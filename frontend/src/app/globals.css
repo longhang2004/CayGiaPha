@@ -1,0 +1,227 @@
+/*
+ * Global styles and the app-wide accessibility foundation (Requirement 18).
+ *
+ * 18.1/18.2 Text scaling: the root font-size is a percentage (overridden at
+ *   runtime by TextSizeProvider 100%–200%) and ALL sizing below uses rem/em so
+ *   the UI reflows proportionally without clipping content.
+ * 18.3 Contrast: the palette below meets WCAG 2.1 SC 1.4.3 — body text
+ *   (--color-fg on --color-bg) ≈ 17:1, links/accent ≈ 7.7:1, muted text ≈ 7:1,
+ *   all ≥ 4.5:1 for normal text (and ≥ 3:1 for large text).
+ * 18.4 Touch targets: interactive controls are sized to at least
+ *   44×44 CSS px via --min-touch-target.
+ * 18.5 Name/role/value: provided by semantic elements in components.
+ * 18.6 Keyboard navigation: visible :focus-visible outlines on every control;
+ *   no positive tabindex is used anywhere.
+ */
+
+:root {
+  /* Palette — contrast ratios are against the adjacent surface. */
+  --color-bg: #ffffff; /* page surface */
+  --color-fg: #1a1a1a; /* body text on bg: ~17:1 */
+  --color-muted: #595959; /* secondary text on bg: ~7:1 */
+  --color-accent: #8a1f1f; /* links/brand on bg: ~7.7:1 */
+  --color-border: #767676; /* UI borders on bg: ~4.5:1 (non-text 3:1+) */
+  --color-focus: #1a4ed8; /* focus ring: high-contrast against bg */
+
+  /* Minimum interactive target size (18.4). */
+  --min-touch-target: 44px;
+
+  /* Spacing scale in rem so it scales with the text-size setting. */
+  --space-xs: 0.25rem;
+  --space-sm: 0.5rem;
+  --space-md: 1rem;
+  --space-lg: 1.5rem;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  background: var(--color-bg);
+  color: var(--color-fg);
+  font-family: system-ui, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  /* Text scaling (Requirement 18.1/18.2): rem-based, so 100–200% root scaling
+   * reflows the whole UI. TextSizeProvider overrides this percentage inline. */
+  font-size: 100%;
+  line-height: 1.5;
+}
+
+/* Relative, rem-based typography so headings scale with the text-size setting. */
+h1 {
+  font-size: 1.75rem;
+  line-height: 1.25;
+}
+
+h2 {
+  font-size: 1.375rem;
+  line-height: 1.3;
+}
+
+h3 {
+  font-size: 1.125rem;
+}
+
+p {
+  font-size: 1rem;
+}
+
+a {
+  color: var(--color-accent);
+  text-decoration: underline;
+}
+
+main {
+  /* Flexible, reflow-friendly content column (no fixed px width). */
+  max-width: 70rem;
+  margin: 0 auto;
+  padding: var(--space-md);
+}
+
+/* Secondary/explanatory text still meets the 4.5:1 normal-text threshold. */
+.text-muted,
+small {
+  color: var(--color-muted);
+}
+
+/*
+ * Touch targets (18.4): every interactive control is at least 44×44 CSS px.
+ */
+button,
+[role="button"],
+a.button,
+input:not([type="checkbox"]):not([type="radio"]),
+select,
+textarea,
+summary {
+  min-height: var(--min-touch-target);
+  font-size: 1rem;
+}
+
+button,
+[role="button"],
+a.button,
+select {
+  min-width: var(--min-touch-target);
+}
+
+button,
+[role="button"],
+a.button,
+input,
+select,
+textarea {
+  padding: var(--space-sm);
+}
+
+/* Checkbox/radio: enlarge the control and give its label a 44px tap area. */
+input[type="checkbox"],
+input[type="radio"] {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+label:has(> input[type="checkbox"]),
+label:has(> input[type="radio"]) {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-sm);
+  min-height: var(--min-touch-target);
+}
+
+/* Visible keyboard focus indicator on every focusable control (18.6). */
+:focus-visible {
+  outline: 3px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+/* Form fields stack with comfortable, rem-based spacing. */
+.field {
+  margin-bottom: var(--space-md);
+}
+
+label {
+  display: inline-block;
+  margin-bottom: var(--space-xs);
+}
+
+fieldset {
+  margin: 0 0 var(--space-md);
+  padding: var(--space-md);
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+}
+
+/* Error / status text inherits accessible foreground colours. */
+.form-error,
+.field-error,
+[role="alert"] {
+  color: var(--color-accent);
+}
+
+/* App header / primary navigation — flex layout that wraps on narrow or
+ * highly-zoomed viewports so no content is lost (18.1/18.2). */
+.app-header {
+  border-bottom: 1px solid var(--color-border);
+}
+
+.app-nav {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-md);
+  max-width: 70rem;
+  margin: 0 auto;
+  padding: var(--space-sm) var(--space-md);
+}
+
+.app-nav__brand {
+  font-weight: 700;
+}
+
+.app-nav__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-md);
+}
+
+/* Text-size setting control (18.1/18.2). */
+.text-size-control {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.text-size-control__label {
+  margin: 0;
+}
+
+.text-size-control__slider {
+  min-height: var(--min-touch-target);
+}
+
+.text-size-control__value {
+  min-width: 3.5ch;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Accessible skip link: visible only when focused (18.6). */
+.skip-link {
+  position: absolute;
+  left: -999px;
+  top: 0;
+  padding: var(--space-sm) var(--space-md);
+  background: var(--color-fg);
+  color: var(--color-bg);
+}
+
+.skip-link:focus {
+  left: 0;
+  z-index: 100;
+}

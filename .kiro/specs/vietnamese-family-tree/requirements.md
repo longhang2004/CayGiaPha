@@ -1,0 +1,371 @@
+# Requirements Document
+
+## Introduction
+
+This document specifies the requirements for a Vietnamese family tree (cây gia phả) web/mobile application. The application lets a user build and visualize the relationships of a Vietnamese clan as a graph rendered as a tree/diagram. The defining domain feature is automatic computation of the correct Vietnamese form of address (cách xưng hô) between any two persons, accounting for paternal-vs-maternal side, gender, birth order/age, and regional dialect (Bắc/Trung/Nam).
+
+The core data model is a graph: each Person is a node and each Relationship is a typed edge. Only primitive bloodline edges (parent-child) and marriage edges are stored; all higher-order kinship terms are derived from these edges. Relatives can be added in two modes: a well-defined primitive relationship (rendered as a SOLID line) from which address can be computed, and an asserted direct label such as "this person is my bác" (rendered as a DASHED line) that lacks intermediate nodes and therefore cannot yet be auto-derived. The system attempts to upgrade dashed relations to solid when intermediate nodes are added and warns on conflicts.
+
+In v1 each User owns their own tree. A User invites relatives via phone number or email so the relative can verify and claim their own Person node. Tree merging and cross-tree linking are deferred to a later version.
+
+## Glossary
+
+- **Family_Tree_System**: The overall application that stores the relationship graph, computes forms of address, and renders the tree.
+- **Auth_Service**: The component responsible for user sign-up, sign-in, and session management via phone number or email.
+- **Verification_Service**: The component that sends and validates one-time verification codes over phone number or email, and manages node claiming.
+- **Graph_Store**: The component that persists Person nodes and Relationship edges.
+- **Kinship_Resolver**: The component that computes the Vietnamese form of address between two Person nodes given a viewpoint, using the relationship path, side, gender, birth order, and region.
+- **Renderer**: The component that draws the relationship graph as a tree/diagram, including solid and dashed edges.
+- **User**: A login account belonging to a real human who authenticates with the Auth_Service.
+- **Person**: A node in the relationship graph representing an individual, which may or may not correspond to a User account.
+- **Relationship**: A typed, directed edge between two Person nodes.
+- **Primitive_Bloodline_Edge**: A stored parent-child Relationship (father-child or mother-child).
+- **Marriage_Edge**: A stored spouse Relationship between two Person nodes, with a marital status.
+- **Non_Bloodline_Relation**: A stored social Relationship (such as friend, teacher, colleague) that does not participate in kinship address computation.
+- **Asserted_Relationship**: A user-provided direct kinship label between two Person nodes that lacks the intermediate nodes required to derive it; rendered as a DASHED line.
+- **Derived_Relationship**: A kinship relationship computable from stored Primitive_Bloodline_Edges and Marriage_Edges; rendered as a SOLID line.
+- **Form_Of_Address**: The Vietnamese kinship term (for example ông, bà, bác, chú, cô, dì, cậu, anh, em, cháu) used by one Person to address another.
+- **Viewpoint** (ego node): The Person from whose perspective forms of address are computed.
+- **Region**: A Vietnamese regional dialect setting with the values Bắc, Trung, or Nam that governs kinship term selection.
+- **Owner**: The User who created and controls a given tree.
+- **Claimed_Node**: A Person node that has been verified and linked to a User via phone number or email.
+- **Search_Service**: The component that searches and filters Person nodes within a tree by display name, by Form_Of_Address relative to the current Viewpoint, and by Person fields.
+- **Help_System**: The in-application component that presents the usage guide explaining core concepts and workflows of the Family_Tree_System.
+
+## Requirements
+
+### Requirement 1: User Sign-Up
+
+**User Story:** As a new user, I want to sign up using my phone number or email, so that I can create and own a family tree.
+
+#### Acceptance Criteria
+
+1. WHEN a visitor submits a sign-up request with a phone number in valid Vietnamese format (10 digits beginning with 0, or +84 followed by 9 digits), THE Auth_Service SHALL create a User account associated with that phone number.
+2. WHEN a visitor submits a sign-up request with an email address of 254 characters or fewer in valid email format (local-part@domain), THE Auth_Service SHALL create a User account associated with that email address.
+3. WHEN a User account is created, THE Verification_Service SHALL send a 6-digit numeric one-time verification code to the provided phone number or email address within 60 seconds.
+4. WHEN a verification code is sent, THE Verification_Service SHALL accept that code as valid for 300 seconds from the time of sending, and after 300 seconds THE Verification_Service SHALL reject the code as expired.
+5. WHILE a User account has not completed verification, THE Auth_Service SHALL mark the account as unverified.
+6. IF a sign-up request uses a phone number or email already associated with an existing User account, THEN THE Auth_Service SHALL reject the request, SHALL NOT create a new User account, and SHALL return a message stating the identifier is already registered.
+7. IF a sign-up request contains a phone number that is not in valid Vietnamese format (10 digits beginning with 0, or +84 followed by 9 digits), or an email address that exceeds 254 characters or does not match the local-part@domain format, THEN THE Auth_Service SHALL reject the request, SHALL NOT create a User account, and SHALL return a message identifying the invalid field.
+8. IF an incorrect verification code is submitted 5 times for the same User account, THEN THE Verification_Service SHALL reject all further verification attempts for that account for 900 seconds.
+9. IF the duplicate-identifier check cannot determine within 5 seconds whether a phone number or email already exists, THEN THE Auth_Service SHALL proceed to create the User account and SHALL mark the account as unverified.
+
+### Requirement 2: User Sign-In
+
+**User Story:** As a registered user, I want to sign in using my phone number or email, so that I can access my family tree.
+
+#### Acceptance Criteria
+
+1. WHEN a User submits a sign-in request with a phone number or email matching a verified User account, THE Verification_Service SHALL send a 6-digit numeric one-time verification code to that identifier within 30 seconds.
+2. WHEN a verification code is sent for sign-in, THE Verification_Service SHALL accept that code as valid for 300 seconds from the time of sending.
+3. WHEN a User submits a verification code that matches the issued code within the 300-second validity period, THE Auth_Service SHALL establish an authenticated session valid for 30 days.
+4. IF a User submits a sign-in request with a phone number or email that does not match any verified User account, THEN THE Auth_Service SHALL reject the request and return an account-not-found message.
+5. IF a User submits a verification code that does not match the issued code, THEN THE Auth_Service SHALL reject the sign-in attempt, leave any existing session unchanged, and return a verification-failure message.
+6. IF a User submits a verification code after the 300-second validity period has elapsed, THEN THE Auth_Service SHALL reject the sign-in attempt and return an expired-code message.
+7. IF an incorrect verification code is submitted 5 times for the same sign-in request, THEN THE Verification_Service SHALL invalidate the issued code and reject further submissions for that request.
+8. WHEN an authenticated User submits a sign-out request, THE Auth_Service SHALL terminate and invalidate the authenticated session.
+
+### Requirement 3: Person Node Management
+
+**User Story:** As a tree owner, I want to create and edit person records, so that I can represent the members of my clan.
+
+#### Acceptance Criteria
+
+1. WHEN an authenticated Owner submits a create-person request containing a valid display name and a valid gender value, THE Graph_Store SHALL create a Person node within the Owner's tree and return the identifier of the created node.
+2. THE Graph_Store SHALL store for each Person node a display name of 1 to 100 characters, a gender value restricted to one of the enumerated values {male, female}, an optional birth order as a positive integer from 1 to 99, and an optional birth year as a four-digit integer from 1000 to the current calendar year.
+3. WHEN an Owner submits an edit-person request for a Person node in the Owner's tree containing field values that satisfy the bounds defined in criterion 2, THE Graph_Store SHALL update the specified fields of that Person node and leave all unspecified fields unchanged.
+4. WHEN an Owner submits a delete-person request for a Person node in the Owner's tree, THE Family_Tree_System SHALL prompt the Owner to choose between cascade deletion and neighbor preservation as defined in Requirement 15, and SHALL NOT remove the Person node or any connected Relationship edge until the Owner selects one of those options.
+5. WHERE a Person node records a death status, THE Graph_Store SHALL store the death status as a boolean field of that Person node.
+6. IF a create-person or edit-person request omits a required display name or gender value, or contains a display name, gender value, birth order, or birth year that violates the bounds defined in criterion 2, THEN THE Graph_Store SHALL reject the request, leave the target Person node unchanged, and return an error indication identifying the invalid field.
+7. IF an Owner submits a create-person, edit-person, or delete-person request targeting a Person node that does not exist in the Owner's tree, THEN THE Graph_Store SHALL reject the request, make no change to any Person node, and return an error indication that the target node is not accessible.
+
+### Requirement 4: Relationship Graph Model
+
+**User Story:** As a tree owner, I want relationships stored as typed edges in a graph, so that kinship terms can be derived rather than stored individually.
+
+#### Acceptance Criteria
+
+1. THE Graph_Store SHALL represent each relationship as a directed Relationship edge between two distinct Person nodes.
+2. IF a create-relationship request specifies the same Person node as both source and target, THEN THE Graph_Store SHALL reject the request and return a self-reference-violation message indicating that source and target must differ.
+3. THE Graph_Store SHALL support Primitive_Bloodline_Edge relationships restricted to father-child and mother-child types, directed from the parent Person node to the child Person node.
+4. THE Graph_Store SHALL restrict each child Person node to at most one father-child Primitive_Bloodline_Edge and at most one mother-child Primitive_Bloodline_Edge.
+5. THE Graph_Store SHALL support Marriage_Edge relationships that record a marital status whose value is exactly one of married, divorced, or deceased.
+6. THE Graph_Store SHALL support Non_Bloodline_Relation relationships that record a social relationship type.
+7. THE Graph_Store SHALL store each Asserted_Relationship together with the user-provided kinship label of 1 to 50 characters.
+8. IF a create-relationship request references a Person node that does not exist in the Graph_Store, THEN THE Graph_Store SHALL reject the request and return a missing-node message indicating which referenced node was not found.
+9. IF a create-relationship request would create a parent-child cycle in the Primitive_Bloodline_Edge set, THEN THE Graph_Store SHALL reject the request and return a cycle-violation message.
+
+### Requirement 5: Add Relative as Derived Relationship (Solid Line)
+
+**User Story:** As a tree owner, I want to add a relative through a known primitive relationship, so that the system can compute forms of address precisely and render a solid line.
+
+#### Acceptance Criteria
+
+1. WHEN an authenticated Owner adds a relative to a Person node in the Owner's tree using a parent-child relationship, THE Graph_Store SHALL store the relationship as a Primitive_Bloodline_Edge.
+2. WHEN an authenticated Owner adds a relative to a Person node in the Owner's tree using a spouse relationship, THE Graph_Store SHALL store the relationship as a Marriage_Edge.
+3. WHEN a relationship is stored as a Primitive_Bloodline_Edge or Marriage_Edge, THE Renderer SHALL render the corresponding edge as a solid line.
+4. WHEN an Owner adds a relative through a parent-child or spouse relationship, THE Kinship_Resolver SHALL compute and return a defined Form_Of_Address from the added Person toward every connected Person whose connecting path consists only of Derived_Relationships.
+5. IF an add-relative request references a Person node that does not exist in the Owner's tree, THEN THE Graph_Store SHALL reject the request, return an error indicating the referenced node is invalid, and SHALL NOT create any edge.
+
+### Requirement 6: Add Relative as Asserted Relationship (Dashed Line)
+
+**User Story:** As a tree owner, I want to add a relative by a direct kinship label even when I do not know the intermediate linkage, so that I can record relatives such as a bác without first modeling the connecting ancestors.
+
+#### Acceptance Criteria
+
+1. WHEN an Owner adds a relative using a direct kinship label of 1 to 50 characters without supplying the intermediate Person nodes, THE Graph_Store SHALL store the relationship as an Asserted_Relationship with the provided label and SHALL link it to exactly the two Person nodes specified by the Owner.
+2. IF an Owner attempts to add a relative with a kinship label that is empty or exceeds 50 characters, THEN THE Graph_Store SHALL reject the request, SHALL NOT create any relationship or Person node, and SHALL return an error indication identifying the invalid label.
+3. WHEN a relationship is stored as an Asserted_Relationship, THE Renderer SHALL render the corresponding edge as a dashed line that is visually distinct from edges representing non-asserted (derived) relationships.
+4. WHILE a relationship between two Person nodes is an Asserted_Relationship, THE Kinship_Resolver SHALL return the stored asserted label as the Form_Of_Address for that relationship and SHALL NOT auto-derive any Form_Of_Address from either Person toward other nodes by traversing the asserted edge.
+
+### Requirement 7: Upgrade and Conflict Detection for Asserted Relationships
+
+**User Story:** As a tree owner, I want asserted relationships to be upgraded to derived relationships when I add the connecting nodes, so that the system can verify my earlier labels and compute address automatically.
+
+#### Acceptance Criteria
+
+1. WHEN an Owner adds one or more Primitive_Bloodline_Edges that complete an unbroken path of Primitive_Bloodline_Edges between two Person nodes previously joined by an Asserted_Relationship, THE Graph_Store SHALL upgrade that Asserted_Relationship to a Derived_Relationship.
+2. WHEN an Asserted_Relationship is upgraded to a Derived_Relationship, THE Renderer SHALL render the connecting edge as a solid line within 1 second of the upgrade.
+3. WHEN an Asserted_Relationship is upgraded, THE Kinship_Resolver SHALL compute the derived Form_Of_Address for the completed path.
+4. WHEN the derived Form_Of_Address for an upgraded relationship matches the previously stored asserted label, THE Family_Tree_System SHALL mark the relationship as verified and SHALL NOT present a conflict warning.
+5. IF the derived Form_Of_Address for an upgraded relationship differs from the previously stored asserted label, THEN THE Family_Tree_System SHALL present a conflict warning that displays both the asserted label and the derived Form_Of_Address, and SHALL retain the stored asserted label unchanged until the Owner resolves the conflict.
+
+### Requirement 8: Kinship Address Resolution
+
+**User Story:** As a user viewing a relative, I want to see the correct Vietnamese form of address relative to me, so that I know how to refer to that person.
+
+#### Acceptance Criteria
+
+1. WHEN a User selects a Person node for a given Viewpoint, THE Kinship_Resolver SHALL compute, within 1 second, the Form_Of_Address used by the Viewpoint Person to address the selected Person.
+2. THE Kinship_Resolver SHALL determine the Form_Of_Address using the relationship path through the graph, the paternal or maternal side of each path segment, the gender of the involved Person nodes, and the birth order or birth year of the involved Person nodes.
+3. WHERE a path segment is on the paternal side, THE Kinship_Resolver SHALL select paternal-side terms (for example bác or chú) rather than the maternal-side term cậu.
+4. WHERE the birth order or birth year of an involved Person node establishes that the relative was born before the connecting parent, THE Kinship_Resolver SHALL select the elder-sibling term, and WHERE the birth order or birth year establishes that the relative was born after the connecting parent, THE Kinship_Resolver SHALL select the younger-sibling term.
+5. IF both the birth order and the birth year required to distinguish an elder-sibling term from a younger-sibling term are absent or equal for the involved Person nodes, THEN THE Kinship_Resolver SHALL return an unresolved-relationship indicator and SHALL NOT select either the elder-sibling or younger-sibling term.
+6. FOR ALL pairs of Person nodes connected solely by Derived_Relationships, IF the Kinship_Resolver computes that Person A addresses Person B with a descendant term such as cháu, THEN the Kinship_Resolver SHALL compute that Person B addresses Person A with the corresponding ascendant term such as bác, chú, cô, dì, or cậu (symmetry property).
+7. IF the relationship path between the Viewpoint Person and the selected Person cannot be resolved to a defined Form_Of_Address, THEN THE Kinship_Resolver SHALL return an unresolved-relationship indicator and SHALL retain the selected Person node and Viewpoint unchanged.
+
+### Requirement 9: Multi-Region Dialect Support
+
+**User Story:** As a user, I want forms of address to follow my regional dialect, so that the terms match how my family actually speaks.
+
+#### Acceptance Criteria
+
+1. THE Kinship_Resolver SHALL read kinship terms from a configurable data layer keyed by Region, where Region is restricted to exactly one of the three values Bắc, Trung, or Nam.
+2. WHEN a tree is created, THE Family_Tree_System SHALL assign and store a default Region for that tree, defaulting to Bắc when the Owner does not specify one.
+3. WHEN the Kinship_Resolver computes a Form_Of_Address, THE Kinship_Resolver SHALL select the kinship term defined in the data layer for the tree's current default Region.
+4. IF no kinship term is defined for the resolved relationship path under the tree's current default Region, THEN THE Kinship_Resolver SHALL return an indication that the Form_Of_Address is undefined for that Region and SHALL leave the tree's stored default Region unchanged.
+5. WHEN an Owner changes the default Region of a tree to one of Bắc, Trung, or Nam, THE Kinship_Resolver SHALL compute every Form_Of_Address requested after the change using the newly selected Region.
+6. IF an Owner attempts to set a tree's default Region to a value other than Bắc, Trung, or Nam, THEN THE Family_Tree_System SHALL reject the change and SHALL retain the previously stored default Region.
+7. FOR ALL Regions in the set {Bắc, Trung, Nam}, THE Kinship_Resolver SHALL resolve every relationship path that it resolves for any other Region in the set to a defined Form_Of_Address (regional coverage property).
+8. WHEN an Owner completes sign-up, THE Family_Tree_System SHALL allow the Owner to specify the new tree's default Region as one of Bắc, Trung, or Nam, SHALL create the tree with the specified Region, and SHALL default to Bắc when the Owner does not specify one; IF the specified value is not one of Bắc, Trung, or Nam, THEN THE Family_Tree_System SHALL reject sign-up verification with a validation error and SHALL NOT create the tree.
+
+### Requirement 10: Change Point of View
+
+**User Story:** As a user, I want to change the viewpoint to another person, so that I can see how that person addresses everyone else in the tree.
+
+#### Acceptance Criteria
+
+1. WHEN a User selects a Person node within a tree as the Viewpoint, THE Kinship_Resolver SHALL recompute the Form_Of_Address from the selected Viewpoint toward every other Person node in that tree.
+2. WHEN the Viewpoint changes, THE Renderer SHALL display the recomputed forms of address within 2 seconds for a tree of up to 1,000 Person nodes without requiring any additional relationship data to be stored.
+3. WHERE the relationship path between the selected Viewpoint and another Person node cannot be resolved to a defined Form_Of_Address, THE Kinship_Resolver SHALL return the unresolved-relationship indicator for that Person node.
+4. IF a User selects as the Viewpoint a Person node that does not exist in the tree, THEN THE Family_Tree_System SHALL reject the request, leave the current Viewpoint unchanged, and return an error indication that the selected node is not in the tree.
+
+### Requirement 11: Node Linking and Verification
+
+**User Story:** As a relative who was added to someone's tree, I want to verify and claim my own node via phone number or email, so that my record is confirmed as mine.
+
+#### Acceptance Criteria
+
+1. WHEN an Owner sends an invitation for a Person node that is not already a Claimed_Node to a phone number or email, THE Verification_Service SHALL deliver, within 60 seconds, an invitation containing a 6-digit numeric one-time verification code that remains valid for 15 minutes from the time of issuance to that phone number or email.
+2. WHEN an invited recipient submits a verification code that matches the issued code within the 15-minute validity period, THE Verification_Service SHALL mark the corresponding Person node as a Claimed_Node linked to the recipient's User account.
+3. IF an invited recipient submits a verification code that does not match the issued code, THEN THE Verification_Service SHALL reject the claim, leave the Person node in its prior unclaimed state, and return a verification-failure message indicating the code is invalid.
+4. IF an invited recipient submits a verification code that matches the issued code but is submitted after the 15-minute validity period has elapsed, THEN THE Verification_Service SHALL reject the claim, leave the Person node in its prior unclaimed state, and return a message indicating the code has expired.
+5. IF an invited recipient submits 5 consecutive non-matching verification codes for the same invitation, THEN THE Verification_Service SHALL invalidate the issued code, reject further submissions for that invitation, and return a message indicating the maximum number of attempts has been reached.
+6. WHILE a Person node is a Claimed_Node, THE Graph_Store SHALL permit edits to that node only by the linked User and the tree Owner.
+7. IF an Owner attempts to send an invitation for a Person node that is already a Claimed_Node, THEN THE Verification_Service SHALL reject the request and return an already-claimed message.
+
+### Requirement 12: Non-Bloodline Relationships
+
+**User Story:** As a tree owner, I want to record non-bloodline relationships such as friends and teachers, so that I can represent social connections without affecting kinship terms.
+
+#### Acceptance Criteria
+
+1. WHEN an authenticated Owner submits a request to add a connection between two distinct Person nodes that both exist within the Owner's tree, using a social relationship type of friend, teacher, or colleague, THE Graph_Store SHALL store the connection as a Non_Bloodline_Relation edge recording the specified social relationship type.
+2. IF a request to add a Non_Bloodline_Relation specifies a social relationship type other than friend, teacher, or colleague, references a Person node that does not exist in the Owner's tree, or references the same Person node for both endpoints, THEN THE Graph_Store SHALL reject the request, return a message identifying the invalid field, and SHALL NOT create any edge.
+3. THE Kinship_Resolver SHALL exclude Non_Bloodline_Relation edges from Form_Of_Address computation and from all relationship path computations, including connection-finding between two Person nodes.
+4. WHEN the Renderer draws a Non_Bloodline_Relation edge, THE Renderer SHALL render that edge using a line style distinct from the solid line used for Primitive_Bloodline_Edge and Marriage_Edge edges and distinct from the dashed line used for Asserted_Relationship edges.
+
+### Requirement 13: Tree Ownership
+
+**User Story:** As a user, I want to own my own tree, so that I control who can change its contents.
+
+#### Acceptance Criteria
+
+1. WHEN a User account completes verification and that User owns no existing tree, THE Family_Tree_System SHALL create exactly one tree, assign that User as its Owner, and confirm creation to the User.
+2. IF a User account completes verification while the User already owns one tree, THEN THE Family_Tree_System SHALL NOT create an additional tree and SHALL retain the existing single tree owned by that User.
+3. IF tree creation fails after a User account completes verification, THEN THE Family_Tree_System SHALL leave the User without a tree and return an error message indicating that tree creation did not complete.
+4. THE Graph_Store SHALL permit create, edit, and delete operations on Person nodes and Relationship edges within a tree only to the tree Owner, except for Claimed_Node edits, which THE Graph_Store SHALL also permit to the User linked to that Claimed_Node.
+5. IF a User attempts a create, edit, or delete operation on a tree the User does not own and in which the User holds no Claimed_Node, THEN THE Family_Tree_System SHALL reject the operation, leave the tree contents unchanged, and return an authorization-failure message.
+
+### Requirement 14: Privacy and Visibility
+
+**User Story:** As a tree owner, I want to control the visibility of sensitive person information, so that details such as divorces, adoptions, and deceased status are shown only as intended.
+
+#### Acceptance Criteria
+
+1. THE Graph_Store SHALL store a visibility setting for each sensitive field of a Person node, where each sensitive field is one of marital status, adoption status, or death status, and where the visibility setting holds exactly one of the values "private" or "public".
+2. WHEN a Person node is created without an explicit visibility setting for a sensitive field, THE Family_Tree_System SHALL set that field's visibility setting to "private".
+3. WHILE a sensitive field's visibility setting is "private", THE Family_Tree_System SHALL include that field in a Person node response only when the requesting viewer is the tree Owner or the linked User of the corresponding Claimed_Node.
+4. IF a viewer who is neither the tree Owner nor the linked User of the corresponding Claimed_Node requests a Person node containing one or more sensitive fields whose visibility setting is "private", THEN THE Family_Tree_System SHALL omit each such private sensitive field from the response while returning all non-private fields of that Person node.
+5. WHILE a sensitive field's visibility setting is "public", THE Family_Tree_System SHALL include that field in the Person node response for every authorized viewer of the tree.
+
+### Requirement 15: Person Node Deletion Cascade Choice
+
+**User Story:** As a tree owner, I want to choose what happens to neighboring records when I delete a person, so that I can either remove the records that become disconnected or preserve them by keeping their kinship as a dashed (asserted) relationship.
+
+#### Acceptance Criteria
+
+1. WHEN an Owner submits a delete-person request for a Person node in the Owner's tree, THE Family_Tree_System SHALL present exactly two options, "cascade deletion" and "neighbor preservation", and SHALL make no change to the Graph_Store until the Owner selects one of the two options.
+2. IF the Owner dismisses the deletion-choice prompt without selecting either option, THEN THE Family_Tree_System SHALL leave the target Person node and every connected Relationship edge unchanged.
+3. WHEN the Owner selects cascade deletion for a target Person node, THE Graph_Store SHALL remove the target Person node, remove every Relationship edge connected to the target Person node, and then repeatedly remove every other Person node that retains zero Relationship edges as a result of the removal, until no Person node that became edgeless through this operation remains.
+4. WHEN the Owner selects neighbor preservation for a target Person node, THE Graph_Store SHALL remove the target Person node and every Relationship edge connected to the target Person node, and SHALL retain every Person node that was connected to the target Person node.
+5. WHILE neighbor preservation is being applied, FOR ALL pairs of distinct Person nodes (A, B) that were each connected to the target Person node by a Derived_Relationship and whose only Derived_Relationship path to each other passed through the target Person node, THE Graph_Store SHALL create an Asserted_Relationship between A and B labeled with the Form_Of_Address that the Kinship_Resolver computed between A and B immediately before the deletion.
+6. WHEN the Graph_Store creates an Asserted_Relationship as a result of neighbor preservation, THE Renderer SHALL render that Relationship as a dashed line that is visually distinct from edges representing Derived_Relationships, consistent with Requirement 6.
+7. IF, immediately before deletion, the Kinship_Resolver did not compute a defined Form_Of_Address between a neighbor pair (A, B), THEN THE Graph_Store SHALL NOT create an Asserted_Relationship for that pair during neighbor preservation.
+8. WHERE neighbor preservation is selected and a Person node that was connected to the target Person node retains zero Relationship edges after the deletion, THE Graph_Store SHALL retain that Person node as an isolated Person node with no Relationship edges.
+9. WHEN an Asserted_Relationship created by neighbor preservation is later completed by an unbroken path of Primitive_Bloodline_Edges, THE Graph_Store SHALL apply the upgrade and conflict-detection behavior defined in Requirement 7 to that Asserted_Relationship, including presenting a conflict warning when the newly derived Form_Of_Address differs from the retained label.
+10. IF an Owner submits a delete-person request targeting a Person node that does not exist in the Owner's tree, THEN THE Family_Tree_System SHALL reject the request, make no change to any Person node or Relationship edge, and return an error indication that the target node is not accessible.
+
+### Requirement 16: Search and Filter Person Nodes
+
+**User Story:** As a user, I want to search and filter the people in my tree by name, by how I address them, and by their attributes, so that I can quickly locate relevant relatives in a large tree.
+
+#### Acceptance Criteria
+
+1. WHEN a User submits a search query of 1 to 100 characters against display name, THE Search_Service SHALL return all and only the Person nodes in the current tree whose display name contains the query as a case-insensitive and diacritic-insensitive substring.
+2. WHEN a User submits a search query against Form_Of_Address relative to the current Viewpoint, THE Search_Service SHALL return all and only the Person nodes whose computed Form_Of_Address from the current Viewpoint equals the query term.
+3. THE Search_Service SHALL support filtering Person nodes by each of the following Person fields: gender value, side relative to the current Viewpoint (paternal or maternal), birth-year range defined by an inclusive lower bound and an inclusive upper bound, death status, claimed status (Claimed_Node or unclaimed), and relationship type (Primitive_Bloodline_Edge, Marriage_Edge, Asserted_Relationship, or Non_Bloodline_Relation).
+4. WHEN a User applies two or more filters simultaneously, THE Search_Service SHALL return all and only the Person nodes that satisfy every applied filter.
+5. FOR ALL combinations of applied filters, THE Search_Service SHALL return a result set that is a subset of the result set it returns when any one of those filters is removed (filter-monotonicity property).
+6. IF no Person node satisfies the submitted search query and applied filters, THEN THE Search_Service SHALL return an empty result set and a no-matches indication.
+7. WHEN a User submits a search or filter request against a tree of up to 1,000 Person nodes, THE Search_Service SHALL return the result set within 2 seconds.
+8. IF a search query is empty or exceeds 100 characters, or a birth-year range specifies a lower bound greater than its upper bound, THEN THE Search_Service SHALL reject the request, return no result set, and return an error indication identifying the invalid field.
+
+### Requirement 17: In-Application Usage Guide
+
+**User Story:** As a user, I want an in-app guide that explains the core concepts and workflows, so that I can learn how to use the application without external help.
+
+#### Acceptance Criteria
+
+1. THE Family_Tree_System SHALL provide access to the Help_System from the main application interface.
+2. THE Help_System SHALL contain at least one section addressing each of the following topics: the distinction between solid Derived_Relationship lines and dashed Asserted_Relationship lines; how to add a relative as a Derived_Relationship and as an Asserted_Relationship; how the Kinship_Resolver computes a Form_Of_Address; how to change the Viewpoint; how to claim a Person node by verification; and how to select a Region.
+3. WHEN a User opens the Help_System, THE Family_Tree_System SHALL display the guide content within 2 seconds.
+4. WHEN a User selects one of the topics listed in criterion 2 from the Help_System, THE Help_System SHALL display the section corresponding to the selected topic.
+5. FOR ALL topics listed in criterion 2, THE Help_System SHALL provide a corresponding section that is reachable from the Help_System entry point (topic-coverage property).
+
+### Requirement 18: Accessibility Across Age Groups
+
+**User Story:** As a user of any age, including elderly and younger relatives, I want the application to be legible and easy to operate, so that everyone in the family can use it comfortably.
+
+#### Acceptance Criteria
+
+1. THE Family_Tree_System SHALL provide a text-size setting that scales application text from 100% up to at least 200% of the default size without loss of content or functionality.
+2. WHEN the text-size setting is changed, THE Family_Tree_System SHALL apply the selected size to all subsequently rendered screens.
+3. THE Renderer SHALL render text against its background with a contrast ratio of at least 4.5:1 for normal-size text and at least 3:1 for large-scale text, aligned with WCAG 2.1 success criterion 1.4.3.
+4. WHERE the application is operated on a touch device, THE Renderer SHALL render each interactive touch target with a size of at least 44 by 44 CSS pixels.
+5. THE Family_Tree_System SHALL expose every interactive control and informational element with a programmatically determinable name, role, and value compatible with screen readers, aligned with WCAG 2.1 success criterion 4.1.2.
+6. THE Family_Tree_System SHALL provide keyboard-only navigation that reaches every interactive control, aligned with WCAG 2.1 success criterion 2.1.1.
+
+> Note: The acceptance criteria above target machine-verifiable, WCAG-aligned thresholds (scalable text, contrast ratios, touch-target size, programmatic names/roles, keyboard reachability). Full accessibility conformance cannot be confirmed by automated checks alone; it additionally requires manual testing with assistive technologies (for example screen readers) and expert accessibility review.
+
+### Requirement 19: Tree-Level Sharing and Read Authorization
+
+**User Story:** As a tree owner, I want to control who can view my tree, so that strangers cannot read my family's information.
+
+#### Acceptance Criteria
+
+1. THE Family_Tree_System SHALL store for each tree a sharing setting holding exactly one of "private", "link", or "public", and SHALL default that setting to "private" when none is specified.
+2. THE Family_Tree_System SHALL require an authenticated session for every request that reads Person nodes, Relationship edges, or computed forms of address.
+3. WHILE a tree's sharing setting is "private", THE Family_Tree_System SHALL permit read access to that tree's Person nodes and Relationship edges only to the tree Owner and to a User linked to a Claimed_Node in that tree, and SHALL reject every other reader with an authorization-failure message.
+4. WHILE a tree's sharing setting is "link", THE Family_Tree_System SHALL permit read access — in addition to the Owner and linked users — only to a requester who presents a valid, unguessable share token for that tree, and SHALL reject requesters without a valid token.
+5. WHEN an Owner generates or revokes a share token, THE Family_Tree_System SHALL respectively issue a new unguessable token or invalidate the existing token, and SHALL deny "link" read access made through a revoked token.
+6. WHILE a tree's sharing setting is "public", THE Family_Tree_System SHALL permit read access to any authenticated User, subject to the per-person and living-person visibility rules of Requirements 14, 20, and 21.
+7. IF a requester who is not authorized to read a tree under criteria 3–6 requests any read of that tree, THEN THE Family_Tree_System SHALL reject the request, disclose no Person or Relationship data, and return a uniform authorization-failure message that does not reveal whether the tree exists.
+8. THE Family_Tree_System SHALL restrict changing a tree's sharing setting and managing its share token to the tree Owner.
+
+### Requirement 20: Protection of Living Persons
+
+**User Story:** As a user, I want details of living relatives hidden from people who are not family, so that living individuals are protected from misuse.
+
+#### Acceptance Criteria
+
+1. THE Family_Tree_System SHALL treat a Person node as a Living_Person unless its death status is true or its birth year is more than 100 years before the current year.
+2. WHILE a Person node is a Living_Person and the requesting viewer is neither the tree Owner nor the linked User of that node's Claimed_Node and Living_Person redaction is enabled for the tree, THE Family_Tree_System SHALL omit that person's birth year and birth order from the response and SHALL replace the display name with a non-identifying placeholder, except for any of those fields whose visibility setting the Owner has set to "public" (Requirement 21).
+3. WHILE a Person node is not a Living_Person, THE Family_Tree_System SHALL apply only the per-field visibility rules of Requirements 14 and 21 and SHALL NOT apply Living_Person redaction.
+4. THE Family_Tree_System SHALL provide a per-tree Living_Person-redaction setting, controllable only by the Owner, defaulting to enabled.
+5. WHERE Living_Person redaction omits or replaces fields, THE Family_Tree_System SHALL still return enough of the person's node identity and graph position to render the tree structure without exposing the protected fields.
+
+### Requirement 21: Extended Field Visibility
+
+**User Story:** As a tree owner or a claimed user, I want to control the visibility of name, birth year, and photo, so that identifying details are shown only as intended.
+
+#### Acceptance Criteria
+
+1. THE Graph_Store SHALL store a visibility setting holding exactly one of "private" or "public" for each of the following additional Person fields: display name, birth year, and primary photo.
+2. WHEN a Person node is created without an explicit visibility setting for one of these fields, THE Family_Tree_System SHALL set the display-name and birth-year visibility to "public" and the primary-photo visibility to "private" (so a shared genealogy is usable by default while living individuals remain protected by Requirement 20 and photos stay private by default).
+3. WHILE one of these fields' visibility setting is "private", THE Family_Tree_System SHALL include that field in a Person node response only when the requesting viewer is the tree Owner or the linked User of the corresponding Claimed_Node.
+4. IF a viewer who is neither the tree Owner nor the linked User of the corresponding Claimed_Node requests a Person node whose display-name visibility is "private", THEN THE Family_Tree_System SHALL replace the display name with a non-identifying placeholder while returning every other permitted field.
+5. THE Family_Tree_System SHALL restrict changing these visibility settings to the tree Owner and, for a Claimed_Node, its linked User.
+
+### Requirement 22: Personal Data Rights
+
+**User Story:** As a person whose record is stored in a tree, I want to access, correct, and remove my own data, so that I retain control over my personal information.
+
+#### Acceptance Criteria
+
+1. WHEN the linked User of a Claimed_Node requests an export of their node's data, THE Family_Tree_System SHALL return a machine-readable export of all stored fields of that Person node and of the Relationship edges directly connecting it.
+2. WHEN the linked User of a Claimed_Node submits a correction to a field they are permitted to edit, THE Family_Tree_System SHALL apply the correction subject to the same validation as an Owner edit.
+3. WHEN the linked User of a Claimed_Node requests removal of their personal data, THE Family_Tree_System SHALL, according to the option the User selects, either delete the Person node applying the deletion-choice behavior of Requirement 15 or irreversibly anonymize the node's identifying fields, and SHALL record that the request was made.
+4. WHEN a User requests deletion of their own User account, THE Family_Tree_System SHALL delete or irreversibly anonymize the account's personal data, delete the tree the account owns together with that tree's Person nodes, Relationship edges, and associated images, and terminate all of the account's sessions.
+5. IF an unauthenticated requester, or a User who is not the subject of the data, attempts a data-rights operation in criteria 1–4, THEN THE Family_Tree_System SHALL reject the request and make no change.
+
+### Requirement 23: Terms of Service, Privacy Policy, and Consent
+
+**User Story:** As both the operator and a user, I want clear terms and recorded consent, so that personal data is handled lawfully and transparently.
+
+#### Acceptance Criteria
+
+1. THE Family_Tree_System SHALL make a Terms of Service document and a Privacy Policy document accessible from the application without requiring authentication.
+2. WHEN a User completes sign-up, THE Family_Tree_System SHALL require the User to accept the current Terms of Service and Privacy Policy and SHALL record the acceptance together with the accepted document version and a timestamp.
+3. IF a User does not accept the current Terms of Service and Privacy Policy during sign-up, THEN THE Family_Tree_System SHALL NOT create the account.
+4. WHEN the version of the Terms of Service or Privacy Policy changes, THE Family_Tree_System SHALL require re-acceptance from each User before that User's next data-mutating operation and SHALL record the new acceptance.
+5. THE Privacy Policy SHALL state the categories of personal data stored, the purposes of processing, the data-subject rights of Requirement 22, and a contact point for data-protection requests.
+6. WHEN an Owner adds or edits a Person node representing a person other than themselves, THE Family_Tree_System SHALL present a notice that the Owner is responsible for having a lawful basis to record that person's data.
+
+### Requirement 24: Person Photos
+
+**User Story:** As a user, I want to attach photos to a person, so that the tree shows faces while photos stay protected.
+
+#### Acceptance Criteria
+
+1. WHEN an authorized editor of a Person node uploads an image of a supported type (JPEG or PNG) within the configured maximum size, THE Family_Tree_System SHALL store the image associated with that Person node, and SHALL support associating more than one image with a single Person node.
+2. THE Family_Tree_System SHALL allow designating exactly one stored image of a Person node as that node's primary photo.
+3. IF an uploaded file is not a supported image type (JPEG or PNG) or exceeds the configured maximum size, THEN THE Family_Tree_System SHALL reject the upload, store no image, and return an error identifying the problem. (WebP support is deferred pending an image codec; uploads of other types, including WebP, are rejected.)
+4. WHEN the Family_Tree_System stores an uploaded image, THE Family_Tree_System SHALL strip embedded metadata, including any geolocation/EXIF data, before persisting the image.
+5. THE Family_Tree_System SHALL serve a stored image only to a viewer authorized to view that Person node under Requirements 14, 19, 20, and 21, and SHALL govern primary-photo exposure by the primary-photo visibility setting of Requirement 21.
+6. WHEN a Person node is deleted, THE Family_Tree_System SHALL delete every image associated with that node from image storage.
+7. THE Family_Tree_System SHALL store image binary content outside the primary relational database in object storage and SHALL persist only an image reference and its metadata in the database.
+8. THE Family_Tree_System SHALL restrict uploading and deleting a Person node's images to the tree Owner and, for a Claimed_Node, its linked User.
+
+### Requirement 25: Abuse Prevention and Audit Logging
+
+**User Story:** As the operator, I want abuse protections and audit trails, so that misuse is limited and traceable.
+
+#### Acceptance Criteria
+
+1. THE Family_Tree_System SHALL rate-limit verification-code requests per identifier and per source address, and SHALL reject requests exceeding the configured threshold with a retry indication that does not reveal whether the identifier exists.
+2. THE Family_Tree_System SHALL record an audit-log entry for each authentication event, each sharing-setting change, each visibility change, each data-rights operation, and each Person-node deletion, capturing the actor, the action, the target, and a timestamp.
+3. THE Family_Tree_System SHALL NOT record verification codes, session tokens, or share tokens in plaintext in the audit log.
+4. WHEN read access to a tree is denied under Requirement 19, THE Family_Tree_System SHALL return a uniform authorization-failure response that does not reveal whether the tree exists.
+
+> Compliance note: Requirements 19–25 establish the product and technical mechanisms for protecting personal data (access control, living-person protection, data-subject rights, consent capture, photo handling, and abuse/audit controls). The wording of the Terms of Service and Privacy Policy documents (Requirement 23) and the determination of the applicable legal basis are legal matters that require review by qualified counsel; these requirements specify the system behavior, not the legal text. They are informed by Vietnam's Law on Personal Data Protection (2025), which supersedes Decree 13/2023/ND-CP.

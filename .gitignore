@@ -1,0 +1,28 @@
+# Maven / Java
+backend/target/
+backend/.jqwik-database/
+*.class
+
+# Node / Frontend
+frontend/node_modules/
+frontend/.next/
+frontend/out/
+frontend/tsconfig.tsbuildinfo
+
+# OS/IDEs
+.idea/
+.vscode/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.swp
+Thumbs.db
+.DS_Store
+
+# Environment / Local Secrets
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local

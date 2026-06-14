@@ -1,0 +1,56 @@
+# Local development infrastructure for the Vietnamese Family Tree API.
+#
+# Starts a PostgreSQL 16 database the Spring Boot app (and Flyway migrations) run against.
+#
+#   docker compose up -d            # start the database
+#   docker compose ps               # check health
+#   docker compose down             # stop (keeps the named volume / data)
+#   docker compose down -v          # stop and delete the data volume
+#
+# Point the app at it with the matching datasource settings (see application-local.yml):
+#   SPRING_DATASOURCE_URL=jdbc:postgresql://localhost:5432/familytree
+#   SPRING_DATASOURCE_USERNAME=familytree
+#   SPRING_DATASOURCE_PASSWORD=familytree
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: caygiapha-db
+    environment:
+      POSTGRES_DB: familytree
+      POSTGRES_USER: familytree
+      POSTGRES_PASSWORD: familytree
+    ports:
+      - "5432:5432"
+    volumes:
+      - caygiapha-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U familytree -d familytree"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # S3-compatible object storage for person photos (Requirement 24.7). The backend's StorageService
+  # talks to any S3-compatible endpoint; in production this is a managed bucket, locally it is MinIO.
+  #   Console: http://localhost:9001  (user/password: familytree / familytree)
+  #   API:     http://localhost:9000
+  minio:
+    image: minio/minio:latest
+    container_name: caygiapha-minio
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: familytree
+      MINIO_ROOT_PASSWORD: familytree
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - caygiapha-minio:/data
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  caygiapha-pgdata:
+  caygiapha-minio:

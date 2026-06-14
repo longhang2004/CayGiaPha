@@ -1,0 +1,10 @@
+allowBuilds:
+  esbuild: set this to true or false
+  unrs-resolver: set this to true or false
+# pnpm settings for the frontend package.
+# Allow these dependencies to run their install/build scripts (pnpm blocks them by default).
+onlyBuiltDependencies:
+  - esbuild
+  - unrs-resolver
+# Don't fail commands when an unlisted dependency's build script is skipped — warn instead.
+strictDepBuilds: false

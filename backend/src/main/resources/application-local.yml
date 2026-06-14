@@ -1,0 +1,24 @@
+# Local development profile.
+#
+# Run the app locally against a throwaway Testcontainers PostgreSQL instance by launching
+# the test-classpath entry point (requires Docker):
+#
+#   mvn test-compile
+#   mvn -Dspring-boot.run.profiles=local \
+#       -Dspring-boot.run.main-class=com.caygiapha.familytree.TestFamilyTreeApiApplication \
+#       spring-boot:run
+#
+# TestcontainersConfiguration provides the DataSource via @ServiceConnection, so no JDBC URL
+# is configured here. To point at an already-running PostgreSQL instead, set the standard
+# spring.datasource.* properties (or the SPRING_DATASOURCE_URL / USERNAME / PASSWORD env vars).
+spring:
+  jpa:
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+
+logging:
+  level:
+    com.caygiapha.familytree: DEBUG
+    org.flywaydb: INFO

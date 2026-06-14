@@ -1,0 +1,10 @@
+# Test profile.
+#
+# Integration tests obtain their PostgreSQL DataSource from a Testcontainers container wired
+# via @ServiceConnection (see TestcontainersConfiguration), so no JDBC URL is set here.
+# Flyway runs the migrations against the container before tests execute.
+spring:
+  jpa:
+    show-sql: false
+  flyway:
+    enabled: true
