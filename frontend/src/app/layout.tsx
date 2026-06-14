@@ -2,9 +2,8 @@ import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import "./globals.css";
 import { SessionProvider } from "./providers";
-import { HelpEntryPoint } from "@/components/help/HelpEntryPoint";
 import { TextSizeProvider } from "@/components/a11y/TextSizeProvider";
-import { TextSizeControl } from "@/components/a11y/TextSizeControl";
+import { HeaderActions } from "@/components/HeaderActions";
 
 export const metadata: Metadata = {
   title: "Cây Gia Phả",
@@ -26,10 +25,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
                 <a href="/" className="app-nav__brand">
                   Cây Gia Phả
                 </a>
-                <div className="app-nav__actions">
-                  <TextSizeControl />
-                  <HelpEntryPoint />
-                </div>
+                <HeaderActions />
               </nav>
             </header>
             <main id="main-content">{children}</main>

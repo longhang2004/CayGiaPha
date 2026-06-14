@@ -367,3 +367,20 @@ fieldset {
   z-index: 100;
 }
 
+.nav-link {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--color-fg);
+  text-decoration: none;
+  transition: color 0.15s ease;
+}
+
+.nav-link:hover {
+  color: var(--color-brand);
+}
+
+.user-email {
+  font-size: 0.875rem;
+}
+
+
