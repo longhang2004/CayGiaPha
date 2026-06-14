@@ -151,7 +151,7 @@ export function DeletionDialog({
           <Button type="button" onClick={handleConfirm} disabled={executing || !strategy}>
             Xác nhận xóa
           </Button>
-          <Button type="button" onClick={handleDismiss} disabled={executing}>
+          <Button type="button" onClick={handleDismiss} disabled={executing} className="btn-secondary">
             Hủy
           </Button>
         </div>

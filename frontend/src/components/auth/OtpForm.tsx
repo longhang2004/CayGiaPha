@@ -100,7 +100,7 @@ export function OtpForm({
         {submitting ? "Đang xác thực…" : submitLabel}
       </Button>
       {onBack ? (
-        <Button onClick={onBack} disabled={submitting}>
+        <Button onClick={onBack} disabled={submitting} className="btn-secondary">
           Quay lại
         </Button>
       ) : null}
