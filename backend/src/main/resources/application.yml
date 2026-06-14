@@ -1,6 +1,8 @@
 spring:
   application:
     name: family-tree-api
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:}
   profiles:
     # Default to the local profile for development; override with SPRING_PROFILES_ACTIVE.
     default: local
