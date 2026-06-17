@@ -50,6 +50,8 @@ export interface TreeGraphProps {
     egoId: string,
     signal?: AbortSignal,
   ) => Promise<ViewpointAddresses>;
+  selectedId?: string | null;
+  onSelectId?: (id: string | null) => void;
 }
 
 const NODE_WIDTH = 130;
@@ -61,10 +63,14 @@ export function TreeGraph({
   relationships,
   initialEgoId,
   fetchAddresses = fetchViewpointAddresses,
+  selectedId,
+  onSelectId,
 }: TreeGraphProps) {
   const firstId = persons[0]?.id ?? "";
   const [egoId, setEgoId] = useState<string>(initialEgoId ?? firstId);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [internalSelectedId, setInternalSelectedId] = useState<string | null>(null);
+  const activeSelectedId = selectedId !== undefined ? selectedId : internalSelectedId;
+  const activeSetSelectedId = onSelectId ?? setInternalSelectedId;
   const [addresses, setAddresses] = useState<Map<string, Address>>(new Map());
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -126,7 +132,7 @@ export function TreeGraph({
   }, []);
 
   const ego = egoId ? personById.get(egoId) ?? null : null;
-  const selected = selectedId ? personById.get(selectedId) ?? null : null;
+  const selected = activeSelectedId ? personById.get(activeSelectedId) ?? null : null;
 
   const svgWidth = useMemo(() => {
     let max = 0;
@@ -193,7 +199,7 @@ export function TreeGraph({
               }
               const address = addresses.get(person.id);
               const isEgo = person.id === egoId;
-              const isSelected = person.id === selectedId;
+              const isSelected = person.id === activeSelectedId;
               const label = isEgo ? "Bản thân" : addressLabel(address);
               const unresolved = !isEgo && isUnresolved(address);
 
@@ -211,7 +217,7 @@ export function TreeGraph({
                       type="button"
                       className="tree-graph__node-button"
                       aria-pressed={isSelected}
-                      onClick={() => setSelectedId(person.id)}
+                      onClick={() => activeSetSelectedId(person.id)}
                     >
                       <span className="tree-graph__node-name">{person.displayName}</span>
                       <span
@@ -233,7 +239,7 @@ export function TreeGraph({
       <PersonInfoPanel
         person={selected}
         ego={ego}
-        address={selectedId ? addresses.get(selectedId) : undefined}
+        address={activeSelectedId ? addresses.get(activeSelectedId) : undefined}
       />
     </div>
   );
