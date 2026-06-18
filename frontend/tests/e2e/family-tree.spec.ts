@@ -37,6 +37,25 @@ test.describe("Family Tree E2E Flow", () => {
     await page.click('button:has-text("Ông Tổ")');
     await expect(page.locator(".person-info h2")).toContainText("Ông Tổ");
 
+    // 8b. Verify photo section loading and empty state
+    await expect(page.locator('section[aria-label="Ảnh"]')).toBeVisible();
+    await expect(page.locator('section[aria-label="Ảnh"]')).toContainText("Chưa có ảnh nào.");
+
+    // Upload a mock PNG photo
+    await page.setInputFiles('input[type="file"]', {
+      name: 'test-photo.png',
+      mimeType: 'image/png',
+      buffer: Buffer.from('89504e470d0a1a0a0000000d49484452000000010000000108060000001f15c4890000000970485973000003e8000003e801b57b526b0000000d49444154089963f8cfc0f01f00050001ffabce36890000000049454e44ae426082', 'hex')
+    });
+
+    // Verify the photo item and primary badge are visible
+    await expect(page.locator('[data-testid="photo-item"]')).toBeVisible();
+    await expect(page.locator('[data-testid="primary-badge"]')).toBeVisible();
+
+    // Delete the uploaded photo and verify empty state again
+    await page.click('section[aria-label="Ảnh"] button:has-text("Xóa")');
+    await expect(page.locator('section[aria-label="Ảnh"]')).toContainText("Chưa có ảnh nào.");
+
     // 9. Click "Tạo thành viên mới" when no node is selected to create "Bà Tổ"
     await page.click('button:has-text("Bỏ chọn")');
     await page.click('button:has-text("Tạo thành viên mới")');

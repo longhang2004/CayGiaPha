@@ -8,6 +8,7 @@ import { AddRelativeForm } from "@/components/person/AddRelativeForm";
 import { DeletionDialog } from "@/components/deletion/DeletionDialog";
 import { SearchPanel } from "@/components/search/SearchPanel";
 import { RegionSelector } from "@/components/region/RegionSelector";
+import { PersonPhotos } from "@/components/photos/PersonPhotos";
 import { api, ApiError } from "@/lib/apiClient";
 import type { Person, Relationship } from "@/lib/graph";
 import type { Region } from "@/lib/region";
@@ -347,6 +348,14 @@ export default function TreePage({ searchParams }: TreePageProps) {
                     >
                       Bỏ chọn
                     </button>
+
+                    <div style={{ marginTop: "1.5rem", borderTop: "1px solid var(--color-hairline-soft)", paddingTop: "1rem" }}>
+                      <PersonPhotos
+                        treeId={activeTreeId}
+                        personId={selectedPerson.id}
+                        canEdit={isOwner}
+                      />
+                    </div>
                   </div>
                 )}
               </div>
