@@ -10,9 +10,11 @@ import { usePathname } from "next/navigation";
 interface SidebarProps {
   isOpen: boolean;
   onClose: () => void;
+  isCollapsed: boolean;
+  onToggleCollapse: () => void;
 }
 
-export function Sidebar({ isOpen, onClose }: SidebarProps) {
+export function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse }: SidebarProps) {
   const { user, loading } = useSession();
   const pathname = usePathname();
 
@@ -24,26 +26,43 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
       {/* Mobile Drawer Overlay */}
       {isOpen && <div className="global-sidebar__overlay" onClick={onClose} aria-hidden="true" />}
 
-      <aside className={`global-sidebar ${isOpen ? "global-sidebar--open" : ""}`} aria-label="Menu ứng dụng">
+      <aside
+        className={`global-sidebar ${isOpen ? "global-sidebar--open" : ""} ${isCollapsed ? "global-sidebar--collapsed" : ""}`}
+        aria-label="Menu ứng dụng"
+      >
         <div className="global-sidebar__top">
-          <Link href="/" className="global-sidebar__brand" onClick={onClose}>
-            Cây Gia Phả
-          </Link>
+          <div className="global-sidebar__brand-container">
+            <Link href="/" className="global-sidebar__brand" onClick={onClose}>
+              Cây Gia Phả
+            </Link>
+            <button
+              type="button"
+              className="sidebar-toggle-btn"
+              onClick={onToggleCollapse}
+              aria-label={isCollapsed ? "Mở rộng menu" : "Thu gọn menu"}
+            >
+              ☰
+            </button>
+          </div>
 
           <nav className="global-sidebar__nav" aria-label="Danh mục ứng dụng">
             <Link
               href="/tree"
               className={`global-sidebar__link ${isTreeActive ? "global-sidebar__link--active" : ""}`}
               onClick={onClose}
+              title={isCollapsed ? "Sơ đồ gia phả" : undefined}
             >
-              <span>🌳 Sơ đồ gia phả</span>
+              <span className="global-sidebar__link-icon" aria-hidden="true">🌳</span>
+              <span className="global-sidebar__link-text">Sơ đồ gia phả</span>
             </Link>
             <Link
               href="/help"
               className={`global-sidebar__link ${isHelpActive ? "global-sidebar__link--active" : ""}`}
               onClick={onClose}
+              title={isCollapsed ? "Hướng dẫn" : undefined}
             >
-              <span>ℹ️ Hướng dẫn</span>
+              <span className="global-sidebar__link-icon" aria-hidden="true">ℹ️</span>
+              <span className="global-sidebar__link-text">Hướng dẫn</span>
             </Link>
           </nav>
         </div>

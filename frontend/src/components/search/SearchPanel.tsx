@@ -119,14 +119,13 @@ export function SearchPanel({ treeId, viewpointId, onSelectResult }: SearchPanel
     <section aria-label="Tìm kiếm và lọc">
       <form onSubmit={handleSubmit} aria-label="Tìm kiếm">
         {formError ? (
-          <p role="alert" data-testid="search-error">
+          <p role="alert" data-testid="search-error" className="form-error">
             {formError}
           </p>
         ) : null}
 
-        <p>
+        <div className="field">
           <label htmlFor="nameQuery">Tên</label>
-          <br />
           <input
             id="nameQuery"
             name="nameQuery"
@@ -137,15 +136,14 @@ export function SearchPanel({ treeId, viewpointId, onSelectResult }: SearchPanel
             onChange={(e) => setNameQuery(e.target.value)}
           />
           {fieldErrors.nameQuery ? (
-            <span id="nameQuery-error" role="alert">
+            <span id="nameQuery-error" role="alert" className="field-error">
               {fieldErrors.nameQuery}
             </span>
           ) : null}
-        </p>
+        </div>
 
-        <p>
+        <div className="field">
           <label htmlFor="addressQuery">Cách xưng hô</label>
-          <br />
           <input
             id="addressQuery"
             name="addressQuery"
@@ -156,115 +154,141 @@ export function SearchPanel({ treeId, viewpointId, onSelectResult }: SearchPanel
             onChange={(e) => setAddressQuery(e.target.value)}
           />
           {fieldErrors.addressQuery ? (
-            <span id="addressQuery-error" role="alert">
+            <span id="addressQuery-error" role="alert" className="field-error">
               {fieldErrors.addressQuery}
             </span>
           ) : null}
-        </p>
+        </div>
 
         <fieldset>
           <legend>Bộ lọc</legend>
 
-          <label htmlFor="filter-gender">Giới tính</label>
-          <select
-            id="filter-gender"
-            value={gender}
-            onChange={(e) => setGender(e.target.value)}
-          >
-            <option value="">Tất cả</option>
-            <option value="male">Nam</option>
-            <option value="female">Nữ</option>
-          </select>
+          <div className="field">
+            <label htmlFor="filter-gender">Giới tính</label>
+            <select
+              id="filter-gender"
+              value={gender}
+              onChange={(e) => setGender(e.target.value)}
+            >
+              <option value="">Tất cả</option>
+              <option value="male">Nam</option>
+              <option value="female">Nữ</option>
+            </select>
+          </div>
 
-          <label htmlFor="filter-side">Bên</label>
-          <select id="filter-side" value={side} onChange={(e) => setSide(e.target.value)}>
-            <option value="">Tất cả</option>
-            <option value="paternal">Nội</option>
-            <option value="maternal">Ngoại</option>
-          </select>
+          <div className="field">
+            <label htmlFor="filter-side">Bên</label>
+            <select id="filter-side" value={side} onChange={(e) => setSide(e.target.value)}>
+              <option value="">Tất cả</option>
+              <option value="paternal">Nội</option>
+              <option value="maternal">Ngoại</option>
+            </select>
+          </div>
 
-          <label htmlFor="filter-birthYearMin">Năm sinh từ</label>
-          <input
-            id="filter-birthYearMin"
-            type="number"
-            value={birthYearMin}
-            aria-invalid={fieldErrors.birthYearMin ? true : undefined}
-            aria-describedby={describedBy("birthYearMin")}
-            onChange={(e) => setBirthYearMin(e.target.value)}
-          />
-          {fieldErrors.birthYearMin ? (
-            <span id="birthYearMin-error" role="alert">
-              {fieldErrors.birthYearMin}
-            </span>
-          ) : null}
+          <div className="field">
+            <label>Khoảng năm sinh</label>
+            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+              <input
+                id="filter-birthYearMin"
+                type="number"
+                placeholder="Từ"
+                aria-label="Năm sinh từ"
+                value={birthYearMin}
+                aria-invalid={fieldErrors.birthYearMin ? true : undefined}
+                aria-describedby={describedBy("birthYearMin")}
+                onChange={(e) => setBirthYearMin(e.target.value)}
+                style={{ flex: 1, marginTop: 0 }}
+              />
+              <span style={{ fontSize: "0.875rem", color: "var(--color-muted)" }}>đến</span>
+              <input
+                id="filter-birthYearMax"
+                type="number"
+                placeholder="Đến"
+                aria-label="đến"
+                value={birthYearMax}
+                aria-invalid={fieldErrors.birthYearMax ? true : undefined}
+                aria-describedby={describedBy("birthYearMax")}
+                onChange={(e) => setBirthYearMax(e.target.value)}
+                style={{ flex: 1, marginTop: 0 }}
+              />
+            </div>
+            {fieldErrors.birthYearMin ? (
+              <span id="birthYearMin-error" role="alert" className="field-error">
+                {fieldErrors.birthYearMin}
+              </span>
+            ) : null}
+            {fieldErrors.birthYearMax ? (
+              <span id="birthYearMax-error" role="alert" className="field-error">
+                {fieldErrors.birthYearMax}
+              </span>
+            ) : null}
+          </div>
 
-          <label htmlFor="filter-birthYearMax">đến</label>
-          <input
-            id="filter-birthYearMax"
-            type="number"
-            value={birthYearMax}
-            aria-invalid={fieldErrors.birthYearMax ? true : undefined}
-            aria-describedby={describedBy("birthYearMax")}
-            onChange={(e) => setBirthYearMax(e.target.value)}
-          />
-          {fieldErrors.birthYearMax ? (
-            <span id="birthYearMax-error" role="alert">
-              {fieldErrors.birthYearMax}
-            </span>
-          ) : null}
+          <div className="field">
+            <label htmlFor="filter-deathStatus">Tình trạng mất</label>
+            <select
+              id="filter-deathStatus"
+              value={deathStatus}
+              onChange={(e) => setDeathStatus(e.target.value)}
+            >
+              <option value="">Tất cả</option>
+              <option value="true">Đã mất</option>
+              <option value="false">Còn sống</option>
+            </select>
+          </div>
 
-          <label htmlFor="filter-deathStatus">Tình trạng mất</label>
-          <select
-            id="filter-deathStatus"
-            value={deathStatus}
-            onChange={(e) => setDeathStatus(e.target.value)}
-          >
-            <option value="">Tất cả</option>
-            <option value="true">Đã mất</option>
-            <option value="false">Còn sống</option>
-          </select>
+          <div className="field">
+            <label htmlFor="filter-claimedStatus">Trạng thái xác nhận</label>
+            <select
+              id="filter-claimedStatus"
+              value={claimedStatus}
+              onChange={(e) => setClaimedStatus(e.target.value)}
+            >
+              <option value="">Tất cả</option>
+              <option value="claimed">Đã xác nhận</option>
+              <option value="unclaimed">Chưa xác nhận</option>
+            </select>
+          </div>
 
-          <label htmlFor="filter-claimedStatus">Trạng thái xác nhận</label>
-          <select
-            id="filter-claimedStatus"
-            value={claimedStatus}
-            onChange={(e) => setClaimedStatus(e.target.value)}
-          >
-            <option value="">Tất cả</option>
-            <option value="claimed">Đã xác nhận</option>
-            <option value="unclaimed">Chưa xác nhận</option>
-          </select>
-
-          <label htmlFor="filter-relationshipType">Loại quan hệ</label>
-          <select
-            id="filter-relationshipType"
-            value={relationshipType}
-            onChange={(e) => setRelationshipType(e.target.value)}
-          >
-            <option value="">Tất cả</option>
-            <option value="bloodline">Huyết thống</option>
-            <option value="marriage">Hôn nhân</option>
-            <option value="asserted">Khai báo</option>
-            <option value="non_bloodline">Ngoài huyết thống</option>
-          </select>
+          <div className="field">
+            <label htmlFor="filter-relationshipType">Loại quan hệ</label>
+            <select
+              id="filter-relationshipType"
+              value={relationshipType}
+              onChange={(e) => setRelationshipType(e.target.value)}
+            >
+              <option value="">Tất cả</option>
+              <option value="bloodline">Huyết thống</option>
+              <option value="marriage">Hôn nhân</option>
+              <option value="asserted">Khai báo</option>
+              <option value="non_bloodline">Ngoài huyết thống</option>
+            </select>
+          </div>
         </fieldset>
 
-        <Button type="submit" disabled={submitting}>
-          Tìm
-        </Button>
+        <div className="form-actions">
+          <Button type="submit" disabled={submitting}>
+            Tìm
+          </Button>
+        </div>
       </form>
 
       {noMatches ? (
-        <p role="status" data-testid="no-matches">
+        <p role="status" data-testid="no-matches" className="text-muted" style={{ marginTop: "1rem" }}>
           Không tìm thấy kết quả.
         </p>
       ) : null}
 
       {results && results.length > 0 ? (
-        <ul aria-label="Kết quả tìm kiếm">
+        <ul aria-label="Kết quả tìm kiếm" style={{ listStyle: "none", padding: 0, marginTop: "1rem", display: "flex", flexDirection: "column", gap: "0.5rem" }}>
           {results.map((r) => (
             <li key={r.personId}>
-              <button type="button" onClick={() => onSelectResult?.(r.personId)}>
+              <button
+                type="button"
+                className="btn btn-secondary"
+                style={{ width: "100%", justifyContent: "flex-start", textAlign: "left", padding: "0.5rem 1rem" }}
+                onClick={() => onSelectResult?.(r.personId)}
+              >
                 {r.displayName}
               </button>
             </li>
