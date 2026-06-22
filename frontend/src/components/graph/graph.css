@@ -6,9 +6,10 @@
 
 .tree-graph {
   display: grid;
-  grid-template-columns: 1fr minmax(220px, 320px);
+  grid-template-columns: 1fr;
   gap: 1rem;
   align-items: start;
+  width: 100%;
 }
 
 .tree-graph__controls {

@@ -56,7 +56,7 @@ export interface TreeGraphProps {
 }
 
 const NODE_WIDTH = 160;
-const NODE_HEIGHT = 46;
+const NODE_HEIGHT = 56;
 
 export function TreeGraph({
   treeId,
