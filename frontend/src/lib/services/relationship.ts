@@ -62,6 +62,25 @@ export class RelationshipService {
     await this.requireExistingNode(treeId, sourceId, "sourceId");
     await this.requireExistingNode(treeId, targetId, "targetId");
 
+    // If a relationship already exists between these two persons (in either direction), overwrite it.
+    const existingRelationship = await db
+      .select()
+      .from(relationships)
+      .where(
+        or(
+          and(eq(relationships.sourceId, sourceId), eq(relationships.targetId, targetId)),
+          and(eq(relationships.sourceId, targetId), eq(relationships.targetId, sourceId))
+        )
+      )
+      .then((rows) => rows[0]);
+
+    if (existingRelationship) {
+      await db
+        .delete(relationships)
+        .where(eq(relationships.id, existingRelationship.id));
+      projectionCache.evict(treeId);
+    }
+
     // Bloodline edge rules
     if (BLOODLINE_TYPES.has(type)) {
       await this.validateBloodlineEdge(type, sourceId, targetId);
