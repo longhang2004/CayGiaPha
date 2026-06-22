@@ -13,7 +13,7 @@ import { Button } from "@/components/Button";
 /**
  * Redesigned Search & Filter Toolbar (Requirement 16.x).
  *
- * Renders horizontally at the top, includes a popover Filter Modal,
+ * Renders horizontally at the top, includes a popover Filter Dropdown,
  * and displays results in a floating absolute dropdown.
  */
 
@@ -23,6 +23,8 @@ interface SearchPanelProps {
   viewpointId?: string;
   /** Notifies the parent when a result is chosen (e.g. to focus the node). */
   onSelectResult?: (personId: string) => void;
+  /** Notifies the parent to trigger the new member creation mode. */
+  onAddMember?: () => void;
 }
 
 function parseOptionalInt(value: string): number | undefined {
@@ -31,7 +33,7 @@ function parseOptionalInt(value: string): number | undefined {
   return Number.isInteger(n) ? n : undefined;
 }
 
-export function SearchPanel({ treeId, viewpointId, onSelectResult }: SearchPanelProps) {
+export function SearchPanel({ treeId, viewpointId, onSelectResult, onAddMember }: SearchPanelProps) {
   const [nameQuery, setNameQuery] = useState("");
   const [addressQuery, setAddressQuery] = useState("");
 
@@ -49,7 +51,7 @@ export function SearchPanel({ treeId, viewpointId, onSelectResult }: SearchPanel
   const [formError, setFormError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isFilterDropdownOpen, setIsFilterDropdownOpen] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
   const toolbarRef = useRef<HTMLDivElement>(null);
 
@@ -57,6 +59,7 @@ export function SearchPanel({ treeId, viewpointId, onSelectResult }: SearchPanel
     function handleClickOutside(event: MouseEvent) {
       if (toolbarRef.current && !toolbarRef.current.contains(event.target as Node)) {
         setShowDropdown(false);
+        setIsFilterDropdownOpen(false);
       }
     }
     document.addEventListener("mousedown", handleClickOutside);
@@ -207,8 +210,8 @@ export function SearchPanel({ treeId, viewpointId, onSelectResult }: SearchPanel
             <button
               type="button"
               className={`btn btn-secondary filter-toggle-btn ${hasActiveFilters() ? "filter-toggle-btn--active" : ""}`}
-              onClick={() => setIsModalOpen(true)}
-              aria-expanded={isModalOpen}
+              onClick={() => setIsFilterDropdownOpen(!isFilterDropdownOpen)}
+              aria-expanded={isFilterDropdownOpen}
             >
               Lọc {hasActiveFilters() ? "•" : ""}
             </button>
@@ -216,149 +219,147 @@ export function SearchPanel({ treeId, viewpointId, onSelectResult }: SearchPanel
             <button type="submit" className="btn search-submit-btn" disabled={submitting}>
               Tìm
             </button>
+
+            {onAddMember && (
+              <button
+                type="button"
+                className="btn add-member-btn"
+                onClick={onAddMember}
+              >
+                Tạo thành viên
+              </button>
+            )}
           </div>
         </form>
 
-        {/* Filter Modal */}
-        {isModalOpen && (
-          <div className="filter-modal-overlay" role="dialog" aria-modal="true" aria-labelledby="filter-modal-title">
-            <div className="filter-modal" onClick={(e) => e.stopPropagation()}>
-              <div className="filter-modal__header">
-                <h3 id="filter-modal-title">Bộ lọc nâng cao</h3>
-                <button
-                  type="button"
-                  className="filter-modal__close-btn"
-                  onClick={() => setIsModalOpen(false)}
-                  aria-label="Đóng bộ lọc"
-                >
-                  &times;
-                </button>
-              </div>
+        {/* Filter Dropdown (Popover Card) */}
+        {isFilterDropdownOpen && (
+          <div className="search-filter-dropdown" onClick={(e) => e.stopPropagation()}>
+            <div className="filter-modal__body">
+              <fieldset>
+                <legend className="sr-only">Bộ lọc tìm kiếm</legend>
 
-              <div className="filter-modal__body">
-                <fieldset>
-                  <legend className="sr-only">Bộ lọc tìm kiếm</legend>
+                <div className="field">
+                  <label htmlFor="filter-gender">Giới tính</label>
+                  <select
+                    id="filter-gender"
+                    value={gender}
+                    onChange={(e) => setGender(e.target.value)}
+                  >
+                    <option value="">Tất cả</option>
+                    <option value="male">Nam</option>
+                    <option value="female">Nữ</option>
+                  </select>
+                </div>
 
-                  <div className="field">
-                    <label htmlFor="filter-gender">Giới tính</label>
-                    <select
-                      id="filter-gender"
-                      value={gender}
-                      onChange={(e) => setGender(e.target.value)}
-                    >
-                      <option value="">Tất cả</option>
-                      <option value="male">Nam</option>
-                      <option value="female">Nữ</option>
-                    </select>
+                <div className="field">
+                  <label htmlFor="filter-side">Bên</label>
+                  <select id="filter-side" value={side} onChange={(e) => setSide(e.target.value)}>
+                    <option value="">Tất cả</option>
+                    <option value="paternal">Nội</option>
+                    <option value="maternal">Ngoại</option>
+                  </select>
+                </div>
+
+                <div className="field">
+                  <label>Khoảng năm sinh</label>
+                  <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                    <input
+                      id="filter-birthYearMin"
+                      type="number"
+                      placeholder="Từ"
+                      aria-label="Năm sinh từ"
+                      value={birthYearMin}
+                      aria-invalid={fieldErrors.birthYearMin ? true : undefined}
+                      aria-describedby={describedBy("birthYearMin")}
+                      onChange={(e) => setBirthYearMin(e.target.value)}
+                      style={{ flex: 1, marginTop: 0 }}
+                    />
+                    <span style={{ fontSize: "0.875rem", color: "var(--color-muted)" }}>đến</span>
+                    <input
+                      id="filter-birthYearMax"
+                      type="number"
+                      placeholder="Đến"
+                      aria-label="đến"
+                      value={birthYearMax}
+                      aria-invalid={fieldErrors.birthYearMax ? true : undefined}
+                      aria-describedby={describedBy("birthYearMax")}
+                      onChange={(e) => setBirthYearMax(e.target.value)}
+                      style={{ flex: 1, marginTop: 0 }}
+                    />
                   </div>
+                  {fieldErrors.birthYearMin ? (
+                    <span id="birthYearMin-error" role="alert" className="field-error">
+                      {fieldErrors.birthYearMin}
+                    </span>
+                  ) : null}
+                  {fieldErrors.birthYearMax ? (
+                    <span id="birthYearMax-error" role="alert" className="field-error">
+                      {fieldErrors.birthYearMax}
+                    </span>
+                  ) : null}
+                </div>
 
-                  <div className="field">
-                    <label htmlFor="filter-side">Bên</label>
-                    <select id="filter-side" value={side} onChange={(e) => setSide(e.target.value)}>
-                      <option value="">Tất cả</option>
-                      <option value="paternal">Nội</option>
-                      <option value="maternal">Ngoại</option>
-                    </select>
-                  </div>
+                <div className="field">
+                  <label htmlFor="filter-deathStatus">Tình trạng mất</label>
+                  <select
+                    id="filter-deathStatus"
+                    value={deathStatus}
+                    onChange={(e) => setDeathStatus(e.target.value)}
+                  >
+                    <option value="">Tất cả</option>
+                    <option value="true">Đã mất</option>
+                    <option value="false">Còn sống</option>
+                  </select>
+                </div>
 
-                  <div className="field">
-                    <label>Khoảng năm sinh</label>
-                    <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                      <input
-                        id="filter-birthYearMin"
-                        type="number"
-                        placeholder="Từ"
-                        aria-label="Năm sinh từ"
-                        value={birthYearMin}
-                        aria-invalid={fieldErrors.birthYearMin ? true : undefined}
-                        aria-describedby={describedBy("birthYearMin")}
-                        onChange={(e) => setBirthYearMin(e.target.value)}
-                        style={{ flex: 1, marginTop: 0 }}
-                      />
-                      <span style={{ fontSize: "0.875rem", color: "var(--color-muted)" }}>đến</span>
-                      <input
-                        id="filter-birthYearMax"
-                        type="number"
-                        placeholder="Đến"
-                        aria-label="đến"
-                        value={birthYearMax}
-                        aria-invalid={fieldErrors.birthYearMax ? true : undefined}
-                        aria-describedby={describedBy("birthYearMax")}
-                        onChange={(e) => setBirthYearMax(e.target.value)}
-                        style={{ flex: 1, marginTop: 0 }}
-                      />
-                    </div>
-                    {fieldErrors.birthYearMin ? (
-                      <span id="birthYearMin-error" role="alert" className="field-error">
-                        {fieldErrors.birthYearMin}
-                      </span>
-                    ) : null}
-                    {fieldErrors.birthYearMax ? (
-                      <span id="birthYearMax-error" role="alert" className="field-error">
-                        {fieldErrors.birthYearMax}
-                      </span>
-                    ) : null}
-                  </div>
+                <div className="field">
+                  <label htmlFor="filter-claimedStatus">Trạng thái xác nhận</label>
+                  <select
+                    id="filter-claimedStatus"
+                    value={claimedStatus}
+                    onChange={(e) => setClaimedStatus(e.target.value)}
+                  >
+                    <option value="">Tất cả</option>
+                    <option value="claimed">Đã xác nhận</option>
+                    <option value="unclaimed">Chưa xác nhận</option>
+                  </select>
+                </div>
 
-                  <div className="field">
-                    <label htmlFor="filter-deathStatus">Tình trạng mất</label>
-                    <select
-                      id="filter-deathStatus"
-                      value={deathStatus}
-                      onChange={(e) => setDeathStatus(e.target.value)}
-                    >
-                      <option value="">Tất cả</option>
-                      <option value="true">Đã mất</option>
-                      <option value="false">Còn sống</option>
-                    </select>
-                  </div>
+                <div className="field">
+                  <label htmlFor="filter-relationshipType">Loại quan hệ</label>
+                  <select
+                    id="filter-relationshipType"
+                    value={relationshipType}
+                    onChange={(e) => setRelationshipType(e.target.value)}
+                  >
+                    <option value="">Tất cả</option>
+                    <option value="bloodline">Huyết thống</option>
+                    <option value="marriage">Hôn nhân</option>
+                    <option value="asserted">Khai báo</option>
+                    <option value="non_bloodline">Ngoài huyết thống</option>
+                  </select>
+                </div>
+              </fieldset>
+            </div>
 
-                  <div className="field">
-                    <label htmlFor="filter-claimedStatus">Trạng thái xác nhận</label>
-                    <select
-                      id="filter-claimedStatus"
-                      value={claimedStatus}
-                      onChange={(e) => setClaimedStatus(e.target.value)}
-                    >
-                      <option value="">Tất cả</option>
-                      <option value="claimed">Đã xác nhận</option>
-                      <option value="unclaimed">Chưa xác nhận</option>
-                    </select>
-                  </div>
-
-                  <div className="field">
-                    <label htmlFor="filter-relationshipType">Loại quan hệ</label>
-                    <select
-                      id="filter-relationshipType"
-                      value={relationshipType}
-                      onChange={(e) => setRelationshipType(e.target.value)}
-                    >
-                      <option value="">Tất cả</option>
-                      <option value="bloodline">Huyết thống</option>
-                      <option value="marriage">Hôn nhân</option>
-                      <option value="asserted">Khai báo</option>
-                      <option value="non_bloodline">Ngoài huyết thống</option>
-                    </select>
-                  </div>
-                </fieldset>
-              </div>
-
-              <div className="filter-modal__footer">
-                <button
-                  type="button"
-                  className="btn btn-secondary"
-                  onClick={handleResetFilters}
-                >
-                  Xóa bộ lọc
-                </button>
-                <button
-                  type="button"
-                  className="btn"
-                  onClick={() => setIsModalOpen(false)}
-                >
-                  Áp dụng
-                </button>
-              </div>
+            <div className="filter-modal__footer" style={{ borderTop: "1px solid var(--color-hairline-soft)", paddingTop: "1rem" }}>
+              <button
+                type="button"
+                className="btn btn-secondary"
+                onClick={handleResetFilters}
+                style={{ flex: 1 }}
+              >
+                Xóa bộ lọc
+              </button>
+              <button
+                type="button"
+                className="btn"
+                onClick={() => setIsFilterDropdownOpen(false)}
+                style={{ flex: 1 }}
+              >
+                Áp dụng
+              </button>
             </div>
           </div>
         )}

@@ -2,11 +2,14 @@ import { describe, expect, it, vi } from "vitest";
 import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { TreeGraph } from "./TreeGraph";
+import { useState } from "react";
+import { PersonInfoPanel } from "./PersonInfoPanel";
 import {
   UNRESOLVED_LABEL,
   type Person,
   type Relationship,
   type ViewpointAddresses,
+  type Address,
 } from "@/lib/graph";
 
 const persons: Person[] = [
@@ -54,6 +57,25 @@ function stubFetcher(byEgo: Record<string, ViewpointAddresses>) {
   });
 }
 
+function TreeGraphTestWrapper(props: any) {
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [address, setAddress] = useState<Address | undefined>(undefined);
+  const selected = props.persons.find((p: any) => p.id === selectedId) || null;
+  const ego = props.persons.find((p: any) => p.id === (props.initialEgoId || props.persons[0]?.id)) || null;
+
+  return (
+    <>
+      <TreeGraph
+        {...props}
+        selectedId={selectedId}
+        onSelectId={setSelectedId}
+        onSelectAddress={setAddress}
+      />
+      <PersonInfoPanel person={selected} ego={ego} address={address} />
+    </>
+  );
+}
+
 describe("TreeGraph renderer", () => {
   it("renders the three edge styles so they are distinguishable by class and stroke-dasharray (5.3, 6.3, 12.4)", async () => {
     const fetchAddresses = stubFetcher({
@@ -98,7 +120,7 @@ describe("TreeGraph renderer", () => {
       },
     });
     render(
-      <TreeGraph
+      <TreeGraphTestWrapper
         treeId="t1"
         persons={persons}
         relationships={relationships}
@@ -129,7 +151,7 @@ describe("TreeGraph renderer", () => {
       },
     });
     render(
-      <TreeGraph
+      <TreeGraphTestWrapper
         treeId="t1"
         persons={persons}
         relationships={relationships}

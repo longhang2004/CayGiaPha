@@ -1,9 +1,7 @@
 "use client";
 
 import { useSession } from "@/app/providers";
-import { SignOutButton } from "@/components/auth/SignOutButton";
 import { HelpEntryPoint } from "@/components/help/HelpEntryPoint";
-import { TextSizeControl } from "@/components/a11y/TextSizeControl";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
@@ -64,42 +62,38 @@ export function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse }: Side
               <span className="global-sidebar__link-icon" aria-hidden="true">ℹ️</span>
               <span className="global-sidebar__link-text">Hướng dẫn</span>
             </Link>
+            {user && (
+              <Link
+                href="/tree?settings=true"
+                className="global-sidebar__link"
+                onClick={onClose}
+                title={isCollapsed ? "Cài đặt" : undefined}
+              >
+                <span className="global-sidebar__link-icon" aria-hidden="true">⚙️</span>
+                <span className="global-sidebar__link-text">Cài đặt</span>
+              </Link>
+            )}
           </nav>
         </div>
 
         <div className="global-sidebar__bottom">
-          {/* Display Settings */}
-          <div className="sidebar-settings">
-            <h4 className="sidebar-settings__title">Cài đặt hiển thị</h4>
-            <TextSizeControl />
-          </div>
-
           {/* Help entry point (Trợ giúp) */}
           <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
             <span style={{ fontSize: "0.875rem", color: "var(--color-muted)" }}>Trợ giúp:</span>
             <HelpEntryPoint />
           </div>
 
-          {/* User info & Signout */}
-          {!loading && (
+          {/* Login/Signup for anonymous users */}
+          {!loading && !user && (
             <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-              {user ? (
-                <>
-                  <span className="global-sidebar__user" title={user.identifier}>
-                    Đã đăng nhập: <strong>{user.identifier.length > 18 ? `${user.identifier.slice(0, 16)}…` : user.identifier}</strong>
-                  </span>
-                  <SignOutButton redirectTo="/" />
-                </>
-              ) : (
-                <div style={{ display: "flex", gap: "0.5rem" }}>
-                  <Link href="/signin" className="btn btn-secondary" style={{ flex: 1, textDecoration: "none", fontSize: "0.8125rem", padding: "0.5rem" }} onClick={onClose}>
-                    Đăng nhập
-                  </Link>
-                  <Link href="/signup" className="btn" style={{ flex: 1, textDecoration: "none", fontSize: "0.8125rem", padding: "0.5rem" }} onClick={onClose}>
-                    Đăng ký
-                  </Link>
-                </div>
-              )}
+              <div style={{ display: "flex", gap: "0.5rem" }}>
+                <Link href="/signin" className="btn btn-secondary" style={{ flex: 1, textDecoration: "none", fontSize: "0.8125rem", padding: "0.5rem" }} onClick={onClose}>
+                  Đăng nhập
+                </Link>
+                <Link href="/signup" className="btn" style={{ flex: 1, textDecoration: "none", fontSize: "0.8125rem", padding: "0.5rem" }} onClick={onClose}>
+                  Đăng ký
+                </Link>
+              </div>
             </div>
           )}
         </div>

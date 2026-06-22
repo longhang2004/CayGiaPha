@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, Suspense } from "react";
+import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { useSession } from "@/app/providers";
 import { TreeGraph } from "@/components/graph/TreeGraph";
 import { PersonForm } from "@/components/person/PersonForm";
@@ -9,8 +10,11 @@ import { DeletionDialog } from "@/components/deletion/DeletionDialog";
 import { SearchPanel } from "@/components/search/SearchPanel";
 import { RegionSelector } from "@/components/region/RegionSelector";
 import { PersonPhotos } from "@/components/photos/PersonPhotos";
+import { TextSizeControl } from "@/components/a11y/TextSizeControl";
+import { SignOutButton } from "@/components/auth/SignOutButton";
+import { PersonInfoPanel } from "@/components/graph/PersonInfoPanel";
 import { api, ApiError } from "@/lib/apiClient";
-import type { Person, Relationship } from "@/lib/graph";
+import type { Person, Relationship, Address } from "@/lib/graph";
 import type { Region } from "@/lib/region";
 import { getCookie, setCookie } from "@/lib/cookies";
 import "@/components/graph/graph.css";
@@ -22,8 +26,11 @@ interface TreePageProps {
   };
 }
 
-export default function TreePage({ searchParams }: TreePageProps) {
+function TreePageContent({ searchParams }: TreePageProps) {
   const { user, loading: sessionLoading } = useSession();
+  const router = useRouter();
+  const nextSearchParams = useSearchParams();
+  const pathname = usePathname();
   
   const queryTreeId = searchParams.treeId;
   const queryShareToken = searchParams.shareToken;
@@ -39,6 +46,8 @@ export default function TreePage({ searchParams }: TreePageProps) {
   const [error, setError] = useState<string | null>(null);
 
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [selectedAddress, setSelectedAddress] = useState<Address | undefined>(undefined);
+  const [selectedEgo, setSelectedEgo] = useState<Person | null>(null);
   const [editMode, setEditMode] = useState(false);
   const [addRelativeMode, setAddRelativeMode] = useState(false);
   const [createMode, setCreateMode] = useState(false);
@@ -49,6 +58,21 @@ export default function TreePage({ searchParams }: TreePageProps) {
   const [generatingToken, setGeneratingToken] = useState(false);
 
   const [showTutorial, setShowTutorial] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+
+  useEffect(() => {
+    if (nextSearchParams.get("settings") === "true") {
+      setIsSettingsOpen(true);
+    }
+  }, [nextSearchParams]);
+
+  const handleCloseSettings = () => {
+    setIsSettingsOpen(false);
+    const params = new URLSearchParams(nextSearchParams.toString());
+    params.delete("settings");
+    const query = params.toString() ? `?${params.toString()}` : "";
+    router.replace(`${pathname}${query}`);
+  };
 
   useEffect(() => {
     const dismissed = getCookie("tutorial_dismissed");
@@ -287,7 +311,7 @@ export default function TreePage({ searchParams }: TreePageProps) {
               <ul>
                 <li><strong>Chọn người:</strong> Bấm vào bất kỳ thành viên nào trên sơ đồ để xem chi tiết, sửa thông tin hoặc thêm người thân.</li>
                 <li><strong>Cách xưng hô:</strong> Thay đổi góc nhìn ở bộ chọn phía trên sơ đồ để xem cách xưng hô của cả dòng họ đối với người đó.</li>
-                <li><strong>Thêm quan hệ:</strong> {isOwner ? "Sử dụng bảng bên trái để thêm thành viên mới hoặc kết nối các mối quan hệ." : "Bạn đang xem cây gia phả theo quyền chia sẻ."}</li>
+                <li><strong>Thêm quan hệ:</strong> {isOwner ? "Sử dụng bảng bên phải để thêm thành viên mới hoặc kết nối các mối quan hệ." : "Bạn đang xem cây gia phả theo quyền chia sẻ."}</li>
               </ul>
             </div>
             <div className="tutorial-popup__footer">
@@ -300,60 +324,124 @@ export default function TreePage({ searchParams }: TreePageProps) {
       )}
 
       <div className="tree-workspace__layout">
-        {/* Left Side: Sidebar */}
-        <div className="tree-workspace__sidebar">
-          
-          {/* Section 1: Selected Node Operations */}
-          <div className="surface-card side-panel">
-            <h3 className="side-panel__title">
-              {selectedPerson ? selectedPerson.displayName : "Thành viên sơ đồ"}
-            </h3>
+        {/* Left/Center: Main Toolbar & Graph */}
+        <div className="tree-workspace__main">
+          {/* Search & Filter Toolbar */}
+          <div className="surface-card tree-workspace__toolbar-container">
+            <SearchPanel
+              treeId={activeTreeId}
+              viewpointId={selectedId || undefined}
+              onSelectResult={(id) => {
+                setSelectedId(id);
+                setEditMode(false);
+                setAddRelativeMode(false);
+              }}
+              onAddMember={isOwner ? () => {
+                setSelectedId(null);
+                setCreateMode(true);
+                setAddRelativeMode(false);
+                setEditMode(false);
+              } : undefined}
+            />
+          </div>
 
-            {selectedPerson ? (
-              <div>
-                {editMode ? (
-                  <div>
-                    <h4 style={{ margin: "1rem 0" }}>Sửa thông tin</h4>
-                    <PersonForm
-                      mode="edit"
-                      treeId={activeTreeId}
-                      personId={selectedPerson.id}
-                      initialValues={selectedInitialValues}
-                      onSuccess={() => {
-                        setEditMode(false);
-                        refreshTree();
-                      }}
-                    />
-                    <button
-                      type="button"
-                      className="btn btn-secondary"
-                      style={{ width: "100%", marginTop: "0.5rem" }}
-                      onClick={() => setEditMode(false)}
-                    >
-                      Hủy bỏ
-                    </button>
-                  </div>
-                ) : addRelativeMode ? (
-                  <div>
-                    <h4 style={{ margin: "1rem 0" }}>Thêm quan hệ cho {selectedPerson.displayName}</h4>
-                    <AddRelativeForm
-                      treeId={activeTreeId}
-                      persons={personOptions}
-                      onCreated={() => {
-                        setAddRelativeMode(false);
-                        refreshTree();
-                      }}
-                    />
-                    <button
-                      type="button"
-                      className="btn btn-secondary"
-                      style={{ width: "100%", marginTop: "0.5rem" }}
-                      onClick={() => setAddRelativeMode(false)}
-                    >
-                      Hủy bỏ
-                    </button>
-                  </div>
-                ) : (
+          {/* Interactive SVG graph area */}
+          <div className="tree-workspace__graph">
+            <TreeGraph
+              treeId={activeTreeId}
+              persons={persons}
+              relationships={relationships}
+              selectedId={selectedId}
+              onSelectId={(id) => {
+                setSelectedId(id);
+                setEditMode(false);
+                setAddRelativeMode(false);
+                setCreateMode(false);
+              }}
+              onSelectAddress={setSelectedAddress}
+              onSelectEgo={setSelectedEgo}
+            />
+          </div>
+        </div>
+
+        {/* Right Side: Member Details and Actions Panel */}
+        <div className="tree-workspace__info-panel">
+          {createMode ? (
+            <div className="surface-card side-panel">
+              <h3 className="side-panel__title">Tạo thành viên mới</h3>
+              <PersonForm
+                mode="create"
+                treeId={activeTreeId}
+                onSuccess={() => {
+                  setCreateMode(false);
+                  refreshTree();
+                }}
+              />
+              <button
+                type="button"
+                className="btn btn-secondary"
+                style={{ width: "100%", marginTop: "0.5rem" }}
+                onClick={() => setCreateMode(false)}
+              >
+                Hủy bỏ
+              </button>
+            </div>
+          ) : selectedPerson ? (
+            <div className="surface-card side-panel">
+              <h3 className="side-panel__title">
+                {selectedPerson.displayName}
+              </h3>
+
+              {editMode ? (
+                <div>
+                  <h4 style={{ margin: "1rem 0" }}>Sửa thông tin</h4>
+                  <PersonForm
+                    mode="edit"
+                    treeId={activeTreeId}
+                    personId={selectedPerson.id}
+                    initialValues={selectedInitialValues}
+                    onSuccess={() => {
+                      setEditMode(false);
+                      refreshTree();
+                    }}
+                  />
+                  <button
+                    type="button"
+                    className="btn btn-secondary"
+                    style={{ width: "100%", marginTop: "0.5rem" }}
+                    onClick={() => setEditMode(false)}
+                  >
+                    Hủy bỏ
+                  </button>
+                </div>
+              ) : addRelativeMode ? (
+                <div>
+                  <h4 style={{ margin: "1rem 0" }}>Thêm quan hệ cho {selectedPerson.displayName}</h4>
+                  <AddRelativeForm
+                    treeId={activeTreeId}
+                    persons={personOptions}
+                    onCreated={() => {
+                      setAddRelativeMode(false);
+                      refreshTree();
+                    }}
+                  />
+                  <button
+                    type="button"
+                    className="btn btn-secondary"
+                    style={{ width: "100%", marginTop: "0.5rem" }}
+                    onClick={() => setAddRelativeMode(false)}
+                  >
+                    Hủy bỏ
+                  </button>
+                </div>
+              ) : (
+                <div>
+                  <PersonInfoPanel
+                    person={selectedPerson}
+                    ego={selectedEgo}
+                    address={selectedAddress}
+                  />
+
                   <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem", marginTop: "1rem" }}>
                     {isOwner && (
                       <>
@@ -392,207 +480,192 @@ export default function TreePage({ searchParams }: TreePageProps) {
                     >
                       Bỏ chọn
                     </button>
-
-                    <div style={{ marginTop: "1.5rem", borderTop: "1px solid var(--color-hairline-soft)", paddingTop: "1rem" }}>
-                      <PersonPhotos
-                        treeId={activeTreeId}
-                        personId={selectedPerson.id}
-                        canEdit={isOwner}
-                      />
-                    </div>
                   </div>
-                )}
-              </div>
-            ) : addRelativeMode ? (
-              <div>
-                <h4 style={{ margin: "1rem 0" }}>Thêm quan hệ mới</h4>
-                <AddRelativeForm
-                  treeId={activeTreeId}
-                  persons={personOptions}
-                  onCreated={() => {
-                    setAddRelativeMode(false);
-                    refreshTree();
-                  }}
-                />
-                <button
-                  type="button"
-                  className="btn btn-secondary"
-                  style={{ width: "100%", marginTop: "0.5rem" }}
-                  onClick={() => setAddRelativeMode(false)}
-                >
-                  Hủy bỏ
-                </button>
-              </div>
-            ) : createMode ? (
-              <div>
-                <h4 style={{ margin: "1rem 0" }}>Tạo thành viên mới</h4>
-                <PersonForm
-                  mode="create"
-                  treeId={activeTreeId}
-                  onSuccess={() => {
-                    setCreateMode(false);
-                    refreshTree();
-                  }}
-                />
-                <button
-                  type="button"
-                  className="btn btn-secondary"
-                  style={{ width: "100%", marginTop: "0.5rem" }}
-                  onClick={() => setCreateMode(false)}
-                >
-                  Hủy bỏ
-                </button>
-              </div>
-            ) : (
-              <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
-                {isOwner && (
-                  <button
-                    type="button"
-                    className="btn"
-                    style={{ width: "100%" }}
-                    onClick={() => {
-                      setSelectedId(null);
-                      setCreateMode(true);
-                      setAddRelativeMode(false);
-                      setEditMode(false);
-                    }}
-                  >
-                    Tạo thành viên mới
-                  </button>
-                )}
-                <p style={{ fontSize: "0.875rem", margin: 0, textAlign: "center" }}>
-                  Hoặc chọn một người trên sơ đồ để sửa thông tin / thêm người thân.
-                </p>
-              </div>
-            )}
-          </div>
 
-          {/* Section 3: Tree Configurations (Owner only) */}
-          {isOwner && (
-            <div className="surface-card side-panel side-panel--stacked">
-              <h3 className="side-panel__title side-panel__title--flush">
-                Cấu hình dòng họ
-              </h3>
-
-              <RegionSelector
-                treeId={activeTreeId}
-                region={region}
-                onChange={(nextRegion) => setRegionState(nextRegion)}
-              />
-
-              <div className="field">
-                <label style={{ display: "flex", alignItems: "center", gap: "0.5rem", cursor: "pointer" }}>
-                  <input
-                    type="checkbox"
-                    checked={livingRedaction}
-                    disabled={updatingRedaction}
-                    onChange={(e) => handleRedactionChange(e.target.checked)}
-                  />
-                  <span>Ẩn thông tin người còn sống</span>
-                </label>
-              </div>
-
-              <div className="field">
-                <label htmlFor="sharing-select">Chế độ chia sẻ</label>
-                <br />
-                <select
-                  id="sharing-select"
-                  value={sharing}
-                  disabled={updatingSharing}
-                  onChange={(e) => handleSharingChange(e.target.value)}
-                  style={{ width: "100%" }}
-                >
-                  <option value="private">Riêng tư (Private)</option>
-                  <option value="link">Bằng liên kết bí mật (Link)</option>
-                  <option value="public">Công khai cho thành viên (Public)</option>
-                </select>
-              </div>
-
-              {sharing === "link" && (
-                <div style={{ borderTop: "1px solid var(--color-hairline-soft)", paddingTop: "1rem" }}>
-                  {shareToken ? (
-                    <div>
-                      <label>Liên kết chia sẻ của bạn:</label>
-                      <input
-                        type="text"
-                        readOnly
-                        value={typeof window !== "undefined" ? `${window.location.origin}/tree?treeId=${activeTreeId}&shareToken=${shareToken}` : ""}
-                        style={{ width: "100%", fontSize: "0.75rem", marginBottom: "0.5rem" }}
-                        onClick={(e) => (e.target as HTMLInputElement).select()}
-                      />
-                      <div style={{ display: "flex", gap: "0.5rem" }}>
-                        <button
-                          type="button"
-                          className="btn btn-secondary"
-                          style={{ flex: 1 }}
-                          onClick={() => {
-                            const url = `${window.location.origin}/tree?treeId=${activeTreeId}&shareToken=${shareToken}`;
-                            navigator.clipboard.writeText(url);
-                            alert("Đã sao chép liên kết vào bộ nhớ tạm!");
-                          }}
-                        >
-                          Sao chép
-                        </button>
-                        <button
-                          type="button"
-                          className="btn btn-secondary"
-                          style={{ flex: 1 }}
-                          disabled={generatingToken}
-                          onClick={handleRevokeShareLink}
-                        >
-                          Hủy liên kết
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    <button
-                      type="button"
-                      className="btn btn-secondary"
-                      style={{ width: "100%" }}
-                      disabled={generatingToken}
-                      onClick={handleGetShareLink}
-                    >
-                      Tạo liên kết chia sẻ
-                    </button>
-                  )}
+                  <div style={{ marginTop: "1.5rem", borderTop: "1px solid var(--color-hairline-soft)", paddingTop: "1rem" }}>
+                    <PersonPhotos
+                      treeId={activeTreeId}
+                      personId={selectedPerson.id}
+                      canEdit={isOwner}
+                    />
+                  </div>
                 </div>
               )}
             </div>
+          ) : addRelativeMode ? (
+            <div className="surface-card side-panel">
+              <h3 className="side-panel__title">Thêm quan hệ mới</h3>
+              <AddRelativeForm
+                treeId={activeTreeId}
+                persons={personOptions}
+                onCreated={() => {
+                  setAddRelativeMode(false);
+                  refreshTree();
+                }}
+              />
+              <button
+                type="button"
+                className="btn btn-secondary"
+                style={{ width: "100%", marginTop: "0.5rem" }}
+                onClick={() => setAddRelativeMode(false)}
+              >
+                Hủy bỏ
+              </button>
+            </div>
+          ) : (
+            <div className="surface-card side-panel">
+              <p style={{ color: "var(--color-muted)", margin: 0, textAlign: "center" }}>
+                Chọn một người để xem thông tin và cách xưng hô.
+              </p>
+            </div>
           )}
         </div>
+      </div>
 
-        {/* Right Side: Main Toolbar & Graph */}
-        <div className="tree-workspace__main">
-          {/* Section 2: Search & Filter Toolbar */}
-          <div className="surface-card tree-workspace__toolbar-container">
-            <SearchPanel
-              treeId={activeTreeId}
-              viewpointId={selectedId || undefined}
-              onSelectResult={(id) => {
-                setSelectedId(id);
-                setEditMode(false);
-                setAddRelativeMode(false);
-              }}
-            />
-          </div>
+      {/* Settings Modal (Cài đặt) */}
+      {isSettingsOpen && (
+        <div className="settings-modal-overlay" onClick={handleCloseSettings}>
+          <div className="settings-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="settings-modal__header">
+              <h2>Cài đặt</h2>
+              <button
+                type="button"
+                className="settings-modal__close"
+                onClick={handleCloseSettings}
+                aria-label="Đóng cài đặt"
+              >
+                &times;
+              </button>
+            </div>
+            <div className="settings-modal__body">
+              {isOwner && (
+                <section className="settings-section">
+                  <h3>Cấu hình dòng họ</h3>
+                  <RegionSelector
+                    treeId={activeTreeId}
+                    region={region}
+                    onChange={(nextRegion) => setRegionState(nextRegion)}
+                  />
 
-          {/* Interactive SVG graph area */}
-          <div className="tree-workspace__graph">
-            <TreeGraph
-              treeId={activeTreeId}
-              persons={persons}
-              relationships={relationships}
-              selectedId={selectedId}
-              onSelectId={(id) => {
-                setSelectedId(id);
-                setEditMode(false);
-                setAddRelativeMode(false);
-                setCreateMode(false);
-              }}
-            />
+                  <div className="field" style={{ marginTop: "1rem" }}>
+                    <label style={{ display: "flex", alignItems: "center", gap: "0.5rem", cursor: "pointer" }}>
+                      <input
+                        type="checkbox"
+                        checked={livingRedaction}
+                        disabled={updatingRedaction}
+                        onChange={(e) => handleRedactionChange(e.target.checked)}
+                      />
+                      <span>Ẩn thông tin người còn sống</span>
+                    </label>
+                  </div>
+
+                  <div className="field" style={{ marginTop: "1rem" }}>
+                    <label htmlFor="sharing-select">Chế độ chia sẻ</label>
+                    <select
+                      id="sharing-select"
+                      value={sharing}
+                      disabled={updatingSharing}
+                      onChange={(e) => handleSharingChange(e.target.value)}
+                      style={{ width: "100%", marginTop: "0.5rem" }}
+                    >
+                      <option value="private">Riêng tư (Private)</option>
+                      <option value="link">Bằng liên kết bí mật (Link)</option>
+                      <option value="public">Công khai cho thành viên (Public)</option>
+                    </select>
+                  </div>
+
+                  {sharing === "link" && (
+                    <div style={{ borderTop: "1px solid var(--color-hairline-soft)", paddingTop: "1rem", marginTop: "1rem" }}>
+                      {shareToken ? (
+                        <div>
+                          <label>Liên kết chia sẻ của bạn:</label>
+                          <input
+                            type="text"
+                            readOnly
+                            value={typeof window !== "undefined" ? `${window.location.origin}/tree?treeId=${activeTreeId}&shareToken=${shareToken}` : ""}
+                            style={{ width: "100%", fontSize: "0.75rem", margin: "0.5rem 0" }}
+                            onClick={(e) => (e.target as HTMLInputElement).select()}
+                          />
+                          <div style={{ display: "flex", gap: "0.5rem" }}>
+                            <button
+                              type="button"
+                              className="btn btn-secondary"
+                              style={{ flex: 1 }}
+                              onClick={() => {
+                                const url = `${window.location.origin}/tree?treeId=${activeTreeId}&shareToken=${shareToken}`;
+                                navigator.clipboard.writeText(url);
+                                alert("Đã sao chép liên kết vào bộ nhớ tạm!");
+                              }}
+                            >
+                              Sao chép
+                            </button>
+                            <button
+                              type="button"
+                              className="btn btn-secondary"
+                              style={{ flex: 1 }}
+                              disabled={generatingToken}
+                              onClick={handleRevokeShareLink}
+                            >
+                              Hủy liên kết
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <button
+                          type="button"
+                          className="btn btn-secondary"
+                          style={{ width: "100%" }}
+                          disabled={generatingToken}
+                          onClick={handleGetShareLink}
+                        >
+                          Tạo liên kết chia sẻ
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </section>
+              )}
+
+              <section className="settings-section" style={{ borderTop: "1px solid var(--color-hairline-soft)", paddingTop: "1.5rem", marginTop: "1.5rem" }}>
+                <h3>Cài đặt hiển thị</h3>
+                <TextSizeControl />
+              </section>
+
+              <section className="settings-section" style={{ borderTop: "1px solid var(--color-hairline-soft)", paddingTop: "1.5rem", marginTop: "1.5rem" }}>
+                <h3>Thông tin tài khoản</h3>
+                {!sessionLoading && user && (
+                  <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+                    <span className="settings-modal__user" title={user.identifier}>
+                      Đã đăng nhập: <strong>{user.identifier}</strong>
+                    </span>
+                    <SignOutButton redirectTo="/" />
+                  </div>
+                )}
+              </section>
+            </div>
+            <div className="settings-modal__footer" style={{ borderTop: "1px solid var(--color-hairline-soft)", paddingTop: "1rem", marginTop: "1rem", display: "flex", justifyContent: "flex-end" }}>
+              <button type="button" className="btn btn-secondary" onClick={handleCloseSettings}>
+                Đóng
+              </button>
+            </div>
           </div>
         </div>
-      </div>
+      )}
     </section>
+  );
+}
+
+export default function TreePage(props: TreePageProps) {
+  return (
+    <Suspense fallback={
+      <section className="center-state" aria-live="polite">
+        <div className="center-state__card">
+          <span className="center-state__spinner" aria-hidden="true" />
+          <p>Đang tải sơ đồ gia phả…</p>
+        </div>
+      </section>
+    }>
+      <TreePageContent {...props} />
+    </Suspense>
   );
 }

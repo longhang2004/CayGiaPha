@@ -354,7 +354,7 @@ main {
 
 .tree-workspace__layout {
   display: grid;
-  grid-template-columns: minmax(20rem, 24rem) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr) minmax(20rem, 24rem);
   gap: var(--space-xl);
   align-items: start;
 }
@@ -374,7 +374,7 @@ main {
   min-width: 0;
 }
 
-.tree-workspace__sidebar {
+.tree-workspace__info-panel {
   display: flex;
   flex-direction: column;
   gap: var(--space-lg);
@@ -458,7 +458,7 @@ main {
     order: 1;
   }
 
-  .tree-workspace__sidebar {
+  .tree-workspace__info-panel {
     order: 2;
   }
 
@@ -1400,6 +1400,116 @@ fieldset .field {
     right: 1rem;
     left: 1rem;
     max-width: calc(100% - 2rem);
+  }
+}
+
+/* Settings Modal Overlay & Popups */
+.settings-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 300;
+  padding: 1rem;
+}
+
+.settings-modal {
+  background-color: var(--color-surface-card);
+  border: 1px solid var(--color-hairline);
+  border-radius: 16px;
+  width: 100%;
+  max-width: 520px;
+  max-height: 90vh;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+  display: flex;
+  flex-direction: column;
+  animation: rise-in 0.2s ease both;
+  overflow: hidden;
+}
+
+.settings-modal__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid var(--color-hairline-soft);
+}
+
+.settings-modal__header h2 {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.settings-modal__close {
+  background: none;
+  border: none;
+  font-size: 1.75rem;
+  cursor: pointer;
+  color: var(--color-muted);
+  line-height: 1;
+  padding: 0.25rem;
+  min-width: auto;
+  min-height: auto;
+}
+
+.settings-modal__close:hover {
+  color: var(--color-fg);
+}
+
+.settings-modal__body {
+  padding: 1.5rem;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.settings-section h3 {
+  margin-top: 0;
+  margin-bottom: 1rem;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--color-accent);
+}
+
+.settings-modal__user {
+  font-size: 0.9375rem;
+  color: var(--color-fg);
+}
+
+/* Dropdown filter popover */
+.search-filter-dropdown {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  width: 100%;
+  max-width: 480px;
+  background-color: var(--color-surface-card);
+  border: 1px solid var(--color-hairline);
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+  margin-top: 0.5rem;
+  z-index: 110;
+  padding: 1.25rem;
+  animation: rise-in 0.2s ease both;
+}
+
+@media (max-width: 640px) {
+  .search-filter-dropdown {
+    position: fixed;
+    top: auto;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    max-width: 100%;
+    border-radius: 16px 16px 0 0;
+    box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.15);
+    margin-top: 0;
   }
 }
 

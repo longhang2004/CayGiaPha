@@ -32,7 +32,6 @@ import {
   type ViewpointAddresses,
 } from "@/lib/graph";
 import { GraphEdge } from "./EdgeStyles";
-import { PersonInfoPanel } from "./PersonInfoPanel";
 import { ViewpointSelector } from "./ViewpointSelector";
 
 export interface TreeGraphProps {
@@ -52,6 +51,8 @@ export interface TreeGraphProps {
   ) => Promise<ViewpointAddresses>;
   selectedId?: string | null;
   onSelectId?: (id: string | null) => void;
+  onSelectAddress?: (address: Address | undefined) => void;
+  onSelectEgo?: (ego: Person | null) => void;
 }
 
 const NODE_WIDTH = 160;
@@ -65,6 +66,8 @@ export function TreeGraph({
   fetchAddresses = fetchViewpointAddresses,
   selectedId,
   onSelectId,
+  onSelectAddress,
+  onSelectEgo,
 }: TreeGraphProps) {
   const firstId = persons[0]?.id ?? "";
   const [egoId, setEgoId] = useState<string>(initialEgoId ?? firstId);
@@ -127,11 +130,20 @@ export function TreeGraph({
     };
   }, [treeId, egoId, fetchAddresses]);
 
+  useEffect(() => {
+    onSelectAddress?.(activeSelectedId ? addresses.get(activeSelectedId) : undefined);
+  }, [addresses, activeSelectedId, onSelectAddress]);
+
+  const ego = egoId ? personById.get(egoId) ?? null : null;
+
+  useEffect(() => {
+    onSelectEgo?.(ego);
+  }, [ego, onSelectEgo]);
+
   const handleSelectViewpoint = useCallback((nextEgoId: string) => {
     setEgoId(nextEgoId);
   }, []);
 
-  const ego = egoId ? personById.get(egoId) ?? null : null;
   const selected = activeSelectedId ? personById.get(activeSelectedId) ?? null : null;
 
   const svgWidth = useMemo(() => {
@@ -400,12 +412,6 @@ export function TreeGraph({
           </button>
         </div>
       </div>
-
-      <PersonInfoPanel
-        person={selected}
-        ego={ego}
-        address={activeSelectedId ? addresses.get(activeSelectedId) : undefined}
-      />
     </div>
   );
 }
