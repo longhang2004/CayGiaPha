@@ -13,7 +13,7 @@ export interface AddressResolution {
 
 let seedingPromise: Promise<void> | null = null;
 
-async function ensureKinshipTermsSeeded() {
+export async function ensureKinshipTermsSeeded() {
   if (seedingPromise) {
     return seedingPromise;
   }

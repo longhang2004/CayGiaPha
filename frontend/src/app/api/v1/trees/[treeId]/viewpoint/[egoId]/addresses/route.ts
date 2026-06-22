@@ -2,9 +2,9 @@ import { handleApiRoute } from "@/lib/services/routeHelper";
 import { getAuthContext, authorizationService } from "@/lib/services/authorization";
 import { ApiException } from "@/lib/services/errors";
 import { db } from "@/lib/db";
-import { persons } from "@/lib/db/schema";
-import { eq } from "drizzle-orm";
-import { projectionCache } from "@/lib/services/kinship/address";
+import { persons, regionKinshipTerms, trees } from "@/lib/db/schema";
+import { eq, and } from "drizzle-orm";
+import { projectionCache, ensureKinshipTermsSeeded } from "@/lib/services/kinship/address";
 import { KinshipResolver } from "@/lib/services/kinship/resolver";
 
 export async function GET(
@@ -49,29 +49,57 @@ export async function GET(
 
     const resolutions = resolver.resolveAllFrom(projection, egoId, targets, lookupFn);
 
+    // Fetch tree to determine the region, then fetch regional kinship terms
+    const treeRecord = await db
+      .select()
+      .from(trees)
+      .where(eq(trees.id, treeId))
+      .then((rows) => rows[0]);
+    const region = treeRecord?.region || "Bac";
+
+    await ensureKinshipTermsSeeded();
+
+    const regionTerms = await db
+      .select()
+      .from(regionKinshipTerms)
+      .where(eq(regionKinshipTerms.region, region));
+    const termMap = new Map(regionTerms.map((t) => [t.canonicalRelation, t.term]));
+
     const addresses = [];
     for (const targetId of targets) {
       const res = resolutions.get(targetId);
       if (res && res.isResolved() && res.relation) {
-        addresses.push({
-          personId: targetId,
-          resolved: true,
-          status: res.status,
-          unresolvedIndicator: null,
-          relation: {
-            upCount: res.relation.upCount,
-            downCount: res.relation.downCount,
-            side: res.relation.side,
-            targetGender: res.relation.targetGender,
-            branchOrder: res.relation.branchOrder,
-            spouseHop: res.relation.spouseHop,
-            canonicalKey: res.relation.canonicalKey(),
-          },
-        });
+        const key = res.relation.canonicalKey();
+        const term = termMap.get(key) || null;
+        if (term) {
+          addresses.push({
+            personId: targetId,
+            resolved: term,
+            status: "resolved",
+            unresolvedIndicator: null,
+            relation: {
+              upCount: res.relation.upCount,
+              downCount: res.relation.downCount,
+              side: res.relation.side,
+              targetGender: res.relation.targetGender,
+              branchOrder: res.relation.branchOrder,
+              spouseHop: res.relation.spouseHop,
+              canonicalKey: key,
+            },
+          });
+        } else {
+          addresses.push({
+            personId: targetId,
+            resolved: null,
+            status: "unresolved",
+            unresolvedIndicator: "unresolved",
+            relation: null,
+          });
+        }
       } else {
         addresses.push({
           personId: targetId,
-          resolved: false,
+          resolved: null,
           status: res ? res.status : "UNRESOLVED_NO_PATH",
           unresolvedIndicator: "unresolved",
           relation: null,
