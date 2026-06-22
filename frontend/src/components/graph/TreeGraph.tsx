@@ -54,7 +54,7 @@ export interface TreeGraphProps {
   onSelectId?: (id: string | null) => void;
 }
 
-const NODE_WIDTH = 130;
+const NODE_WIDTH = 160;
 const NODE_HEIGHT = 46;
 
 export function TreeGraph({
@@ -83,7 +83,7 @@ export function TreeGraph({
     return map;
   }, [persons]);
 
-  const positions = useMemo(() => layoutNodes(persons, { padding: 100 }), [persons]);
+  const positions = useMemo(() => layoutNodes(persons, { cellWidth: 220, cellHeight: 130, padding: 100 }), [persons]);
 
   // Re-fetch every node's address whenever the viewpoint (ego) changes
   // (Requirements 10.1, 10.2).

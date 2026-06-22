@@ -12,6 +12,7 @@ import { PersonPhotos } from "@/components/photos/PersonPhotos";
 import { api, ApiError } from "@/lib/apiClient";
 import type { Person, Relationship } from "@/lib/graph";
 import type { Region } from "@/lib/region";
+import { getCookie, setCookie } from "@/lib/cookies";
 import "@/components/graph/graph.css";
 
 interface TreePageProps {
@@ -46,6 +47,20 @@ export default function TreePage({ searchParams }: TreePageProps) {
   const [updatingRedaction, setUpdatingRedaction] = useState(false);
   const [shareToken, setShareToken] = useState<string | null>(queryShareToken || null);
   const [generatingToken, setGeneratingToken] = useState(false);
+
+  const [showTutorial, setShowTutorial] = useState(false);
+
+  useEffect(() => {
+    const dismissed = getCookie("tutorial_dismissed");
+    if (!dismissed) {
+      setShowTutorial(true);
+    }
+  }, []);
+
+  const handleDismissTutorial = () => {
+    setCookie("tutorial_dismissed", "true", 365);
+    setShowTutorial(false);
+  };
 
   const loadTree = useCallback(async (id: string, token?: string) => {
     setLoadingData(true);
@@ -254,30 +269,38 @@ export default function TreePage({ searchParams }: TreePageProps) {
         )}
       </div>
 
-      <div className="onboarding-strip onboarding-strip--workspace" aria-label="Gợi ý sử dụng sơ đồ">
-        <span>Chọn người để xem chi tiết</span>
-        <span>Đổi góc nhìn để tính xưng hô</span>
-        {isOwner ? <span>Thêm quan hệ từ bảng bên phải</span> : <span>Bạn đang xem theo quyền chia sẻ</span>}
-      </div>
+      {showTutorial && (
+        <div className="tutorial-popup-overlay">
+          <div className="tutorial-popup">
+            <div className="tutorial-popup__header">
+              <h4>💡 Hướng dẫn nhanh</h4>
+              <button
+                type="button"
+                className="tutorial-popup__close"
+                onClick={handleDismissTutorial}
+                aria-label="Đóng hướng dẫn"
+              >
+                &times;
+              </button>
+            </div>
+            <div className="tutorial-popup__body">
+              <ul>
+                <li><strong>Chọn người:</strong> Bấm vào bất kỳ thành viên nào trên sơ đồ để xem chi tiết, sửa thông tin hoặc thêm người thân.</li>
+                <li><strong>Cách xưng hô:</strong> Thay đổi góc nhìn ở bộ chọn phía trên sơ đồ để xem cách xưng hô của cả dòng họ đối với người đó.</li>
+                <li><strong>Thêm quan hệ:</strong> {isOwner ? "Sử dụng bảng bên trái để thêm thành viên mới hoặc kết nối các mối quan hệ." : "Bạn đang xem cây gia phả theo quyền chia sẻ."}</li>
+              </ul>
+            </div>
+            <div className="tutorial-popup__footer">
+              <button type="button" className="btn" onClick={handleDismissTutorial}>
+                Đã hiểu
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="tree-workspace__layout">
-        {/* Main interactive SVG graph area */}
-        <div className="tree-workspace__graph">
-          <TreeGraph
-            treeId={activeTreeId}
-            persons={persons}
-            relationships={relationships}
-            selectedId={selectedId}
-            onSelectId={(id) => {
-              setSelectedId(id);
-              setEditMode(false);
-              setAddRelativeMode(false);
-              setCreateMode(false);
-            }}
-          />
-        </div>
-
-        {/* Action and configuration sidebar */}
+        {/* Left Side: Sidebar */}
         <div className="tree-workspace__sidebar">
           
           {/* Section 1: Selected Node Operations */}
@@ -444,22 +467,6 @@ export default function TreePage({ searchParams }: TreePageProps) {
             )}
           </div>
 
-          {/* Section 2: Search & Filter */}
-          <div className="surface-card side-panel">
-            <h3 className="side-panel__title">
-              Tìm kiếm & Lọc
-            </h3>
-            <SearchPanel
-              treeId={activeTreeId}
-              viewpointId={selectedId || undefined}
-              onSelectResult={(id) => {
-                setSelectedId(id);
-                setEditMode(false);
-                setAddRelativeMode(false);
-              }}
-            />
-          </div>
-
           {/* Section 3: Tree Configurations (Owner only) */}
           {isOwner && (
             <div className="surface-card side-panel side-panel--stacked">
@@ -552,7 +559,38 @@ export default function TreePage({ searchParams }: TreePageProps) {
               )}
             </div>
           )}
+        </div>
 
+        {/* Right Side: Main Toolbar & Graph */}
+        <div className="tree-workspace__main">
+          {/* Section 2: Search & Filter Toolbar */}
+          <div className="surface-card tree-workspace__toolbar-container">
+            <SearchPanel
+              treeId={activeTreeId}
+              viewpointId={selectedId || undefined}
+              onSelectResult={(id) => {
+                setSelectedId(id);
+                setEditMode(false);
+                setAddRelativeMode(false);
+              }}
+            />
+          </div>
+
+          {/* Interactive SVG graph area */}
+          <div className="tree-workspace__graph">
+            <TreeGraph
+              treeId={activeTreeId}
+              persons={persons}
+              relationships={relationships}
+              selectedId={selectedId}
+              onSelectId={(id) => {
+                setSelectedId(id);
+                setEditMode(false);
+                setAddRelativeMode(false);
+                setCreateMode(false);
+              }}
+            />
+          </div>
         </div>
       </div>
     </section>

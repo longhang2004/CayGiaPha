@@ -58,6 +58,7 @@ describe("SearchPanel", () => {
 
     render(<SearchPanel treeId="t1" viewpointId="v1" />);
 
+    await userEvent.click(screen.getByRole("button", { name: /Lọc/i }));
     await userEvent.selectOptions(screen.getByLabelText("Giới tính"), "male");
     await userEvent.selectOptions(screen.getByLabelText("Bên"), "paternal");
     await userEvent.type(screen.getByLabelText("Năm sinh từ"), "1950");
@@ -102,6 +103,7 @@ describe("SearchPanel", () => {
     });
 
     render(<SearchPanel treeId="t1" />);
+    await userEvent.click(screen.getByRole("button", { name: /Lọc/i }));
     await userEvent.type(screen.getByLabelText("Năm sinh từ"), "2000");
     await userEvent.type(screen.getByLabelText("đến"), "1990");
     await userEvent.click(screen.getByRole("button", { name: "Tìm" }));
