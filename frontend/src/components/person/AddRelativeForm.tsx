@@ -1,14 +1,16 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useState, useEffect, type FormEvent } from "react";
 import { ApiError } from "@/lib/apiClient";
 import {
   addAssertedRelative,
   addDerivedRelative,
+  createPerson,
   type ConflictWarning as ConflictWarningData,
   type DerivedRelativeInput,
   type MaritalStatus,
 } from "@/lib/persons";
+import { uploadPhoto } from "@/lib/photos";
 import { Button } from "@/components/Button";
 import { ConflictWarning } from "./ConflictWarning";
 
@@ -29,6 +31,7 @@ import { ConflictWarning } from "./ConflictWarning";
 export interface PersonOption {
   id: string;
   displayName: string;
+  gender?: "male" | "female";
 }
 
 type Mode = "derived" | "asserted";
@@ -42,6 +45,12 @@ interface AddRelativeFormProps {
   onCreated?: (relationshipId: string) => void;
 }
 
+function parseOptionalInt(value: string): number | undefined {
+  if (value.trim() === "") return undefined;
+  const n = Number(value);
+  return Number.isFinite(n) ? n : undefined;
+}
+
 export function AddRelativeForm({ treeId, persons, onCreated }: AddRelativeFormProps) {
   const [mode, setMode] = useState<Mode>("derived");
   const [derivedKind, setDerivedKind] = useState<DerivedKind>("bloodline_father");
@@ -50,10 +59,53 @@ export function AddRelativeForm({ treeId, persons, onCreated }: AddRelativeFormP
   const [targetId, setTargetId] = useState(persons[1]?.id ?? persons[0]?.id ?? "");
   const [assertedLabel, setAssertedLabel] = useState("");
 
+  // New relative creation state
+  const [isNewPerson, setIsNewPerson] = useState(false);
+  const [newPersonPosition, setNewPersonPosition] = useState<"source" | "target">("target");
+  const [newDisplayName, setNewDisplayName] = useState("");
+  const [newGender, setNewGender] = useState<"male" | "female">("male");
+  const [newBirthOrder, setNewBirthOrder] = useState("");
+  const [newBirthYear, setNewBirthYear] = useState("");
+  const [newPhone, setNewPhone] = useState("");
+  const [newEmail, setNewEmail] = useState("");
+  const [newDeathStatus, setNewDeathStatus] = useState(false);
+  const [newPhotoFile, setNewPhotoFile] = useState<File | null>(null);
+  const [newPhotoPreviewUrl, setNewPhotoPreviewUrl] = useState<string | null>(null);
+
   const [conflicts, setConflicts] = useState<ConflictWarningData[] | undefined>();
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [formError, setFormError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+
+  // Auto gender-assignment based on relationship type
+  useEffect(() => {
+    if (isNewPerson) {
+      if (mode === "derived") {
+        if (newPersonPosition === "source") {
+          if (derivedKind === "bloodline_father") {
+            setNewGender("male");
+          } else if (derivedKind === "bloodline_mother") {
+            setNewGender("female");
+          } else if (derivedKind === "marriage") {
+            // Pre-select opposite gender of target (existing spouse)
+            const targetPerson = persons.find((p) => p.id === targetId);
+            if (targetPerson?.gender) {
+              setNewGender(targetPerson.gender === "male" ? "female" : "male");
+            }
+          }
+        } else {
+          // newPersonPosition === "target"
+          if (derivedKind === "marriage") {
+            // Pre-select opposite gender of source (existing spouse)
+            const sourcePerson = persons.find((p) => p.id === sourceId);
+            if (sourcePerson?.gender) {
+              setNewGender(sourcePerson.gender === "male" ? "female" : "male");
+            }
+          }
+        }
+      }
+    }
+  }, [isNewPerson, mode, derivedKind, newPersonPosition, sourceId, targetId, persons]);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -63,12 +115,58 @@ export function AddRelativeForm({ treeId, persons, onCreated }: AddRelativeFormP
     setSubmitting(true);
 
     try {
+      let activeSourceId = sourceId;
+      let activeTargetId = targetId;
+
+      if (isNewPerson) {
+        if (!newDisplayName.trim()) {
+          throw new Error("Vui lòng nhập họ và tên của người thân mới.");
+        }
+
+        let finalGender = newGender;
+        if (mode === "derived" && newPersonPosition === "source") {
+          if (derivedKind === "bloodline_father") finalGender = "male";
+          if (derivedKind === "bloodline_mother") finalGender = "female";
+        }
+
+        const order = parseOptionalInt(newBirthOrder);
+        const year = parseOptionalInt(newBirthYear);
+
+        // 1. Create the new person
+        const created = await createPerson({
+          displayName: newDisplayName.trim(),
+          gender: finalGender,
+          deathStatus: newDeathStatus,
+          ...(order !== undefined ? { birthOrder: order } : {}),
+          ...(year !== undefined ? { birthYear: year } : {}),
+          ...(newPhone.trim() ? { phone: newPhone.trim() } : {}),
+          ...(newEmail.trim() ? { email: newEmail.trim() } : {}),
+        });
+
+        // 2. Upload photo if selected
+        if (newPhotoFile) {
+          try {
+            await uploadPhoto(treeId, created.id, newPhotoFile);
+          } catch (uploadErr) {
+            console.error("Failed to upload photo for new relative:", uploadErr);
+          }
+        }
+
+        // 3. Assign ID
+        if (newPersonPosition === "source") {
+          activeSourceId = created.id;
+        } else {
+          activeTargetId = created.id;
+        }
+      }
+
+      // 4. Create relationship
       if (mode === "derived") {
         const result = await addDerivedRelative({
           treeId,
           type: derivedKind,
-          sourceId,
-          targetId,
+          sourceId: activeSourceId,
+          targetId: activeTargetId,
           ...(derivedKind === "marriage" ? { maritalStatus } : {}),
         });
         setConflicts(result.conflicts);
@@ -76,8 +174,8 @@ export function AddRelativeForm({ treeId, persons, onCreated }: AddRelativeFormP
       } else {
         const result = await addAssertedRelative({
           treeId,
-          sourceId,
-          targetId,
+          sourceId: activeSourceId,
+          targetId: activeTargetId,
           assertedLabel,
         });
         setConflicts(result.conflicts);
@@ -86,7 +184,7 @@ export function AddRelativeForm({ treeId, persons, onCreated }: AddRelativeFormP
     } catch (error) {
       if (error instanceof ApiError && error.field) {
         setFieldErrors({ [error.field]: error.message });
-      } else if (error instanceof ApiError) {
+      } else if (error instanceof Error) {
         setFormError(error.message);
       } else {
         setFormError("Không thể thêm quan hệ. Vui lòng thử lại.");
@@ -96,79 +194,114 @@ export function AddRelativeForm({ treeId, persons, onCreated }: AddRelativeFormP
     }
   }
 
+  // Determine if gender field should be read-only based on relationship type
+  const isGenderFixed =
+    mode === "derived" &&
+    newPersonPosition === "source" &&
+    (derivedKind === "bloodline_father" || derivedKind === "bloodline_mother");
+
   return (
     <form onSubmit={handleSubmit} aria-label="Thêm người thân">
       {formError ? (
-        <p role="alert" data-testid="form-error">
+        <p role="alert" data-testid="form-error" className="form-error">
           {formError}
         </p>
       ) : null}
 
       <fieldset>
         <legend>Kiểu quan hệ</legend>
-        <label htmlFor="mode-derived">
-          <input
-            id="mode-derived"
-            type="radio"
-            name="mode"
-            value="derived"
-            checked={mode === "derived"}
-            onChange={() => setMode("derived")}
-          />
-          {" Quan hệ suy ra (nét liền)"}
-        </label>
-        <label htmlFor="mode-asserted">
-          <input
-            id="mode-asserted"
-            type="radio"
-            name="mode"
-            value="asserted"
-            checked={mode === "asserted"}
-            onChange={() => setMode("asserted")}
-          />
-          {" Quan hệ khai báo (nét đứt)"}
-        </label>
+        <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+          <label htmlFor="mode-derived" style={{ display: "flex", alignItems: "center", gap: "0.25rem", cursor: "pointer", fontWeight: "normal", color: "var(--color-muted)", minHeight: "auto" }}>
+            <input
+              id="mode-derived"
+              type="radio"
+              name="mode"
+              value="derived"
+              checked={mode === "derived"}
+              onChange={() => setMode("derived")}
+            />
+            {" Quan hệ suy ra (nét liền)"}
+          </label>
+          <label htmlFor="mode-asserted" style={{ display: "flex", alignItems: "center", gap: "0.25rem", cursor: "pointer", fontWeight: "normal", color: "var(--color-muted)", minHeight: "auto" }}>
+            <input
+              id="mode-asserted"
+              type="radio"
+              name="mode"
+              value="asserted"
+              checked={mode === "asserted"}
+              onChange={() => setMode("asserted")}
+            />
+            {" Quan hệ khai báo (nét đứt)"}
+          </label>
+        </div>
       </fieldset>
 
-      <p>
-        <label htmlFor="sourceId">Từ người</label>
-        <br />
-        <select
-          id="sourceId"
-          name="sourceId"
-          value={sourceId}
-          onChange={(e) => setSourceId(e.target.value)}
-        >
-          {persons.map((p) => (
-            <option key={p.id} value={p.id}>
-              {p.displayName}
-            </option>
-          ))}
-        </select>
-      </p>
+      <div className="field">
+        <label htmlFor="isNewPerson" style={{ display: "flex", alignItems: "center", gap: "0.5rem", cursor: "pointer", fontWeight: "normal", color: "var(--color-muted)", minHeight: "auto" }}>
+          <input
+            id="isNewPerson"
+            type="checkbox"
+            checked={isNewPerson}
+            onChange={(e) => setIsNewPerson(e.target.checked)}
+          />
+          <span>Tạo và kết nối thành viên mới</span>
+        </label>
+      </div>
 
-      <p>
-        <label htmlFor="targetId">Đến người</label>
-        <br />
-        <select
-          id="targetId"
-          name="targetId"
-          value={targetId}
-          onChange={(e) => setTargetId(e.target.value)}
-        >
-          {persons.map((p) => (
-            <option key={p.id} value={p.id}>
-              {p.displayName}
-            </option>
-          ))}
-        </select>
-      </p>
+      {isNewPerson && (
+        <div className="field">
+          <label htmlFor="newPersonPosition">Người mới là</label>
+          <select
+            id="newPersonPosition"
+            value={newPersonPosition}
+            onChange={(e) => setNewPersonPosition(e.target.value as "source" | "target")}
+          >
+            <option value="source">Người bắt đầu (Từ người)</option>
+            <option value="target">Người kết thúc (Đến người)</option>
+          </select>
+        </div>
+      )}
+
+      {(!isNewPerson || newPersonPosition !== "source") && (
+        <div className="field">
+          <label htmlFor="sourceId">Từ người</label>
+          <select
+            id="sourceId"
+            name="sourceId"
+            value={sourceId}
+            onChange={(e) => setSourceId(e.target.value)}
+          >
+            {persons.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.displayName}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
+
+      {(!isNewPerson || newPersonPosition !== "target") && (
+        <div className="field">
+          <label htmlFor="targetId">Đến người</label>
+          <select
+            id="targetId"
+            name="targetId"
+            value={targetId}
+            onChange={(e) => setTargetId(e.target.value)}
+          >
+            {persons.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.displayName}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
 
       {mode === "derived" ? (
         <>
-          <p>
+          <div className="field">
             <label htmlFor="derivedKind">Loại quan hệ suy ra</label>
-            <br />
             <select
               id="derivedKind"
               name="derivedKind"
@@ -179,11 +312,10 @@ export function AddRelativeForm({ treeId, persons, onCreated }: AddRelativeFormP
               <option value="bloodline_mother">Mẹ - con</option>
               <option value="marriage">Vợ chồng</option>
             </select>
-          </p>
+          </div>
           {derivedKind === "marriage" ? (
-            <p>
+            <div className="field">
               <label htmlFor="maritalStatus">Tình trạng hôn nhân</label>
-              <br />
               <select
                 id="maritalStatus"
                 name="maritalStatus"
@@ -194,13 +326,12 @@ export function AddRelativeForm({ treeId, persons, onCreated }: AddRelativeFormP
                 <option value="divorced">Đã ly hôn</option>
                 <option value="deceased">Đã mất</option>
               </select>
-            </p>
+            </div>
           ) : null}
         </>
       ) : (
-        <p>
+        <div className="field">
           <label htmlFor="assertedLabel">Nhãn xưng hô (1-50 ký tự)</label>
-          <br />
           <input
             id="assertedLabel"
             name="assertedLabel"
@@ -213,16 +344,153 @@ export function AddRelativeForm({ treeId, persons, onCreated }: AddRelativeFormP
             onChange={(e) => setAssertedLabel(e.target.value)}
           />
           {fieldErrors.assertedLabel ? (
-            <span id="assertedLabel-error" role="alert">
+            <span id="assertedLabel-error" role="alert" className="field-error">
               {fieldErrors.assertedLabel}
             </span>
           ) : null}
-        </p>
+        </div>
       )}
 
-      <Button type="submit" disabled={submitting}>
-        Thêm
-      </Button>
+      {isNewPerson && (
+        <fieldset style={{ marginTop: "1rem" }}>
+          <legend>Thông tin người mới</legend>
+
+          <div className="field">
+            <label htmlFor="newDisplayName">Họ và tên</label>
+            <input
+              id="newDisplayName"
+              type="text"
+              value={newDisplayName}
+              onChange={(e) => setNewDisplayName(e.target.value)}
+              required
+            />
+          </div>
+
+          <div className="field">
+            <label>Giới tính</label>
+            <div style={{ display: "flex", gap: "1rem", marginTop: "0.25rem" }}>
+              <label style={{ display: "flex", alignItems: "center", gap: "0.25rem", cursor: isGenderFixed ? "not-allowed" : "pointer", fontWeight: "normal", color: "var(--color-muted)", minHeight: "auto" }}>
+                <input
+                  type="radio"
+                  name="newGender"
+                  value="male"
+                  checked={newGender === "male"}
+                  disabled={isGenderFixed}
+                  onChange={() => setNewGender("male")}
+                />
+                Nam
+              </label>
+              <label style={{ display: "flex", alignItems: "center", gap: "0.25rem", cursor: isGenderFixed ? "not-allowed" : "pointer", fontWeight: "normal", color: "var(--color-muted)", minHeight: "auto" }}>
+                <input
+                  type="radio"
+                  name="newGender"
+                  value="female"
+                  checked={newGender === "female"}
+                  disabled={isGenderFixed}
+                  onChange={() => setNewGender("female")}
+                />
+                Nữ
+              </label>
+            </div>
+            {isGenderFixed && (
+              <p className="field-hint" style={{ fontSize: "0.75rem", marginTop: "4px" }}>
+                Giới tính được tự động khóa theo loại quan hệ.
+              </p>
+            )}
+          </div>
+
+          <div className="field">
+            <label htmlFor="newBirthOrder">Thứ tự sinh (tùy chọn)</label>
+            <input
+              id="newBirthOrder"
+              type="number"
+              min={1}
+              max={99}
+              value={newBirthOrder}
+              onChange={(e) => setNewBirthOrder(e.target.value)}
+            />
+            <p className="field-hint" style={{ fontSize: "0.75rem", marginTop: "4px" }}>
+              Lưu ý: Người sinh thứ 1 (đầu lòng) là con cả/Anh Hai/Chị Hai (nhập số 1).
+            </p>
+          </div>
+
+          <div className="field">
+            <label htmlFor="newBirthYear">Năm sinh (tùy chọn)</label>
+            <input
+              id="newBirthYear"
+              type="number"
+              min={1000}
+              value={newBirthYear}
+              onChange={(e) => setNewBirthYear(e.target.value)}
+            />
+          </div>
+
+          <div className="field">
+            <label htmlFor="newPhone">Số điện thoại (tùy chọn)</label>
+            <input
+              id="newPhone"
+              type="tel"
+              value={newPhone}
+              onChange={(e) => setNewPhone(e.target.value)}
+            />
+          </div>
+
+          <div className="field">
+            <label htmlFor="newEmail">Email (tùy chọn)</label>
+            <input
+              id="newEmail"
+              type="email"
+              value={newEmail}
+              onChange={(e) => setNewEmail(e.target.value)}
+            />
+          </div>
+
+          <div className="field">
+            <label htmlFor="newPhoto">Hình ảnh đại diện (tùy chọn)</label>
+            <input
+              id="newPhoto"
+              type="file"
+              accept="image/jpeg,image/png"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) {
+                  setNewPhotoFile(file);
+                  setNewPhotoPreviewUrl(URL.createObjectURL(file));
+                } else {
+                  setNewPhotoFile(null);
+                  setNewPhotoPreviewUrl(null);
+                }
+              }}
+            />
+            {newPhotoPreviewUrl && (
+              <div style={{ marginTop: "0.5rem" }}>
+                <img
+                  src={newPhotoPreviewUrl}
+                  alt="Xem trước ảnh"
+                  style={{ width: "80px", height: "80px", objectFit: "cover", borderRadius: "8px", border: "1px solid var(--color-hairline)" }}
+                />
+              </div>
+            )}
+          </div>
+
+          <div className="field">
+            <label style={{ display: "flex", alignItems: "center", gap: "0.5rem", cursor: "pointer", fontWeight: "normal", color: "var(--color-muted)", minHeight: "auto" }}>
+              <input
+                type="checkbox"
+                checked={newDeathStatus}
+                onChange={(e) => setNewDeathStatus(e.target.checked)}
+              />
+              <span>Đã mất</span>
+            </label>
+          </div>
+        </fieldset>
+      )}
+
+      <div className="form-actions">
+        <Button type="submit" disabled={submitting}>
+          {isNewPerson ? "Tạo và Thêm" : "Thêm"}
+        </Button>
+      </div>
 
       <ConflictWarning conflicts={conflicts} />
     </form>

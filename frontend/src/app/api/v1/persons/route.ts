@@ -17,6 +17,8 @@ export async function POST(request: Request) {
       gender: body.gender,
       birthOrder: body.birthOrder,
       birthYear: body.birthYear,
+      phone: body.phone,
+      email: body.email,
       deathStatus: body.deathStatus,
     });
 

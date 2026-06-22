@@ -28,6 +28,9 @@ export function SignUpFlow({ redirectTo = "/" }: SignUpFlowProps) {
   const [acceptedPrivacy, setAcceptedPrivacy] = useState(false);
 
   async function handleIdentifier(value: string) {
+    if (!acceptedTos || !acceptedPrivacy) {
+      throw new Error("Bạn cần đồng ý với Điều khoản dịch vụ và Chính sách bảo mật để tiếp tục.");
+    }
     await signUp(value);
     setIdentifier(value);
   }
@@ -58,24 +61,26 @@ export function SignUpFlow({ redirectTo = "/" }: SignUpFlowProps) {
             Chọn vùng miền của bạn — điều này quyết định cách xưng hô (ví dụ bố/ba, mẹ/má).
           </p>
         </div>
-        <div className="field" style={{ marginBottom: "1rem" }}>
-          <label>
+        <div className="field" style={{ marginBottom: "1.5rem", display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+          <label style={{ display: "flex", alignItems: "center", gap: "0.5rem", margin: 0, cursor: "pointer", fontWeight: "normal", color: "var(--color-muted)" }}>
             <input
               type="checkbox"
               checked={acceptedTos}
               onChange={(e) => setAcceptedTos(e.target.checked)}
-            />{" "}
-            Tôi đồng ý với <a href="/legal/tos">Điều khoản dịch vụ</a>.
+              style={{ margin: 0 }}
+            />
+            <span>Tôi đồng ý với <a href="/legal/tos" onClick={(e) => e.stopPropagation()}>Điều khoản dịch vụ</a>.</span>
           </label>
-          <label style={{ display: "block", marginTop: "0.5rem" }}>
+          <label style={{ display: "flex", alignItems: "center", gap: "0.5rem", margin: 0, cursor: "pointer", fontWeight: "normal", color: "var(--color-muted)" }}>
             <input
               type="checkbox"
               checked={acceptedPrivacy}
               onChange={(e) => setAcceptedPrivacy(e.target.checked)}
-            />{" "}
-            Tôi đồng ý với <a href="/legal/privacy">Chính sách bảo mật</a>.
+              style={{ margin: 0 }}
+            />
+            <span>Tôi đồng ý với <a href="/legal/privacy" onClick={(e) => e.stopPropagation()}>Chính sách bảo mật</a>.</span>
           </label>
-          <p className="field-hint">
+          <p className="field-hint" style={{ margin: 0 }}>
             Bạn cần đồng ý với cả hai để tạo cây gia phả.
           </p>
         </div>
@@ -84,7 +89,6 @@ export function SignUpFlow({ redirectTo = "/" }: SignUpFlowProps) {
           description="Đăng ký bằng số điện thoại (Việt Nam) hoặc email. Chúng tôi sẽ gửi mã xác thực 6 chữ số."
           submitLabel="Gửi mã xác thực"
           onSubmit={handleIdentifier}
-          disabled={!acceptedTos || !acceptedPrivacy}
         />
       </div>
     );

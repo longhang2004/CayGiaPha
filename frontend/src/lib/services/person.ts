@@ -9,6 +9,8 @@ export interface CreatePersonRequest {
   gender: string;
   birthOrder?: number | null;
   birthYear?: number | null;
+  phone?: string | null;
+  email?: string | null;
   deathStatus?: boolean | null;
 }
 
@@ -17,6 +19,8 @@ export interface EditPersonRequest {
   gender?: string | null;
   birthOrder?: number | null;
   birthYear?: number | null;
+  phone?: string | null;
+  email?: string | null;
   deathStatus?: boolean | null;
 }
 
@@ -56,6 +60,8 @@ export class PersonService {
         gender: request.gender,
         birthOrder: request.birthOrder || null,
         birthYear: request.birthYear || null,
+        phone: request.phone || null,
+        email: request.email || null,
         deathStatus: request.deathStatus || false,
         adoptionStatus: false, // default
         visMarital: "private",
@@ -93,6 +99,8 @@ export class PersonService {
     if (request.gender !== undefined) updates.gender = request.gender || undefined;
     if (request.birthOrder !== undefined) updates.birthOrder = request.birthOrder;
     if (request.birthYear !== undefined) updates.birthYear = request.birthYear;
+    if (request.phone !== undefined) updates.phone = request.phone || null;
+    if (request.email !== undefined) updates.email = request.email || null;
     if (request.deathStatus !== undefined) updates.deathStatus = request.deathStatus || false;
 
     const [updated] = await db

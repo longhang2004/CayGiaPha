@@ -12,4 +12,6 @@ Durable project knowledge for future AI agents. Keep entries short, verified, an
 ## 2026-06-22
 
 - Local environment `pnpm` version switcher might fail to switch to the specified version in `package.json` (e.g. `pnpm@11.5.0`) with `ENOENT`. If this happens, use `npx pnpm <command>` as a workaround, which successfully resolves the configured version.
+- The Spring Boot Java backend is currently disabled (`USE_BACKEND=false`). The frontend Next.js server handles routing and database queries full-stack using Drizzle ORM. Database updates must be made in the frontend Next.js project first, and mirrored to the Java backend's Flyway migrations directory (`backend/src/main/resources/db/migration/`) for future synchronization.
+
 

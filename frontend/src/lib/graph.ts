@@ -33,6 +33,8 @@ export interface Person {
   gender?: "male" | "female";
   birthOrder?: number | null;
   birthYear?: number | null;
+  phone?: string | null;
+  email?: string | null;
   deceased?: boolean;
 }
 

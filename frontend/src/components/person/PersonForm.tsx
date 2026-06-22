@@ -18,6 +18,7 @@ import {
   visibilityDiff,
   type VisibilityState,
 } from "./VisibilityToggles";
+import { uploadPhoto } from "@/lib/photos";
 
 /**
  * Create/edit form for a Person node (Requirements 3.1, 3.3) with per-field
@@ -38,6 +39,8 @@ export interface PersonFormInitialValues {
   gender?: Gender;
   birthOrder?: number;
   birthYear?: number;
+  phone?: string;
+  email?: string;
   deathStatus?: boolean;
   visibility?: VisibilityState;
 }
@@ -73,10 +76,14 @@ export function PersonForm({
   const [birthYear, setBirthYear] = useState(
     initialValues?.birthYear != null ? String(initialValues.birthYear) : "",
   );
+  const [phone, setPhone] = useState(initialValues?.phone ?? "");
+  const [email, setEmail] = useState(initialValues?.email ?? "");
   const [deathStatus, setDeathStatus] = useState(initialValues?.deathStatus ?? false);
   const [visibility, setVisibilityState] = useState<VisibilityState>(
     initialValues?.visibility ?? DEFAULT_VISIBILITY,
   );
+  const [photoFile, setPhotoFile] = useState<File | null>(null);
+  const [photoPreviewUrl, setPhotoPreviewUrl] = useState<string | null>(null);
 
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [formError, setFormError] = useState<string | null>(null);
@@ -105,6 +112,8 @@ export function PersonForm({
           deathStatus,
           ...(order !== undefined ? { birthOrder: order } : {}),
           ...(year !== undefined ? { birthYear: year } : {}),
+          ...(phone.trim() ? { phone: phone.trim() } : {}),
+          ...(email.trim() ? { email: email.trim() } : {}),
         };
         const created = await createPerson(body);
         resolvedId = created.id;
@@ -118,8 +127,21 @@ export function PersonForm({
           deathStatus,
           ...(order !== undefined ? { birthOrder: order } : {}),
           ...(year !== undefined ? { birthYear: year } : {}),
+          phone: phone.trim() || undefined,
+          email: email.trim() || undefined,
         };
         await editPerson(personId, treeId, body);
+      }
+
+      // Upload photo if selected
+      if (photoFile && resolvedId) {
+        try {
+          await uploadPhoto(treeId, resolvedId, photoFile);
+        } catch (uploadErr) {
+          console.error("Failed to upload photo:", uploadErr);
+          // Don't fail the whole form submit if photo fails, just warn
+          alert("Lưu thông tin thành công nhưng không thể tải ảnh lên: " + (uploadErr instanceof Error ? uploadErr.message : ""));
+        }
       }
 
       // Apply visibility changes once the node id is known (14.1).
@@ -148,14 +170,13 @@ export function PersonForm({
   return (
     <form onSubmit={handleSubmit} aria-label={mode === "create" ? "Tạo người" : "Sửa người"}>
       {formError ? (
-        <p role="alert" data-testid="form-error">
+        <p role="alert" data-testid="form-error" className="form-error">
           {formError}
         </p>
       ) : null}
 
-      <p>
+      <div className="field">
         <label htmlFor="displayName">Họ và tên</label>
-        <br />
         <input
           id="displayName"
           name="displayName"
@@ -167,46 +188,47 @@ export function PersonForm({
           onChange={(e) => setDisplayName(e.target.value)}
         />
         {fieldErrors.displayName ? (
-          <span id="displayName-error" role="alert">
+          <span id="displayName-error" role="alert" className="field-error">
             {fieldErrors.displayName}
           </span>
         ) : null}
-      </p>
+      </div>
 
       <fieldset>
         <legend>Giới tính</legend>
-        <label htmlFor="gender-male">
-          <input
-            id="gender-male"
-            type="radio"
-            name="gender"
-            value="male"
-            checked={gender === "male"}
-            onChange={() => setGender("male")}
-          />
-          {" Nam"}
-        </label>
-        <label htmlFor="gender-female">
-          <input
-            id="gender-female"
-            type="radio"
-            name="gender"
-            value="female"
-            checked={gender === "female"}
-            onChange={() => setGender("female")}
-          />
-          {" Nữ"}
-        </label>
+        <div style={{ display: "flex", gap: "1rem" }}>
+          <label htmlFor="gender-male" style={{ display: "flex", alignItems: "center", gap: "0.25rem", cursor: "pointer", fontWeight: "normal", color: "var(--color-muted)", minHeight: "auto" }}>
+            <input
+              id="gender-male"
+              type="radio"
+              name="gender"
+              value="male"
+              checked={gender === "male"}
+              onChange={() => setGender("male")}
+            />
+            {" Nam"}
+          </label>
+          <label htmlFor="gender-female" style={{ display: "flex", alignItems: "center", gap: "0.25rem", cursor: "pointer", fontWeight: "normal", color: "var(--color-muted)", minHeight: "auto" }}>
+            <input
+              id="gender-female"
+              type="radio"
+              name="gender"
+              value="female"
+              checked={gender === "female"}
+              onChange={() => setGender("female")}
+            />
+            {" Nữ"}
+          </label>
+        </div>
         {fieldErrors.gender ? (
-          <span id="gender-error" role="alert">
+          <span id="gender-error" role="alert" className="field-error">
             {fieldErrors.gender}
           </span>
         ) : null}
       </fieldset>
 
-      <p>
+      <div className="field">
         <label htmlFor="birthOrder">Thứ tự sinh (tùy chọn)</label>
-        <br />
         <input
           id="birthOrder"
           name="birthOrder"
@@ -218,16 +240,18 @@ export function PersonForm({
           aria-describedby={describedBy("birthOrder")}
           onChange={(e) => setBirthOrder(e.target.value)}
         />
+        <p className="field-hint" style={{ fontSize: "0.75rem", marginTop: "4px" }}>
+          Lưu ý: Người sinh thứ 1 (đầu lòng) là con cả/Anh Hai/Chị Hai (nhập số 1).
+        </p>
         {fieldErrors.birthOrder ? (
-          <span id="birthOrder-error" role="alert">
+          <span id="birthOrder-error" role="alert" className="field-error">
             {fieldErrors.birthOrder}
           </span>
         ) : null}
-      </p>
+      </div>
 
-      <p>
+      <div className="field">
         <label htmlFor="birthYear">Năm sinh (tùy chọn)</label>
-        <br />
         <input
           id="birthYear"
           name="birthYear"
@@ -239,14 +263,65 @@ export function PersonForm({
           onChange={(e) => setBirthYear(e.target.value)}
         />
         {fieldErrors.birthYear ? (
-          <span id="birthYear-error" role="alert">
+          <span id="birthYear-error" role="alert" className="field-error">
             {fieldErrors.birthYear}
           </span>
         ) : null}
-      </p>
+      </div>
 
-      <p>
-        <label htmlFor="deathStatus">
+      <div className="field">
+        <label htmlFor="phone">Số điện thoại (tùy chọn)</label>
+        <input
+          id="phone"
+          name="phone"
+          type="tel"
+          value={phone}
+          onChange={(e) => setPhone(e.target.value)}
+        />
+      </div>
+
+      <div className="field">
+        <label htmlFor="email">Email (tùy chọn)</label>
+        <input
+          id="email"
+          name="email"
+          type="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+        />
+      </div>
+
+      <div className="field">
+        <label htmlFor="photo">Hình ảnh đại diện (tùy chọn)</label>
+        <input
+          id="photo"
+          name="photo"
+          type="file"
+          accept="image/jpeg,image/png"
+          onChange={(e) => {
+            const file = e.target.files?.[0];
+            if (file) {
+              setPhotoFile(file);
+              setPhotoPreviewUrl(URL.createObjectURL(file));
+            } else {
+              setPhotoFile(null);
+              setPhotoPreviewUrl(null);
+            }
+          }}
+        />
+        {photoPreviewUrl && (
+          <div style={{ marginTop: "0.5rem" }}>
+            <img
+              src={photoPreviewUrl}
+              alt="Xem trước ảnh"
+              style={{ width: "80px", height: "80px", objectFit: "cover", borderRadius: "8px", border: "1px solid var(--color-hairline)" }}
+            />
+          </div>
+        )}
+      </div>
+
+      <div className="field">
+        <label htmlFor="deathStatus" style={{ display: "flex", alignItems: "center", gap: "0.5rem", cursor: "pointer", fontWeight: "normal", color: "var(--color-muted)", minHeight: "auto" }}>
           <input
             id="deathStatus"
             name="deathStatus"
@@ -254,9 +329,9 @@ export function PersonForm({
             checked={deathStatus}
             onChange={(e) => setDeathStatus(e.target.checked)}
           />
-          {" Đã mất"}
+          <span>Đã mất</span>
         </label>
-      </p>
+      </div>
 
       <VisibilityToggles
         value={visibility}
@@ -264,9 +339,11 @@ export function PersonForm({
         disabled={submitting}
       />
 
-      <Button type="submit" disabled={submitting}>
-        {mode === "create" ? "Tạo" : "Lưu"}
-      </Button>
+      <div className="form-actions">
+        <Button type="submit" disabled={submitting}>
+          {mode === "create" ? "Tạo" : "Lưu"}
+        </Button>
+      </div>
     </form>
   );
 }

@@ -30,6 +30,8 @@ function projectPerson(person: any, privileged: boolean, redactLiving: boolean) 
     gender: person.gender,
     birthOrder: redactLiving ? null : person.birthOrder,
     birthYear: birthYearHidden ? null : person.birthYear,
+    phone: privileged && !redactLiving ? person.phone : null,
+    email: privileged && !redactLiving ? person.email : null,
     deathStatus: visible(privileged, person.visDeath) ? person.deathStatus : null,
     adoptionStatus: visible(privileged, person.visAdoption) ? person.adoptionStatus : null,
     visMarital: person.visMarital,

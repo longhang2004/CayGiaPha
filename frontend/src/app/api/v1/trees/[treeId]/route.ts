@@ -68,6 +68,8 @@ export async function GET(
         gender: person.gender,
         birthOrder: redactLiving ? null : person.birthOrder,
         birthYear: birthYearHidden ? null : person.birthYear,
+        phone: privileged && !redactLiving ? person.phone : undefined,
+        email: privileged && !redactLiving ? person.email : undefined,
         deceased: visible(privileged, person.visDeath) ? person.deathStatus : undefined,
         visName: person.visName,
         visBirthYear: person.visBirthYear,

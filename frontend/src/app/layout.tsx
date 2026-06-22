@@ -3,7 +3,7 @@ import type { ReactNode } from "react";
 import "./globals.css";
 import { SessionProvider } from "./providers";
 import { TextSizeProvider } from "@/components/a11y/TextSizeProvider";
-import { HeaderActions } from "@/components/HeaderActions";
+import { AppLayoutWrapper } from "@/components/AppLayoutWrapper";
 
 export const metadata: Metadata = {
   title: "Cây Gia Phả",
@@ -20,15 +20,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
             <a href="#main-content" className="skip-link">
               Bỏ qua tới nội dung chính
             </a>
-            <header className="app-header">
-              <nav className="app-nav" aria-label="Điều hướng chính">
-                <a href="/" className="app-nav__brand">
-                  Cây Gia Phả
-                </a>
-                <HeaderActions />
-              </nav>
-            </header>
-            <main id="main-content">{children}</main>
+            <AppLayoutWrapper>{children}</AppLayoutWrapper>
           </SessionProvider>
         </TextSizeProvider>
       </body>

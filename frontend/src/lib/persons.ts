@@ -45,6 +45,8 @@ export interface CreatePersonInput {
   gender: Gender;
   birthOrder?: number;
   birthYear?: number;
+  phone?: string;
+  email?: string;
   deathStatus?: boolean;
 }
 
@@ -54,6 +56,8 @@ export interface EditPersonInput {
   gender?: Gender;
   birthOrder?: number;
   birthYear?: number;
+  phone?: string;
+  email?: string;
   deathStatus?: boolean;
 }
 

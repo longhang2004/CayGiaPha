@@ -209,7 +209,7 @@ export default function TreePage({ searchParams }: TreePageProps) {
   const isOwner = user?.treeId === activeTreeId;
 
   // Map person option for relation dropdown selection
-  const personOptions = persons.map((p) => ({ id: p.id, displayName: p.displayName }));
+  const personOptions = persons.map((p) => ({ id: p.id, displayName: p.displayName, gender: p.gender }));
 
   // Map selected person's initial values for the edit form
   const selectedInitialValues = selectedPerson

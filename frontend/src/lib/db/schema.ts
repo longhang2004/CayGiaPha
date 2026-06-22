@@ -78,6 +78,8 @@ export const persons = pgTable(
     gender: text("gender").notNull(), // 'male' | 'female'
     birthOrder: integer("birth_order"),
     birthYear: integer("birth_year"),
+    phone: text("phone"),
+    email: text("email"),
     deathStatus: boolean("death_status").notNull().default(false),
     adoptionStatus: boolean("adoption_status"),
     visMarital: text("vis_marital").notNull().default("private"),
