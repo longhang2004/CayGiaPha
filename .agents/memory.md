@@ -8,3 +8,8 @@ Durable project knowledge for future AI agents. Keep entries short, verified, an
 - Product specs live under `.kiro/specs/vietnamese-family-tree/` and should be checked before changing domain behavior.
 - Backend verification command: run `mvn test` from `backend/`.
 - Frontend verification commands: run `npm run typecheck`, `npm test`, `npm run lint`, and `npm run build` from `frontend/` as risk requires.
+
+## 2026-06-22
+
+- Local environment `pnpm` version switcher might fail to switch to the specified version in `package.json` (e.g. `pnpm@11.5.0`) with `ENOENT`. If this happens, use `npx pnpm <command>` as a workaround, which successfully resolves the configured version.
+
