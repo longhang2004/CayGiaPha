@@ -1,0 +1,113 @@
+# AGENTS.md
+
+Shared operating instructions for AI agents working in this repository. These rules apply to Codex, Cursor, Claude, Kiro, Antigravity, OpenCode, and similar coding agents.
+
+## Repository Snapshot
+
+- Product: Vietnamese family tree application with privacy controls and Vietnamese kinship resolution.
+- Backend: Java 21, Spring Boot 3.3.5, PostgreSQL, Flyway, JPA, jqwik, JUnit 5, Testcontainers.
+- Frontend: Next.js 14 App Router, React 18, TypeScript, Vitest, Testing Library, fast-check.
+- Specs: `.kiro/specs/vietnamese-family-tree/requirements.md`, `design.md`, and `tasks.md` are the product source of truth.
+
+## Agent Workflow
+
+1. Start from the smallest useful context.
+2. Check the Kiro spec before changing behavior that affects product requirements, domain rules, privacy, auth, kinship logic, accessibility, or persistence.
+3. Prefer structural navigation over full-file scans. Use Codegraph or an equivalent symbol graph for definitions, callers, callees, impact, and flow tracing.
+4. Use literal search only for strings, comments, config keys, logs, or when a symbol graph is unavailable.
+5. Make surgical changes. Do not refactor adjacent code unless the requested change requires it.
+6. Add or update tests for behavior changes. Prefer property-based tests for kinship invariants and graph invariants.
+7. Run the narrowest verification that proves the change, then broader checks when risk is high.
+8. Record durable repo knowledge in `.agents/memory.md` when a discovery will help future agents avoid repeated exploration.
+
+## RTK Prompt Contract
+
+Use this compact contract before non-trivial work:
+
+```text
+Role: <backend | frontend | full-stack | reviewer | test engineer>
+Task: <specific outcome>
+Knowledge: <spec links, files, symbols, constraints already known>
+Success: <tests/checks that prove completion>
+Constraints: smallest correct change; protect privacy/security; preserve existing style
+```
+
+For implementation tasks, convert vague requests into verifiable goals before editing.
+
+## Codegraph Workflow
+
+Use Codegraph when available:
+
+- `codegraph_context`: first stop for an area or task.
+- `codegraph_search`: find a symbol by name.
+- `codegraph_node`: inspect a symbol signature/source.
+- `codegraph_callers`: understand who depends on a symbol.
+- `codegraph_callees`: understand downstream behavior.
+- `codegraph_trace`: trace a flow from one symbol to another.
+- `codegraph_impact`: check what may break before changing shared symbols.
+
+If Codegraph is not initialized, ask before running initialization. Do not index secrets or generated dependency directories.
+
+## Memory Workflow
+
+Use `.agents/memory.md` as lightweight project memory inspired by claude-mem:
+
+- Add only durable, verified facts that future agents need.
+- Prefer decisions, traps, commands, invariants, and architecture notes.
+- Do not store secrets, credentials, tokens, personal data, or private family data.
+- Keep entries short and dated.
+- Remove or correct stale entries when you prove they are wrong.
+
+## Skill Workflow
+
+Use skills as reusable procedures, not as hidden requirements:
+
+- Keep repo-local skills under `.agents/skills/`.
+- Load or read a skill only when the task matches its description.
+- Prefer a narrow skill over a broad one.
+- If a skill conflicts with `AGENTS.md` or a Kiro spec, follow the Kiro spec for product behavior and `AGENTS.md` for workflow.
+
+Recommended skill categories for this repo:
+
+- `backend-spring`: controllers, services, JPA, Flyway, Testcontainers.
+- `frontend-next`: App Router, React components, API client, accessibility, Vitest.
+- `kinship-domain`: graph edges, asserted vs derived relationships, regional terms, invariants.
+- `security-privacy`: auth, sessions, living-person redaction, audit logs, rate limits.
+
+## Verification Commands
+
+Run commands from the module directory unless noted.
+
+Backend:
+
+```bash
+mvn test
+```
+
+Frontend:
+
+```bash
+npm run typecheck
+npm test
+npm run lint
+npm run build
+```
+
+Prefer targeted tests first when available, then run the broader command before finishing risky changes.
+
+## Domain Guardrails
+
+- Store primitive parent-child and spouse relationships; derive higher-order kinship terms.
+- Treat asserted relationships as opaque until intermediate primitive paths exist.
+- Preserve living-person privacy and redaction behavior.
+- Never leak OTP codes, session tokens, private identifiers, or family data in logs or docs.
+- For regional kinship behavior, check coverage for Bắc, Trung, and Nam.
+- Do not change API contracts, database schema, or privacy behavior without matching tests and migration/spec updates.
+
+## Review Checklist
+
+- Does the change satisfy the relevant Kiro requirement?
+- Is the implementation the smallest correct change?
+- Are tests updated at the right level?
+- Are generated files, secrets, local env files, and dependency directories untouched?
+- Did verification commands run, or is any skipped check explicitly explained?

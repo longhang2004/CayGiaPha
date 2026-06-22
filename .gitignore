@@ -29,3 +29,9 @@ Thumbs.db
 .env.development.local
 .env.test.local
 .env.production.local
+
+# Agent/IDE local metadata and caches
+.antigravity/
+.codex/
+.cursor/
+.kiro/steering/
