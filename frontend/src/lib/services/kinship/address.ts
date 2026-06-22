@@ -1,13 +1,49 @@
 import { db } from "../../db";
 import { regionKinshipTerms, relationships, persons, trees } from "../../db/schema";
-import { eq, and } from "drizzle-orm";
+import { eq, and, sql } from "drizzle-orm";
 import { KinshipGraphProjection, Relationship } from "./projection";
 import { KinshipResolver, CanonicalResolution, CanonicalRelation } from "./resolver";
+import { SEEDED_KINSHIP_TERMS } from "./seededTerms";
 
 export interface AddressResolution {
   status: "RESOLVED" | "ASSERTED" | "UNDEFINED_FOR_REGION" | "UNRESOLVED_NO_PATH" | "UNRESOLVED_INDETERMINATE_ORDER";
   term: string | null;
   relation: CanonicalRelation | null;
+}
+
+let seedingPromise: Promise<void> | null = null;
+
+async function ensureKinshipTermsSeeded() {
+  if (seedingPromise) {
+    return seedingPromise;
+  }
+
+  seedingPromise = (async () => {
+    try {
+      const countResult = await db
+        .select({ count: sql<number>`count(*)` })
+        .from(regionKinshipTerms);
+      const count = Number(countResult[0]?.count ?? 0);
+      if (count > 0) {
+        return;
+      }
+
+      console.log("Seeding region_kinship_terms table in Next.js backend...");
+      
+      // Batch insert in chunks of 50
+      for (let i = 0; i < SEEDED_KINSHIP_TERMS.length; i += 50) {
+        const chunk = SEEDED_KINSHIP_TERMS.slice(i, i + 50);
+        await db.insert(regionKinshipTerms).values(chunk);
+      }
+      console.log("Seeding region_kinship_terms table completed successfully.");
+    } catch (err) {
+      console.error("Failed to seed region_kinship_terms table:", err);
+      seedingPromise = null;
+      throw err;
+    }
+  })();
+
+  return seedingPromise;
 }
 
 // Simple in-memory cache for graph projections to mimic KinshipGraphProjectionCache.
@@ -77,6 +113,8 @@ export class KinshipAddressService {
     egoId: string,
     targetId: string
   ): Promise<AddressResolution> {
+    await ensureKinshipTermsSeeded();
+
     const treeRecord = await db
       .select()
       .from(trees)

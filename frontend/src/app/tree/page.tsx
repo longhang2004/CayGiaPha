@@ -420,6 +420,7 @@ function TreePageContent({ searchParams }: TreePageProps) {
                   <AddRelativeForm
                     treeId={activeTreeId}
                     persons={personOptions}
+                    preselectedPersonId={selectedPerson.id}
                     onCreated={() => {
                       setAddRelativeMode(false);
                       refreshTree();

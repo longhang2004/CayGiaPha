@@ -36,12 +36,18 @@ export interface PersonOption {
 
 type Mode = "derived" | "asserted";
 
-type DerivedKind = DerivedRelativeInput["type"];
+type DerivedKind =
+  | "bloodline_father"
+  | "bloodline_mother"
+  | "bloodline_father_reverse"
+  | "bloodline_mother_reverse"
+  | "marriage";
 
 interface AddRelativeFormProps {
   treeId: string;
   /** Persons selectable as the relationship endpoints. */
   persons: PersonOption[];
+  preselectedPersonId?: string;
   onCreated?: (relationshipId: string) => void;
 }
 
@@ -51,13 +57,23 @@ function parseOptionalInt(value: string): number | undefined {
   return Number.isFinite(n) ? n : undefined;
 }
 
-export function AddRelativeForm({ treeId, persons, onCreated }: AddRelativeFormProps) {
+export function AddRelativeForm({ treeId, persons, preselectedPersonId, onCreated }: AddRelativeFormProps) {
   const [mode, setMode] = useState<Mode>("derived");
   const [derivedKind, setDerivedKind] = useState<DerivedKind>("bloodline_father");
   const [maritalStatus, setMaritalStatus] = useState<MaritalStatus>("married");
-  const [sourceId, setSourceId] = useState(persons[0]?.id ?? "");
-  const [targetId, setTargetId] = useState(persons[1]?.id ?? persons[0]?.id ?? "");
+  
+  const [sourceId, setSourceId] = useState("");
+  const [targetId, setTargetId] = useState("");
   const [assertedLabel, setAssertedLabel] = useState("");
+
+  // Sync with preselectedPersonId or persons list
+  useEffect(() => {
+    const initialSource = preselectedPersonId ?? persons[0]?.id ?? "";
+    setSourceId(initialSource);
+    
+    const initialTarget = persons.find((p) => p.id !== initialSource)?.id ?? initialSource;
+    setTargetId(initialTarget);
+  }, [preselectedPersonId, persons]);
 
   // New relative creation state
   const [isNewPerson, setIsNewPerson] = useState(false);
@@ -95,7 +111,11 @@ export function AddRelativeForm({ treeId, persons, onCreated }: AddRelativeFormP
           }
         } else {
           // newPersonPosition === "target"
-          if (derivedKind === "marriage") {
+          if (derivedKind === "bloodline_father_reverse") {
+            setNewGender("male");
+          } else if (derivedKind === "bloodline_mother_reverse") {
+            setNewGender("female");
+          } else if (derivedKind === "marriage") {
             // Pre-select opposite gender of source (existing spouse)
             const sourcePerson = persons.find((p) => p.id === sourceId);
             if (sourcePerson?.gender) {
@@ -124,9 +144,15 @@ export function AddRelativeForm({ treeId, persons, onCreated }: AddRelativeFormP
         }
 
         let finalGender = newGender;
-        if (mode === "derived" && newPersonPosition === "source") {
-          if (derivedKind === "bloodline_father") finalGender = "male";
-          if (derivedKind === "bloodline_mother") finalGender = "female";
+        if (mode === "derived") {
+          if (newPersonPosition === "source") {
+            if (derivedKind === "bloodline_father") finalGender = "male";
+            if (derivedKind === "bloodline_mother") finalGender = "female";
+          } else {
+            // target
+            if (derivedKind === "bloodline_father_reverse") finalGender = "male";
+            if (derivedKind === "bloodline_mother_reverse") finalGender = "female";
+          }
         }
 
         const order = parseOptionalInt(newBirthOrder);
@@ -162,11 +188,31 @@ export function AddRelativeForm({ treeId, persons, onCreated }: AddRelativeFormP
 
       // 4. Create relationship
       if (mode === "derived") {
+        let finalType: "bloodline_father" | "bloodline_mother" | "marriage" = "bloodline_father";
+        let finalSourceId = activeSourceId;
+        let finalTargetId = activeTargetId;
+
+        if (derivedKind === "bloodline_father") {
+          finalType = "bloodline_father";
+        } else if (derivedKind === "bloodline_father_reverse") {
+          finalType = "bloodline_father";
+          finalSourceId = activeTargetId;
+          finalTargetId = activeSourceId;
+        } else if (derivedKind === "bloodline_mother") {
+          finalType = "bloodline_mother";
+        } else if (derivedKind === "bloodline_mother_reverse") {
+          finalType = "bloodline_mother";
+          finalSourceId = activeTargetId;
+          finalTargetId = activeSourceId;
+        } else if (derivedKind === "marriage") {
+          finalType = "marriage";
+        }
+
         const result = await addDerivedRelative({
           treeId,
-          type: derivedKind,
-          sourceId: activeSourceId,
-          targetId: activeTargetId,
+          type: finalType,
+          sourceId: finalSourceId,
+          targetId: finalTargetId,
           ...(derivedKind === "marriage" ? { maritalStatus } : {}),
         });
         setConflicts(result.conflicts);
@@ -197,8 +243,10 @@ export function AddRelativeForm({ treeId, persons, onCreated }: AddRelativeFormP
   // Determine if gender field should be read-only based on relationship type
   const isGenderFixed =
     mode === "derived" &&
-    newPersonPosition === "source" &&
-    (derivedKind === "bloodline_father" || derivedKind === "bloodline_mother");
+    ((newPersonPosition === "source" &&
+      (derivedKind === "bloodline_father" || derivedKind === "bloodline_mother")) ||
+     (newPersonPosition === "target" &&
+      (derivedKind === "bloodline_father_reverse" || derivedKind === "bloodline_mother_reverse")));
 
   return (
     <form onSubmit={handleSubmit} aria-label="Thêm người thân">
@@ -308,9 +356,11 @@ export function AddRelativeForm({ treeId, persons, onCreated }: AddRelativeFormP
               value={derivedKind}
               onChange={(e) => setDerivedKind(e.target.value as DerivedKind)}
             >
-              <option value="bloodline_father">Cha - con</option>
-              <option value="bloodline_mother">Mẹ - con</option>
-              <option value="marriage">Vợ chồng</option>
+              <option value="bloodline_father">Từ người là CHA của Đến người</option>
+              <option value="bloodline_father_reverse">Từ người là CON của Đến người (Đến người là CHA)</option>
+              <option value="bloodline_mother">Từ người là MẸ của Đến người</option>
+              <option value="bloodline_mother_reverse">Từ người là CON của Đến người (Đến người là MẸ)</option>
+              <option value="marriage">Từ người và Đến người là VỢ CHỒNG</option>
             </select>
           </div>
           {derivedKind === "marriage" ? (
