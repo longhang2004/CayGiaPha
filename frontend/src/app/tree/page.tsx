@@ -148,15 +148,18 @@ export default function TreePage({ searchParams }: TreePageProps) {
 
   if (sessionLoading || (loadingData && persons.length === 0)) {
     return (
-      <section style={{ maxWidth: "42rem", margin: "4rem auto", textAlign: "center" }}>
-        <p>Đang tải sơ đồ gia phả…</p>
+      <section className="center-state" aria-live="polite">
+        <div className="center-state__card">
+          <span className="center-state__spinner" aria-hidden="true" />
+          <p>Đang tải sơ đồ gia phả…</p>
+        </div>
       </section>
     );
   }
 
   if (!activeTreeId) {
     return (
-      <section style={{ maxWidth: "42rem", margin: "4rem auto", textAlign: "center" }}>
+      <section className="center-state">
         <h1>Cây gia phả</h1>
         <p>Bạn cần đăng nhập và có cây gia phả để xem sơ đồ.</p>
       </section>
@@ -165,9 +168,9 @@ export default function TreePage({ searchParams }: TreePageProps) {
 
   if (error) {
     return (
-      <section style={{ maxWidth: "42rem", margin: "4rem auto", textAlign: "center" }}>
+      <section className="center-state">
         <h1>Lỗi tải sơ đồ</h1>
-        <p style={{ color: "var(--color-accent)", marginBottom: "2rem" }}>{error}</p>
+        <p className="center-state__error">{error}</p>
         <button type="button" className="btn" onClick={refreshTree}>Thử lại</button>
       </section>
     );
@@ -175,13 +178,21 @@ export default function TreePage({ searchParams }: TreePageProps) {
 
   if (persons.length === 0) {
     return (
-      <section style={{ maxWidth: "40rem", margin: "4rem auto" }}>
-        <h1>Bắt đầu cây gia phả của bạn</h1>
-        <p style={{ marginBottom: "2rem" }}>
-          Sơ đồ gia phả của bạn hiện chưa có thành viên nào. Hãy thêm thành viên đầu tiên
-          (ví dụ: bản thân bạn hoặc người lớn tuổi nhất trong dòng họ) để bắt đầu.
-        </p>
-        <div style={{ background: "white", padding: "2rem", borderRadius: "12px", border: "1px solid var(--color-hairline)" }}>
+      <section className="empty-tree">
+        <div className="empty-tree__intro">
+          <p className="eyebrow">Dành cho người mới</p>
+          <h1>Bắt đầu cây gia phả của bạn</h1>
+          <p>
+            Sơ đồ gia phả của bạn hiện chưa có thành viên nào. Hãy thêm thành viên đầu tiên
+            (ví dụ: bản thân bạn hoặc người lớn tuổi nhất trong dòng họ) để bắt đầu.
+          </p>
+        </div>
+        <div className="onboarding-strip" aria-label="Các bước gợi ý">
+          <span>1. Nhập tên</span>
+          <span>2. Chọn giới tính</span>
+          <span>3. Bấm lưu</span>
+        </div>
+        <div className="surface-card empty-tree__form">
           <PersonForm
             mode="create"
             treeId={activeTreeId}
@@ -220,9 +231,13 @@ export default function TreePage({ searchParams }: TreePageProps) {
     : undefined;
 
   return (
-    <section style={{ maxWidth: "100%", margin: "0 auto" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.5rem" }}>
-        <h1>Sơ đồ gia phả</h1>
+    <section className="tree-workspace">
+      <div className="tree-workspace__header">
+        <div>
+          <p className="eyebrow">{persons.length} thành viên</p>
+          <h1>Sơ đồ gia phả</h1>
+          <p className="tree-workspace__hint">Chọn một người trên sơ đồ để xem chi tiết, sửa thông tin hoặc thêm người thân.</p>
+        </div>
         {isOwner && (
           <button
             type="button"
@@ -239,9 +254,15 @@ export default function TreePage({ searchParams }: TreePageProps) {
         )}
       </div>
 
-      <div style={{ display: "flex", gap: "2rem", flexWrap: "wrap" }}>
+      <div className="onboarding-strip onboarding-strip--workspace" aria-label="Gợi ý sử dụng sơ đồ">
+        <span>Chọn người để xem chi tiết</span>
+        <span>Đổi góc nhìn để tính xưng hô</span>
+        {isOwner ? <span>Thêm quan hệ từ bảng bên phải</span> : <span>Bạn đang xem theo quyền chia sẻ</span>}
+      </div>
+
+      <div className="tree-workspace__layout">
         {/* Main interactive SVG graph area */}
-        <div style={{ flex: "1 1 48rem", minWidth: 0 }}>
+        <div className="tree-workspace__graph">
           <TreeGraph
             treeId={activeTreeId}
             persons={persons}
@@ -257,11 +278,11 @@ export default function TreePage({ searchParams }: TreePageProps) {
         </div>
 
         {/* Action and configuration sidebar */}
-        <div style={{ flex: "0 0 24rem", width: "24rem", display: "flex", flexDirection: "column", gap: "1.5rem" }}>
+        <div className="tree-workspace__sidebar">
           
           {/* Section 1: Selected Node Operations */}
-          <div style={{ background: "white", padding: "1.5rem", borderRadius: "12px", border: "1px solid var(--color-hairline)" }}>
-            <h3 style={{ marginTop: 0, borderBottom: "1px solid var(--color-hairline-soft)", paddingBottom: "0.5rem" }}>
+          <div className="surface-card side-panel">
+            <h3 className="side-panel__title">
               {selectedPerson ? selectedPerson.displayName : "Thành viên sơ đồ"}
             </h3>
 
@@ -424,8 +445,8 @@ export default function TreePage({ searchParams }: TreePageProps) {
           </div>
 
           {/* Section 2: Search & Filter */}
-          <div style={{ background: "white", padding: "1.5rem", borderRadius: "12px", border: "1px solid var(--color-hairline)" }}>
-            <h3 style={{ marginTop: 0, borderBottom: "1px solid var(--color-hairline-soft)", paddingBottom: "0.5rem" }}>
+          <div className="surface-card side-panel">
+            <h3 className="side-panel__title">
               Tìm kiếm & Lọc
             </h3>
             <SearchPanel
@@ -441,8 +462,8 @@ export default function TreePage({ searchParams }: TreePageProps) {
 
           {/* Section 3: Tree Configurations (Owner only) */}
           {isOwner && (
-            <div style={{ background: "white", padding: "1.5rem", borderRadius: "12px", border: "1px solid var(--color-hairline)", display: "flex", flexDirection: "column", gap: "1rem" }}>
-              <h3 style={{ marginTop: 0, borderBottom: "1px solid var(--color-hairline-soft)", paddingBottom: "0.5rem", marginBottom: 0 }}>
+            <div className="surface-card side-panel side-panel--stacked">
+              <h3 className="side-panel__title side-panel__title--flush">
                 Cấu hình dòng họ
               </h3>
 

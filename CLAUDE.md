@@ -2,6 +2,8 @@
 
 Behavioral guidelines to reduce common LLM coding mistakes. Merge with project-specific instructions as needed.
 
+Also follow `AGENTS.md` for the shared repository workflow used by Codex, Cursor, Claude, Kiro, Antigravity, and OpenCode. `AGENTS.md` contains the Codegraph workflow, RTK prompt contract, memory rules, repo-local skills, verification commands, and CayGiaPha domain guardrails.
+
 **Tradeoff:** These guidelines bias toward caution over speed. For trivial tasks, use judgment.
 
 ## 1. Think Before Coding
