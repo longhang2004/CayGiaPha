@@ -4,6 +4,7 @@ import {
   STROKE_DASHARRAY,
   UNRESOLVED_LABEL,
   addressLabel,
+  capitalize,
   edgeStyleFor,
   fetchViewpointAddresses,
   indexAddresses,
@@ -78,6 +79,18 @@ describe("address helpers", () => {
   it("returns the resolved term for a resolved address (8.1)", () => {
     expect(isUnresolved(resolved)).toBe(false);
     expect(addressLabel(resolved)).toBe("bác");
+  });
+
+  describe("capitalize", () => {
+    it("capitalizes the first letter of lowercase strings", () => {
+      expect(capitalize("ba")).toBe("Ba");
+      expect(capitalize("ông nội")).toBe("Ông nội");
+    });
+
+    it("handles empty or falsy strings gracefully", () => {
+      expect(capitalize("")).toBe("");
+      expect(capitalize(undefined as any)).toBe("");
+    });
   });
 });
 

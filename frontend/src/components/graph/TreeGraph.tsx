@@ -22,6 +22,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   addressLabel,
+  capitalize,
   fetchViewpointAddresses,
   indexAddresses,
   isUnresolved,
@@ -340,8 +341,12 @@ export function TreeGraph({
                 const address = addresses.get(person.id);
                 const isEgo = person.id === activeEgoId;
                 const isSelected = person.id === activeSelectedId;
-                const label = isEgo ? "Bản thân" : addressLabel(address);
-                const unresolved = !isEgo && isUnresolved(address);
+                const label = isEgo
+                  ? "Bản thân"
+                  : loading || addresses.size === 0
+                  ? ""
+                  : capitalize(addressLabel(address));
+                const unresolved = !isEgo && !loading && addresses.size > 0 && isUnresolved(address);
 
                 return (
                   <g

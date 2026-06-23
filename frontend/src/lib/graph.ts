@@ -138,6 +138,12 @@ export function addressLabel(address: Address | undefined): string {
   return address!.resolved as string;
 }
 
+/** Capitalize the first letter of a string. */
+export function capitalize(str: string): string {
+  if (!str) return "";
+  return str.charAt(0).toUpperCase() + str.slice(1);
+}
+
 /** Build a lookup of personId → Address from a viewpoint result. */
 export function indexAddresses(result: ViewpointAddresses): Map<string, Address> {
   const map = new Map<string, Address>();

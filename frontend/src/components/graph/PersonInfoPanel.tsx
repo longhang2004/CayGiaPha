@@ -4,7 +4,7 @@
  * unresolved indicator is shown (8.7 / 10.3).
  */
 
-import { addressLabel, isUnresolved, type Address, type Person } from "@/lib/graph";
+import { addressLabel, capitalize, isUnresolved, type Address, type Person } from "@/lib/graph";
 import { Skeleton } from "@/components/ui/Skeleton";
 
 export interface PersonInfoPanelProps {
@@ -76,7 +76,7 @@ export function PersonInfoPanel({ person, ego, address, loading, hideHeading = f
         <div>
           <dt>Cách xưng hô{ego ? ` (${ego.displayName} gọi)` : ""}</dt>
           <dd data-address data-unresolved={unresolved ? "true" : "false"}>
-            {isSelf ? "Bản thân" : addressLabel(address)}
+            {isSelf ? "Bản thân" : capitalize(addressLabel(address))}
           </dd>
         </div>
       </dl>

@@ -137,7 +137,7 @@ describe("TreeGraph renderer", () => {
     const panel = screen.getByRole("complementary");
     expect(within(panel).getByRole("heading", { name: "Bố" })).toBeInTheDocument();
     const address = panel.querySelector("[data-address]")!;
-    expect(address).toHaveTextContent("con");
+    expect(address).toHaveTextContent("Con");
     expect(address).toHaveAttribute("data-unresolved", "false");
   });
 
@@ -200,7 +200,7 @@ describe("TreeGraph renderer", () => {
     // Initial viewpoint p1: p2's node shows "con".
     await waitFor(() => {
       const node = document.querySelector('.tree-graph__node[data-person-id="p2"] [data-address]');
-      expect(node).toHaveTextContent("con");
+      expect(node).toHaveTextContent("Con");
     });
     expect(fetchAddresses).toHaveBeenCalledWith("t1", "p1", expect.anything());
 
@@ -214,14 +214,14 @@ describe("TreeGraph renderer", () => {
     // backend was queried for the new ego (10.1, 10.2).
     await waitFor(() => {
       const node = document.querySelector('.tree-graph__node[data-person-id="p1"] [data-address]');
-      expect(node).toHaveTextContent("bố");
+      expect(node).toHaveTextContent("Bố");
     });
     expect(fetchAddresses).toHaveBeenCalledWith("t1", "p2", expect.anything());
 
     // p4's displayed address updated from "anh" (ego p1) to "bác" (ego p2).
     await waitFor(() => {
       const node = document.querySelector('.tree-graph__node[data-person-id="p4"] [data-address]');
-      expect(node).toHaveTextContent("bác");
+      expect(node).toHaveTextContent("Bác");
     });
   });
 
