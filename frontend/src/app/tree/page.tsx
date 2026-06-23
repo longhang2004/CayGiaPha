@@ -49,6 +49,7 @@ function TreePageContent({ searchParams }: TreePageProps) {
 
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [selectedAddress, setSelectedAddress] = useState<Address | undefined>(undefined);
+  const [addresses, setAddresses] = useState<Map<string, Address>>(new Map());
   const [selectedEgo, setSelectedEgo] = useState<Person | null>(null);
   const [editMode, setEditMode] = useState(false);
   const [addRelativeMode, setAddRelativeMode] = useState(false);
@@ -339,6 +340,9 @@ function TreePageContent({ searchParams }: TreePageProps) {
           <div className="surface-card tree-workspace__toolbar-container">
             <SearchPanel
               treeId={activeTreeId}
+              persons={persons}
+              addresses={addresses}
+              egoId={egoId}
               viewpointId={selectedId || undefined}
               onSelectResult={(id) => {
                 setSelectedId(id);
@@ -380,6 +384,7 @@ function TreePageContent({ searchParams }: TreePageProps) {
               egoId={egoId}
               onEgoChange={setEgoId}
               onAddressLoading={setAddressLoading}
+              onAddressesLoaded={setAddresses}
               hideViewpointSelector={true}
             />
           </div>

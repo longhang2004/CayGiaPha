@@ -155,7 +155,10 @@ main {
   gap: clamp(1.5rem, 5vw, 4rem);
   align-items: center;
   min-height: calc(100vh - 10rem);
-  padding: clamp(2rem, 6vw, 5rem) 0;
+  padding: clamp(2rem, 6vw, 5rem) var(--space-md);
+  max-width: 70rem;
+  margin: 0 auto;
+  width: 100%;
 }
 
 .home-hero__content h1 {
@@ -1175,20 +1178,62 @@ fieldset .field {
 
 .search-panel-toolbar__fields {
   display: flex;
-  align-items: flex-end;
-  gap: var(--space-sm);
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
   flex-wrap: wrap;
 }
 
 .search-panel-toolbar__fields .field.search-field {
   flex: 1;
-  min-width: 180px;
+  min-width: 220px;
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
   margin-bottom: 0;
+}
+
+.search-input-wrapper {
+  position: relative;
+  flex: 1;
+}
+
+.search-input-wrapper input {
+  width: 100%;
+  margin: 0;
+}
+
+.search-panel-toolbar__fields .filter-toggle-btn {
+  padding: 0 0.75rem;
+  min-width: 44px;
+  margin-bottom: 0;
+}
+
+.search-panel-toolbar__viewpoint {
+  display: flex;
+  align-items: center;
+}
+
+.search-panel-toolbar__fields .add-member-btn {
+  margin-left: auto;
+  white-space: nowrap;
 }
 
 .search-panel-toolbar__fields .btn {
   margin-bottom: 0;
   padding: 0.625rem 1.125rem;
+}
+
+/* Under 1150px (with sidebar open), let the search field take full width,
+ * wrapping the viewpoint and add member buttons to the next row cleanly. */
+@media (max-width: 1150px) {
+  .search-panel-toolbar__fields .field.search-field {
+    flex: 1 1 100%;
+    width: 100%;
+  }
+  .search-panel-toolbar__fields .add-member-btn {
+    margin-left: auto;
+  }
 }
 
 .filter-toggle-btn--active {

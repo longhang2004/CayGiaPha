@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, type FormEvent } from "react";
+import { useState, useEffect, useRef, useMemo, useCallback, type FormEvent } from "react";
 import { ApiError } from "@/lib/apiClient";
 import {
   searchTree,
@@ -9,6 +9,7 @@ import {
   type SearchResult,
 } from "@/lib/search";
 import { Button } from "@/components/Button";
+import { type Person, type Address, addressLabel } from "@/lib/graph";
 
 /**
  * Redesigned Search & Filter Toolbar (Requirement 16.x).
@@ -19,6 +20,9 @@ import { Button } from "@/components/Button";
 
 interface SearchPanelProps {
   treeId: string;
+  persons?: Person[];
+  addresses?: Map<string, Address>;
+  egoId?: string | null;
   /** Current viewpoint (ego) used for address search and side filtering. */
   viewpointId?: string;
   /** Notifies the parent when a result is chosen (e.g. to focus the node). */
@@ -47,6 +51,9 @@ function parseOptionalInt(value: string): number | undefined {
 
 export function SearchPanel({
   treeId,
+  persons,
+  addresses,
+  egoId,
   viewpointId,
   onSelectResult,
   onAddMember,
@@ -84,7 +91,7 @@ export function SearchPanel({
     };
   }, []);
 
-  const hasActiveFilters = () => {
+  const hasActiveFilters = useCallback(() => {
     return (
       gender !== "" ||
       side !== "" ||
@@ -94,7 +101,7 @@ export function SearchPanel({
       claimedStatus !== "" ||
       relationshipType !== ""
     );
-  };
+  }, [gender, side, birthYearMin, birthYearMax, deathStatus, claimedStatus, relationshipType]);
 
   const handleResetFilters = () => {
     setGender("");
@@ -110,7 +117,7 @@ export function SearchPanel({
     return fieldErrors[field] ? `${field}-error` : undefined;
   }
 
-  function buildFilters(): SearchFilters {
+  const buildFilters = useCallback((): SearchFilters => {
     const filters: SearchFilters = {};
     if (gender === "male" || gender === "female") filters.gender = gender;
     if (side === "paternal" || side === "maternal") filters.side = side;
@@ -132,7 +139,105 @@ export function SearchPanel({
       filters.relationshipType = relationshipType;
     }
     return filters;
-  }
+  }, [gender, side, birthYearMin, birthYearMax, deathStatus, claimedStatus, relationshipType]);
+
+  // Local diacritic-insensitive search matching display name or relationship term
+  const performFrontendSearch = useCallback((query: string): SearchResult[] => {
+    const min = parseOptionalInt(birthYearMin);
+    const max = parseOptionalInt(birthYearMax);
+    if (min !== undefined && max !== undefined && min > max) {
+      setFieldErrors({ birthYearMin: "Khoảng năm không hợp lệ" });
+      throw new Error("Khoảng năm không hợp lệ");
+    }
+
+    const normQuery = query
+      ? query.trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/đ/g, "d")
+      : "";
+
+    const activeFilters = buildFilters();
+    const addressesMap = addresses || new Map<string, Address>();
+
+    return (persons || [])
+      .filter((person) => {
+        // Filter by gender
+        if (activeFilters.gender && person.gender !== activeFilters.gender) {
+          return false;
+        }
+
+        // Filter by birth year min
+        if (activeFilters.birthYearMin !== undefined) {
+          if (person.birthYear === null || person.birthYear === undefined || person.birthYear < activeFilters.birthYearMin) {
+            return false;
+          }
+        }
+
+        // Filter by birth year max
+        if (activeFilters.birthYearMax !== undefined) {
+          if (person.birthYear === null || person.birthYear === undefined || person.birthYear > activeFilters.birthYearMax) {
+            return false;
+          }
+        }
+
+        // Filter by deathStatus
+        if (activeFilters.deathStatus !== undefined) {
+          const isDeceased = !!person.deceased;
+          if (isDeceased !== activeFilters.deathStatus) {
+            return false;
+          }
+        }
+
+        // Search match
+        if (normQuery) {
+          const normName = person.displayName
+            ? person.displayName.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/đ/g, "d")
+            : "";
+
+          const isEgo = person.id === (egoId || viewpointId);
+          const address = addressesMap.get(person.id);
+          const label = isEgo ? "bản thân" : (address ? addressLabel(address) : "");
+          const normLabel = label
+            ? label.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/đ/g, "d")
+            : "";
+
+          const matchesName = normName.includes(normQuery);
+          const matchesLabel = normLabel.includes(normQuery);
+
+          if (!matchesName && !matchesLabel) {
+            return false;
+          }
+        }
+
+        return true;
+      })
+      .map((person) => ({
+        personId: person.id,
+        displayName: person.displayName,
+      }));
+  }, [birthYearMin, birthYearMax, buildFilters, persons, addresses, egoId, viewpointId]);
+
+  // Run frontend search reactively as user types or adjusts filters
+  useEffect(() => {
+    if (!persons) return;
+
+    const query = searchQuery.trim();
+    if (!query && !hasActiveFilters()) {
+      setResults(null);
+      setNoMatches(false);
+      return;
+    }
+
+    try {
+      setFieldErrors({});
+      setFormError(null);
+      const res = performFrontendSearch(query);
+      setResults(res);
+      setNoMatches(res.length === 0);
+    } catch (error: any) {
+      setResults(null);
+      setNoMatches(false);
+      setFormError(error.message || "Không thể tìm kiếm.");
+    }
+  }, [searchQuery, persons, hasActiveFilters, performFrontendSearch]);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -141,6 +246,24 @@ export function SearchPanel({
     setSubmitting(true);
 
     const query = searchQuery.trim();
+
+    if (persons) {
+      try {
+        const res = performFrontendSearch(query);
+        setResults(res);
+        setNoMatches(res.length === 0);
+        setShowDropdown(true);
+      } catch (error: any) {
+        setResults(null);
+        setNoMatches(false);
+        setFormError(error.message || "Không thể tìm kiếm.");
+        setShowDropdown(true);
+      } finally {
+        setSubmitting(false);
+      }
+      return;
+    }
+
     const useAddressQuery = viewpointId && isAddressQuery(query);
 
     const request: SearchRequest = {
@@ -182,9 +305,9 @@ export function SearchPanel({
           ) : null}
 
           {/* Row 1 — Toolbar chính */}
-          <div className="search-panel-toolbar__fields" style={{ display: "flex", gap: "0.75rem", alignItems: "center", width: "100%", flexWrap: "wrap" }}>
-            <div className="field search-field" style={{ flex: 1, minWidth: "220px", display: "flex", gap: "0.5rem", alignItems: "center" }}>
-              <div style={{ position: "relative", flex: 1 }}>
+          <div className="search-panel-toolbar__fields">
+            <div className="field search-field">
+              <div className="search-input-wrapper">
                 {/* Two sr-only labels pointing to the same input to support test queries */}
                 <label htmlFor="nameQuery" className="sr-only">Tên</label>
                 <label htmlFor="nameQuery" className="sr-only">Cách xưng hô</label>
@@ -200,7 +323,6 @@ export function SearchPanel({
                     setSearchQuery(e.target.value);
                     if (e.target.value) setShowDropdown(true);
                   }}
-                  style={{ width: "100%", margin: 0 }}
                 />
               </div>
 
@@ -209,20 +331,19 @@ export function SearchPanel({
                 className={`btn btn-secondary filter-toggle-btn ${hasActiveFilters() ? "filter-toggle-btn--active" : ""}`}
                 onClick={() => setIsFilterDropdownOpen(!isFilterDropdownOpen)}
                 aria-expanded={isFilterDropdownOpen}
-                style={{ padding: "0 0.75rem", minWidth: "44px" }}
                 aria-label="Lọc"
                 title="Bộ lọc"
               >
                 ⚙ {hasActiveFilters() ? "•" : ""}
               </button>
 
-              <button type="submit" className="btn search-submit-btn" disabled={submitting} style={{ margin: 0 }}>
+              <button type="submit" className="btn search-submit-btn" disabled={submitting}>
                 Tìm
               </button>
             </div>
 
             {viewpointSelector && (
-              <div className="search-panel-toolbar__viewpoint" style={{ display: "flex", alignItems: "center" }}>
+              <div className="search-panel-toolbar__viewpoint">
                 {viewpointSelector}
               </div>
             )}
@@ -232,7 +353,6 @@ export function SearchPanel({
                 type="button"
                 className="btn add-member-btn"
                 onClick={onAddMember}
-                style={{ marginLeft: "auto", whiteSpace: "nowrap" }}
               >
                 + Thêm thành viên
               </button>

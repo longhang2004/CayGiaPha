@@ -57,6 +57,7 @@ export interface TreeGraphProps {
   onEgoChange?: (id: string) => void;
   onAddressLoading?: (loading: boolean) => void;
   hideViewpointSelector?: boolean;
+  onAddressesLoaded?: (addresses: Map<string, Address>) => void;
 }
 
 const NODE_WIDTH = 160;
@@ -76,6 +77,7 @@ export function TreeGraph({
   onEgoChange,
   onAddressLoading,
   hideViewpointSelector = false,
+  onAddressesLoaded,
 }: TreeGraphProps) {
   const firstId = persons[0]?.id ?? "";
   const [internalEgoId, setInternalEgoId] = useState<string>(initialEgoId ?? firstId);
@@ -113,6 +115,7 @@ export function TreeGraph({
   useEffect(() => {
     if (!activeEgoId) {
       setAddresses(new Map());
+      onAddressesLoaded?.(new Map());
       return;
     }
     const requestId = ++requestRef.current;
@@ -126,7 +129,9 @@ export function TreeGraph({
         if (requestId !== requestRef.current) {
           return;
         }
-        setAddresses(indexAddresses(result));
+        const indexed = indexAddresses(result);
+        setAddresses(indexed);
+        onAddressesLoaded?.(indexed);
       })
       .catch((err: unknown) => {
         if (requestId !== requestRef.current) {
@@ -137,6 +142,7 @@ export function TreeGraph({
         }
         setError("Không tải được cách xưng hô cho góc nhìn này.");
         setAddresses(new Map());
+        onAddressesLoaded?.(new Map());
       })
       .finally(() => {
         if (requestId === requestRef.current) {
@@ -147,7 +153,7 @@ export function TreeGraph({
     return () => {
       controller.abort();
     };
-  }, [treeId, activeEgoId, fetchAddresses]);
+  }, [treeId, activeEgoId, fetchAddresses, onAddressesLoaded]);
 
   useEffect(() => {
     onSelectAddress?.(activeSelectedId ? addresses.get(activeSelectedId) : undefined);

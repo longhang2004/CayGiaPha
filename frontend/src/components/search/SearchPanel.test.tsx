@@ -111,4 +111,38 @@ describe("SearchPanel", () => {
     expect(await screen.findByText("Khoảng năm không hợp lệ")).toBeInTheDocument();
     expect(screen.getByLabelText("Năm sinh từ")).toHaveAttribute("aria-invalid", "true");
   });
+
+  it("filters locally on the frontend when persons and addresses are supplied", async () => {
+    const personsList = [
+      { id: "p1", displayName: "Hàng Hữu Phương", gender: "male" as const, birthYear: 1960 },
+      { id: "p2", displayName: "Phạm Thị Cẩm Tú", gender: "female" as const, birthYear: 1965 },
+    ];
+    const addressesMap = new Map([
+      ["p1", { personId: "p1", resolved: "ba", status: "resolved" }],
+      ["p2", { personId: "p2", resolved: "má", status: "resolved" }],
+    ]);
+
+    const selectMock = vi.fn();
+
+    render(
+      <SearchPanel
+        treeId="t1"
+        persons={personsList}
+        addresses={addressesMap}
+        onSelectResult={selectMock}
+      />
+    );
+
+    // Search for "ba"
+    await userEvent.type(screen.getByLabelText("Tên"), "ba");
+    await userEvent.click(screen.getByRole("button", { name: "Tìm" }));
+
+    // Hàng Hữu Phương should appear as his address matches "ba"
+    const resultItem = await screen.findByText("Hàng Hữu Phương");
+    expect(resultItem).toBeInTheDocument();
+
+    // Clicking on it should trigger select callback
+    await userEvent.click(resultItem);
+    expect(selectMock).toHaveBeenCalledWith("p1");
+  });
 });
