@@ -5,11 +5,13 @@
  */
 
 import { addressLabel, isUnresolved, type Address, type Person } from "@/lib/graph";
+import { Skeleton } from "@/components/ui/Skeleton";
 
 export interface PersonInfoPanelProps {
   person: Person | null;
   ego: Person | null;
   address: Address | undefined;
+  loading?: boolean;
 }
 
 const GENDER_LABEL: Record<string, string> = {
@@ -17,7 +19,19 @@ const GENDER_LABEL: Record<string, string> = {
   female: "Nữ",
 };
 
-export function PersonInfoPanel({ person, ego, address }: PersonInfoPanelProps) {
+export function PersonInfoPanel({ person, ego, address, loading }: PersonInfoPanelProps) {
+  if (loading) {
+    return (
+      <aside className="person-info" aria-live="polite" aria-busy="true">
+        <Skeleton variant="text" width="70%" height="1.5rem" />
+        <Skeleton variant="text" width="40%" />
+        <Skeleton variant="text" width="55%" />
+        <Skeleton variant="text" width="50%" />
+        <Skeleton variant="rect" height="2.5rem" style={{ marginTop: "1rem" }} />
+      </aside>
+    );
+  }
+
   if (!person) {
     return (
       <aside className="person-info" aria-live="polite">
@@ -47,8 +61,8 @@ export function PersonInfoPanel({ person, ego, address }: PersonInfoPanelProps) 
         ) : null}
         {person.birthOrder != null ? (
           <div>
-            <dt>Vai vế (thứ tự sinh)</dt>
-            <dd>{person.birthOrder}</dd>
+            <dt>Thứ tự trong gia đình</dt>
+            <dd>Con thứ {person.birthOrder}</dd>
           </div>
         ) : null}
         {person.deceased != null ? (

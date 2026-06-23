@@ -13,6 +13,8 @@ import { PersonPhotos } from "@/components/photos/PersonPhotos";
 import { TextSizeControl } from "@/components/a11y/TextSizeControl";
 import { SignOutButton } from "@/components/auth/SignOutButton";
 import { PersonInfoPanel } from "@/components/graph/PersonInfoPanel";
+import { ViewpointSelector } from "@/components/graph/ViewpointSelector";
+import { TreeGraphSkeleton } from "@/components/graph/TreeGraphSkeleton";
 import { api, ApiError } from "@/lib/apiClient";
 import type { Person, Relationship, Address } from "@/lib/graph";
 import type { Region } from "@/lib/region";
@@ -51,6 +53,20 @@ function TreePageContent({ searchParams }: TreePageProps) {
   const [editMode, setEditMode] = useState(false);
   const [addRelativeMode, setAddRelativeMode] = useState(false);
   const [createMode, setCreateMode] = useState(false);
+
+  const [addressLoading, setAddressLoading] = useState(false);
+  const [overflowOpen, setOverflowOpen] = useState(false);
+  const [egoId, setEgoId] = useState<string>("");
+
+  useEffect(() => {
+    if (persons.length > 0 && !egoId) {
+      setEgoId(persons[0].id);
+    }
+  }, [persons, egoId]);
+
+  useEffect(() => {
+    setOverflowOpen(false);
+  }, [selectedId]);
 
   const [updatingSharing, setUpdatingSharing] = useState(false);
   const [updatingRedaction, setUpdatingRedaction] = useState(false);
@@ -186,14 +202,7 @@ function TreePageContent({ searchParams }: TreePageProps) {
   }
 
   if (sessionLoading || (loadingData && persons.length === 0)) {
-    return (
-      <section className="center-state" aria-live="polite">
-        <div className="center-state__card">
-          <span className="center-state__spinner" aria-hidden="true" />
-          <p>Đang tải sơ đồ gia phả…</p>
-        </div>
-      </section>
-    );
+    return <TreeGraphSkeleton />;
   }
 
   if (!activeTreeId) {
@@ -342,6 +351,14 @@ function TreePageContent({ searchParams }: TreePageProps) {
                 setAddRelativeMode(false);
                 setEditMode(false);
               } : undefined}
+              viewpointSelector={
+                <ViewpointSelector
+                  persons={persons}
+                  egoId={egoId}
+                  onChange={setEgoId}
+                  disabled={addressLoading}
+                />
+              }
             />
           </div>
 
@@ -360,6 +377,10 @@ function TreePageContent({ searchParams }: TreePageProps) {
               }}
               onSelectAddress={setSelectedAddress}
               onSelectEgo={setSelectedEgo}
+              egoId={egoId}
+              onEgoChange={setEgoId}
+              onAddressLoading={setAddressLoading}
+              hideViewpointSelector={true}
             />
           </div>
         </div>
@@ -441,15 +462,15 @@ function TreePageContent({ searchParams }: TreePageProps) {
                     person={selectedPerson}
                     ego={selectedEgo}
                     address={selectedAddress}
+                    loading={addressLoading}
                   />
 
                   <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem", marginTop: "1rem" }}>
                     {isOwner && (
-                      <>
+                      <div className="person-actions">
                         <button
                           type="button"
                           className="btn"
-                          style={{ width: "100%" }}
                           onClick={() => setEditMode(true)}
                         >
                           Sửa thông tin
@@ -457,21 +478,39 @@ function TreePageContent({ searchParams }: TreePageProps) {
                         <button
                           type="button"
                           className="btn btn-secondary"
-                          style={{ width: "100%" }}
                           onClick={() => setAddRelativeMode(true)}
                         >
                           Thêm quan hệ
                         </button>
-                        <DeletionDialog
-                          treeId={activeTreeId}
-                          personId={selectedPerson.id}
-                          triggerLabel="Xóa thành viên này"
-                          onDeleted={() => {
-                            setSelectedId(null);
-                            refreshTree();
-                          }}
-                        />
-                      </>
+                        
+                        {/* Overflow menu */}
+                        <div className="person-actions__overflow" style={{ position: "relative" }}>
+                          <button
+                            type="button"
+                            className="btn btn-secondary"
+                            aria-label="Thêm tùy chọn"
+                            aria-expanded={overflowOpen}
+                            onClick={() => setOverflowOpen((v) => !v)}
+                          >
+                            ···
+                          </button>
+                          {overflowOpen && (
+                            <div className="person-actions__overflow-menu" role="menu">
+                              <DeletionDialog
+                                treeId={activeTreeId}
+                                personId={selectedPerson.id}
+                                triggerLabel="Xóa thành viên này"
+                                className="person-actions__overflow-item person-actions__overflow-item--danger"
+                                onDeleted={() => {
+                                  setOverflowOpen(false);
+                                  setSelectedId(null);
+                                  refreshTree();
+                                }}
+                              />
+                            </div>
+                          )}
+                        </div>
+                      </div>
                     )}
                     <button
                       type="button"

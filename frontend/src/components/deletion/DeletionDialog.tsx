@@ -32,6 +32,7 @@ interface DeletionDialogProps {
   triggerLabel?: string;
   onDeleted?: (personId: string, strategy: DeletionStrategy) => void;
   onDismiss?: () => void;
+  className?: string;
 }
 
 const STRATEGY_LABELS: Record<DeletionStrategy, { title: string; description: string }> = {
@@ -53,6 +54,7 @@ export function DeletionDialog({
   triggerLabel = "Xóa",
   onDeleted,
   onDismiss,
+  className,
 }: DeletionDialogProps) {
   const [open, setOpen] = useState(false);
   const [choice, setChoice] = useState<DeletionChoice | null>(null);
@@ -116,7 +118,7 @@ export function DeletionDialog({
 
   return (
     <div>
-      <Button type="button" onClick={handleOpen} disabled={loading}>
+      <Button type="button" onClick={handleOpen} disabled={loading} className={className}>
         {triggerLabel}
       </Button>
 

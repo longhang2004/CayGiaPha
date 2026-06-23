@@ -1513,3 +1513,68 @@ fieldset .field {
   }
 }
 
+/* Skeleton Loading Shimmer */
+@keyframes skeleton-shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position:  200% 0; }
+}
+
+.skeleton {
+  display: inline-block;
+  background: linear-gradient(
+    90deg,
+    var(--color-hairline-soft) 25%,
+    var(--color-surface-strong) 50%,
+    var(--color-hairline-soft) 75%
+  );
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.4s ease infinite;
+  border-radius: 4px;
+}
+.skeleton--text   { height: 1em; border-radius: 4px; }
+.skeleton--circle { border-radius: 50%; }
+.skeleton--rect   { border-radius: 8px; }
+
+/* Shimmer on node labels when switching viewpoint */
+.tree-graph__node--loading .tree-graph__node-address {
+  opacity: 0.3;
+}
+
+/* PersonInfoPanel overflow action buttons */
+.person-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+.person-actions__overflow {
+  position: relative;
+}
+.person-actions__overflow-menu {
+  position: absolute;
+  bottom: calc(100% + 4px);
+  right: 0;
+  background: var(--color-surface-card);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+  min-width: 180px;
+  z-index: 100;
+}
+.person-actions__overflow-item {
+  display: block;
+  width: 100%;
+  padding: 0.75rem 1rem;
+  text-align: left;
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-size: 0.9375rem;
+}
+.person-actions__overflow-item:hover {
+  background: var(--color-hairline-soft);
+}
+.person-actions__overflow-item--danger {
+  color: var(--color-danger, #C0392B);
+}
+
+

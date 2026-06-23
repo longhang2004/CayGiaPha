@@ -53,6 +53,10 @@ export interface TreeGraphProps {
   onSelectId?: (id: string | null) => void;
   onSelectAddress?: (address: Address | undefined) => void;
   onSelectEgo?: (ego: Person | null) => void;
+  egoId?: string;
+  onEgoChange?: (id: string) => void;
+  onAddressLoading?: (loading: boolean) => void;
+  hideViewpointSelector?: boolean;
 }
 
 const NODE_WIDTH = 160;
@@ -68,15 +72,27 @@ export function TreeGraph({
   onSelectId,
   onSelectAddress,
   onSelectEgo,
+  egoId,
+  onEgoChange,
+  onAddressLoading,
+  hideViewpointSelector = false,
 }: TreeGraphProps) {
   const firstId = persons[0]?.id ?? "";
-  const [egoId, setEgoId] = useState<string>(initialEgoId ?? firstId);
+  const [internalEgoId, setInternalEgoId] = useState<string>(initialEgoId ?? firstId);
+  const activeEgoId = egoId !== undefined ? egoId : internalEgoId;
+  const activeSetEgoId = onEgoChange ?? setInternalEgoId;
+
   const [internalSelectedId, setInternalSelectedId] = useState<string | null>(null);
   const activeSelectedId = selectedId !== undefined ? selectedId : internalSelectedId;
   const activeSetSelectedId = onSelectId ?? setInternalSelectedId;
   const [addresses, setAddresses] = useState<Map<string, Address>>(new Map());
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Notify parent of address loading state changes
+  useEffect(() => {
+    onAddressLoading?.(loading);
+  }, [loading, onAddressLoading]);
 
   const personById = useMemo(() => {
     const map = new Map<string, Person>();
@@ -86,13 +102,16 @@ export function TreeGraph({
     return map;
   }, [persons]);
 
-  const positions = useMemo(() => layoutNodes(persons, { cellWidth: 220, cellHeight: 130, padding: 100 }), [persons]);
+  const positions = useMemo(
+    () => layoutNodes(persons, relationships, { cellWidth: 220, cellHeight: 130, padding: 100 }),
+    [persons, relationships]
+  );
 
   // Re-fetch every node's address whenever the viewpoint (ego) changes
   // (Requirements 10.1, 10.2).
   const requestRef = useRef(0);
   useEffect(() => {
-    if (!egoId) {
+    if (!activeEgoId) {
       setAddresses(new Map());
       return;
     }
@@ -101,7 +120,7 @@ export function TreeGraph({
     setLoading(true);
     setError(null);
 
-    fetchAddresses(treeId, egoId, controller.signal)
+    fetchAddresses(treeId, activeEgoId, controller.signal)
       .then((result) => {
         // Ignore stale responses from superseded viewpoint changes.
         if (requestId !== requestRef.current) {
@@ -128,21 +147,21 @@ export function TreeGraph({
     return () => {
       controller.abort();
     };
-  }, [treeId, egoId, fetchAddresses]);
+  }, [treeId, activeEgoId, fetchAddresses]);
 
   useEffect(() => {
     onSelectAddress?.(activeSelectedId ? addresses.get(activeSelectedId) : undefined);
   }, [addresses, activeSelectedId, onSelectAddress]);
 
-  const ego = egoId ? personById.get(egoId) ?? null : null;
+  const ego = activeEgoId ? personById.get(activeEgoId) ?? null : null;
 
   useEffect(() => {
     onSelectEgo?.(ego);
   }, [ego, onSelectEgo]);
 
   const handleSelectViewpoint = useCallback((nextEgoId: string) => {
-    setEgoId(nextEgoId);
-  }, []);
+    activeSetEgoId(nextEgoId);
+  }, [activeSetEgoId]);
 
   const selected = activeSelectedId ? personById.get(activeSelectedId) ?? null : null;
 
@@ -247,12 +266,14 @@ export function TreeGraph({
   return (
     <div className="tree-graph">
       <div className="tree-graph__controls">
-        <ViewpointSelector
-          persons={persons}
-          egoId={egoId}
-          onChange={handleSelectViewpoint}
-          disabled={loading}
-        />
+        {!hideViewpointSelector && (
+          <ViewpointSelector
+            persons={persons}
+            egoId={activeEgoId}
+            onChange={handleSelectViewpoint}
+            disabled={loading}
+          />
+        )}
         <p role="status" aria-live="polite" className="tree-graph__status">
           {loading ? "Đang tính cách xưng hô…" : error ?? ""}
         </p>
@@ -311,7 +332,7 @@ export function TreeGraph({
                   return null;
                 }
                 const address = addresses.get(person.id);
-                const isEgo = person.id === egoId;
+                const isEgo = person.id === activeEgoId;
                 const isSelected = person.id === activeSelectedId;
                 const label = isEgo ? "Bản thân" : addressLabel(address);
                 const unresolved = !isEgo && isUnresolved(address);
@@ -319,7 +340,7 @@ export function TreeGraph({
                 return (
                   <g
                     key={person.id}
-                    className="tree-graph__node"
+                    className={`tree-graph__node ${loading ? "tree-graph__node--loading" : ""}`}
                     data-person-id={person.id}
                     data-ego={isEgo ? "true" : "false"}
                     data-selected={isSelected ? "true" : "false"}

@@ -103,10 +103,51 @@ describe("layoutNodes", () => {
       { id: "b", displayName: "B" },
       { id: "c", displayName: "C" },
     ];
-    const positions = layoutNodes(persons);
+    const positions = layoutNodes(persons, []);
     expect(positions.size).toBe(3);
     const coords = new Set([...positions.values()].map((p) => `${p.x},${p.y}`));
     expect(coords.size).toBe(3);
+  });
+
+  it("ensures root nodes have smaller y than child nodes, and spouse nodes have equal y", () => {
+    const persons: Person[] = [
+      { id: "father", displayName: "Father", gender: "male" },
+      { id: "mother", displayName: "Mother", gender: "female" },
+      { id: "child", displayName: "Child", gender: "male" },
+      { id: "isolated", displayName: "Isolated" },
+    ];
+    const relationships: Relationship[] = [
+      {
+        id: "r1",
+        type: "marriage",
+        sourceId: "father",
+        targetId: "mother",
+        derivationState: "derived",
+      },
+      {
+        id: "r2",
+        type: "bloodline_father",
+        sourceId: "father",
+        targetId: "child",
+        derivationState: "derived",
+      },
+    ];
+
+    const positions = layoutNodes(persons, relationships);
+
+    const fatherPos = positions.get("father")!;
+    const motherPos = positions.get("mother")!;
+    const childPos = positions.get("child")!;
+    const isolatedPos = positions.get("isolated")!;
+
+    // Father and Mother are spouses, so they must have the same y
+    expect(fatherPos.y).toBe(motherPos.y);
+
+    // Child is a descendant, so childPos.y should be greater than fatherPos.y
+    expect(childPos.y).toBeGreaterThan(fatherPos.y);
+
+    // Isolated node should not crash and should be at the bottom (greatest y)
+    expect(isolatedPos.y).toBeGreaterThan(childPos.y);
   });
 });
 

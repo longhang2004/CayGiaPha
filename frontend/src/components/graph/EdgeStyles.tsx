@@ -35,22 +35,78 @@ export function GraphEdge({ relationship, source, target }: GraphEdgeProps) {
         ? relationship.socialType ?? undefined
         : undefined;
 
+  const props = {
+    className: EDGE_CLASS[style],
+    "data-edge-style": style,
+    "data-relationship-id": relationship.id,
+    stroke: "currentColor",
+    strokeWidth: 2,
+    strokeDasharray: STROKE_DASHARRAY[style],
+    role: "presentation",
+    "aria-hidden": true,
+  };
+
+  const titleElement = label ? <title>{label}</title> : null;
+
+  // bloodline_father / bloodline_mother: elbow connector dọc
+  if (relationship.type === "bloodline_father" || relationship.type === "bloodline_mother") {
+    const NODE_HEIGHT = 56;
+    const HALF_HEIGHT = NODE_HEIGHT / 2;
+    const midY = (source.y + target.y) / 2;
+    const pathData = `M ${source.x} ${source.y + HALF_HEIGHT} L ${source.x} ${midY} L ${target.x} ${midY} L ${target.x} ${target.y - HALF_HEIGHT}`;
+    return (
+      <path d={pathData} fill="none" {...props}>
+        {titleElement}
+      </path>
+    );
+  }
+
+  // marriage: đường ngang giữa 2 spouse với small indicator ╪ ở giữa
+  if (relationship.type === "marriage") {
+    const NODE_WIDTH = 160;
+    const HALF_WIDTH = NODE_WIDTH / 2;
+    const left = source.x < target.x ? source : target;
+    const right = source.x < target.x ? target : source;
+    const x1 = left.x + HALF_WIDTH;
+    const y1 = left.y;
+    const x2 = right.x - HALF_WIDTH;
+    const y2 = right.y;
+    const midX = (x1 + x2) / 2;
+    const midY = (y1 + y2) / 2;
+
+    return (
+      <g>
+        <line x1={x1} y1={y1} x2={x2} y2={y2} {...props}>
+          {titleElement}
+        </line>
+        <text
+          x={midX}
+          y={midY}
+          textAnchor="middle"
+          dominantBaseline="central"
+          fill="currentColor"
+          fontSize="14"
+          fontWeight="bold"
+          role="presentation"
+          aria-hidden="true"
+          style={{ pointerEvents: "none", userSelect: "none" }}
+        >
+          ╪
+        </text>
+      </g>
+    );
+  }
+
+  // Các loại khác: giữ nguyên logic hiện tại
   return (
     <line
       x1={source.x}
       y1={source.y + NODE_HALF_HEIGHT}
       x2={target.x}
       y2={target.y - NODE_HALF_HEIGHT}
-      className={EDGE_CLASS[style]}
-      data-edge-style={style}
-      data-relationship-id={relationship.id}
-      stroke="currentColor"
-      strokeWidth={2}
-      strokeDasharray={STROKE_DASHARRAY[style]}
-      role="presentation"
-      aria-hidden="true"
+      {...props}
     >
-      {label ? <title>{label}</title> : null}
+      {titleElement}
     </line>
   );
 }
