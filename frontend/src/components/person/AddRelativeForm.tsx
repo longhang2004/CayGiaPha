@@ -495,12 +495,12 @@ export function AddRelativeForm({ treeId, persons, preselectedPersonId, onCreate
             />
           </div>
 
-          <div className="field">
-            <label htmlFor="newPhoto">Hình ảnh đại diện (tùy chọn)</label>
+          <div className="field photo-upload-container">
             <input
               id="newPhoto"
               type="file"
               accept="image/jpeg,image/png"
+              className="photo-upload-input"
               onChange={(e) => {
                 const file = e.target.files?.[0];
                 if (file) {
@@ -512,6 +512,13 @@ export function AddRelativeForm({ treeId, persons, preselectedPersonId, onCreate
                 }
               }}
             />
+            <label htmlFor="newPhoto" className="photo-upload-zone">
+              <span className="photo-upload-zone__icon">📤</span>
+              <span className="photo-upload-zone__title">
+                {newPhotoFile ? `Đã chọn: ${newPhotoFile.name}` : "Hình ảnh đại diện (tùy chọn)"}
+              </span>
+              <span className="photo-upload-zone__subtitle">Kéo thả file hoặc click để chọn ảnh đại diện</span>
+            </label>
             {newPhotoPreviewUrl && (
               <div style={{ marginTop: "0.5rem" }}>
                 <img

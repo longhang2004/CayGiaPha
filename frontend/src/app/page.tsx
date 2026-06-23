@@ -37,15 +37,24 @@ export default function HomePage() {
         </div>
       </div>
 
-      <aside className="home-hero__card" aria-label="Tính năng chính">
-        <div>
-          <span className="home-hero__stat">3 bước</span>
-          <p>Thêm thành viên, nối quan hệ, chọn góc nhìn để xem cách xưng hô.</p>
-        </div>
-        <div className="home-feature-grid">
-          <span>Bảo vệ thông tin người còn sống</span>
-          <span>Chia sẻ bằng liên kết riêng</span>
-          <span>Tìm kiếm nhanh trong cây</span>
+      <aside className="home-hero__card" aria-label="Tính năng chính" style={{ padding: 0, overflow: "hidden" }}>
+        <img
+          src="/hero.png"
+          alt="Minh họa Cây Gia Phả"
+          style={{ width: "100%", height: "220px", objectFit: "cover", borderBottom: "1px solid var(--color-hairline)" }}
+        />
+        <div style={{ padding: "1.5rem" }}>
+          <div>
+            <span className="home-hero__stat" style={{ fontSize: "1.75rem", fontWeight: 700 }}>Trực quan & Tiện lợi</span>
+            <p style={{ margin: "0.25rem 0 0", fontSize: "0.875rem", color: "var(--color-muted)" }}>
+              Thêm thành viên, nối quan hệ, tự động tính xưng hô theo vùng miền.
+            </p>
+          </div>
+          <div className="home-feature-grid" style={{ marginTop: "1rem" }}>
+            <span style={{ padding: "0.5rem 0.75rem", fontSize: "0.8125rem", display: "inline-block" }}>🛡️ Bảo vệ thông tin người còn sống</span>
+            <span style={{ padding: "0.5rem 0.75rem", fontSize: "0.8125rem", display: "inline-block" }}>🔗 Chia sẻ bằng liên kết riêng</span>
+            <span style={{ padding: "0.5rem 0.75rem", fontSize: "0.8125rem", display: "inline-block" }}>🔍 Tìm kiếm nhanh trong cây</span>
+          </div>
         </div>
       </aside>
 

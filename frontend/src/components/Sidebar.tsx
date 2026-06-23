@@ -30,8 +30,9 @@ export function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse }: Side
       >
         <div className="global-sidebar__top">
           <div className="global-sidebar__brand-container">
-            <Link href="/" className="global-sidebar__brand" onClick={onClose}>
-              Cây Gia Phả
+            <Link href="/" className="global-sidebar__brand" onClick={onClose} style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+              <img src="/logo.png" alt="Logo Cây Gia Phả" style={{ height: "24px", width: "auto" }} />
+              <span>Cây Gia Phả</span>
             </Link>
             <button
               type="button"

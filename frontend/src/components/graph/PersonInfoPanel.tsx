@@ -12,6 +12,7 @@ export interface PersonInfoPanelProps {
   ego: Person | null;
   address: Address | undefined;
   loading?: boolean;
+  hideHeading?: boolean;
 }
 
 const GENDER_LABEL: Record<string, string> = {
@@ -19,15 +20,12 @@ const GENDER_LABEL: Record<string, string> = {
   female: "Nữ",
 };
 
-export function PersonInfoPanel({ person, ego, address, loading }: PersonInfoPanelProps) {
+export function PersonInfoPanel({ person, ego, address, loading, hideHeading = false }: PersonInfoPanelProps) {
   if (loading) {
     return (
-      <aside className="person-info" aria-live="polite" aria-busy="true">
-        <Skeleton variant="text" width="70%" height="1.5rem" />
-        <Skeleton variant="text" width="40%" />
-        <Skeleton variant="text" width="55%" />
-        <Skeleton variant="text" width="50%" />
-        <Skeleton variant="rect" height="2.5rem" style={{ marginTop: "1rem" }} />
+      <aside className="person-info" aria-live="polite" aria-busy="true" style={{ display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", minHeight: "180px", gap: "0.75rem" }}>
+        <div className="center-state__spinner" style={{ width: "2rem", height: "2rem", borderWidth: "3px" }} />
+        <p style={{ margin: 0, color: "var(--color-muted)", fontSize: "0.875rem" }}>Đang tính toán cách xưng hô…</p>
       </aside>
     );
   }
@@ -45,7 +43,11 @@ export function PersonInfoPanel({ person, ego, address, loading }: PersonInfoPan
 
   return (
     <aside className="person-info" aria-live="polite" data-person-id={person.id}>
-      <h2>{person.displayName}</h2>
+      {hideHeading ? (
+        <h2 className="sr-only">{person.displayName}</h2>
+      ) : (
+        <h2>{person.displayName}</h2>
+      )}
       <dl>
         {person.gender ? (
           <div>

@@ -116,14 +116,14 @@ export function PersonPhotos({ treeId, personId, canEdit = false }: PersonPhotos
       ) : null}
 
       {canEdit ? (
-        <div className="field">
-          <label htmlFor="photo-upload">Tải ảnh lên (JPEG hoặc PNG)</label>
+        <div className="field photo-upload-container">
           <input
             id="photo-upload"
             ref={fileInput}
             type="file"
             accept="image/jpeg,image/png"
             disabled={busy}
+            className="photo-upload-input"
             onChange={(e) => {
               const file = e.target.files?.[0];
               if (file) {
@@ -131,6 +131,11 @@ export function PersonPhotos({ treeId, personId, canEdit = false }: PersonPhotos
               }
             }}
           />
+          <label htmlFor="photo-upload" className={`photo-upload-zone ${busy ? "photo-upload-zone--disabled" : ""}`}>
+            <span className="photo-upload-zone__icon">📤</span>
+            <span className="photo-upload-zone__title">Tải ảnh lên (JPEG hoặc PNG)</span>
+            <span className="photo-upload-zone__subtitle">Kéo thả file hoặc click vào đây để chọn ảnh</span>
+          </label>
         </div>
       ) : null}
 

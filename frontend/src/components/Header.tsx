@@ -11,12 +11,15 @@ export function Header() {
   return (
     <header className="app-header app-header--sticky">
       <nav className="app-nav" aria-label="Điều hướng chính">
-        <Link href="/" className="app-nav__brand">
-          Cây Gia Phả
+        <Link href="/" className="app-nav__brand" style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+          <img src="/logo.png" alt="Logo Cây Gia Phả" style={{ height: "32px", width: "auto" }} />
+          <span>Cây Gia Phả</span>
         </Link>
 
         <div className="app-nav__actions" style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
-          {!loading && (
+          {loading ? (
+            <div className="center-state__spinner" style={{ width: "1.25rem", height: "1.25rem", borderWidth: "2px" }} aria-label="Đang tải..." />
+          ) : (
             <>
               {user ? (
                 <>

@@ -203,7 +203,15 @@ function TreePageContent({ searchParams }: TreePageProps) {
   }
 
   if (sessionLoading || (loadingData && persons.length === 0)) {
-    return <TreeGraphSkeleton />;
+    return (
+      <>
+        <div className="full-screen-loader" role="status" aria-live="polite">
+          <div className="full-screen-loader__spinner" />
+          <p className="full-screen-loader__text">Đang tải dữ liệu gia phả…</p>
+        </div>
+        <TreeGraphSkeleton />
+      </>
+    );
   }
 
   if (!activeTreeId) {
@@ -468,6 +476,7 @@ function TreePageContent({ searchParams }: TreePageProps) {
                     ego={selectedEgo}
                     address={selectedAddress}
                     loading={addressLoading}
+                    hideHeading={true}
                   />
 
                   <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem", marginTop: "1rem" }}>

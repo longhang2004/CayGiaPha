@@ -291,13 +291,13 @@ export function PersonForm({
         />
       </div>
 
-      <div className="field">
-        <label htmlFor="photo">Hình ảnh đại diện (tùy chọn)</label>
+      <div className="field photo-upload-container">
         <input
           id="photo"
           name="photo"
           type="file"
           accept="image/jpeg,image/png"
+          className="photo-upload-input"
           onChange={(e) => {
             const file = e.target.files?.[0];
             if (file) {
@@ -309,6 +309,13 @@ export function PersonForm({
             }
           }}
         />
+        <label htmlFor="photo" className="photo-upload-zone">
+          <span className="photo-upload-zone__icon">📤</span>
+          <span className="photo-upload-zone__title">
+            {photoFile ? `Đã chọn: ${photoFile.name}` : "Hình ảnh đại diện (tùy chọn)"}
+          </span>
+          <span className="photo-upload-zone__subtitle">Kéo thả file hoặc click để chọn ảnh đại diện</span>
+        </label>
         {photoPreviewUrl && (
           <div style={{ marginTop: "0.5rem" }}>
             <img
