@@ -45,6 +45,7 @@ function TreePageContent({ searchParams }: TreePageProps) {
   const [sharing, setSharing] = useState("private");
   
   const [loadingData, setLoadingData] = useState(true);
+  const [addressesReady, setAddressesReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -202,7 +203,14 @@ function TreePageContent({ searchParams }: TreePageProps) {
     }
   }
 
-  if (sessionLoading || (loadingData && persons.length === 0)) {
+  const isSessionOrDataLoading = sessionLoading || (loadingData && persons.length === 0);
+  // Show full-screen spinner for the initial data + address load.
+  // When persons are already loaded but addresses haven't been fetched yet,
+  // we render the tree in the background (hidden) so TreeGraph can mount and
+  // fire its address fetch, then remove the overlay once addresses are ready.
+  const showLoadingOverlay = isSessionOrDataLoading || (persons.length > 0 && !addressesReady);
+
+  if (isSessionOrDataLoading) {
     return (
       <>
         <div className="full-screen-loader" role="status" aria-live="polite">
@@ -288,7 +296,14 @@ function TreePageContent({ searchParams }: TreePageProps) {
     : undefined;
 
   return (
-    <section className="tree-workspace">
+    <>
+      {showLoadingOverlay && (
+        <div className="full-screen-loader" role="status" aria-live="polite">
+          <div className="full-screen-loader__spinner" />
+          <p className="full-screen-loader__text">Đang tải dữ liệu gia phả…</p>
+        </div>
+      )}
+    <section className="tree-workspace" style={showLoadingOverlay ? { visibility: "hidden" } : undefined}>
       <div className="tree-workspace__header">
         <div>
           <p className="eyebrow">{persons.length} thành viên</p>
@@ -392,7 +407,10 @@ function TreePageContent({ searchParams }: TreePageProps) {
               egoId={egoId}
               onEgoChange={setEgoId}
               onAddressLoading={setAddressLoading}
-              onAddressesLoaded={setAddresses}
+              onAddressesLoaded={(loaded) => {
+                setAddresses(loaded);
+                setAddressesReady(true);
+              }}
               hideViewpointSelector={true}
             />
           </div>
@@ -706,6 +724,7 @@ function TreePageContent({ searchParams }: TreePageProps) {
         </div>
       )}
     </section>
+    </>
   );
 }
 
