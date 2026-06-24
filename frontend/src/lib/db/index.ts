@@ -17,6 +17,7 @@ if (isNeon) {
 } else {
   const pool = new PgPool({
     connectionString: databaseUrl,
+    connectionTimeoutMillis: 5000,
   });
   dbInstance = nodeDrizzle(pool, { schema });
 }

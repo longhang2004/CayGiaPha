@@ -154,7 +154,7 @@ export function TreeGraph({
     return () => {
       controller.abort();
     };
-  }, [treeId, activeEgoId, fetchAddresses, onAddressesLoaded]);
+  }, [treeId, activeEgoId, fetchAddresses, onAddressesLoaded, persons, relationships]);
 
   useEffect(() => {
     onSelectAddress?.(activeSelectedId ? addresses.get(activeSelectedId) : undefined);

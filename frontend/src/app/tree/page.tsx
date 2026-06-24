@@ -106,6 +106,7 @@ function TreePageContent({ searchParams }: TreePageProps) {
 
   const loadTree = useCallback(async (id: string, token?: string) => {
     setLoadingData(true);
+    setAddressesReady(false);
     setError(null);
     try {
       const url = `/trees/${encodeURIComponent(id)}${token ? `?shareToken=${encodeURIComponent(token)}` : ""}`;
