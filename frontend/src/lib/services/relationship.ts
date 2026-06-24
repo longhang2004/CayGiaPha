@@ -134,6 +134,11 @@ export class RelationshipService {
       })
       .returning();
 
+    // Auto-create marriage if both parents exist now
+    if (BLOODLINE_TYPES.has(type)) {
+      await this.autoCreateMarriageIfBothParentsExist(treeId, type, sourceId, targetId);
+    }
+
     // Invalidate cached projection
     projectionCache.evict(treeId);
 
@@ -144,6 +149,74 @@ export class RelationshipService {
     }
 
     return { edge: saved, conflicts };
+  }
+
+  private async autoCreateMarriageIfBothParentsExist(
+    treeId: string,
+    type: string,
+    parentId: string,
+    childId: string
+  ): Promise<void> {
+    let fatherId: string | null = null;
+    let motherId: string | null = null;
+
+    if (type === "bloodline_father") {
+      fatherId = parentId;
+      const motherEdges = await db
+        .select()
+        .from(relationships)
+        .where(
+          and(
+            eq(relationships.targetId, childId),
+            eq(relationships.type, "bloodline_mother")
+          )
+        );
+      if (motherEdges.length > 0) {
+        motherId = motherEdges[0].sourceId;
+      }
+    } else if (type === "bloodline_mother") {
+      motherId = parentId;
+      const fatherEdges = await db
+        .select()
+        .from(relationships)
+        .where(
+          and(
+            eq(relationships.targetId, childId),
+            eq(relationships.type, "bloodline_father")
+          )
+        );
+      if (fatherEdges.length > 0) {
+        fatherId = fatherEdges[0].sourceId;
+      }
+    }
+
+    if (fatherId && motherId) {
+      // Check if there is already a marriage edge between them
+      const marriageExists = await db
+        .select()
+        .from(relationships)
+        .where(
+          and(
+            eq(relationships.type, "marriage"),
+            or(
+              and(eq(relationships.sourceId, fatherId), eq(relationships.targetId, motherId)),
+              and(eq(relationships.sourceId, motherId), eq(relationships.targetId, fatherId))
+            )
+          )
+        )
+        .then((rows) => rows.length > 0);
+
+      if (!marriageExists) {
+        await db.insert(relationships).values({
+          treeId,
+          type: "marriage",
+          sourceId: fatherId,
+          targetId: motherId,
+          maritalStatus: "married",
+          derivationState: "derived",
+        });
+      }
+    }
   }
 
   private async requireExistingNode(treeId: string, personId: string, field: string) {

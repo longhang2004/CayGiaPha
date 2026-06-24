@@ -10,14 +10,14 @@ import {
 } from "react";
 import { getCurrentSession, signOut, type SessionUser } from "@/lib/session";
 
-interface SessionContextValue {
+export interface SessionContextValue {
   user: SessionUser | null;
   loading: boolean;
   refresh: () => Promise<void>;
   logout: () => Promise<void>;
 }
 
-const SessionContext = createContext<SessionContextValue | undefined>(undefined);
+export const SessionContext = createContext<SessionContextValue | undefined>(undefined);
 
 /**
  * Client-side session provider. Loads the current session on mount and exposes

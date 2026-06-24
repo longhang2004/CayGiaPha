@@ -23,3 +23,14 @@ Durable project knowledge for future AI agents. Keep entries short, verified, an
 - **CodeGraph MCP Server Setup**: Configured CodeGraph as an MCP server using its absolute path `/Users/longhang/.nvm/versions/node/v22.15.0/bin/codegraph` and explicit `--path` to avoid `npx` stdout pollution causing JSON-RPC parsing errors (`invalid character 'â' looking for beginning of value`).
 - **PersonInfoPanel Accessibility**: When visually hiding the panel's heading using `hideHeading={true}`, a screen-reader-only heading `<h2 className="sr-only">` is rendered instead of completely omitting the heading element, ensuring compatibility with WCAG SC 4.1.2.
 - **Agent Workflow Reminder**: Future agents should prioritize initializing and utilizing **Codegraph** tools (if available in their environment) for structural navigation, and strictly use the **RTK Prompt Contract** defined in `AGENTS.md` before starting non-trivial tasks.
+
+## 2026-06-24
+
+- **Prototype Pages**: Added a `(prototype)` route group at `frontend/src/app/(prototype)/`. Prototype pages render real components with mock data — no auth required. Routes: `/prototype` (index), `/prototype/home`, `/prototype/signin`, `/prototype/signin/otp`, `/prototype/signup`, `/prototype/signup/otp`, `/prototype/tree`, `/prototype/tree?panel=settings`, `/prototype/tree/empty`, `/prototype/help`.
+- **Prototype Guard**: Middleware blocks `/prototype/*` in production (NODE_ENV=production) with 404. Layout also calls `notFound()` as a second guard.
+- **MockSessionProvider**: Lives in `frontend/src/lib/prototype/mockSession.tsx`. Injects mock session into the real `SessionContext` (exported from `providers.tsx`) so all `useSession()` calls across real components work without a real backend session.
+- **SessionContext export**: `SessionContext` and `SessionContextValue` are now exported from `frontend/src/app/providers.tsx` — intentional, required by `MockSessionProvider`. Do not remove.
+- **Mock data**: Lives in `frontend/src/lib/prototype/mockData.ts`. Contains `MOCK_PERSONS`, `MOCK_RELATIONSHIPS`, `MOCK_USER`, `PROTOTYPE_TREE_ID`.
+- **Prototype Playwright spec**: `frontend/tests/e2e/prototype.spec.ts` — smoke tests for all prototype pages without auth.
+- **AGENTS.md sync rule**: Added "Prototype Pages" section to `AGENTS.md` mandating that prototype pages must be updated in the same PR/commit as any main page UI/UX change.
+- **Automatic Spouse Inference**: Implemented logic in both `RelationshipService.java` (Java backend) and `relationship.ts` (Next.js frontend) to automatically detect when a child has both a father and a mother, and insert a `marriage` edge with a default status of `"married"` if one does not already exist. This facilitates natural user onboarding when connecting parents. Sibling relationships are not stored as edges and remain fully derived dynamically from shared parents by the kinship resolver.

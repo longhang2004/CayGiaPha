@@ -111,3 +111,39 @@ Prefer targeted tests first when available, then run the broader command before 
 - Are tests updated at the right level?
 - Are generated files, secrets, local env files, and dependency directories untouched?
 - Did verification commands run, or is any skipped check explicitly explained?
+
+## Prototype Pages
+
+Prototype pages live under `frontend/src/app/(prototype)/prototype/` and are **dev/local only** (blocked at middleware level and via `notFound()` in production).
+
+### Purpose
+
+Prototype pages render each main functional page with mock data — no login required. They exist so Playwright tests and AI agents can visually inspect any page state without signing in or out.
+
+### Route Map
+
+| Prototype URL | Mirrors |
+|---|---|
+| `/prototype` | Index / discovery page |
+| `/prototype/home` | `src/app/page.tsx` |
+| `/prototype/signin` | `src/app/signin/page.tsx` — identifier step |
+| `/prototype/signin/otp` | `src/app/signin/page.tsx` — OTP step |
+| `/prototype/signup` | `src/app/signup/page.tsx` — identifier+TOS step |
+| `/prototype/signup/otp` | `src/app/signup/page.tsx` — OTP step |
+| `/prototype/tree` | `src/app/tree/page.tsx` — populated tree |
+| `/prototype/tree?panel=settings` | `src/app/tree/page.tsx` — settings modal open |
+| `/prototype/tree/empty` | `src/app/tree/page.tsx` — empty/onboarding state |
+| `/prototype/help` | `src/app/help/page.tsx` |
+
+### Mandatory Sync Rule
+
+**Whenever the UI or UX of a main page changes** (layout, components, interactions, CSS classes, accessible labels, `data-testid` attributes, copy/text), the corresponding prototype page in `src/app/(prototype)/prototype/<page>/` **MUST be updated in the same commit or PR**.
+
+Each prototype file contains a `BEGIN/END mirror` comment block that marks the section to keep in sync. Only update lines inside that block; leave the prototype scaffolding (mock data wiring, `MockSessionProvider`, no-op handlers) intact.
+
+### Constraints
+
+- Never import from `src/lib/prototype/` in production application code (only in `(prototype)` route group files).
+- Never connect prototype pages to real database queries or session tokens.
+- Mock data lives in `src/lib/prototype/mockData.ts`. Update it if the `Person` or `Relationship` type shapes change.
+- `SessionContext` is exported from `src/app/providers.tsx` specifically to support `MockSessionProvider`. Do not remove that export.

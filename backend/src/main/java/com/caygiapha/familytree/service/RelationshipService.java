@@ -8,6 +8,7 @@ import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -149,6 +150,11 @@ public class RelationshipService {
 
         Relationship saved = relationshipRepository.save(edge);
 
+        // Auto-create marriage if both parents exist now
+        if (BLOODLINE_TYPES.contains(type)) {
+            autoCreateMarriageIfBothParentsExist(treeId, type, sourceId, targetId);
+        }
+
         // Any new edge can change derived connectivity, so invalidate the tree's cached kinship
         // graph projection; the next resolve rebuilds it from the current graph.
         projectionCache.evict(treeId);
@@ -167,6 +173,35 @@ public class RelationshipService {
         if (!personRepository.existsByIdAndTreeId(personId, treeId)) {
             throw ApiException.missingNode(field,
                     "Referenced person " + personId + " was not found in the tree.");
+        }
+    }
+
+    private void autoCreateMarriageIfBothParentsExist(UUID treeId, String type, UUID parentId, UUID childId) {
+        UUID fatherId = null;
+        UUID motherId = null;
+        if (TYPE_BLOODLINE_FATHER.equals(type)) {
+            fatherId = parentId;
+            List<Relationship> motherEdges = relationshipRepository.findByTargetIdAndType(childId, TYPE_BLOODLINE_MOTHER);
+            if (!motherEdges.isEmpty()) {
+                motherId = motherEdges.get(0).getSourceId();
+            }
+        } else if (TYPE_BLOODLINE_MOTHER.equals(type)) {
+            motherId = parentId;
+            List<Relationship> fatherEdges = relationshipRepository.findByTargetIdAndType(childId, TYPE_BLOODLINE_FATHER);
+            if (!fatherEdges.isEmpty()) {
+                fatherId = fatherEdges.get(0).getSourceId();
+            }
+        }
+
+        if (fatherId != null && motherId != null) {
+            // Check if there is already a marriage edge between them
+            boolean marriageExists = relationshipRepository.findFirstBySourceIdAndTargetIdAndType(fatherId, motherId, TYPE_MARRIAGE).isPresent()
+                    || relationshipRepository.findFirstBySourceIdAndTargetIdAndType(motherId, fatherId, TYPE_MARRIAGE).isPresent();
+            if (!marriageExists) {
+                Relationship marriage = new Relationship(treeId, TYPE_MARRIAGE, fatherId, motherId);
+                marriage.setMaritalStatus("married");
+                relationshipRepository.save(marriage);
+            }
         }
     }
 

@@ -27,6 +27,18 @@ function isPublicApiRoute(pathname: string): boolean {
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
+  // Block prototype routes in production to prevent auth bypasses from
+  // leaking into production builds.
+  if (
+    pathname.startsWith("/prototype") &&
+    process.env.NODE_ENV === "production"
+  ) {
+    return new NextResponse(
+      JSON.stringify({ error: { code: "NOT_FOUND", message: "Not found." } }),
+      { status: 404, headers: { "Content-Type": "application/json" } },
+    );
+  }
+
   // If proxying to backend is enabled, bypass local middleware logic completely
   if (process.env.USE_BACKEND === "true") {
     return NextResponse.next();
@@ -93,7 +105,8 @@ export function middleware(request: NextRequest) {
   return response;
 }
 
-// Config to match only /api/:path* routes
+// Config to match /api/:path* routes and /prototype/:path* routes
+// (prototype guard runs first; API middleware only applies to /api/ paths)
 export const config = {
-  matcher: "/api/:path*",
+  matcher: ["/api/:path*", "/prototype/:path*"],
 };
