@@ -112,11 +112,16 @@ export function TreeGraph({
 
   // Re-fetch every node's address whenever the viewpoint (ego) changes
   // (Requirements 10.1, 10.2).
+  const onAddressesLoadedRef = useRef(onAddressesLoaded);
+  useEffect(() => {
+    onAddressesLoadedRef.current = onAddressesLoaded;
+  }, [onAddressesLoaded]);
+
   const requestRef = useRef(0);
   useEffect(() => {
     if (!activeEgoId) {
       setAddresses(new Map());
-      onAddressesLoaded?.(new Map());
+      onAddressesLoadedRef.current?.(new Map());
       return;
     }
     const requestId = ++requestRef.current;
@@ -132,7 +137,7 @@ export function TreeGraph({
         }
         const indexed = indexAddresses(result);
         setAddresses(indexed);
-        onAddressesLoaded?.(indexed);
+        onAddressesLoadedRef.current?.(indexed);
       })
       .catch((err: unknown) => {
         if (requestId !== requestRef.current) {
@@ -143,7 +148,7 @@ export function TreeGraph({
         }
         setError("Không tải được cách xưng hô cho góc nhìn này.");
         setAddresses(new Map());
-        onAddressesLoaded?.(new Map());
+        onAddressesLoadedRef.current?.(new Map());
       })
       .finally(() => {
         if (requestId === requestRef.current) {
@@ -154,7 +159,7 @@ export function TreeGraph({
     return () => {
       controller.abort();
     };
-  }, [treeId, activeEgoId, fetchAddresses, onAddressesLoaded, persons, relationships]);
+  }, [treeId, activeEgoId, fetchAddresses, persons, relationships]);
 
   useEffect(() => {
     onSelectAddress?.(activeSelectedId ? addresses.get(activeSelectedId) : undefined);

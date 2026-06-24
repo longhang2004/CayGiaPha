@@ -108,6 +108,10 @@ function PrototypeTreeContent() {
     /* no-op in prototype */
   }, []);
 
+  const handleAddressesLoaded = useCallback((loaded: Map<string, Address>) => {
+    setAddresses(loaded);
+  }, []);
+
   const selectedPerson = selectedId
     ? persons.find((p) => p.id === selectedId)
     : null;
@@ -221,9 +225,7 @@ function PrototypeTreeContent() {
               egoId={egoId}
               onEgoChange={setEgoId}
               onAddressLoading={() => {}}
-              onAddressesLoaded={(loaded) => {
-                setAddresses(loaded);
-              }}
+              onAddressesLoaded={handleAddressesLoaded}
               hideViewpointSelector={true}
             />
           </div>

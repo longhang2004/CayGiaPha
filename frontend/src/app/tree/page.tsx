@@ -147,6 +147,11 @@ function TreePageContent({ searchParams }: TreePageProps) {
     }
   }, [activeTreeId, queryShareToken, loadTree]);
 
+  const handleAddressesLoaded = useCallback((loaded: Map<string, Address>) => {
+    setAddresses(loaded);
+    setAddressesReady(true);
+  }, []);
+
   async function handleSharingChange(nextSharing: string) {
     if (!activeTreeId) return;
     setUpdatingSharing(true);
@@ -408,10 +413,7 @@ function TreePageContent({ searchParams }: TreePageProps) {
               egoId={egoId}
               onEgoChange={setEgoId}
               onAddressLoading={setAddressLoading}
-              onAddressesLoaded={(loaded) => {
-                setAddresses(loaded);
-                setAddressesReady(true);
-              }}
+              onAddressesLoaded={handleAddressesLoaded}
               hideViewpointSelector={true}
             />
           </div>
