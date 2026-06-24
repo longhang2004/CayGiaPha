@@ -110,6 +110,18 @@ export function TreeGraph({
     [persons, relationships]
   );
 
+  const treeStructureVersion = useMemo(() => {
+    const personParts = persons
+      .map((p) => `${p.id}:${p.gender ?? ""}:${p.birthOrder ?? ""}:${p.birthYear ?? ""}`)
+      .sort()
+      .join("|");
+    const relParts = relationships
+      .map((r) => `${r.id}:${r.type}:${r.sourceId}:${r.targetId}:${r.derivationState}:${r.assertedLabel ?? ""}`)
+      .sort()
+      .join("|");
+    return `${personParts}#${relParts}`;
+  }, [persons, relationships]);
+
   // Re-fetch every node's address whenever the viewpoint (ego) changes
   // (Requirements 10.1, 10.2).
   const onAddressesLoadedRef = useRef(onAddressesLoaded);
@@ -159,7 +171,7 @@ export function TreeGraph({
     return () => {
       controller.abort();
     };
-  }, [treeId, activeEgoId, fetchAddresses, persons, relationships]);
+  }, [treeId, activeEgoId, fetchAddresses, treeStructureVersion]);
 
   useEffect(() => {
     onSelectAddress?.(activeSelectedId ? addresses.get(activeSelectedId) : undefined);
