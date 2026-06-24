@@ -11,39 +11,36 @@ export interface AddressResolution {
   relation: CanonicalRelation | null;
 }
 
-let seedingPromise: Promise<void> | null = null;
+let isSeeded = false;
 
 export async function ensureKinshipTermsSeeded() {
-  if (seedingPromise) {
-    return seedingPromise;
+  if (isSeeded) {
+    return;
   }
 
-  seedingPromise = (async () => {
-    try {
-      const countResult = await db
-        .select({ count: sql<number>`count(*)` })
-        .from(regionKinshipTerms);
-      const count = Number(countResult[0]?.count ?? 0);
-      if (count > 0) {
-        return;
-      }
-
-      console.log("Seeding region_kinship_terms table in Next.js backend...");
-      
-      // Batch insert in chunks of 50
-      for (let i = 0; i < SEEDED_KINSHIP_TERMS.length; i += 50) {
-        const chunk = SEEDED_KINSHIP_TERMS.slice(i, i + 50);
-        await db.insert(regionKinshipTerms).values(chunk);
-      }
-      console.log("Seeding region_kinship_terms table completed successfully.");
-    } catch (err) {
-      console.error("Failed to seed region_kinship_terms table:", err);
-      seedingPromise = null;
-      throw err;
+  try {
+    const countResult = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(regionKinshipTerms);
+    const count = Number(countResult[0]?.count ?? 0);
+    if (count > 0) {
+      isSeeded = true;
+      return;
     }
-  })();
 
-  return seedingPromise;
+    console.log("Seeding region_kinship_terms table in Next.js backend...");
+    
+    // Batch insert in chunks of 50
+    for (let i = 0; i < SEEDED_KINSHIP_TERMS.length; i += 50) {
+      const chunk = SEEDED_KINSHIP_TERMS.slice(i, i + 50);
+      await db.insert(regionKinshipTerms).values(chunk);
+    }
+    console.log("Seeding region_kinship_terms table completed successfully.");
+    isSeeded = true;
+  } catch (err) {
+    console.error("Failed to seed region_kinship_terms table:", err);
+    throw err;
+  }
 }
 
 // Simple in-memory cache for graph projections to mimic KinshipGraphProjectionCache.

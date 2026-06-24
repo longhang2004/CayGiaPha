@@ -12,6 +12,7 @@ let dbInstance;
 if (isNeon) {
   const pool = new NeonPool({
     connectionString: databaseUrl,
+    connectionTimeoutMillis: 10000,
   });
   dbInstance = neonDrizzle(pool, { schema });
 } else {
