@@ -67,6 +67,12 @@ function TreePageContent({ searchParams }: TreePageProps) {
   }, [persons, egoId]);
 
   useEffect(() => {
+    if (egoId) {
+      setAddressesReady(false);
+    }
+  }, [egoId]);
+
+  useEffect(() => {
     setOverflowOpen(false);
   }, [selectedId]);
 
