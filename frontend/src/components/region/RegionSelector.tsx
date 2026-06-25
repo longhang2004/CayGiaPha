@@ -51,7 +51,7 @@ export function RegionSelector({ treeId, region, onChange }: RegionSelectorProps
   }
 
   return (
-    <div>
+    <div className="field">
       <label htmlFor="region-select">Vùng phương ngữ</label>
       <select
         id="region-select"
@@ -66,14 +66,18 @@ export function RegionSelector({ treeId, region, onChange }: RegionSelectorProps
         ))}
       </select>
       {error ? (
-        <span role="alert" data-testid="region-error">
-          {error}
-        </span>
+        <div style={{ marginTop: "0.25rem" }}>
+          <span role="alert" className="field-error" data-testid="region-error">
+            {error}
+          </span>
+        </div>
       ) : null}
       {saved ? (
-        <span role="status" data-testid="region-saved">
-          Đã lưu vùng.
-        </span>
+        <div style={{ marginTop: "0.25rem" }}>
+          <span role="status" data-testid="region-saved" style={{ color: "var(--color-muted)", fontSize: "0.875rem" }}>
+            Đã lưu vùng.
+          </span>
+        </div>
       ) : null}
     </div>
   );
