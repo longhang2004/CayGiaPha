@@ -2,6 +2,15 @@
 
 import { useSession } from "@/app/providers";
 import { HelpEntryPoint } from "@/components/help/HelpEntryPoint";
+import {
+  MenuIcon,
+  CloseIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  TreeIcon,
+  InfoIcon,
+  SettingsIcon,
+} from "@/components/ui/Icons";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { NotificationBell } from "@/components/ui/NotificationBell";
@@ -19,6 +28,16 @@ export function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse }: Side
 
   const isTreeActive = pathname.startsWith("/tree");
   const isHelpActive = pathname.startsWith("/help");
+
+  // On mobile the sidebar is an open drawer (isOpen=true). In that mode the
+  // toggle button closes the drawer rather than collapsing it to icon-only
+  // width (which is a desktop-only concept).
+  const handleToggleBtn = isOpen ? onClose : onToggleCollapse;
+  const toggleLabel = isOpen
+    ? "Đóng menu"
+    : isCollapsed
+    ? "Mở rộng menu"
+    : "Thu gọn menu";
 
   return (
     <>
@@ -40,10 +59,16 @@ export function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse }: Side
               <button
                 type="button"
                 className="sidebar-toggle-btn"
-                onClick={onToggleCollapse}
-                aria-label={isCollapsed ? "Mở rộng menu" : "Thu gọn menu"}
+                onClick={handleToggleBtn}
+                aria-label={toggleLabel}
               >
-                ☰
+                {isOpen ? (
+                  <CloseIcon size={18} />
+                ) : isCollapsed ? (
+                  <ChevronRightIcon size={18} />
+                ) : (
+                  <ChevronLeftIcon size={18} />
+                )}
               </button>
             </div>
           </div>
@@ -55,7 +80,7 @@ export function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse }: Side
               onClick={onClose}
               title={isCollapsed ? "Sơ đồ gia phả" : undefined}
             >
-              <span className="global-sidebar__link-icon" aria-hidden="true">🌳</span>
+              <span className="global-sidebar__link-icon" aria-hidden="true"><TreeIcon size={18} /></span>
               <span className="global-sidebar__link-text">Sơ đồ gia phả</span>
             </Link>
             <Link
@@ -64,7 +89,7 @@ export function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse }: Side
               onClick={onClose}
               title={isCollapsed ? "Hướng dẫn" : undefined}
             >
-              <span className="global-sidebar__link-icon" aria-hidden="true">ℹ️</span>
+              <span className="global-sidebar__link-icon" aria-hidden="true"><InfoIcon size={18} /></span>
               <span className="global-sidebar__link-text">Hướng dẫn</span>
             </Link>
             {user && (
@@ -74,7 +99,7 @@ export function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse }: Side
                 onClick={onClose}
                 title={isCollapsed ? "Cài đặt" : undefined}
               >
-                <span className="global-sidebar__link-icon" aria-hidden="true">⚙️</span>
+                <span className="global-sidebar__link-icon" aria-hidden="true"><SettingsIcon size={18} /></span>
                 <span className="global-sidebar__link-text">Cài đặt</span>
               </Link>
             )}

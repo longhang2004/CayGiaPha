@@ -34,6 +34,7 @@ import {
 } from "@/lib/graph";
 import { GraphEdge } from "./EdgeStyles";
 import { ViewpointSelector } from "./ViewpointSelector";
+import { SearchIcon, DownloadIcon } from "@/components/ui/Icons";
 
 export interface TreeGraphProps {
   treeId: string;
@@ -59,6 +60,12 @@ export interface TreeGraphProps {
   onAddressLoading?: (loading: boolean) => void;
   hideViewpointSelector?: boolean;
   onAddressesLoaded?: (addresses: Map<string, Address>) => void;
+  /**
+   * Increment this value to force address re-fetch without changing egoId.
+   * Used by tree/page.tsx after a region change so kinship terms update
+   * immediately without a full tree reload.
+   */
+  addressRefreshKey?: number;
 }
 
 const NODE_WIDTH = 180;
@@ -79,6 +86,7 @@ export function TreeGraph({
   onAddressLoading,
   hideViewpointSelector = false,
   onAddressesLoaded,
+  addressRefreshKey = 0,
 }: TreeGraphProps) {
   const firstId = persons[0]?.id ?? "";
   const [internalEgoId, setInternalEgoId] = useState<string>(initialEgoId ?? firstId);
@@ -229,7 +237,7 @@ export function TreeGraph({
     return () => {
       controller.abort();
     };
-  }, [treeId, activeEgoId, fetchAddresses, treeStructureVersion]);
+  }, [treeId, activeEgoId, fetchAddresses, treeStructureVersion, addressRefreshKey]);
 
   useEffect(() => {
     onSelectAddress?.(activeSelectedId ? addresses.get(activeSelectedId) : undefined);
@@ -690,7 +698,7 @@ export function TreeGraph({
             }}
             title="Đặt lại góc nhìn"
           >
-            🔍
+            <SearchIcon size={18} />
           </button>
 
           {/* Export SVG Button */}
@@ -708,7 +716,7 @@ export function TreeGraph({
             }}
             title="Tải ảnh sơ đồ (SVG)"
           >
-            📥
+            <DownloadIcon size={18} />
           </button>
         </div>
       </div>

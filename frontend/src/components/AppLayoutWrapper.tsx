@@ -7,6 +7,7 @@ import { Sidebar } from "./Sidebar";
 import Link from "next/link";
 import { useSession } from "@/app/providers";
 import { NotificationBell } from "@/components/ui/NotificationBell";
+import { MenuIcon } from "@/components/ui/Icons";
 
 export function AppLayoutWrapper({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -52,7 +53,7 @@ export function AppLayoutWrapper({ children }: { children: React.ReactNode }) {
           onClick={() => setIsSidebarOpen(true)}
           aria-label="Mở menu ứng dụng"
         >
-          ☰
+          <MenuIcon size={20} />
         </button>
         <Link href="/" className="mobile-top-bar__brand">
           Cây Gia Phả

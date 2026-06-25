@@ -96,6 +96,7 @@ function PrototypeTreeContent() {
   const [overflowOpen, setOverflowOpen] = useState(false);
   const [egoId, setEgoId] = useState<string>(MOCK_PERSONS[0].id);
   const [addressLoading] = useState(false);
+  const [addressRefreshKey, setAddressRefreshKey] = useState(0);
 
   const [isSettingsOpen, setIsSettingsOpen] = useState(
     () => nextSearchParams.get("panel") === "settings",
@@ -233,6 +234,7 @@ function PrototypeTreeContent() {
               onAddressLoading={() => {}}
               onAddressesLoaded={handleAddressesLoaded}
               hideViewpointSelector={true}
+              addressRefreshKey={addressRefreshKey}
             />
           </div>
         </div>
@@ -464,7 +466,10 @@ function PrototypeTreeContent() {
                   <RegionSelector
                     treeId={PROTOTYPE_TREE_ID}
                     region={region}
-                    onChange={(nextRegion) => setRegionState(nextRegion)}
+                    onChange={(nextRegion) => {
+                      setRegionState(nextRegion);
+                      setAddressRefreshKey((k) => k + 1);
+                    }}
                   />
 
                   <div className="field" style={{ marginTop: "1rem" }}>

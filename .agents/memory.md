@@ -35,3 +35,9 @@ Durable project knowledge for future AI agents. Keep entries short, verified, an
 - **AGENTS.md sync rule**: Added "Prototype Pages" section to `AGENTS.md` mandating that prototype pages must be updated in the same PR/commit as any main page UI/UX change.
 - **Automatic Spouse Inference**: Implemented logic in both `RelationshipService.java` (Java backend) and `relationship.ts` (Next.js frontend) to automatically detect when a child has both a father and a mother, and insert a `marriage` edge with a default status of `"married"` if one does not already exist. This facilitates natural user onboarding when connecting parents. Sibling relationships are not stored as edges and remain fully derived dynamically from shared parents by the kinship resolver.
 - **Serverless-Safe Seeding & Database Connection Timeout**: Configured `connectionTimeoutMillis` (10s for Neon on production, 5s for local pg) to prevent the application from hanging indefinitely during database outages. Replaced the global `seedingPromise` in `address.ts` with a simple boolean `isSeeded` flag to prevent serverless containers from getting stuck waiting on a permanently pending/suspended promise if a cold start or database query times out during initial migration seeding.
+
+## 2026-06-25
+
+- **Frontend Priority**: The backend is currently not used. Prioritize all development and updates in the frontend; syncing with the backend will be done later.
+- **Environment Configurations**: Environment variables are managed via `.env.development` and `.env.production`. The general `.env` file is redundant and has been removed/ignored.
+

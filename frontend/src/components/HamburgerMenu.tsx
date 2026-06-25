@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import { TextSizeControl } from "@/components/a11y/TextSizeControl";
 import { HelpEntryPoint } from "@/components/help/HelpEntryPoint";
+import { MenuIcon } from "@/components/ui/Icons";
 
 export function HamburgerMenu() {
   const [isOpen, setIsOpen] = useState(false);
@@ -40,7 +41,7 @@ export function HamburgerMenu() {
           borderRadius: "8px",
         }}
       >
-        ☰
+        <MenuIcon size={20} />
       </button>
 
       {isOpen && (

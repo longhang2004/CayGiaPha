@@ -21,6 +21,7 @@ import type { Person, Relationship, Address } from "@/lib/graph";
 import type { Region } from "@/lib/region";
 import { getCookie, setCookie } from "@/lib/cookies";
 import "@/components/graph/graph.css";
+import { LightbulbIcon } from "@/components/ui/Icons";
 
 interface TreePageProps {
   searchParams: {
@@ -60,6 +61,7 @@ function TreePageContent({ searchParams }: TreePageProps) {
   const [addressLoading, setAddressLoading] = useState(false);
   const [overflowOpen, setOverflowOpen] = useState(false);
   const [egoId, setEgoId] = useState<string>("");
+  const [addressRefreshKey, setAddressRefreshKey] = useState(0);
 
   useEffect(() => {
     if (persons.length > 0 && !egoId) {
@@ -348,7 +350,9 @@ function TreePageContent({ searchParams }: TreePageProps) {
         <div className="tutorial-popup-overlay">
           <div className="tutorial-popup">
             <div className="tutorial-popup__header">
-              <h4>💡 Hướng dẫn nhanh</h4>
+              <h4 style={{ display: "flex", alignItems: "center", gap: "0.4rem", margin: 0 }}>
+                <LightbulbIcon size={16} /> Hướng dẫn nhanh
+              </h4>
               <button
                 type="button"
                 className="tutorial-popup__close"
@@ -427,6 +431,7 @@ function TreePageContent({ searchParams }: TreePageProps) {
               onAddressLoading={setAddressLoading}
               onAddressesLoaded={handleAddressesLoaded}
               hideViewpointSelector={true}
+              addressRefreshKey={addressRefreshKey}
             />
           </div>
         </div>
@@ -634,7 +639,12 @@ function TreePageContent({ searchParams }: TreePageProps) {
                   <RegionSelector
                     treeId={activeTreeId}
                     region={region}
-                    onChange={(nextRegion) => setRegionState(nextRegion)}
+                    onChange={(nextRegion) => {
+                      setRegionState(nextRegion);
+                      // Force TreeGraph to re-fetch addresses with the new
+                      // region immediately, without a full tree reload.
+                      setAddressRefreshKey((k) => k + 1);
+                    }}
                   />
 
                   <div className="field" style={{ marginTop: "1rem" }}>

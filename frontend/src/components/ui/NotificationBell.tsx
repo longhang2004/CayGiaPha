@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef } from "react";
 import { getReminders, markReminderAsRead, deleteReminder, type InAppReminder } from "@/lib/persons";
+import { BellIcon, TrashIcon } from "@/components/ui/Icons";
 
 export function NotificationBell() {
   const [reminders, setReminders] = useState<InAppReminder[]>([]);
@@ -84,7 +85,7 @@ export function NotificationBell() {
         aria-label="Thông báo"
         aria-expanded={isOpen}
       >
-        <span>🔔</span>
+        <BellIcon size={20} />
         {unreadCount > 0 && (
           <span
             style={{
@@ -193,7 +194,7 @@ export function NotificationBell() {
                       }}
                       title="Xóa thông báo"
                     >
-                      🗑️
+                      <TrashIcon size={14} />
                     </button>
                   </div>
                   <p style={{
