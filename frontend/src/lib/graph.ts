@@ -36,6 +36,13 @@ export interface Person {
   phone?: string | null;
   email?: string | null;
   deceased?: boolean;
+  claimed?: boolean;
+  deathDay?: number | null;
+  deathMonth?: number | null;
+  deathYear?: number | null;
+  deathCalendar?: string | null;
+  deathLunarLeap?: boolean | null;
+  visDeath?: string | null;
 }
 
 export interface Relationship {

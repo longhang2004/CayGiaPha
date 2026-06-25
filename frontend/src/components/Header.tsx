@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useSession } from "@/app/providers";
 import { SignOutButton } from "@/components/auth/SignOutButton";
 import { HamburgerMenu } from "@/components/HamburgerMenu";
+import { NotificationBell } from "@/components/ui/NotificationBell";
 
 export function Header() {
   const { user, loading } = useSession();
@@ -26,6 +27,7 @@ export function Header() {
                   <Link href="/tree" className="nav-link" style={{ fontWeight: 600 }}>
                     Xem sơ đồ
                   </Link>
+                  <NotificationBell />
                   <SignOutButton redirectTo="/" />
                 </>
               ) : (

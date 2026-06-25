@@ -5,9 +5,12 @@ import { useState } from "react";
 import { Header } from "./Header";
 import { Sidebar } from "./Sidebar";
 import Link from "next/link";
+import { useSession } from "@/app/providers";
+import { NotificationBell } from "@/components/ui/NotificationBell";
 
 export function AppLayoutWrapper({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const { user } = useSession();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(() => {
     if (typeof window !== "undefined") {
@@ -37,6 +40,7 @@ export function AppLayoutWrapper({ children }: { children: React.ReactNode }) {
     );
   }
 
+
   // In-app experience: sidebar + mobile top bar
   return (
     <div className="inapp-layout">
@@ -53,7 +57,9 @@ export function AppLayoutWrapper({ children }: { children: React.ReactNode }) {
         <Link href="/" className="mobile-top-bar__brand">
           Cây Gia Phả
         </Link>
-        <div style={{ width: "32px" }} /> {/* spacer to center brand title */}
+        <div style={{ display: "flex", alignItems: "center", marginRight: "1rem" }}>
+          {user && <NotificationBell />}
+        </div>
       </div>
 
       <Sidebar

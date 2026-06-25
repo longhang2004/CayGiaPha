@@ -82,6 +82,21 @@ public class Person {
     @Column(name = "vis_photo", nullable = false)
     private String visPhoto = "private";
 
+    @Column(name = "death_day")
+    private Integer deathDay;
+
+    @Column(name = "death_month")
+    private Integer deathMonth;
+
+    @Column(name = "death_year")
+    private Integer deathYear;
+
+    @Column(name = "death_calendar")
+    private String deathCalendar = "lunar";
+
+    @Column(name = "death_lunar_leap")
+    private Boolean deathLunarLeap = false;
+
     /** Creation timestamp; populated by the database default ({@code now()}). */
     @Column(name = "created_at", nullable = false, insertable = false, updatable = false)
     private Instant createdAt;
@@ -206,6 +221,46 @@ public class Person {
 
     public Instant getCreatedAt() {
         return createdAt;
+    }
+
+    public Integer getDeathDay() {
+        return deathDay;
+    }
+
+    public void setDeathDay(Integer deathDay) {
+        this.deathDay = deathDay;
+    }
+
+    public Integer getDeathMonth() {
+        return deathMonth;
+    }
+
+    public void setDeathMonth(Integer deathMonth) {
+        this.deathMonth = deathMonth;
+    }
+
+    public Integer getDeathYear() {
+        return deathYear;
+    }
+
+    public void setDeathYear(Integer deathYear) {
+        this.deathYear = deathYear;
+    }
+
+    public String getDeathCalendar() {
+        return deathCalendar;
+    }
+
+    public void setDeathCalendar(String deathCalendar) {
+        this.deathCalendar = deathCalendar;
+    }
+
+    public Boolean getDeathLunarLeap() {
+        return deathLunarLeap;
+    }
+
+    public void setDeathLunarLeap(Boolean deathLunarLeap) {
+        this.deathLunarLeap = deathLunarLeap;
     }
 
     @Override

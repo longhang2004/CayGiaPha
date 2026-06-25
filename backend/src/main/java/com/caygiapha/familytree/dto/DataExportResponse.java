@@ -25,14 +25,21 @@ public record DataExportResponse(PersonExport person, List<EdgeExport> incidentE
             String visDeath,
             String visName,
             String visBirthYear,
-            String visPhoto) {
+            String visPhoto,
+            Integer deathDay,
+            Integer deathMonth,
+            Integer deathYear,
+            String deathCalendar,
+            Boolean deathLunarLeap) {
 
         static PersonExport from(Person p) {
             return new PersonExport(
                     p.getId(), p.getTreeId(), p.getDisplayName(), p.getGender(),
                     p.getBirthOrder(), p.getBirthYear(), p.isDeathStatus(), p.getAdoptionStatus(),
                     p.getVisMarital(), p.getVisAdoption(), p.getVisDeath(),
-                    p.getVisName(), p.getVisBirthYear(), p.getVisPhoto());
+                    p.getVisName(), p.getVisBirthYear(), p.getVisPhoto(),
+                    p.getDeathDay(), p.getDeathMonth(), p.getDeathYear(),
+                    p.getDeathCalendar(), p.getDeathLunarLeap());
         }
     }
 

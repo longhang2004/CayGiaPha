@@ -39,6 +39,11 @@ public class InMemoryClaimRepository extends InMemoryRepository<Claim> implement
     }
 
     @Override
+    public java.util.List<UUID> findUserIdsWithClaimsInTree(UUID treeId) {
+        return java.util.List.of();
+    }
+
+    @Override
     public void deleteByPersonIdIn(java.util.Collection<UUID> personIds) {
         all().stream()
                 .filter(c -> personIds.contains(c.getPersonId()))

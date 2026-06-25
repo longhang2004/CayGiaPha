@@ -8,17 +8,24 @@ import com.caygiapha.familytree.dto.SharingResponse;
 import com.caygiapha.familytree.dto.SharingUpdateRequest;
 import com.caygiapha.familytree.dto.ShareTokenResponse;
 import com.caygiapha.familytree.entity.Tree;
+import com.caygiapha.familytree.dto.UpcomingEventResponse;
 import com.caygiapha.familytree.service.AuditService;
+import com.caygiapha.familytree.service.EventService;
 import com.caygiapha.familytree.service.TreeRegionService;
 import com.caygiapha.familytree.service.TreeSharingService;
+import com.caygiapha.familytree.security.AuthorizationService;
+import java.util.List;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -47,14 +54,20 @@ public class TreeController {
     private final TreeRegionService treeRegionService;
     private final TreeSharingService treeSharingService;
     private final AuditService auditService;
+    private final EventService eventService;
+    private final AuthorizationService authorizationService;
 
     public TreeController(
             TreeRegionService treeRegionService,
             TreeSharingService treeSharingService,
-            AuditService auditService) {
+            AuditService auditService,
+            EventService eventService,
+            AuthorizationService authorizationService) {
         this.treeRegionService = treeRegionService;
         this.treeSharingService = treeSharingService;
         this.auditService = auditService;
+        this.eventService = eventService;
+        this.authorizationService = authorizationService;
     }
 
     @PatchMapping("/{treeId}/region")
@@ -93,5 +106,14 @@ public class TreeController {
         auditService.record(AuditService.LIVING_REDACTION_CHANGED, "tree", treeId,
                 String.valueOf(tree.isLivingRedaction())); // 25.2
         return LivingRedactionResponse.from(tree);
+    }
+
+    @GetMapping("/{treeId}/upcoming-events")
+    public List<UpcomingEventResponse> getUpcomingEvents(
+            @PathVariable("treeId") UUID treeId,
+            @RequestParam(value = "days", defaultValue = "30") int days,
+            @RequestHeader(value = "X-Share-Token", required = false) String shareToken) {
+        authorizationService.requireReadAccess(treeId, shareToken);
+        return eventService.getUpcomingEvents(treeId, days);
     }
 }

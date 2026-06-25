@@ -20,5 +20,14 @@ public record EditPersonRequest(
         String gender,
         Integer birthOrder,
         Integer birthYear,
-        Boolean deathStatus) {
+        Boolean deathStatus,
+        Integer deathDay,
+        Integer deathMonth,
+        Integer deathYear,
+        String deathCalendar,
+        Boolean deathLunarLeap) {
+
+    public EditPersonRequest(String displayName, String gender, Integer birthOrder, Integer birthYear, Boolean deathStatus) {
+        this(displayName, gender, birthOrder, birthYear, deathStatus, null, null, null, "lunar", false);
+    }
 }

@@ -32,6 +32,7 @@ import { PersonPhotos } from "@/components/photos/PersonPhotos";
 import { TextSizeControl } from "@/components/a11y/TextSizeControl";
 import { PersonInfoPanel } from "@/components/graph/PersonInfoPanel";
 import { ViewpointSelector } from "@/components/graph/ViewpointSelector";
+import { UpcomingEventsWidget } from "@/components/graph/UpcomingEventsWidget";
 import type { Person, Relationship, Address, ViewpointAddresses } from "@/lib/graph";
 import type { Region } from "@/lib/region";
 import { MockSessionProvider } from "@/lib/prototype/mockSession";
@@ -130,6 +131,11 @@ function PrototypeTreeContent() {
         birthOrder: selectedPerson.birthOrder ?? undefined,
         birthYear: selectedPerson.birthYear ?? undefined,
         deathStatus: selectedPerson.deceased ?? false,
+        deathDay: selectedPerson.deathDay ?? undefined,
+        deathMonth: selectedPerson.deathMonth ?? undefined,
+        deathYear: selectedPerson.deathYear ?? undefined,
+        deathCalendar: selectedPerson.deathCalendar ?? undefined,
+        deathLunarLeap: selectedPerson.deathLunarLeap ?? undefined,
         visibility: {
           visMarital: "private" as const,
           visAdoption: "private" as const,
@@ -415,16 +421,19 @@ function PrototypeTreeContent() {
               </button>
             </div>
           ) : (
-            <div className="surface-card side-panel">
-              <p
-                style={{
-                  color: "var(--color-muted)",
-                  margin: 0,
-                  textAlign: "center",
-                }}
-              >
-                Chọn một người để xem thông tin và cách xưng hô.
-              </p>
+            <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+              <div className="surface-card side-panel">
+                <p
+                  style={{
+                    color: "var(--color-muted)",
+                    margin: 0,
+                    textAlign: "center",
+                  }}
+                >
+                  Chọn một người để xem thông tin và cách xưng hô.
+                </p>
+              </div>
+              <UpcomingEventsWidget treeId={PROTOTYPE_TREE_ID} />
             </div>
           )}
         </div>

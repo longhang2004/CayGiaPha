@@ -2,7 +2,7 @@ import { handleApiRoute } from "@/lib/services/routeHelper";
 import { getAuthContext, authorizationService } from "@/lib/services/authorization";
 import { ApiException } from "@/lib/services/errors";
 import { db } from "@/lib/db";
-import { persons, relationships, trees } from "@/lib/db/schema";
+import { persons, relationships, trees, claims } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 
 const REDACTED_NAME_PLACEHOLDER = "Người thân còn sống";
@@ -45,6 +45,14 @@ export async function GET(
       .from(persons)
       .where(eq(persons.treeId, treeId));
 
+    // Fetch all claims in the tree
+    const dbClaims = await db
+      .select({ personId: claims.personId })
+      .from(claims)
+      .innerJoin(persons, eq(claims.personId, persons.id))
+      .where(eq(persons.treeId, treeId));
+    const claimedPersonIds = new Set(dbClaims.map((c) => c.personId));
+
     // Fetch all relationships in the tree
     const dbRelationships = await db
       .select()
@@ -71,12 +79,18 @@ export async function GET(
         phone: privileged && !redactLiving ? person.phone : undefined,
         email: privileged && !redactLiving ? person.email : undefined,
         deceased: visible(privileged, person.visDeath) ? person.deathStatus : undefined,
+        deathDay: visible(privileged, person.visDeath) ? person.deathDay : undefined,
+        deathMonth: visible(privileged, person.visDeath) ? person.deathMonth : undefined,
+        deathYear: visible(privileged, person.visDeath) ? person.deathYear : undefined,
+        deathCalendar: visible(privileged, person.visDeath) ? person.deathCalendar : undefined,
+        deathLunarLeap: visible(privileged, person.visDeath) ? person.deathLunarLeap : undefined,
         visName: person.visName,
         visBirthYear: person.visBirthYear,
         visPhoto: person.visPhoto,
         visDeath: person.visDeath,
         visMarital: person.visMarital,
         visAdoption: person.visAdoption,
+        claimed: claimedPersonIds.has(person.id),
       });
     }
 

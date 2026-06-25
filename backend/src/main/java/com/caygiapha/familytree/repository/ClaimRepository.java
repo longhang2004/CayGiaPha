@@ -1,6 +1,7 @@
 package com.caygiapha.familytree.repository;
 
 import com.caygiapha.familytree.entity.Claim;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -35,6 +36,10 @@ public interface ClaimRepository extends JpaRepository<Claim, UUID> {
     @Query("SELECT COUNT(c) > 0 FROM Claim c, Person p "
             + "WHERE p.id = c.personId AND p.treeId = :treeId AND c.userId = :userId")
     boolean existsLinkInTree(@Param("treeId") UUID treeId, @Param("userId") UUID userId);
+
+    @Query("SELECT DISTINCT c.userId FROM Claim c, Person p "
+            + "WHERE p.id = c.personId AND p.treeId = :treeId")
+    List<UUID> findUserIdsWithClaimsInTree(@Param("treeId") UUID treeId);
 
     /** Delete every claim on any of the given person nodes (account/tree deletion cascade; 22.4). */
     void deleteByPersonIdIn(java.util.Collection<UUID> personIds);

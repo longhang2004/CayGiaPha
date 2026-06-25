@@ -17,6 +17,11 @@ public class InMemoryPersonRepository extends InMemoryRepository<Person>
     }
 
     @Override
+    public List<Person> findByTreeIdAndDeathStatusTrue(UUID treeId) {
+        return findByTreeId(treeId).stream().filter(Person::isDeathStatus).toList();
+    }
+
+    @Override
     public Optional<Person> findByIdAndTreeId(UUID id, UUID treeId) {
         return all().stream()
                 .filter(p -> Objects.equals(p.getId(), id) && Objects.equals(p.getTreeId(), treeId))

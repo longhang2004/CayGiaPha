@@ -240,4 +240,120 @@ describe("TreeGraph renderer", () => {
     const egoNode = document.querySelector('.tree-graph__node[data-ego="true"] [data-address]');
     expect(egoNode).toHaveTextContent("Bản thân");
   });
+
+  it("renders card features like gender themes, deceased markers, and claimed badges", async () => {
+    const fetchAddresses = stubFetcher({ p1: { egoId: "p1", addresses: [] } });
+    const mockPersons: Person[] = [
+      { id: "p1", displayName: "Người 1", gender: "male", birthYear: 1980, claimed: true },
+      { id: "p2", displayName: "Người 2", gender: "female", birthYear: 1985, deceased: true },
+    ];
+    render(
+      <TreeGraph
+        treeId="t1"
+        persons={mockPersons}
+        relationships={[]}
+        initialEgoId="p1"
+        fetchAddresses={fetchAddresses}
+      />,
+    );
+
+    await waitFor(() => expect(fetchAddresses).toHaveBeenCalled());
+
+    const node1 = document.querySelector('.tree-graph__node[data-person-id="p1"]')!;
+    const node2 = document.querySelector('.tree-graph__node[data-person-id="p2"]')!;
+
+    // Gender themes in classes
+    expect(node1).toHaveClass("tree-graph__node--male");
+    expect(node2).toHaveClass("tree-graph__node--female");
+
+    // Deceased classes
+    expect(node1).not.toHaveClass("tree-graph__node--deceased");
+    expect(node2).toHaveClass("tree-graph__node--deceased");
+
+    // Claimed badge
+    expect(node1.querySelector(".tree-graph__node-claimed-badge")).toBeInTheDocument();
+    expect(node2.querySelector(".tree-graph__node-claimed-badge")).not.toBeInTheDocument();
+
+    // Lifespan rendering
+    expect(node1.querySelector(".tree-graph__node-lifespan")).toHaveTextContent("(s. 1980)");
+    expect(node2.querySelector(".tree-graph__node-lifespan")).toHaveTextContent("(1985 - †)");
+  });
+
+  it("supports switching tabs (Chi tiết vs Tiểu sử) in PersonInfoPanel", async () => {
+    const fetchAddresses = stubFetcher({
+      p1: { egoId: "p1", addresses: [{ personId: "p1", resolved: null, status: "resolved" }] },
+    });
+    render(
+      <TreeGraphTestWrapper
+        treeId="t1"
+        persons={[{ id: "p1", displayName: "Bố", gender: "male", birthYear: 1965, deceased: true }]}
+        relationships={[]}
+        initialEgoId="p1"
+        fetchAddresses={fetchAddresses}
+      />,
+    );
+
+    await waitFor(() => expect(fetchAddresses).toHaveBeenCalled());
+    await userEvent.click(screen.getByRole("button", { name: /Bố/ }));
+
+    // Verify info tab content is displayed initially
+    expect(screen.getByText("Giới tính")).toBeInTheDocument();
+
+    // Switch to biography tab
+    const bioTabButton = screen.getByRole("tab", { name: /Tiểu sử/ });
+    await userEvent.click(bioTabButton);
+
+    // Verify timeline event is rendered
+    expect(screen.queryByText("Giới tính")).not.toBeInTheDocument();
+    expect(screen.getByText("Sinh năm 1965.")).toBeInTheDocument();
+    expect(screen.getAllByText("†").length).toBeGreaterThan(0);
+  });
+
+  it("filters the tree view when branch focus view is toggled", async () => {
+    const fetchAddresses = vi.fn(async () => ({ egoId: "p1", addresses: [] }));
+    const mockPersons: Person[] = [
+      { id: "p1", displayName: "Ông", gender: "male" },
+      { id: "p2", displayName: "Bố", gender: "male" },
+      { id: "p3", displayName: "Con", gender: "male" },
+    ];
+    const mockRelationships = [
+      { id: "r1", type: "bloodline_father", sourceId: "p1", targetId: "p2", derivationState: "derived" },
+      { id: "r2", type: "bloodline_father", sourceId: "p2", targetId: "p3", derivationState: "derived" },
+    ] as Relationship[];
+
+    render(
+      <TreeGraph
+        treeId="t1"
+        persons={mockPersons}
+        relationships={mockRelationships}
+        initialEgoId="p1"
+        fetchAddresses={fetchAddresses}
+      />,
+    );
+
+    await waitFor(() => expect(fetchAddresses).toHaveBeenCalled());
+
+    // Initially all nodes are rendered
+    expect(document.querySelector('.tree-graph__node[data-person-id="p1"]')).toBeInTheDocument();
+    expect(document.querySelector('.tree-graph__node[data-person-id="p2"]')).toBeInTheDocument();
+    expect(document.querySelector('.tree-graph__node[data-person-id="p3"]')).toBeInTheDocument();
+
+    // Select "Bố" (p2)
+    await userEvent.click(screen.getByRole("button", { name: /Bố/ }));
+
+    // Click "Xem riêng nhánh này"
+    const focusBtn = screen.getByRole("button", { name: /Xem riêng nhánh này/ });
+    await userEvent.click(focusBtn);
+
+    // After focus is active, "Ông" (p1) should be filtered out
+    expect(document.querySelector('.tree-graph__node[data-person-id="p1"]')).not.toBeInTheDocument();
+    expect(document.querySelector('.tree-graph__node[data-person-id="p2"]')).toBeInTheDocument();
+    expect(document.querySelector('.tree-graph__node[data-person-id="p3"]')).toBeInTheDocument();
+
+    // Toggle off
+    await userEvent.click(screen.getByRole("button", { name: /Hiện toàn bộ cây/ }));
+
+    // All nodes should be back
+    expect(document.querySelector('.tree-graph__node[data-person-id="p1"]')).toBeInTheDocument();
+  });
 });

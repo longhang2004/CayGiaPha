@@ -48,6 +48,11 @@ export interface CreatePersonInput {
   phone?: string;
   email?: string;
   deathStatus?: boolean;
+  deathDay?: number;
+  deathMonth?: number;
+  deathYear?: number;
+  deathCalendar?: string;
+  deathLunarLeap?: boolean;
 }
 
 /** Partial edit body for PATCH /persons/{id} (Requirements 3.3, 3.6). */
@@ -59,6 +64,11 @@ export interface EditPersonInput {
   phone?: string;
   email?: string;
   deathStatus?: boolean;
+  deathDay?: number;
+  deathMonth?: number;
+  deathYear?: number;
+  deathCalendar?: string;
+  deathLunarLeap?: boolean;
 }
 
 /** Partial visibility update for PATCH /persons/{id}/visibility (Requirement 14.1). */
@@ -178,4 +188,69 @@ export function addAssertedRelative(
     targetId: input.targetId,
     assertedLabel: input.assertedLabel,
   });
+}
+
+export interface UpcomingEvent {
+  personId: string;
+  displayName: string;
+  relationship: string;
+  eventType: string;
+  eventDate: string; // Gregorian solar date, e.g. "2024-04-18"
+  originalDate: string; // Vietnamese lunar or solar label, e.g. "10/03 Âm lịch"
+  daysRemaining: number;
+}
+
+export interface InAppReminder {
+  id: string;
+  userId: string;
+  personId: string;
+  title: string;
+  content: string;
+  daysUntil: number;
+  anniversaryDate: string;
+  isRead: boolean;
+  createdAt: string;
+}
+
+export interface LunarConversionResult {
+  day: number;
+  month: number;
+  year: number;
+  leap: boolean;
+  formatted: string;
+}
+
+export interface SolarConversionResult {
+  day: number;
+  month: number;
+  year: number;
+  formatted: string;
+}
+
+export function getUpcomingEvents(treeId: string): Promise<UpcomingEvent[]> {
+  return api.get<UpcomingEvent[]>(`/trees/${encodeURIComponent(treeId)}/upcoming-events`);
+}
+
+export function getReminders(): Promise<InAppReminder[]> {
+  return api.get<InAppReminder[]>("/reminders");
+}
+
+export function markReminderAsRead(id: string): Promise<InAppReminder> {
+  return api.patch<InAppReminder>(`/reminders/${encodeURIComponent(id)}/read`, {});
+}
+
+export function deleteReminder(id: string): Promise<void> {
+  return api.del(`/reminders/${encodeURIComponent(id)}`);
+}
+
+export function triggerReminderCheck(): Promise<number> {
+  return api.post<number>("/reminders/trigger-check", {});
+}
+
+export function convertSolarToLunar(day: number, month: number, year: number): Promise<LunarConversionResult> {
+  return api.get<LunarConversionResult>(`/calendar/solar-to-lunar?day=${day}&month=${month}&year=${year}`);
+}
+
+export function convertLunarToSolar(day: number, month: number, year: number, leap: boolean): Promise<SolarConversionResult> {
+  return api.get<SolarConversionResult>(`/calendar/lunar-to-solar?day=${day}&month=${month}&year=${year}&leap=${leap}`);
 }

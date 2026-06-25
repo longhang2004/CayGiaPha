@@ -19,6 +19,9 @@ public interface PersonRepository extends JpaRepository<Person, UUID> {
     /** All person nodes belonging to the given tree. */
     List<Person> findByTreeId(UUID treeId);
 
+    /** All deceased person nodes belonging to the given tree. */
+    List<Person> findByTreeIdAndDeathStatusTrue(UUID treeId);
+
     /** A person scoped to a tree (used to verify the node is accessible in the caller's tree). */
     Optional<Person> findByIdAndTreeId(UUID id, UUID treeId);
 

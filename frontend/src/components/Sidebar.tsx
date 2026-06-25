@@ -4,6 +4,7 @@ import { useSession } from "@/app/providers";
 import { HelpEntryPoint } from "@/components/help/HelpEntryPoint";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { NotificationBell } from "@/components/ui/NotificationBell";
 
 interface SidebarProps {
   isOpen: boolean;
@@ -32,16 +33,19 @@ export function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse }: Side
           <div className="global-sidebar__brand-container">
             <Link href="/" className="global-sidebar__brand" onClick={onClose} style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
               <img src="/logo.png" alt="Logo Cây Gia Phả" style={{ height: "24px", width: "auto" }} />
-              <span>Cây Gia Phả</span>
+              {!isCollapsed && <span>Cây Gia Phả</span>}
             </Link>
-            <button
-              type="button"
-              className="sidebar-toggle-btn"
-              onClick={onToggleCollapse}
-              aria-label={isCollapsed ? "Mở rộng menu" : "Thu gọn menu"}
-            >
-              ☰
-            </button>
+            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+              {user && <NotificationBell />}
+              <button
+                type="button"
+                className="sidebar-toggle-btn"
+                onClick={onToggleCollapse}
+                aria-label={isCollapsed ? "Mở rộng menu" : "Thu gọn menu"}
+              >
+                ☰
+              </button>
+            </div>
           </div>
 
           <nav className="global-sidebar__nav" aria-label="Danh mục ứng dụng">

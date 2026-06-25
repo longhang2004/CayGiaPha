@@ -1,11 +1,13 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useState, useEffect, type FormEvent } from "react";
 import { ApiError } from "@/lib/apiClient";
 import {
   createPerson,
   editPerson,
   setVisibility,
+  convertSolarToLunar,
+  convertLunarToSolar,
   type CreatePersonInput,
   type EditPersonInput,
   type Gender,
@@ -42,6 +44,11 @@ export interface PersonFormInitialValues {
   phone?: string;
   email?: string;
   deathStatus?: boolean;
+  deathDay?: number;
+  deathMonth?: number;
+  deathYear?: number;
+  deathCalendar?: string;
+  deathLunarLeap?: boolean;
   visibility?: VisibilityState;
 }
 
@@ -79,9 +86,66 @@ export function PersonForm({
   const [phone, setPhone] = useState(initialValues?.phone ?? "");
   const [email, setEmail] = useState(initialValues?.email ?? "");
   const [deathStatus, setDeathStatus] = useState(initialValues?.deathStatus ?? false);
+  const [deathDay, setDeathDay] = useState(
+    initialValues?.deathDay != null ? String(initialValues.deathDay) : "",
+  );
+  const [deathMonth, setDeathMonth] = useState(
+    initialValues?.deathMonth != null ? String(initialValues.deathMonth) : "",
+  );
+  const [deathYear, setDeathYear] = useState(
+    initialValues?.deathYear != null ? String(initialValues.deathYear) : "",
+  );
+  const [deathCalendar, setDeathCalendar] = useState<string>(
+    initialValues?.deathCalendar ?? "lunar",
+  );
+  const [deathLunarLeap, setDeathLunarLeap] = useState<boolean>(
+    initialValues?.deathLunarLeap ?? false,
+  );
+  const [conversionPreview, setConversionPreview] = useState<string>("");
   const [visibility, setVisibilityState] = useState<VisibilityState>(
     initialValues?.visibility ?? DEFAULT_VISIBILITY,
   );
+
+  useEffect(() => {
+    if (!deathStatus || !deathDay || !deathMonth) {
+      setConversionPreview("");
+      return;
+    }
+    const day = Number(deathDay);
+    const month = Number(deathMonth);
+    const year = deathYear ? Number(deathYear) : new Date().getFullYear();
+
+    if (isNaN(day) || isNaN(month) || isNaN(year) || day < 1 || day > 31 || month < 1 || month > 12) {
+      setConversionPreview("");
+      return;
+    }
+
+    let active = true;
+    if (deathCalendar === "lunar") {
+      convertLunarToSolar(day, month, year, deathLunarLeap)
+        .then((res) => {
+          if (active) {
+            setConversionPreview(`Tương đương Dương lịch: ${res.formatted}`);
+          }
+        })
+        .catch(() => {
+          if (active) setConversionPreview("Ngày Âm lịch không hợp lệ");
+        });
+    } else {
+      convertSolarToLunar(day, month, year)
+        .then((res) => {
+          if (active) {
+            setConversionPreview(`Tương đương Âm lịch: ${res.formatted}`);
+          }
+        })
+        .catch(() => {
+          if (active) setConversionPreview("Ngày Dương lịch không hợp lệ");
+        });
+    }
+    return () => {
+      active = false;
+    };
+  }, [deathStatus, deathDay, deathMonth, deathYear, deathCalendar, deathLunarLeap]);
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [photoPreviewUrl, setPhotoPreviewUrl] = useState<string | null>(null);
 
@@ -101,6 +165,9 @@ export function PersonForm({
 
     const order = parseOptionalInt(birthOrder);
     const year = parseOptionalInt(birthYear);
+    const dDay = parseOptionalInt(deathDay);
+    const dMonth = parseOptionalInt(deathMonth);
+    const dYear = parseOptionalInt(deathYear);
 
     try {
       let resolvedId = personId;
@@ -110,6 +177,13 @@ export function PersonForm({
           displayName,
           gender,
           deathStatus,
+          ...(deathStatus && dDay !== undefined && dMonth !== undefined ? {
+            deathDay: dDay,
+            deathMonth: dMonth,
+            deathYear: dYear,
+            deathCalendar,
+            deathLunarLeap,
+          } : {}),
           ...(order !== undefined ? { birthOrder: order } : {}),
           ...(year !== undefined ? { birthYear: year } : {}),
           ...(phone.trim() ? { phone: phone.trim() } : {}),
@@ -125,6 +199,11 @@ export function PersonForm({
           displayName,
           gender,
           deathStatus,
+          deathDay: deathStatus ? dDay : undefined,
+          deathMonth: deathStatus ? dMonth : undefined,
+          deathYear: deathStatus ? dYear : undefined,
+          deathCalendar: deathStatus && dDay !== undefined && dMonth !== undefined ? deathCalendar : undefined,
+          deathLunarLeap: deathStatus && dDay !== undefined && dMonth !== undefined ? deathLunarLeap : undefined,
           ...(order !== undefined ? { birthOrder: order } : {}),
           ...(year !== undefined ? { birthYear: year } : {}),
           phone: phone.trim() || undefined,
@@ -339,6 +418,129 @@ export function PersonForm({
           <span>Đã mất</span>
         </label>
       </div>
+
+      {deathStatus && (
+        <div className="death-details-pane" style={{
+          marginTop: "1rem",
+          padding: "1rem",
+          borderRadius: "8px",
+          border: "1px solid var(--color-hairline)",
+          background: "rgba(255,255,255,0.05)",
+          display: "flex",
+          flexDirection: "column",
+          gap: "1rem"
+        }}>
+          <div className="field">
+            <label style={{ fontWeight: "600", fontSize: "0.875rem" }}>Lịch ngày mất</label>
+            <div style={{ display: "flex", gap: "1.5rem", marginTop: "0.5rem" }}>
+              <label htmlFor="calendar-lunar" style={{ display: "flex", alignItems: "center", gap: "0.35rem", cursor: "pointer", fontWeight: "normal", color: "var(--color-muted)", minHeight: "auto" }}>
+                <input
+                  id="calendar-lunar"
+                  type="radio"
+                  name="deathCalendar"
+                  value="lunar"
+                  checked={deathCalendar === "lunar"}
+                  onChange={() => setDeathCalendar("lunar")}
+                />
+                <span>Âm lịch</span>
+              </label>
+              <label htmlFor="calendar-solar" style={{ display: "flex", alignItems: "center", gap: "0.35rem", cursor: "pointer", fontWeight: "normal", color: "var(--color-muted)", minHeight: "auto" }}>
+                <input
+                  id="calendar-solar"
+                  type="radio"
+                  name="deathCalendar"
+                  value="solar"
+                  checked={deathCalendar === "solar"}
+                  onChange={() => setDeathCalendar("solar")}
+                />
+                <span>Dương lịch</span>
+              </label>
+            </div>
+          </div>
+
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "0.75rem" }}>
+            <div className="field">
+              <label htmlFor="deathDay" style={{ fontSize: "0.875rem" }}>Ngày mất</label>
+              <input
+                id="deathDay"
+                name="deathDay"
+                type="number"
+                min={1}
+                max={31}
+                value={deathDay}
+                aria-invalid={fieldErrors.deathDay ? true : undefined}
+                aria-describedby={describedBy("deathDay")}
+                onChange={(e) => setDeathDay(e.target.value)}
+              />
+              {fieldErrors.deathDay && (
+                <span id="deathDay-error" role="alert" className="field-error">
+                  {fieldErrors.deathDay}
+                </span>
+              )}
+            </div>
+
+            <div className="field">
+              <label htmlFor="deathMonth" style={{ fontSize: "0.875rem" }}>Tháng mất</label>
+              <input
+                id="deathMonth"
+                name="deathMonth"
+                type="number"
+                min={1}
+                max={12}
+                value={deathMonth}
+                aria-invalid={fieldErrors.deathMonth ? true : undefined}
+                aria-describedby={describedBy("deathMonth")}
+                onChange={(e) => setDeathMonth(e.target.value)}
+              />
+              {fieldErrors.deathMonth && (
+                <span id="deathMonth-error" role="alert" className="field-error">
+                  {fieldErrors.deathMonth}
+                </span>
+              )}
+            </div>
+
+            <div className="field">
+              <label htmlFor="deathYear" style={{ fontSize: "0.875rem" }}>Năm mất (tùy chọn)</label>
+              <input
+                id="deathYear"
+                name="deathYear"
+                type="number"
+                min={1000}
+                value={deathYear}
+                aria-invalid={fieldErrors.deathYear ? true : undefined}
+                aria-describedby={describedBy("deathYear")}
+                onChange={(e) => setDeathYear(e.target.value)}
+              />
+              {fieldErrors.deathYear && (
+                <span id="deathYear-error" role="alert" className="field-error">
+                  {fieldErrors.deathYear}
+                </span>
+              )}
+            </div>
+          </div>
+
+          {deathCalendar === "lunar" && (
+            <div className="field">
+              <label htmlFor="deathLunarLeap" style={{ display: "flex", alignItems: "center", gap: "0.5rem", cursor: "pointer", fontWeight: "normal", color: "var(--color-muted)", minHeight: "auto" }}>
+                <input
+                  id="deathLunarLeap"
+                  name="deathLunarLeap"
+                  type="checkbox"
+                  checked={deathLunarLeap}
+                  onChange={(e) => setDeathLunarLeap(e.target.checked)}
+                />
+                <span>Tháng nhuận</span>
+              </label>
+            </div>
+          )}
+
+          {conversionPreview && (
+            <div style={{ fontSize: "0.875rem", color: "var(--color-accent)", fontStyle: "italic", marginTop: "0.25rem" }}>
+              {conversionPreview}
+            </div>
+          )}
+        </div>
+      )}
 
       <VisibilityToggles
         value={visibility}

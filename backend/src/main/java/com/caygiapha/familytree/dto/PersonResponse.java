@@ -57,7 +57,12 @@ public record PersonResponse(
         String visDeath,
         String visName,
         String visBirthYear,
-        String visPhoto) {
+        String visPhoto,
+        Integer deathDay,
+        Integer deathMonth,
+        Integer deathYear,
+        String deathCalendar,
+        Boolean deathLunarLeap) {
 
     /** Placeholder shown in place of a redacted Living_Person's display name (Requirement 20.2). */
     public static final String REDACTED_NAME_PLACEHOLDER = "Người thân còn sống";
@@ -108,6 +113,7 @@ public record PersonResponse(
                 || (!privileged && PersonVisibility.PRIVATE.equals(person.getVisName()));
         boolean birthYearHidden = redactLiving
                 || (!privileged && PersonVisibility.PRIVATE.equals(person.getVisBirthYear()));
+        boolean deathVisible = visible(privileged, person.getVisDeath());
         return new PersonResponse(
                 person.getId(),
                 person.getTreeId(),
@@ -115,14 +121,19 @@ public record PersonResponse(
                 person.getGender(),
                 redactLiving ? null : person.getBirthOrder(),
                 birthYearHidden ? null : person.getBirthYear(),
-                visible(privileged, person.getVisDeath()) ? person.isDeathStatus() : null,
+                deathVisible ? person.isDeathStatus() : null,
                 visible(privileged, person.getVisAdoption()) ? person.getAdoptionStatus() : null,
                 person.getVisMarital(),
                 person.getVisAdoption(),
                 person.getVisDeath(),
                 person.getVisName(),
                 person.getVisBirthYear(),
-                person.getVisPhoto());
+                person.getVisPhoto(),
+                deathVisible ? person.getDeathDay() : null,
+                deathVisible ? person.getDeathMonth() : null,
+                deathVisible ? person.getDeathYear() : null,
+                deathVisible ? person.getDeathCalendar() : null,
+                deathVisible ? person.getDeathLunarLeap() : null);
     }
 
     /**

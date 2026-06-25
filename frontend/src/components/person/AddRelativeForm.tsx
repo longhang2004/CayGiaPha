@@ -6,6 +6,8 @@ import {
   addAssertedRelative,
   addDerivedRelative,
   createPerson,
+  convertSolarToLunar,
+  convertLunarToSolar,
   type ConflictWarning as ConflictWarningData,
   type DerivedRelativeInput,
   type MaritalStatus,
@@ -85,8 +87,55 @@ export function AddRelativeForm({ treeId, persons, preselectedPersonId, onCreate
   const [newPhone, setNewPhone] = useState("");
   const [newEmail, setNewEmail] = useState("");
   const [newDeathStatus, setNewDeathStatus] = useState(false);
+  const [newDeathDay, setNewDeathDay] = useState("");
+  const [newDeathMonth, setNewDeathMonth] = useState("");
+  const [newDeathYear, setNewDeathYear] = useState("");
+  const [newDeathCalendar, setNewDeathCalendar] = useState<string>("lunar");
+  const [newDeathLunarLeap, setNewDeathLunarLeap] = useState<boolean>(false);
+  const [newConversionPreview, setNewConversionPreview] = useState<string>("");
   const [newPhotoFile, setNewPhotoFile] = useState<File | null>(null);
   const [newPhotoPreviewUrl, setNewPhotoPreviewUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!newDeathStatus || !newDeathDay || !newDeathMonth) {
+      setNewConversionPreview("");
+      return;
+    }
+    const day = Number(newDeathDay);
+    const month = Number(newDeathMonth);
+    const year = newDeathYear ? Number(newDeathYear) : new Date().getFullYear();
+
+    if (isNaN(day) || isNaN(month) || isNaN(year) || day < 1 || day > 31 || month < 1 || month > 12) {
+      setNewConversionPreview("");
+      return;
+    }
+
+    let active = true;
+    if (newDeathCalendar === "lunar") {
+      convertLunarToSolar(day, month, year, newDeathLunarLeap)
+        .then((res) => {
+          if (active) {
+            setNewConversionPreview(`Tương đương Dương lịch: ${res.formatted}`);
+          }
+        })
+        .catch(() => {
+          if (active) setNewConversionPreview("Ngày Âm lịch không hợp lệ");
+        });
+    } else {
+      convertSolarToLunar(day, month, year)
+        .then((res) => {
+          if (active) {
+            setNewConversionPreview(`Tương đương Âm lịch: ${res.formatted}`);
+          }
+        })
+        .catch(() => {
+          if (active) setNewConversionPreview("Ngày Dương lịch không hợp lệ");
+        });
+    }
+    return () => {
+      active = false;
+    };
+  }, [newDeathStatus, newDeathDay, newDeathMonth, newDeathYear, newDeathCalendar, newDeathLunarLeap]);
 
   const [conflicts, setConflicts] = useState<ConflictWarningData[] | undefined>();
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
@@ -157,12 +206,22 @@ export function AddRelativeForm({ treeId, persons, preselectedPersonId, onCreate
 
         const order = parseOptionalInt(newBirthOrder);
         const year = parseOptionalInt(newBirthYear);
+        const dDay = parseOptionalInt(newDeathDay);
+        const dMonth = parseOptionalInt(newDeathMonth);
+        const dYear = parseOptionalInt(newDeathYear);
 
         // 1. Create the new person
         const created = await createPerson({
           displayName: newDisplayName.trim(),
           gender: finalGender,
           deathStatus: newDeathStatus,
+          ...(newDeathStatus && dDay !== undefined && dMonth !== undefined ? {
+            deathDay: dDay,
+            deathMonth: dMonth,
+            deathYear: dYear,
+            deathCalendar: newDeathCalendar,
+            deathLunarLeap: newDeathLunarLeap,
+          } : {}),
           ...(order !== undefined ? { birthOrder: order } : {}),
           ...(year !== undefined ? { birthYear: year } : {}),
           ...(newPhone.trim() ? { phone: newPhone.trim() } : {}),
@@ -540,6 +599,129 @@ export function AddRelativeForm({ treeId, persons, preselectedPersonId, onCreate
               <span>Đã mất</span>
             </label>
           </div>
+
+          {newDeathStatus && (
+            <div className="death-details-pane" style={{
+              marginTop: "1rem",
+              padding: "1rem",
+              borderRadius: "8px",
+              border: "1px solid var(--color-hairline)",
+              background: "rgba(255,255,255,0.05)",
+              display: "flex",
+              flexDirection: "column",
+              gap: "1rem"
+            }}>
+              <div className="field">
+                <label style={{ fontWeight: "600", fontSize: "0.875rem" }}>Lịch ngày mất</label>
+                <div style={{ display: "flex", gap: "1.5rem", marginTop: "0.5rem" }}>
+                  <label htmlFor="new-calendar-lunar" style={{ display: "flex", alignItems: "center", gap: "0.35rem", cursor: "pointer", fontWeight: "normal", color: "var(--color-muted)", minHeight: "auto" }}>
+                    <input
+                      id="new-calendar-lunar"
+                      type="radio"
+                      name="newDeathCalendar"
+                      value="lunar"
+                      checked={newDeathCalendar === "lunar"}
+                      onChange={() => setNewDeathCalendar("lunar")}
+                    />
+                    <span>Âm lịch</span>
+                  </label>
+                  <label htmlFor="new-calendar-solar" style={{ display: "flex", alignItems: "center", gap: "0.35rem", cursor: "pointer", fontWeight: "normal", color: "var(--color-muted)", minHeight: "auto" }}>
+                    <input
+                      id="new-calendar-solar"
+                      type="radio"
+                      name="newDeathCalendar"
+                      value="solar"
+                      checked={newDeathCalendar === "solar"}
+                      onChange={() => setNewDeathCalendar("solar")}
+                    />
+                    <span>Dương lịch</span>
+                  </label>
+                </div>
+              </div>
+
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "0.75rem" }}>
+                <div className="field">
+                  <label htmlFor="newDeathDay" style={{ fontSize: "0.875rem" }}>Ngày mất</label>
+                  <input
+                    id="newDeathDay"
+                    name="newDeathDay"
+                    type="number"
+                    min={1}
+                    max={31}
+                    value={newDeathDay}
+                    aria-invalid={fieldErrors.newDeathDay ? true : undefined}
+                    aria-describedby={fieldErrors.newDeathDay ? "newDeathDay-error" : undefined}
+                    onChange={(e) => setNewDeathDay(e.target.value)}
+                  />
+                  {fieldErrors.newDeathDay && (
+                    <span id="newDeathDay-error" role="alert" className="field-error">
+                      {fieldErrors.newDeathDay}
+                    </span>
+                  )}
+                </div>
+
+                <div className="field">
+                  <label htmlFor="newDeathMonth" style={{ fontSize: "0.875rem" }}>Tháng mất</label>
+                  <input
+                    id="newDeathMonth"
+                    name="newDeathMonth"
+                    type="number"
+                    min={1}
+                    max={12}
+                    value={newDeathMonth}
+                    aria-invalid={fieldErrors.newDeathMonth ? true : undefined}
+                    aria-describedby={fieldErrors.newDeathMonth ? "newDeathMonth-error" : undefined}
+                    onChange={(e) => setNewDeathMonth(e.target.value)}
+                  />
+                  {fieldErrors.newDeathMonth && (
+                    <span id="newDeathMonth-error" role="alert" className="field-error">
+                      {fieldErrors.newDeathMonth}
+                    </span>
+                  )}
+                </div>
+
+                <div className="field">
+                  <label htmlFor="newDeathYear" style={{ fontSize: "0.875rem" }}>Năm mất (tùy chọn)</label>
+                  <input
+                    id="newDeathYear"
+                    name="newDeathYear"
+                    type="number"
+                    min={1000}
+                    value={newDeathYear}
+                    aria-invalid={fieldErrors.newDeathYear ? true : undefined}
+                    aria-describedby={fieldErrors.newDeathYear ? "newDeathYear-error" : undefined}
+                    onChange={(e) => setNewDeathYear(e.target.value)}
+                  />
+                  {fieldErrors.newDeathYear && (
+                    <span id="newDeathYear-error" role="alert" className="field-error">
+                      {fieldErrors.newDeathYear}
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              {newDeathCalendar === "lunar" && (
+                <div className="field">
+                  <label htmlFor="newDeathLunarLeap" style={{ display: "flex", alignItems: "center", gap: "0.5rem", cursor: "pointer", fontWeight: "normal", color: "var(--color-muted)", minHeight: "auto" }}>
+                    <input
+                      id="newDeathLunarLeap"
+                      name="newDeathLunarLeap"
+                      type="checkbox"
+                      checked={newDeathLunarLeap}
+                      onChange={(e) => setNewDeathLunarLeap(e.target.checked)}
+                    />
+                    <span>Tháng nhuận</span>
+                  </label>
+                </div>
+              )}
+
+              {newConversionPreview && (
+                <div style={{ fontSize: "0.875rem", color: "var(--color-accent)", fontStyle: "italic", marginTop: "0.25rem" }}>
+                  {newConversionPreview}
+                </div>
+              )}
+            </div>
+          )}
         </fieldset>
       )}
 

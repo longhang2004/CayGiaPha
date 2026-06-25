@@ -61,8 +61,8 @@ export interface TreeGraphProps {
   onAddressesLoaded?: (addresses: Map<string, Address>) => void;
 }
 
-const NODE_WIDTH = 160;
-const NODE_HEIGHT = 56;
+const NODE_WIDTH = 180;
+const NODE_HEIGHT = 72;
 
 export function TreeGraph({
   treeId,
@@ -92,10 +92,20 @@ export function TreeGraph({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Focus Branch State
+  const [focusId, setFocusId] = useState<string | null>(null);
+
   // Notify parent of address loading state changes
   useEffect(() => {
     onAddressLoading?.(loading);
   }, [loading, onAddressLoading]);
+
+  // Reset focusId if it's no longer in the list of persons
+  useEffect(() => {
+    if (focusId && !persons.some((p) => p.id === focusId)) {
+      setFocusId(null);
+    }
+  }, [persons, focusId]);
 
   const personById = useMemo(() => {
     const map = new Map<string, Person>();
@@ -105,9 +115,59 @@ export function TreeGraph({
     return map;
   }, [persons]);
 
+  // Branch focus filtering logic: keeps the focused person, their descendants, and descendants' spouses
+  const filteredData = useMemo(() => {
+    if (!focusId) {
+      return { persons, relationships };
+    }
+
+    const descendantIds = new Set<string>();
+    descendantIds.add(focusId);
+
+    const childrenOf = new Map<string, string[]>();
+    relationships.forEach((r) => {
+      if (r.type === "bloodline_father" || r.type === "bloodline_mother") {
+        if (!childrenOf.has(r.sourceId)) childrenOf.set(r.sourceId, []);
+        childrenOf.get(r.sourceId)!.push(r.targetId);
+      }
+    });
+
+    const queue = [focusId];
+    while (queue.length > 0) {
+      const current = queue.shift()!;
+      const children = childrenOf.get(current) || [];
+      children.forEach((childId) => {
+        if (!descendantIds.has(childId)) {
+          descendantIds.add(childId);
+          queue.push(childId);
+        }
+      });
+    }
+
+    const spouseIds = new Set<string>();
+    relationships.forEach((r) => {
+      if (r.type === "marriage") {
+        if (descendantIds.has(r.sourceId)) {
+          spouseIds.add(r.targetId);
+        } else if (descendantIds.has(r.targetId)) {
+          spouseIds.add(r.sourceId);
+        }
+      }
+    });
+
+    const keepIds = new Set([...descendantIds, ...spouseIds]);
+
+    const filteredPersons = persons.filter((p) => keepIds.has(p.id));
+    const filteredRels = relationships.filter(
+      (r) => keepIds.has(r.sourceId) && keepIds.has(r.targetId)
+    );
+
+    return { persons: filteredPersons, relationships: filteredRels };
+  }, [persons, relationships, focusId]);
+
   const positions = useMemo(
-    () => layoutNodes(persons, relationships, { cellWidth: 220, cellHeight: 130, padding: 100 }),
-    [persons, relationships]
+    () => layoutNodes(filteredData.persons, filteredData.relationships, { cellWidth: 220, cellHeight: 130, padding: 100 }),
+    [filteredData.persons, filteredData.relationships]
   );
 
   const treeStructureVersion = useMemo(() => {
@@ -123,7 +183,6 @@ export function TreeGraph({
   }, [persons, relationships]);
 
   // Re-fetch every node's address whenever the viewpoint (ego) changes
-  // (Requirements 10.1, 10.2).
   const onAddressesLoadedRef = useRef(onAddressesLoaded);
   useEffect(() => {
     onAddressesLoadedRef.current = onAddressesLoaded;
@@ -143,7 +202,6 @@ export function TreeGraph({
 
     fetchAddresses(treeId, activeEgoId, controller.signal)
       .then((result) => {
-        // Ignore stale responses from superseded viewpoint changes.
         if (requestId !== requestRef.current) {
           return;
         }
@@ -222,7 +280,7 @@ export function TreeGraph({
       setPan({ x: initialPanX, y: initialPanY });
       setZoom(1);
     }
-  }, [svgWidth, svgHeight, persons.length]);
+  }, [svgWidth, svgHeight, filteredData.persons.length]);
 
   const handleMouseDown = (e: React.MouseEvent<SVGSVGElement>) => {
     if (e.button !== 0) return;
@@ -287,6 +345,72 @@ export function TreeGraph({
     }
   };
 
+  // Center viewport on a specific node position
+  const handleCenterOnNode = (nodeId: string) => {
+    const pos = positions.get(nodeId);
+    if (pos && containerRef.current) {
+      const containerWidth = containerRef.current.clientWidth;
+      const containerHeight = containerRef.current.clientHeight;
+      setPan({
+        x: containerWidth / 2 - pos.x * zoom,
+        y: containerHeight / 2 - pos.y * zoom,
+      });
+    }
+  };
+
+  // Client-side SVG Download/Export
+  const handleExportSVG = () => {
+    const svgElement = document.querySelector(".tree-graph__svg") as SVGSVGElement | null;
+    if (!svgElement) return;
+
+    const clone = svgElement.cloneNode(true) as SVGSVGElement;
+    const groupElement = clone.querySelector("g");
+    if (groupElement) {
+      groupElement.removeAttribute("transform");
+    }
+
+    let styles = "";
+    try {
+      for (const sheet of Array.from(document.styleSheets)) {
+        try {
+          const rules = Array.from(sheet.cssRules || sheet.rules);
+          for (const rule of rules) {
+            if (rule.cssText.includes("tree-graph") || rule.cssText.includes("edge-")) {
+              styles += rule.cssText + "\n";
+            }
+          }
+        } catch (e) {
+          // ignore CORS errors
+        }
+      }
+    } catch (e) {
+      // ignore
+    }
+
+    if (styles) {
+      const styleTag = document.createElementNS("http://www.w3.org/2000/svg", "style");
+      styleTag.textContent = styles;
+      clone.insertBefore(styleTag, clone.firstChild);
+    }
+
+    clone.setAttribute("width", svgWidth.toString());
+    clone.setAttribute("height", svgHeight.toString());
+    clone.setAttribute("viewBox", `0 0 ${svgWidth} ${svgHeight}`);
+
+    const serializer = new XMLSerializer();
+    const svgString = serializer.serializeToString(clone);
+    const blob = new Blob([svgString], { type: "image/svg+xml;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `gia-pha-dong-ho.svg`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <div className="tree-graph">
       <div className="tree-graph__controls">
@@ -301,6 +425,60 @@ export function TreeGraph({
         <p role="status" aria-live="polite" className="tree-graph__status">
           {loading ? "Đang tính cách xưng hô…" : error ?? ""}
         </p>
+
+        {/* Branch Focus Mode Controls */}
+        {activeSelectedId && (
+          <button
+            type="button"
+            className={`btn btn-secondary tree-graph__focus-toggle-btn ${focusId === activeSelectedId ? "tree-graph__focus-toggle-btn--active" : ""}`}
+            onClick={() => setFocusId(focusId === activeSelectedId ? null : activeSelectedId)}
+            style={{
+              marginLeft: "auto",
+              fontSize: "0.8125rem",
+              padding: "0.25rem 0.75rem",
+              minHeight: "36px",
+              display: "flex",
+              alignItems: "center",
+              gap: "0.25rem",
+              border: focusId === activeSelectedId ? "1px solid var(--color-brand)" : undefined
+            }}
+          >
+            {focusId === activeSelectedId ? (
+              <>
+                <span>✕</span> Hiện toàn bộ cây
+              </>
+            ) : (
+              <>
+                <span>👁</span> Xem riêng nhánh này
+              </>
+            )}
+          </button>
+        )}
+        {focusId && !activeSelectedId && (
+          <div
+            className="tree-graph__focus-badge-container"
+            style={{
+              marginLeft: "auto",
+              display: "flex",
+              alignItems: "center",
+              gap: "0.5rem",
+              fontSize: "0.8125rem",
+              color: "var(--color-brand)",
+              fontWeight: 600
+            }}
+          >
+            <span>Đang xem một nhánh</span>
+            <button
+              type="button"
+              className="btn btn-secondary"
+              style={{ padding: "0 0.5rem", minHeight: "28px", minWidth: "28px" }}
+              onClick={() => setFocusId(null)}
+              title="Hiện toàn bộ cây"
+            >
+              ✕
+            </button>
+          </div>
+        )}
       </div>
 
       <div
@@ -332,7 +510,7 @@ export function TreeGraph({
         >
           <g transform={`translate(${pan.x}, ${pan.y}) scale(${zoom})`}>
             <g className="tree-graph__edges">
-              {relationships.map((rel) => {
+              {filteredData.relationships.map((rel) => {
                 const source = positions.get(rel.sourceId);
                 const target = positions.get(rel.targetId);
                 if (!source || !target) {
@@ -350,7 +528,7 @@ export function TreeGraph({
             </g>
 
             <g className="tree-graph__nodes">
-              {persons.map((person) => {
+              {filteredData.persons.map((person) => {
                 const pos = positions.get(person.id);
                 if (!pos) {
                   return null;
@@ -364,11 +542,12 @@ export function TreeGraph({
                   ? ""
                   : capitalize(addressLabel(address));
                 const unresolved = !isEgo && !loading && addresses.size > 0 && isUnresolved(address);
+                const isRedacted = person.displayName === "Người thân còn sống";
 
                 return (
                   <g
                     key={person.id}
-                    className={`tree-graph__node ${loading ? "tree-graph__node--loading" : ""}`}
+                    className={`tree-graph__node ${loading ? "tree-graph__node--loading" : ""} tree-graph__node--${person.gender ?? "unknown"} ${person.deceased ? "tree-graph__node--deceased" : ""} ${person.claimed ? "tree-graph__node--claimed" : ""} ${isRedacted ? "tree-graph__node--redacted" : ""}`}
                     data-person-id={person.id}
                     data-ego={isEgo ? "true" : "false"}
                     data-selected={isSelected ? "true" : "false"}
@@ -381,14 +560,47 @@ export function TreeGraph({
                         aria-pressed={isSelected}
                         onClick={() => activeSetSelectedId(person.id)}
                       >
-                        <span className="tree-graph__node-name">{person.displayName}</span>
-                        <span
-                          className="tree-graph__node-address"
-                          data-address
-                          data-unresolved={unresolved ? "true" : "false"}
-                        >
-                          {label}
-                        </span>
+                        {/* Left gender status stripe */}
+                        <div className="tree-graph__node-gender-strip" />
+                        
+                        <div className="tree-graph__node-content">
+                          <div className="tree-graph__node-row-top">
+                            <span className="tree-graph__node-name">
+                              {person.displayName}
+                            </span>
+                            {person.deceased && (
+                              <span className="tree-graph__node-deceased-marker" title="Đã mất">
+                                †
+                              </span>
+                            )}
+                            {person.claimed && (
+                              <span className="tree-graph__node-claimed-badge" title="Tài khoản đã xác nhận">
+                                <svg viewBox="0 0 24 24" className="tree-graph__node-badge-icon" aria-hidden="true">
+                                  <path fill="currentColor" d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                                </svg>
+                              </span>
+                            )}
+                            {isEgo && (
+                              <span className="tree-graph__node-ego-badge">
+                                Bạn
+                              </span>
+                            )}
+                          </div>
+                          <div className="tree-graph__node-row-bottom">
+                            <span
+                              className="tree-graph__node-address"
+                              data-address
+                              data-unresolved={unresolved ? "true" : "false"}
+                            >
+                              {label}
+                            </span>
+                            {person.birthYear && (
+                              <span className="tree-graph__node-lifespan">
+                                {person.deceased ? `(${person.birthYear} - †)` : `(s. ${person.birthYear})`}
+                              </span>
+                            )}
+                          </div>
+                        </div>
                       </button>
                     </foreignObject>
                   </g>
@@ -443,6 +655,27 @@ export function TreeGraph({
           >
             −
           </button>
+          
+          {/* Target Center selection button */}
+          {activeSelectedId && (
+            <button
+              type="button"
+              onClick={() => handleCenterOnNode(activeSelectedId)}
+              className="btn btn-secondary"
+              style={{
+                minWidth: "40px",
+                minHeight: "40px",
+                padding: 0,
+                fontSize: "1rem",
+                borderRadius: "8px",
+                boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
+              }}
+              title="Căn giữa người được chọn"
+            >
+              🎯
+            </button>
+          )}
+
           <button
             type="button"
             onClick={handleReset}
@@ -458,6 +691,24 @@ export function TreeGraph({
             title="Đặt lại góc nhìn"
           >
             🔍
+          </button>
+
+          {/* Export SVG Button */}
+          <button
+            type="button"
+            onClick={handleExportSVG}
+            className="btn btn-secondary"
+            style={{
+              minWidth: "40px",
+              minHeight: "40px",
+              padding: 0,
+              fontSize: "1rem",
+              borderRadius: "8px",
+              boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
+            }}
+            title="Tải ảnh sơ đồ (SVG)"
+          >
+            📥
           </button>
         </div>
       </div>

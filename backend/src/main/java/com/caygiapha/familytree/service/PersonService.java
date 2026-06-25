@@ -60,11 +60,24 @@ public class PersonService {
         validateGender(request.gender());
         validateBirthOrder(request.birthOrder()); // optional; validated only when present
         validateBirthYear(request.birthYear()); // optional; validated only when present
+        validateDeathDate(request.deathDay(), request.deathMonth(), request.deathYear(), request.deathCalendar(), request.deathLunarLeap());
 
         Person person = new Person(request.treeId(), request.displayName(), request.gender());
         person.setBirthOrder(request.birthOrder());
         person.setBirthYear(request.birthYear());
-        person.setDeathStatus(Boolean.TRUE.equals(request.deathStatus()));
+
+        boolean isDeceased = Boolean.TRUE.equals(request.deathStatus())
+                || request.deathDay() != null
+                || request.deathMonth() != null;
+        person.setDeathStatus(isDeceased);
+
+        if (isDeceased) {
+            person.setDeathDay(request.deathDay());
+            person.setDeathMonth(request.deathMonth());
+            person.setDeathYear(request.deathYear());
+            person.setDeathCalendar(request.deathCalendar() != null ? request.deathCalendar() : "lunar");
+            person.setDeathLunarLeap(Boolean.TRUE.equals(request.deathLunarLeap()));
+        }
 
         return personRepository.save(person).getId();
     }
@@ -96,6 +109,21 @@ public class PersonService {
             validateBirthYear(request.birthYear());
         }
 
+        Integer finalDay = request.deathDay() != null ? request.deathDay() : person.getDeathDay();
+        Integer finalMonth = request.deathMonth() != null ? request.deathMonth() : person.getDeathMonth();
+        Integer finalYear = request.deathYear() != null ? request.deathYear() : person.getDeathYear();
+        String finalCalendar = request.deathCalendar() != null ? request.deathCalendar() : person.getDeathCalendar();
+        Boolean finalLeap = request.deathLunarLeap() != null ? request.deathLunarLeap() : person.getDeathLunarLeap();
+
+        boolean willBeDeceased = Boolean.TRUE.equals(request.deathStatus())
+                || (request.deathStatus() == null && person.isDeathStatus())
+                || request.deathDay() != null
+                || request.deathMonth() != null;
+
+        if (willBeDeceased) {
+            validateDeathDate(finalDay, finalMonth, finalYear, finalCalendar, finalLeap);
+        }
+
         // Apply only the specified fields (3.3).
         if (request.displayName() != null) {
             person.setDisplayName(request.displayName());
@@ -109,8 +137,21 @@ public class PersonService {
         if (request.birthYear() != null) {
             person.setBirthYear(request.birthYear());
         }
-        if (request.deathStatus() != null) {
-            person.setDeathStatus(request.deathStatus());
+
+        if (Boolean.FALSE.equals(request.deathStatus())) {
+            person.setDeathStatus(false);
+            person.setDeathDay(null);
+            person.setDeathMonth(null);
+            person.setDeathYear(null);
+            person.setDeathCalendar("lunar");
+            person.setDeathLunarLeap(false);
+        } else if (willBeDeceased) {
+            person.setDeathStatus(true);
+            if (request.deathDay() != null) person.setDeathDay(request.deathDay());
+            if (request.deathMonth() != null) person.setDeathMonth(request.deathMonth());
+            if (request.deathYear() != null) person.setDeathYear(request.deathYear());
+            if (request.deathCalendar() != null) person.setDeathCalendar(request.deathCalendar());
+            if (request.deathLunarLeap() != null) person.setDeathLunarLeap(request.deathLunarLeap());
         }
 
         return personRepository.save(person);
@@ -221,6 +262,37 @@ public class PersonService {
         if (value != null && !PersonVisibility.isValid(value)) {
             throw ApiException.validation(
                     field, "Visibility must be one of {private, public}.");
+        }
+    }
+
+    private void validateDeathDate(Integer day, Integer month, Integer year, String calendar, Boolean leap) {
+        if (day == null && month == null && year == null && calendar == null && leap == null) {
+            return;
+        }
+        if (day != null || month != null) {
+            if (day == null) {
+                throw ApiException.validation("deathDay", "Ngày mất là bắt buộc khi có tháng mất.");
+            }
+            if (month == null) {
+                throw ApiException.validation("deathMonth", "Tháng mất là bắt buộc khi có ngày mất.");
+            }
+            if (day < 1 || day > 31) {
+                throw ApiException.validation("deathDay", "Ngày mất phải từ 1 đến 31.");
+            }
+            if (month < 1 || month > 12) {
+                throw ApiException.validation("deathMonth", "Tháng mất phải từ 1 đến 12.");
+            }
+        }
+        if (year != null) {
+            int currentYear = Year.now().getValue();
+            if (year < 1000 || year > currentYear) {
+                throw ApiException.validation("deathYear", "Năm mất phải từ 1000 đến " + currentYear + ".");
+            }
+        }
+        if (calendar != null) {
+            if (!"solar".equals(calendar) && !"lunar".equals(calendar)) {
+                throw ApiException.validation("deathCalendar", "Lịch phải là 'solar' hoặc 'lunar'.");
+            }
         }
     }
 }

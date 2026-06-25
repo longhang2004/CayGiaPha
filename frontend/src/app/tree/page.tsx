@@ -15,6 +15,7 @@ import { SignOutButton } from "@/components/auth/SignOutButton";
 import { PersonInfoPanel } from "@/components/graph/PersonInfoPanel";
 import { ViewpointSelector } from "@/components/graph/ViewpointSelector";
 import { TreeGraphSkeleton } from "@/components/graph/TreeGraphSkeleton";
+import { UpcomingEventsWidget } from "@/components/graph/UpcomingEventsWidget";
 import { api, ApiError } from "@/lib/apiClient";
 import type { Person, Relationship, Address } from "@/lib/graph";
 import type { Region } from "@/lib/region";
@@ -296,6 +297,11 @@ function TreePageContent({ searchParams }: TreePageProps) {
         birthOrder: selectedPerson.birthOrder ?? undefined,
         birthYear: selectedPerson.birthYear ?? undefined,
         deathStatus: selectedPerson.deceased ?? false,
+        deathDay: selectedPerson.deathDay ?? undefined,
+        deathMonth: selectedPerson.deathMonth ?? undefined,
+        deathYear: selectedPerson.deathYear ?? undefined,
+        deathCalendar: selectedPerson.deathCalendar ?? undefined,
+        deathLunarLeap: selectedPerson.deathLunarLeap ?? undefined,
         visibility: {
           visMarital: (selectedPerson as any).visMarital ?? "private",
           visAdoption: (selectedPerson as any).visAdoption ?? "private",
@@ -594,10 +600,13 @@ function TreePageContent({ searchParams }: TreePageProps) {
               </button>
             </div>
           ) : (
-            <div className="surface-card side-panel">
-              <p style={{ color: "var(--color-muted)", margin: 0, textAlign: "center" }}>
-                Chọn một người để xem thông tin và cách xưng hô.
-              </p>
+            <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+              <div className="surface-card side-panel">
+                <p style={{ color: "var(--color-muted)", margin: 0, textAlign: "center" }}>
+                  Chọn một người để xem thông tin và cách xưng hô.
+                </p>
+              </div>
+              <UpcomingEventsWidget treeId={activeTreeId} />
             </div>
           )}
         </div>

@@ -71,47 +71,85 @@
 
 .tree-graph__node-button {
   display: flex;
-  flex-direction: column;
-  justify-content: center;
+  flex-direction: row;
+  align-items: stretch;
+  position: relative;
+  overflow: hidden;
   min-height: 0 !important;
   min-width: 0 !important;
   width: calc(100% - 6px);
   height: calc(100% - 6px);
   margin: 3px;
-  padding: 4px 8px;
+  padding: 0;
   border: 1px solid var(--color-hairline-strong);
-  border-radius: 6px;
+  border-radius: 8px;
   background: var(--color-surface-card);
   color: var(--color-fg);
   cursor: pointer;
-  text-align: center;
-  line-height: 1.1;
   transition: border-color 0.15s ease, background-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
+  box-shadow: 0 2px 5px rgba(38, 37, 30, 0.04);
 }
 
 .tree-graph__node-button:hover {
   background: var(--color-hairline-soft);
   border-color: var(--color-hairline-strong);
-  box-shadow: 0 8px 18px rgba(38, 37, 30, 0.12);
+  box-shadow: 0 6px 14px rgba(38, 37, 30, 0.1);
   transform: translateY(-1px);
 }
 
-.tree-graph__node[data-ego="true"] .tree-graph__node-button {
-  border-color: var(--color-brand);
-  border-width: 2px;
+/* Gender Indicator Strips */
+.tree-graph__node-gender-strip {
+  width: 5px;
+  height: 100%;
+  flex-shrink: 0;
+  background-color: var(--color-border);
 }
 
-.tree-graph__node[data-selected="true"] .tree-graph__node-button {
-  outline: 2px solid var(--color-timeline-read);
+.tree-graph__node--male .tree-graph__node-gender-strip {
+  background-color: var(--color-timeline-read); /* Elegant soft blue */
+}
+
+.tree-graph__node--female .tree-graph__node-gender-strip {
+  background-color: #f472b6; /* Elegant soft pink */
+}
+
+/* Main Card Content Layout */
+.tree-graph__node-content {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  flex-grow: 1;
+  padding: 6px 10px;
+  min-width: 0;
+  text-align: left;
+}
+
+.tree-graph__node-row-top {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  min-width: 0;
+}
+
+.tree-graph__node-row-bottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
+  width: 100%;
+  margin-top: 4px;
 }
 
 .tree-graph__node-name {
   font-weight: 600;
-  font-size: 0.85rem;
+  font-size: 0.8125rem;
+  color: var(--color-fg);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  width: 100%;
+  flex-grow: 1;
+  min-width: 0;
 }
 
 .tree-graph__node-address {
@@ -120,7 +158,83 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  width: 100%;
+  max-width: 65%;
+}
+
+/* Lifespan text */
+.tree-graph__node-lifespan {
+  font-size: 0.6875rem;
+  color: var(--color-muted);
+  opacity: 0.8;
+  white-space: nowrap;
+  font-family: ui-monospace, monospace;
+}
+
+/* Deceased State Styling */
+.tree-graph__node--deceased .tree-graph__node-button {
+  background-color: var(--color-hairline-soft);
+  border-color: var(--color-hairline-strong);
+  opacity: 0.75;
+}
+
+.tree-graph__node--deceased .tree-graph__node-name {
+  color: var(--color-muted);
+  text-decoration: line-through;
+}
+
+.tree-graph__node-deceased-marker {
+  font-size: 0.8125rem;
+  font-weight: bold;
+  color: var(--color-muted);
+  line-height: 1;
+}
+
+/* Claimed/Verified checkmark badge */
+.tree-graph__node-claimed-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #3b82f6;
+  width: 13px;
+  height: 13px;
+  flex-shrink: 0;
+}
+
+.tree-graph__node-badge-icon {
+  width: 13px;
+  height: 13px;
+}
+
+/* Ego viewpoint highlights */
+.tree-graph__node[data-ego="true"] .tree-graph__node-button {
+  border-color: var(--color-brand);
+  border-width: 2px;
+}
+
+.tree-graph__node-ego-badge {
+  font-size: 0.625rem;
+  font-weight: 700;
+  color: white;
+  background-color: var(--color-brand);
+  padding: 1px 4px;
+  border-radius: 4px;
+  line-height: 1;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  flex-shrink: 0;
+}
+
+/* Selected state styling */
+.tree-graph__node[data-selected="true"] .tree-graph__node-button {
+  outline: 2px solid var(--color-timeline-read);
+  box-shadow: 0 4px 12px rgba(159, 187, 224, 0.3);
+}
+
+/* Redacted details */
+.tree-graph__node--redacted .tree-graph__node-name {
+  font-style: italic;
+  color: var(--color-muted);
+  filter: blur(0.2px);
 }
 
 .tree-graph__node-address[data-unresolved="true"] {
@@ -173,4 +287,126 @@
   .tree-graph__node-button:hover {
     transform: none;
   }
+}
+
+/* Sidebar Details Panel Enhancements (Tabs & Timeline) */
+.person-info__tabs {
+  display: flex;
+  border-bottom: 1px solid var(--color-hairline);
+  margin-bottom: 1rem;
+  gap: 0.5rem;
+}
+
+.person-info__tab-btn {
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--color-muted);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  min-height: 36px;
+}
+
+.person-info__tab-btn:hover {
+  color: var(--color-fg);
+}
+
+.person-info__tab-btn--active {
+  color: var(--color-brand);
+  border-bottom-color: var(--color-brand);
+}
+
+.person-info__avatar-container {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px dashed var(--color-hairline);
+}
+
+.person-info__avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 1.25rem;
+  color: white;
+}
+
+.person-info__avatar--male {
+  background-color: var(--color-timeline-read); /* pastel blue */
+}
+
+.person-info__avatar--female {
+  background-color: #f472b6; /* pastel pink */
+}
+
+.person-info__header-text {
+  display: flex;
+  flex-direction: column;
+}
+
+.person-info__header-name {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--color-fg);
+  margin: 0;
+}
+
+.person-info__header-subtitle {
+  font-size: 0.75rem;
+  color: var(--color-muted);
+}
+
+.person-info__timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  position: relative;
+  padding-left: 1rem;
+  margin-top: 0.5rem;
+}
+
+.person-info__timeline::before {
+  content: "";
+  position: absolute;
+  left: 3px;
+  top: 4px;
+  bottom: 4px;
+  width: 2px;
+  background-color: var(--color-hairline);
+}
+
+.person-info__timeline-item {
+  position: relative;
+}
+
+.person-info__timeline-dot {
+  position: absolute;
+  left: -17px;
+  top: 6px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: var(--color-brand);
+  border: 2px solid var(--color-surface-card);
+}
+
+.person-info__timeline-year {
+  font-weight: bold;
+  font-size: 0.8125rem;
+  color: var(--color-brand);
+}
+
+.person-info__timeline-content {
+  font-size: 0.875rem;
+  color: var(--color-fg);
+  margin-top: 2px;
 }

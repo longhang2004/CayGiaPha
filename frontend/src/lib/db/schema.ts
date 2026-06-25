@@ -81,6 +81,11 @@ export const persons = pgTable(
     phone: text("phone"),
     email: text("email"),
     deathStatus: boolean("death_status").notNull().default(false),
+    deathDay: integer("death_day"),
+    deathMonth: integer("death_month"),
+    deathYear: integer("death_year"),
+    deathCalendar: text("death_calendar").default("lunar"),
+    deathLunarLeap: boolean("death_lunar_leap").default(false),
     adoptionStatus: boolean("adoption_status"),
     visMarital: text("vis_marital").notNull().default("private"),
     visAdoption: text("vis_adoption").notNull().default("private"),
@@ -294,3 +299,35 @@ export const personPhotos = pgTable(
       .where(sql`is_primary = true`),
   })
 );
+
+// ==========================================
+// IN-APP REMINDERS
+// ==========================================
+export const inAppReminders = pgTable(
+  "in_app_reminders",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id),
+    personId: uuid("person_id")
+      .notNull()
+      .references(() => persons.id),
+    title: text("title").notNull(),
+    content: text("content").notNull(),
+    daysUntil: integer("days_until").notNull(),
+    anniversaryDate: timestamp("anniversary_date", { withTimezone: false }).notNull(),
+    isRead: boolean("is_read").notNull().default(false),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => ({
+    userIdIdx: index("ix_in_app_reminders_user").on(table.userId),
+    uniqueReminderIdx: uniqueIndex("ux_in_app_reminders_unique").on(
+      table.userId,
+      table.personId,
+      table.anniversaryDate,
+      table.daysUntil
+    ),
+  })
+);
+

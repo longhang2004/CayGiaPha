@@ -26,5 +26,14 @@ public record CreatePersonRequest(
         String gender,
         Integer birthOrder,
         Integer birthYear,
-        Boolean deathStatus) {
+        Boolean deathStatus,
+        Integer deathDay,
+        Integer deathMonth,
+        Integer deathYear,
+        String deathCalendar,
+        Boolean deathLunarLeap) {
+
+    public CreatePersonRequest(UUID treeId, String displayName, String gender, Integer birthOrder, Integer birthYear, Boolean deathStatus) {
+        this(treeId, displayName, gender, birthOrder, birthYear, deathStatus, null, null, null, "lunar", false);
+    }
 }
