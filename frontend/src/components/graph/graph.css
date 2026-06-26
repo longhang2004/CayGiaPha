@@ -297,26 +297,40 @@
   gap: 0.5rem;
 }
 
-.person-info__tab-btn {
-  background: none;
-  border: none;
-  border-bottom: 2px solid transparent;
-  padding: 0.5rem 0.75rem;
-  font-size: 0.875rem;
-  font-weight: 600;
-  color: var(--color-muted);
-  cursor: pointer;
-  transition: all 0.15s ease;
-  min-height: 36px;
+.person-info__tabs .person-info__tab-btn {
+  background: transparent !important;
+  background-color: transparent !important;
+  color: var(--color-muted) !important;
+  font-family: inherit !important;
+  font-weight: 600 !important;
+  font-size: 0.875rem !important;
+  border: none !important;
+  border-bottom: 2px solid transparent !important;
+  border-radius: 0 !important;
+  padding: 0.5rem 1rem !important;
+  min-height: 36px !important;
+  min-width: auto !important;
+  box-shadow: none !important;
+  transform: none !important;
+  cursor: pointer !important;
+  transition: all 0.15s ease !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
 }
 
-.person-info__tab-btn:hover {
-  color: var(--color-fg);
+.person-info__tabs .person-info__tab-btn:hover {
+  color: var(--color-brand) !important;
+  background: transparent !important;
+  background-color: transparent !important;
+  opacity: 0.85;
 }
 
-.person-info__tab-btn--active {
-  color: var(--color-brand);
-  border-bottom-color: var(--color-brand);
+.person-info__tabs .person-info__tab-btn--active {
+  color: var(--color-brand) !important;
+  border-bottom-color: var(--color-brand) !important;
+  background: transparent !important;
+  background-color: transparent !important;
 }
 
 .person-info__avatar-container {

@@ -16,10 +16,9 @@ vi.mock("@/app/providers", () => ({
 
 vi.mock("@/lib/auth", () => ({
   signIn: vi.fn(),
-  verifySignIn: vi.fn(),
 }));
 
-import { signIn, verifySignIn } from "@/lib/auth";
+import { signIn } from "@/lib/auth";
 import { SignInFlow } from "./SignInFlow";
 
 afterEach(() => {
@@ -27,9 +26,8 @@ afterEach(() => {
 });
 
 describe("SignInFlow", () => {
-  it("requests a code, verifies it, refreshes the session, and routes into the app", async () => {
+  it("submits the identifier and password, refreshes the session, and routes into the app", async () => {
     vi.mocked(signIn).mockResolvedValue(undefined);
-    vi.mocked(verifySignIn).mockResolvedValue(undefined);
 
     render(<SignInFlow />);
 
@@ -37,15 +35,13 @@ describe("SignInFlow", () => {
       screen.getByLabelText("Số điện thoại hoặc email"),
       "user@example.com",
     );
-    await userEvent.click(screen.getByRole("button", { name: "Gửi mã xác thực" }));
-
-    expect(signIn).toHaveBeenCalledWith("user@example.com");
-
-    const codeInput = await screen.findByLabelText("Mã xác thực");
-    await userEvent.type(codeInput, "654321");
+    await userEvent.type(
+      screen.getByLabelText("Mật khẩu"),
+      "mypassword123",
+    );
     await userEvent.click(screen.getByRole("button", { name: "Đăng nhập" }));
 
-    expect(verifySignIn).toHaveBeenCalledWith("user@example.com", "654321");
+    expect(signIn).toHaveBeenCalledWith("user@example.com", "mypassword123");
     expect(refresh).toHaveBeenCalledTimes(1);
     expect(push).toHaveBeenCalledWith("/");
   });
@@ -63,7 +59,7 @@ describe("SignInFlow", () => {
 
     const input = screen.getByLabelText("Số điện thoại hoặc email");
     await userEvent.type(input, "user@example.com");
-    await userEvent.click(screen.getByRole("button", { name: "Gửi mã xác thực" }));
+    await userEvent.click(screen.getByRole("button", { name: "Đăng nhập" }));
 
     const alert = await screen.findByRole("alert");
     expect(alert).toHaveTextContent("Không tìm thấy tài khoản.");

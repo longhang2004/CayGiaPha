@@ -128,6 +128,25 @@ public final class KinshipGraphProjection {
             }
         }
 
+        // Auto-infer spouses for parents who share a child
+        for (Map.Entry<UUID, List<ParentLink>> entry : parents.entrySet()) {
+            ParentLink father = null;
+            ParentLink mother = null;
+            for (ParentLink p : entry.getValue()) {
+                if (p.parentType() == ParentType.FATHER) {
+                    father = p;
+                } else if (p.parentType() == ParentType.MOTHER) {
+                    mother = p;
+                }
+            }
+            if (father != null && mother != null) {
+                UUID fId = father.parentId();
+                UUID mId = mother.parentId();
+                spouses.computeIfAbsent(fId, k -> new LinkedHashSet<>()).add(mId);
+                spouses.computeIfAbsent(mId, k -> new LinkedHashSet<>()).add(fId);
+            }
+        }
+
         return new KinshipGraphProjection(
                 treeId,
                 freezeLists(parents),

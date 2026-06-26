@@ -16,10 +16,9 @@ vi.mock("@/app/providers", () => ({
 
 vi.mock("@/lib/auth", () => ({
   signUp: vi.fn(),
-  verifySignUp: vi.fn(),
 }));
 
-import { signUp, verifySignUp } from "@/lib/auth";
+import { signUp } from "@/lib/auth";
 import { SignUpFlow } from "./SignUpFlow";
 
 afterEach(() => {
@@ -27,9 +26,8 @@ afterEach(() => {
 });
 
 describe("SignUpFlow", () => {
-  it("calls the signup endpoint, then the verify endpoint, then routes into the app", async () => {
-    vi.mocked(signUp).mockResolvedValue({ userId: "u1", verified: false });
-    vi.mocked(verifySignUp).mockResolvedValue({
+  it("calls the signup endpoint directly and routes into the app", async () => {
+    vi.mocked(signUp).mockResolvedValue({
       userId: "u1",
       treeId: "t1",
       verified: true,
@@ -45,23 +43,19 @@ describe("SignUpFlow", () => {
       screen.getByLabelText("Số điện thoại hoặc email"),
       "0901234567",
     );
-    await userEvent.click(screen.getByRole("button", { name: "Gửi mã xác thực" }));
+    await userEvent.type(
+      screen.getByLabelText("Mật khẩu"),
+      "password123",
+    );
+    await userEvent.click(screen.getByRole("button", { name: "Đăng ký" }));
 
-    expect(signUp).toHaveBeenCalledWith("0901234567");
-
-    // OTP step is now shown.
-    const codeInput = await screen.findByLabelText("Mã xác thực");
-    await userEvent.type(codeInput, "123456");
-    await userEvent.click(screen.getByRole("button", { name: "Xác thực" }));
-
-    expect(verifySignUp).toHaveBeenCalledWith("0901234567", "123456", "Bac", true, true);
+    expect(signUp).toHaveBeenCalledWith("0901234567", "password123", "Bac", true, true);
     expect(refresh).toHaveBeenCalledTimes(1);
     expect(push).toHaveBeenCalledWith("/");
   });
 
-  it("passes the chosen region (Nam) through to verifySignUp", async () => {
-    vi.mocked(signUp).mockResolvedValue({ userId: "u1", verified: false });
-    vi.mocked(verifySignUp).mockResolvedValue({
+  it("passes the chosen region (Nam) through to signUp", async () => {
+    vi.mocked(signUp).mockResolvedValue({
       userId: "u1",
       treeId: "t1",
       verified: true,
@@ -81,16 +75,16 @@ describe("SignUpFlow", () => {
       screen.getByLabelText("Số điện thoại hoặc email"),
       "0901234567",
     );
-    await userEvent.click(screen.getByRole("button", { name: "Gửi mã xác thực" }));
+    await userEvent.type(
+      screen.getByLabelText("Mật khẩu"),
+      "password123",
+    );
+    await userEvent.click(screen.getByRole("button", { name: "Đăng ký" }));
 
-    const codeInput = await screen.findByLabelText("Mã xác thực");
-    await userEvent.type(codeInput, "123456");
-    await userEvent.click(screen.getByRole("button", { name: "Xác thực" }));
-
-    expect(verifySignUp).toHaveBeenCalledWith("0901234567", "123456", "Nam", true, true);
+    expect(signUp).toHaveBeenCalledWith("0901234567", "password123", "Nam", true, true);
   });
 
-  it("shows a field error from the envelope and stays on the identifier step", async () => {
+  it("shows a field error from the envelope", async () => {
     vi.mocked(signUp).mockRejectedValue(
       new ApiError(409, {
         code: "IDENTIFIER_TAKEN",
@@ -107,12 +101,14 @@ describe("SignUpFlow", () => {
 
     const input = screen.getByLabelText("Số điện thoại hoặc email");
     await userEvent.type(input, "0901234567");
-    await userEvent.click(screen.getByRole("button", { name: "Gửi mã xác thực" }));
+    await userEvent.type(
+      screen.getByLabelText("Mật khẩu"),
+      "password123",
+    );
+    await userEvent.click(screen.getByRole("button", { name: "Đăng ký" }));
 
     const alert = await screen.findByRole("alert");
     expect(alert).toHaveTextContent("Số điện thoại đã được đăng ký.");
     expect(input).toHaveAttribute("aria-invalid", "true");
-    // Still on the identifier step (no OTP input yet).
-    expect(screen.queryByLabelText("Mã xác thực")).not.toBeInTheDocument();
   });
 });

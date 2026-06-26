@@ -21,8 +21,8 @@ test.describe("Prototype Pages — smoke tests (no auth required)", () => {
   }) => {
     await page.goto("/prototype/home");
     await expect(page.locator("h1#home-title")).toContainText("Cây Gia Phả");
-    await expect(page.locator('a[href="/signup"]')).toBeVisible();
-    await expect(page.locator('a[href="/signin"]')).toBeVisible();
+    await expect(page.locator('a[href="/signup"]').first()).toBeVisible();
+    await expect(page.locator('a[href="/signin"]').first()).toBeVisible();
   });
 
   test("home prototype — logged-in state toggle shows tree CTA", async ({
@@ -31,42 +31,30 @@ test.describe("Prototype Pages — smoke tests (no auth required)", () => {
     await page.goto("/prototype/home");
     // Toggle to logged-in state
     await page.click('button:has-text("Đã đăng nhập")');
-    await expect(page.locator('a[href="/tree"]')).toBeVisible();
+    await expect(page.locator('a[href="/tree"]').first()).toBeVisible();
   });
 
-  test("signin prototype — identifier step renders form", async ({ page }) => {
+  test("signin prototype — renders form with identifier and password", async ({ page }) => {
     await page.goto("/prototype/signin");
     await expect(page.locator("h1")).toContainText("Đăng nhập");
     await expect(page.locator('input[name="identifier"]')).toBeVisible();
+    await expect(page.locator('input[name="password"]')).toBeVisible();
     await expect(page.locator('button[type="submit"]')).toBeVisible();
   });
 
-  test("signin prototype — OTP step renders OTP form with identifier", async ({
-    page,
-  }) => {
-    await page.goto("/prototype/signin/otp");
-    await expect(page.locator("h1")).toContainText("Xác thực đăng nhập");
-    await expect(page.locator('input[name="code"]')).toBeVisible();
-    await expect(page.locator("p")).toContainText("prototype@caygipha.dev");
-  });
-
-  test("signup prototype — identifier+TOS step renders region and checkboxes", async ({
+  test("signup prototype — step renders region, fields and checkboxes", async ({
     page,
   }) => {
     await page.goto("/prototype/signup");
     await expect(page.locator("h1")).toContainText("Đăng ký");
     await expect(page.locator('select#signup-region')).toBeVisible();
+    await expect(page.locator('input[name="identifier"]')).toBeVisible();
+    await expect(page.locator('input[name="password"]')).toBeVisible();
     // Submit should be disabled until both checkboxes are checked
     await expect(page.locator('button[type="submit"]')).toBeDisabled();
     await page.locator('input[type="checkbox"]').first().check();
     await page.locator('input[type="checkbox"]').last().check();
     await expect(page.locator('button[type="submit"]')).toBeEnabled();
-  });
-
-  test("signup prototype — OTP step renders OTP form", async ({ page }) => {
-    await page.goto("/prototype/signup/otp");
-    await expect(page.locator("h1")).toContainText("Xác thực đăng ký");
-    await expect(page.locator('input[name="code"]')).toBeVisible();
   });
 
   test("tree prototype — populated tree renders graph canvas and sidebar", async ({

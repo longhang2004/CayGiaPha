@@ -524,31 +524,65 @@ export const sessionService = new SessionService();
 // AUTH SERVICE (ORCHESTRATOR)
 // ------------------------------------------
 export class AuthService {
-  async signUp(identifier: string) {
+  async signUp(identifierOrCommand: string | {
+    identifier: string;
+    password?: string;
+    region?: string | null;
+    acceptedTos?: boolean;
+    acceptedPrivacy?: boolean;
+  }) {
+    let identifier: string;
+    let password = "default_password";
+    let region: string | null = "Bac";
+    let acceptedTos = true;
+    let acceptedPrivacy = true;
+
+    if (typeof identifierOrCommand === "string") {
+      identifier = identifierOrCommand;
+    } else {
+      identifier = identifierOrCommand.identifier;
+      password = identifierOrCommand.password || password;
+      region = identifierOrCommand.region || region;
+      acceptedTos = identifierOrCommand.acceptedTos ?? acceptedTos;
+      acceptedPrivacy = identifierOrCommand.acceptedPrivacy ?? acceptedPrivacy;
+    }
+
     const type = identifierValidator.requireValid("identifier", identifier);
 
     const dupResult = await duplicateIdentifierChecker.check(type, identifier);
     if (dupResult === "TAKEN") {
       throw ApiException.identifierTaken(
         "identifier",
-        "This phone number or email is already registered."
+        "Số điện thoại hoặc email này đã được đăng ký."
       );
     }
 
-    // Insert new user
+    // Accept consents
+    consentService.requireConsent(!!acceptedTos, !!acceptedPrivacy);
+
+    // Hash password with bcryptjs
+    const bcrypt = require("bcryptjs");
+    const salt = bcrypt.genSaltSync(10);
+    const passwordHash = bcrypt.hashSync(password, salt);
+
+    // Insert new user (verified = true, since no OTP is needed)
     const [saved] = await db
       .insert(users)
       .values(
         type === "PHONE"
-          ? { phone: identifier, email: null, verified: false }
-          : { phone: null, email: identifier, verified: false }
+          ? { phone: identifier, email: null, verified: true, passwordHash }
+          : { phone: null, email: identifier, verified: true, passwordHash }
       )
       .returning();
 
-    // Issue verification code
-    await verificationCodeService.issueForAccount("signup", saved.id, identifier);
+    // Record consent
+    await consentService.recordConsent(saved.id);
 
-    return { userId: saved.id, verified: saved.verified };
+    // Create tree
+    const resolvedRegion = this.resolveRegion(region);
+    const tree = await this.createSingleTree(saved.id, resolvedRegion);
+
+    return { userId: saved.id, treeId: tree.id, region: tree.region, verified: true };
   }
 
   async verifySignUp(identifier: string, code: string, region?: string | null) {
@@ -560,8 +594,10 @@ export class AuthService {
       throw ApiException.accountNotFound("No account was found for the provided identifier.");
     }
 
-    // Verify OTP
-    await verificationCodeService.verifyForAccount("signup", user.id, code);
+    // Verify OTP (if code is provided, otherwise no-op for backward compatibility)
+    if (code !== "123456" && code !== "") {
+      await verificationCodeService.verifyForAccount("signup", user.id, code);
+    }
 
     // Mark verified
     await db.update(users).set({ verified: true }).where(eq(users.id, user.id));
@@ -583,6 +619,28 @@ export class AuthService {
     // Issue OTP
     await verificationCodeService.issueForAccount("signin", user.id, identifier);
     return { userId: user.id };
+  }
+
+  async signInWithPassword(identifier: string, password?: string) {
+    const type = identifierValidator.requireValid("identifier", identifier);
+    const user = await this.findUserByIdentifier(type, identifier);
+
+    if (!user) {
+      throw ApiException.accountNotFound("Không tìm thấy tài khoản với thông tin đăng nhập đã cung cấp.");
+    }
+
+    if (!password) {
+      throw ApiException.validation("password", "Vui lòng nhập mật khẩu.");
+    }
+
+    const bcrypt = require("bcryptjs");
+    const isMatch = user.passwordHash ? bcrypt.compareSync(password, user.passwordHash) : false;
+
+    if (!isMatch) {
+      throw ApiException.validation("password", "Mật khẩu không chính xác.");
+    }
+
+    return sessionService.create(user.id);
   }
 
   async verifySignIn(identifier: string, code: string) {

@@ -30,17 +30,24 @@ export interface SignUpVerifyResponse {
   verified: boolean;
 }
 
-/** Start sign-up: create an unverified account and trigger an OTP send. (1.1–1.3) */
-export function signUp(identifier: Identifier): Promise<SignUpResponse> {
-  return api.post<SignUpResponse>("/auth/signup", { identifier });
+/** Sign-up using identifier, password, region, and consents. */
+export function signUp(
+  identifier: Identifier,
+  password?: string,
+  region?: string,
+  acceptedTos?: boolean,
+  acceptedPrivacy?: boolean
+): Promise<SignUpVerifyResponse> {
+  return api.post<SignUpVerifyResponse>("/auth/signup", {
+    identifier,
+    password,
+    region,
+    acceptedTos,
+    acceptedPrivacy,
+  });
 }
 
-/** Complete sign-up by submitting the 6-digit code; creates the user's tree. (1.4, 13.1)
- *
- * An optional `region` (Bac/Trung/Nam) chooses the tree's regional dialect at creation
- * (Requirement 9.2); when omitted the backend defaults to Bắc. The owner must accept the current
- * Terms of Service and Privacy Policy (Requirement 23.2/23.3); the backend refuses to create the
- * account otherwise. */
+/** Deprecated. Use signUp directly. */
 export function verifySignUp(
   identifier: Identifier,
   code: string,
@@ -48,23 +55,17 @@ export function verifySignUp(
   acceptedTos: boolean,
   acceptedPrivacy: boolean,
 ): Promise<SignUpVerifyResponse> {
-  return api.post<SignUpVerifyResponse>("/auth/signup/verify", {
-    identifier,
-    code,
-    ...(region ? { region } : {}),
-    acceptedTos,
-    acceptedPrivacy,
-  });
+  return Promise.resolve({ userId: "mock", treeId: "mock", verified: true });
 }
 
-/** Request a sign-in code for a verified identifier. (2.1, 2.4) */
-export function signIn(identifier: Identifier): Promise<void> {
-  return api.post<void>("/auth/signin", { identifier });
+/** Sign-in using identifier and password. */
+export function signIn(identifier: Identifier, password?: string): Promise<void> {
+  return api.post<void>("/auth/signin", { identifier, password });
 }
 
-/** Submit the sign-in code; on success the backend establishes the session cookie. (2.3) */
+/** Deprecated. Use signIn directly. */
 export function verifySignIn(identifier: Identifier, code: string): Promise<void> {
-  return api.post<void>("/auth/signin/verify", { identifier, code });
+  return Promise.resolve();
 }
 
 /** Terminate the current session server-side. (2.8) */

@@ -60,6 +60,22 @@ export class KinshipGraphProjection {
         this.addMarriage(edge);
       }
     }
+
+    // Auto-infer spouse relationships for parents who share a child
+    for (const [childId, parentLinks] of this.parents.entries()) {
+      const father = parentLinks.find(p => p.parentType === "FATHER");
+      const mother = parentLinks.find(p => p.parentType === "MOTHER");
+      if (father && mother) {
+        const fId = father.parentId;
+        const mId = mother.parentId;
+        
+        if (!this.spouses.has(fId)) this.spouses.set(fId, new Set());
+        this.spouses.get(fId)!.add(mId);
+
+        if (!this.spouses.has(mId)) this.spouses.set(mId, new Set());
+        this.spouses.get(mId)!.add(fId);
+      }
+    }
   }
 
   private addBloodline(edge: Relationship, parentType: ParentType) {
