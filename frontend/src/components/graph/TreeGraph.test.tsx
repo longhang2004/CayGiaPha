@@ -356,4 +356,38 @@ describe("TreeGraph renderer", () => {
     // All nodes should be back
     expect(document.querySelector('.tree-graph__node[data-person-id="p1"]')).toBeInTheDocument();
   });
+
+  it("renders a joint parent-child connector when both parents are in the tree and married", async () => {
+    const fetchAddresses = vi.fn(async () => ({ egoId: "p3", addresses: [] }));
+    const mockPersons: Person[] = [
+      { id: "p1", displayName: "Father", gender: "male" },
+      { id: "p2", displayName: "Mother", gender: "female" },
+      { id: "p3", displayName: "Child", gender: "male" },
+    ];
+    const mockRelationships = [
+      { id: "r-marriage", type: "marriage", sourceId: "p1", targetId: "p2", derivationState: "derived" },
+      { id: "r-father", type: "bloodline_father", sourceId: "p1", targetId: "p3", derivationState: "derived" },
+      { id: "r-mother", type: "bloodline_mother", sourceId: "p2", targetId: "p3", derivationState: "derived" },
+    ] as Relationship[];
+
+    render(
+      <TreeGraph
+        treeId="t1"
+        persons={mockPersons}
+        relationships={mockRelationships}
+        initialEgoId="p3"
+        fetchAddresses={fetchAddresses}
+      />,
+    );
+
+    await waitFor(() => expect(fetchAddresses).toHaveBeenCalled());
+
+    // Should find the joint edge path
+    const jointPath = document.querySelector('path[data-joint-child-id="p3"]');
+    expect(jointPath).toBeInTheDocument();
+
+    // The individual father and mother edges should NOT be rendered separately
+    expect(document.querySelector('[data-relationship-id="r-father"]')).not.toBeInTheDocument();
+    expect(document.querySelector('[data-relationship-id="r-mother"]')).not.toBeInTheDocument();
+  });
 });

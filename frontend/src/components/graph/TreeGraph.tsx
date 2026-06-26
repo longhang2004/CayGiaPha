@@ -27,6 +27,9 @@ import {
   indexAddresses,
   isUnresolved,
   layoutNodes,
+  edgeStyleFor,
+  EDGE_CLASS,
+  STROKE_DASHARRAY,
   type Address,
   type Person,
   type Relationship,
@@ -177,6 +180,83 @@ export function TreeGraph({
     () => layoutNodes(filteredData.persons, filteredData.relationships, { cellWidth: 220, cellHeight: 130, padding: 100 }),
     [filteredData.persons, filteredData.relationships]
   );
+
+  // Group parent-child relationships for joint rendering
+  const { jointEdges, processedRelIds } = useMemo(() => {
+    const jointEdgesList: {
+      key: string;
+      pathData: string;
+      className: string;
+      style: string;
+      strokeDash: string;
+      childId: string;
+    }[] = [];
+    const processedIds = new Set<string>();
+
+    // Map children to their parent-child relationships
+    const childrenMap = new Map<string, { father?: Relationship; mother?: Relationship }>();
+    filteredData.relationships.forEach((rel) => {
+      if (rel.type === "bloodline_father") {
+        if (!childrenMap.has(rel.targetId)) childrenMap.set(rel.targetId, {});
+        childrenMap.get(rel.targetId)!.father = rel;
+      } else if (rel.type === "bloodline_mother") {
+        if (!childrenMap.has(rel.targetId)) childrenMap.set(rel.targetId, {});
+        childrenMap.get(rel.targetId)!.mother = rel;
+      }
+    });
+
+    childrenMap.forEach((parents, childId) => {
+      if (parents.father && parents.mother) {
+        const fRel = parents.father;
+        const mRel = parents.mother;
+
+        // Check if the parents are married
+        const areMarried = filteredData.relationships.some(
+          (r) =>
+            r.type === "marriage" &&
+            ((r.sourceId === fRel.sourceId && r.targetId === mRel.sourceId) ||
+              (r.sourceId === mRel.sourceId && r.targetId === fRel.sourceId))
+        );
+
+        if (areMarried) {
+          const fatherPos = positions.get(fRel.sourceId);
+          const motherPos = positions.get(mRel.sourceId);
+          const childPos = positions.get(childId);
+
+          if (fatherPos && motherPos && childPos) {
+            processedIds.add(fRel.id);
+            processedIds.add(mRel.id);
+
+            const midParentX = (fatherPos.x + motherPos.x) / 2;
+            const parentY = (fatherPos.y + motherPos.y) / 2;
+            const midY = (parentY + childPos.y) / 2;
+
+            const fStyle = edgeStyleFor(fRel);
+            const mStyle = edgeStyleFor(mRel);
+            const style = fStyle === "dashed" || mStyle === "dashed" ? "dashed" : "solid";
+            const strokeDash = STROKE_DASHARRAY[style];
+            const className = EDGE_CLASS[style];
+
+            const NODE_HEIGHT = 56;
+            const HALF_HEIGHT = NODE_HEIGHT / 2;
+
+            const pathData = `M ${midParentX} ${parentY} L ${midParentX} ${midY} L ${childPos.x} ${midY} L ${childPos.x} ${childPos.y - HALF_HEIGHT}`;
+
+            jointEdgesList.push({
+              key: `joint-${childId}`,
+              pathData,
+              className,
+              style,
+              strokeDash,
+              childId,
+            });
+          }
+        }
+      }
+    });
+
+    return { jointEdges: jointEdgesList, processedRelIds: processedIds };
+  }, [filteredData.relationships, positions]);
 
   const treeStructureVersion = useMemo(() => {
     const personParts = persons
@@ -518,21 +598,38 @@ export function TreeGraph({
         >
           <g transform={`translate(${pan.x}, ${pan.y}) scale(${zoom})`}>
             <g className="tree-graph__edges">
-              {filteredData.relationships.map((rel) => {
-                const source = positions.get(rel.sourceId);
-                const target = positions.get(rel.targetId);
-                if (!source || !target) {
-                  return null;
-                }
-                return (
-                  <GraphEdge
-                    key={rel.id}
-                    relationship={rel}
-                    source={source}
-                    target={target}
-                  />
-                );
-              })}
+              {jointEdges.map((edge) => (
+                <path
+                  key={edge.key}
+                  d={edge.pathData}
+                  fill="none"
+                  className={edge.className}
+                  data-edge-style={edge.style}
+                  data-joint-child-id={edge.childId}
+                  stroke="currentColor"
+                  strokeWidth={2}
+                  strokeDasharray={edge.strokeDash}
+                  role="presentation"
+                  aria-hidden={true}
+                />
+              ))}
+              {filteredData.relationships
+                .filter((rel) => !processedRelIds.has(rel.id))
+                .map((rel) => {
+                  const source = positions.get(rel.sourceId);
+                  const target = positions.get(rel.targetId);
+                  if (!source || !target) {
+                    return null;
+                  }
+                  return (
+                    <GraphEdge
+                      key={rel.id}
+                      relationship={rel}
+                      source={source}
+                      target={target}
+                    />
+                  );
+                })}
             </g>
 
             <g className="tree-graph__nodes">

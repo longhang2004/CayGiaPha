@@ -24,6 +24,20 @@ export async function ensureKinshipTermsSeeded() {
       .from(regionKinshipTerms);
     const count = Number(countResult[0]?.count ?? 0);
     if (count > 0) {
+      // Ensure existing grandparent terms are updated to nội/ngoại
+      await db.update(regionKinshipTerms)
+        .set({ term: "ông nội" })
+        .where(eq(regionKinshipTerms.canonicalRelation, "u2:d0:PATERNAL:MALE:SELF:s0"));
+      await db.update(regionKinshipTerms)
+        .set({ term: "bà nội" })
+        .where(eq(regionKinshipTerms.canonicalRelation, "u2:d0:PATERNAL:FEMALE:SELF:s0"));
+      await db.update(regionKinshipTerms)
+        .set({ term: "ông ngoại" })
+        .where(eq(regionKinshipTerms.canonicalRelation, "u2:d0:MATERNAL:MALE:SELF:s0"));
+      await db.update(regionKinshipTerms)
+        .set({ term: "bà ngoại" })
+        .where(eq(regionKinshipTerms.canonicalRelation, "u2:d0:MATERNAL:FEMALE:SELF:s0"));
+
       isSeeded = true;
       return;
     }

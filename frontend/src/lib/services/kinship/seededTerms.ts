@@ -69,62 +69,62 @@ export const SEEDED_KINSHIP_TERMS: SeededKinshipTerm[] = [
   {
     "region": "Bac",
     "canonicalRelation": "u2:d0:PATERNAL:MALE:SELF:s0",
-    "term": "ông"
+    "term": "ông nội"
   },
   {
     "region": "Trung",
     "canonicalRelation": "u2:d0:PATERNAL:MALE:SELF:s0",
-    "term": "ông"
+    "term": "ông nội"
   },
   {
     "region": "Nam",
     "canonicalRelation": "u2:d0:PATERNAL:MALE:SELF:s0",
-    "term": "ông"
+    "term": "ông nội"
   },
   {
     "region": "Bac",
     "canonicalRelation": "u2:d0:PATERNAL:FEMALE:SELF:s0",
-    "term": "bà"
+    "term": "bà nội"
   },
   {
     "region": "Trung",
     "canonicalRelation": "u2:d0:PATERNAL:FEMALE:SELF:s0",
-    "term": "bà"
+    "term": "bà nội"
   },
   {
     "region": "Nam",
     "canonicalRelation": "u2:d0:PATERNAL:FEMALE:SELF:s0",
-    "term": "bà"
+    "term": "bà nội"
   },
   {
     "region": "Bac",
     "canonicalRelation": "u2:d0:MATERNAL:MALE:SELF:s0",
-    "term": "ông"
+    "term": "ông ngoại"
   },
   {
     "region": "Trung",
     "canonicalRelation": "u2:d0:MATERNAL:MALE:SELF:s0",
-    "term": "ông"
+    "term": "ông ngoại"
   },
   {
     "region": "Nam",
     "canonicalRelation": "u2:d0:MATERNAL:MALE:SELF:s0",
-    "term": "ông"
+    "term": "ông ngoại"
   },
   {
     "region": "Bac",
     "canonicalRelation": "u2:d0:MATERNAL:FEMALE:SELF:s0",
-    "term": "bà"
+    "term": "bà ngoại"
   },
   {
     "region": "Trung",
     "canonicalRelation": "u2:d0:MATERNAL:FEMALE:SELF:s0",
-    "term": "bà"
+    "term": "bà ngoại"
   },
   {
     "region": "Nam",
     "canonicalRelation": "u2:d0:MATERNAL:FEMALE:SELF:s0",
-    "term": "bà"
+    "term": "bà ngoại"
   },
   {
     "region": "Bac",
