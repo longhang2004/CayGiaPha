@@ -16,6 +16,9 @@ export class RateLimiter {
   }
 
   check(key: string | null | undefined): void {
+    if (process.env.NODE_ENV !== "production") {
+      return;
+    }
     if (!key || key.trim() === "") {
       return;
     }

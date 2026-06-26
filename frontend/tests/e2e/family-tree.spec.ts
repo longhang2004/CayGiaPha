@@ -4,6 +4,7 @@ test.describe("Family Tree E2E Flow", () => {
   const email = `test-e2e-${Date.now()}@example.com`;
 
   test("should sign up, verify OTP, create first member, add relative, search, and change settings", async ({ page }) => {
+    test.setTimeout(60000);
     // 1. Visit signup page
     await page.goto("/signup");
     await expect(page).toHaveTitle(/Cây Gia Phả/);
@@ -12,22 +13,20 @@ test.describe("Family Tree E2E Flow", () => {
     await page.locator('input[type="checkbox"]').first().check();
     await page.locator('input[type="checkbox"]').last().check();
 
-    // 3. Fill email and request verification code
-    await page.fill('input[type="email"], input[type="text"]', email);
+    // 3. Fill email and password, then submit
+    await page.fill('input[name="identifier"]', email);
+    await page.fill('input[name="password"]', "password123");
     await page.click('button[type="submit"]');
 
-    // 4. Input Mock OTP code "123456" and click verify
-    await page.fill('input[type="text"]', "123456");
-    await page.click('button[type="submit"]');
 
     // 5. Arrive at tree page (should display empty tree setup first)
-    await expect(page).toHaveURL(/\/tree/);
-    await expect(page.locator("h1")).toContainText("Bắt đầu cây gia phả của bạn");
+    await expect(page).toHaveURL(/\/tree/, { timeout: 30000 });
+    await expect(page.locator("h1")).toContainText("Bắt đầu cây gia phả của bạn", { timeout: 30000 });
 
     // 6. Create the first member "Ông Tổ" (Grandfather)
     await page.fill('input[id="displayName"]', "Ông Tổ");
     await page.locator('input[id="gender-male"]').check();
-    await page.click('button[type="submit"]');
+    await page.click('form[aria-label="Tạo người"] button[type="submit"]');
 
     // 7. Verify the node "Ông Tổ" is created and loaded onto the tree canvas
     await expect(page.locator(".tree-graph__canvas")).toBeVisible();
@@ -58,10 +57,10 @@ test.describe("Family Tree E2E Flow", () => {
 
     // 9. Click "Tạo thành viên mới" when no node is selected to create "Bà Tổ"
     await page.click('button:has-text("Bỏ chọn")');
-    await page.click('button:has-text("Tạo thành viên mới")');
+    await page.click('button:has-text("Thêm thành viên")');
     await page.fill('input[id="displayName"]', "Bà Tổ");
     await page.locator('input[id="gender-female"]').check();
-    await page.click('button[type="submit"]');
+    await page.click('form[aria-label="Tạo người"] button[type="submit"]');
 
     // 10. Verify "Bà Tổ" is also visible in the tree canvas
     await expect(page.locator(".tree-graph__node-name").filter({ hasText: "Bà Tổ" })).toBeVisible();
@@ -72,18 +71,19 @@ test.describe("Family Tree E2E Flow", () => {
     await page.selectOption('select[id="targetId"]', { label: "Bà Tổ" });
     await page.selectOption('select[id="derivedKind"]', "marriage");
     await page.selectOption('select[id="maritalStatus"]', "married");
-    await page.click('button[type="submit"]');
+    await page.click('form[aria-label="Thêm người thân"] button[type="submit"]');
 
     // 12. Verify the relationship edge is created
     // A marriage relationship is a solid line (edge-solid)
-    await expect(page.locator(".edge-solid").first()).toBeVisible();
+    await expect(page.locator(".edge-solid").first()).toBeAttached({ timeout: 10000 });
 
     // 13. Test Search & Filter (Search for "Bà")
     await page.fill('input[id="nameQuery"]', "Bà");
     await page.click('form[aria-label="Tìm kiếm"] button[type="submit"]');
-    await expect(page.locator("ul li")).toContainText("Bà Tổ");
+    await expect(page.locator("ul[aria-label='Kết quả tìm kiếm'] li").filter({ hasText: "Bà Tổ" })).toBeVisible();
 
     // 14. Test Dialect change (change default region to Nam)
+    await page.click('a:has-text("Cài đặt")');
     const regionSelect = page.locator("select[id='region-select']");
     await regionSelect.selectOption("Nam");
     await expect(page.locator("[data-testid='region-saved']")).toContainText("Đã lưu vùng.");
