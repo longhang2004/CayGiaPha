@@ -51,6 +51,7 @@ interface AddRelativeFormProps {
   persons: PersonOption[];
   preselectedPersonId?: string;
   onCreated?: (relationshipId: string) => void;
+  onCancel?: () => void;
 }
 
 function parseOptionalInt(value: string): number | undefined {
@@ -59,7 +60,7 @@ function parseOptionalInt(value: string): number | undefined {
   return Number.isFinite(n) ? n : undefined;
 }
 
-export function AddRelativeForm({ treeId, persons, preselectedPersonId, onCreated }: AddRelativeFormProps) {
+export function AddRelativeForm({ treeId, persons, preselectedPersonId, onCreated, onCancel }: AddRelativeFormProps) {
   const [mode, setMode] = useState<Mode>("derived");
   const [derivedKind, setDerivedKind] = useState<DerivedKind>("bloodline_father");
   const [maritalStatus, setMaritalStatus] = useState<MaritalStatus>("married");
@@ -726,9 +727,20 @@ export function AddRelativeForm({ treeId, persons, preselectedPersonId, onCreate
       )}
 
       <div className="form-actions">
-        <Button type="submit" disabled={submitting}>
+        <Button type="submit" disabled={submitting} style={onCancel ? { flex: 1 } : undefined}>
           {isNewPerson ? "Tạo và Thêm" : "Thêm"}
         </Button>
+        {onCancel && (
+          <Button
+            type="button"
+            className="btn-secondary"
+            onClick={onCancel}
+            disabled={submitting}
+            style={{ flex: 1 }}
+          >
+            Hủy bỏ
+          </Button>
+        )}
       </div>
 
       <ConflictWarning conflicts={conflicts} />

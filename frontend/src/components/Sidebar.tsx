@@ -54,7 +54,12 @@ export function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse }: Side
               <img src="/logo.png" alt="Logo Cây Gia Phả" style={{ height: "24px", width: "auto" }} />
               {!isCollapsed && <span>Cây Gia Phả</span>}
             </Link>
-            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+            <div style={{
+              display: "flex",
+              flexDirection: isCollapsed ? "column" : "row",
+              alignItems: "center",
+              gap: isCollapsed ? "0.75rem" : "0.5rem"
+            }}>
               {user && <NotificationBell />}
               <button
                 type="button"

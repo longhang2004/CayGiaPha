@@ -96,9 +96,11 @@ export default function PrototypeSignUpPage() {
             />
             <span>Tôi đồng ý với <a href="/legal/privacy" onClick={(e) => e.stopPropagation()}>Chính sách bảo mật</a>.</span>
           </label>
-          <p className="field-hint" style={{ margin: 0 }}>
-            Bạn cần đồng ý với cả hai để tạo cây gia phả.
-          </p>
+          {(!acceptedTos || !acceptedPrivacy) && (
+            <p className="field-error" style={{ margin: 0 }}>
+              Bạn cần đồng ý với cả hai để tạo cây gia phả.
+            </p>
+          )}
         </div>
 
         <Button type="submit" disabled={!acceptedTos || !acceptedPrivacy}>

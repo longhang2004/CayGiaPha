@@ -250,15 +250,8 @@ function PrototypeTreeContent() {
                 onSuccess={() => {
                   setCreateMode(false);
                 }}
+                onCancel={() => setCreateMode(false)}
               />
-              <button
-                type="button"
-                className="btn btn-secondary"
-                style={{ width: "100%", marginTop: "0.5rem" }}
-                onClick={() => setCreateMode(false)}
-              >
-                Hủy bỏ
-              </button>
             </div>
           ) : selectedPerson ? (
             <div className="surface-card side-panel">
@@ -275,15 +268,8 @@ function PrototypeTreeContent() {
                     onSuccess={() => {
                       setEditMode(false);
                     }}
+                    onCancel={() => setEditMode(false)}
                   />
-                  <button
-                    type="button"
-                    className="btn btn-secondary"
-                    style={{ width: "100%", marginTop: "0.5rem" }}
-                    onClick={() => setEditMode(false)}
-                  >
-                    Hủy bỏ
-                  </button>
                 </div>
               ) : addRelativeMode ? (
                 <div>
@@ -297,15 +283,8 @@ function PrototypeTreeContent() {
                     onCreated={() => {
                       setAddRelativeMode(false);
                     }}
+                    onCancel={() => setAddRelativeMode(false)}
                   />
-                  <button
-                    type="button"
-                    className="btn btn-secondary"
-                    style={{ width: "100%", marginTop: "0.5rem" }}
-                    onClick={() => setAddRelativeMode(false)}
-                  >
-                    Hủy bỏ
-                  </button>
                 </div>
               ) : (
                 <div>

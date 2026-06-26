@@ -620,6 +620,19 @@ textarea:focus {
   border-color: var(--color-focus);
 }
 
+input[aria-invalid="true"],
+select[aria-invalid="true"],
+textarea[aria-invalid="true"] {
+  border-color: #dc2626 !important;
+}
+
+input[aria-invalid="true"]:focus,
+select[aria-invalid="true"]:focus,
+textarea[aria-invalid="true"]:focus {
+  border-color: #dc2626 !important;
+  box-shadow: 0 0 0 2px rgba(220, 38, 38, 0.2) !important;
+}
+
 /* Checkbox/radio: enlarge the control and give its label a 44px tap area. */
 input[type="checkbox"],
 input[type="radio"] {
@@ -672,7 +685,7 @@ fieldset {
 .form-error,
 .field-error,
 [role="alert"] {
-  color: var(--color-accent);
+  color: #dc2626 !important;
 }
 
 /* App header / primary navigation — flex layout that wraps on narrow or

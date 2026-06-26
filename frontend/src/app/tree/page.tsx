@@ -448,15 +448,8 @@ function TreePageContent({ searchParams }: TreePageProps) {
                   setCreateMode(false);
                   refreshTree();
                 }}
+                onCancel={() => setCreateMode(false)}
               />
-              <button
-                type="button"
-                className="btn btn-secondary"
-                style={{ width: "100%", marginTop: "0.5rem" }}
-                onClick={() => setCreateMode(false)}
-              >
-                Hủy bỏ
-              </button>
             </div>
           ) : selectedPerson ? (
             <div className="surface-card side-panel">
@@ -476,15 +469,8 @@ function TreePageContent({ searchParams }: TreePageProps) {
                       setEditMode(false);
                       refreshTree();
                     }}
+                    onCancel={() => setEditMode(false)}
                   />
-                  <button
-                    type="button"
-                    className="btn btn-secondary"
-                    style={{ width: "100%", marginTop: "0.5rem" }}
-                    onClick={() => setEditMode(false)}
-                  >
-                    Hủy bỏ
-                  </button>
                 </div>
               ) : addRelativeMode ? (
                 <div>
@@ -497,15 +483,8 @@ function TreePageContent({ searchParams }: TreePageProps) {
                       setAddRelativeMode(false);
                       refreshTree();
                     }}
+                    onCancel={() => setAddRelativeMode(false)}
                   />
-                  <button
-                    type="button"
-                    className="btn btn-secondary"
-                    style={{ width: "100%", marginTop: "0.5rem" }}
-                    onClick={() => setAddRelativeMode(false)}
-                  >
-                    Hủy bỏ
-                  </button>
                 </div>
               ) : (
                 <div>
