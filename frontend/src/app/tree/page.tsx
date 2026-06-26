@@ -444,6 +444,7 @@ function TreePageContent({ searchParams }: TreePageProps) {
               <PersonForm
                 mode="create"
                 treeId={activeTreeId}
+                persons={personOptions}
                 onSuccess={() => {
                   setCreateMode(false);
                   refreshTree();

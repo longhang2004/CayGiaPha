@@ -47,8 +47,9 @@ export default function PersonPage() {
       <PersonForm
         mode="create"
         treeId={treeId}
+        persons={created}
         onSuccess={(id) =>
-          setCreated((prev) => [...prev, { id, displayName: `Người ${prev.length + 1}` }])
+          setCreated((prev) => [...prev, { id, displayName: `Người ${prev.length + 1}`, gender: "male" }])
         }
       />
 

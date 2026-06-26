@@ -247,6 +247,7 @@ function PrototypeTreeContent() {
               <PrototypePersonForm
                 mode="create"
                 treeId={PROTOTYPE_TREE_ID}
+                persons={personOptions}
                 onSuccess={() => {
                   setCreateMode(false);
                 }}

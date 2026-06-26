@@ -8,10 +8,12 @@ import {
   setVisibility,
   convertSolarToLunar,
   convertLunarToSolar,
+  addDerivedRelative,
   type CreatePersonInput,
   type EditPersonInput,
   type Gender,
 } from "@/lib/persons";
+import { type PersonOption } from "./AddRelativeForm";
 import { Button } from "@/components/Button";
 import {
   DEFAULT_VISIBILITY,
@@ -61,6 +63,7 @@ interface PersonFormProps {
   initialValues?: PersonFormInitialValues;
   onSuccess?: (personId: string) => void;
   onCancel?: () => void;
+  persons?: PersonOption[];
 }
 
 function parseOptionalInt(value: string): number | undefined {
@@ -76,6 +79,7 @@ export function PersonForm({
   initialValues,
   onSuccess,
   onCancel,
+  persons = [],
 }: PersonFormProps) {
   const [displayName, setDisplayName] = useState(initialValues?.displayName ?? "");
   const [gender, setGender] = useState<Gender>(initialValues?.gender ?? "male");
@@ -107,6 +111,23 @@ export function PersonForm({
   const [visibility, setVisibilityState] = useState<VisibilityState>(
     initialValues?.visibility ?? DEFAULT_VISIBILITY,
   );
+
+  const [linkRelationship, setLinkRelationship] = useState(false);
+  const [relTargetId, setRelTargetId] = useState(persons[0]?.id ?? "");
+  const [derivedKind, setDerivedKind] = useState<
+    "bloodline_father" | "bloodline_father_reverse" | "bloodline_mother" | "bloodline_mother_reverse" | "marriage"
+  >("bloodline_father");
+  const [maritalStatus, setMaritalStatus] = useState<"married" | "divorced" | "deceased">("married");
+
+  useEffect(() => {
+    if (persons.length > 0 && !relTargetId) {
+      setRelTargetId(persons[0].id);
+    }
+  }, [persons, relTargetId]);
+
+  const sourceName = displayName.trim() || "Thành viên mới";
+  const targetPerson = persons.find((p) => p.id === relTargetId);
+  const targetName = targetPerson?.displayName ?? "Thành viên B";
 
   useEffect(() => {
     if (!deathStatus || !deathDay || !deathMonth) {
@@ -230,6 +251,37 @@ export function PersonForm({
       const diff = visibilityDiff(visibility, baseline ?? DEFAULT_VISIBILITY);
       if (resolvedId && hasVisibilityChange(diff)) {
         await setVisibility(resolvedId, treeId, diff);
+      }
+
+      // Create relationship if requested
+      if (mode === "create" && linkRelationship && relTargetId && resolvedId) {
+        let finalType: "bloodline_father" | "bloodline_mother" | "marriage" = "bloodline_father";
+        let finalSourceId = resolvedId;
+        let finalTargetId = relTargetId;
+
+        if (derivedKind === "bloodline_father") {
+          finalType = "bloodline_father";
+        } else if (derivedKind === "bloodline_father_reverse") {
+          finalType = "bloodline_father";
+          finalSourceId = relTargetId;
+          finalTargetId = resolvedId;
+        } else if (derivedKind === "bloodline_mother") {
+          finalType = "bloodline_mother";
+        } else if (derivedKind === "bloodline_mother_reverse") {
+          finalType = "bloodline_mother";
+          finalSourceId = relTargetId;
+          finalTargetId = resolvedId;
+        } else if (derivedKind === "marriage") {
+          finalType = "marriage";
+        }
+
+        await addDerivedRelative({
+          treeId,
+          type: finalType,
+          sourceId: finalSourceId,
+          targetId: finalTargetId,
+          ...(derivedKind === "marriage" ? { maritalStatus } : {}),
+        });
       }
 
       if (resolvedId) {
@@ -542,6 +594,73 @@ export function PersonForm({
             </div>
           )}
         </div>
+      )}
+
+      {mode === "create" && persons.length > 0 && (
+        <fieldset style={{ marginTop: "1.5rem", border: "1px dashed var(--color-hairline-strong)", borderRadius: "8px", padding: "1rem" }}>
+          <legend style={{ padding: "0 0.5rem", fontSize: "0.875rem", fontWeight: "600", color: "var(--color-muted)" }}>
+            Thiết lập quan hệ (tùy chọn)
+          </legend>
+          <div className="field" style={{ margin: 0 }}>
+            <label style={{ display: "flex", alignItems: "center", gap: "0.5rem", cursor: "pointer", fontWeight: "normal", margin: 0, minHeight: "auto" }}>
+              <input
+                type="checkbox"
+                checked={linkRelationship}
+                onChange={(e) => setLinkRelationship(e.target.checked)}
+              />
+              <span>Thiết lập quan hệ ngay</span>
+            </label>
+          </div>
+
+          {linkRelationship && (
+            <>
+              <div className="field" style={{ marginTop: "1rem" }}>
+                <label htmlFor="relTargetId">Liên kết với thành viên</label>
+                <select
+                  id="relTargetId"
+                  value={relTargetId}
+                  onChange={(e) => setRelTargetId(e.target.value)}
+                >
+                  {persons.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.displayName}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="field">
+                <label htmlFor="relDerivedKind">Quan hệ của thành viên mới</label>
+                <select
+                  id="relDerivedKind"
+                  value={derivedKind}
+                  onChange={(e) => setDerivedKind(e.target.value as "bloodline_father" | "bloodline_father_reverse" | "bloodline_mother" | "bloodline_mother_reverse" | "marriage")}
+                >
+                  <option value="bloodline_father">{sourceName} là CHA của {targetName}</option>
+                  <option value="bloodline_father_reverse">{sourceName} là CON của {targetName} ({targetName} là CHA)</option>
+                  <option value="bloodline_mother">{sourceName} là MẸ của {targetName}</option>
+                  <option value="bloodline_mother_reverse">{sourceName} là CON của {targetName} ({targetName} là MẸ)</option>
+                  <option value="marriage">{sourceName} và {targetName} là VỢ CHỒNG</option>
+                </select>
+              </div>
+
+              {derivedKind === "marriage" && (
+                <div className="field">
+                  <label htmlFor="relMaritalStatus">Tình trạng hôn nhân</label>
+                  <select
+                    id="relMaritalStatus"
+                    value={maritalStatus}
+                    onChange={(e) => setMaritalStatus(e.target.value as "married" | "divorced" | "deceased")}
+                  >
+                    <option value="married">Đang kết hôn</option>
+                    <option value="divorced">Đã ly hôn</option>
+                    <option value="deceased">Đã mất</option>
+                  </select>
+                </div>
+              )}
+            </>
+          )}
+        </fieldset>
       )}
 
       <VisibilityToggles
