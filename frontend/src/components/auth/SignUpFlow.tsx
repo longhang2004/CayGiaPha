@@ -65,7 +65,8 @@ export function SignUpFlow({ redirectTo = "/" }: SignUpFlowProps) {
   };
 
   return (
-    <form onSubmit={handleSubmit} noValidate aria-labelledby={`${inputId}-heading`}>
+    <div className="auth-card">
+      <form onSubmit={handleSubmit} noValidate aria-labelledby={`${inputId}-heading`}>
       <h1 id={`${inputId}-heading`}>Đăng ký</h1>
       <p>Tạo tài khoản cây gia phả mới của bạn.</p>
 
@@ -212,6 +213,7 @@ export function SignUpFlow({ redirectTo = "/" }: SignUpFlowProps) {
           Đăng ký bằng Google
         </a>
       </div>
-    </form>
+      </form>
+    </div>
   );
 }

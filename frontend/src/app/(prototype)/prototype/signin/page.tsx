@@ -22,9 +22,10 @@ export default function PrototypeSignInPage() {
   const passwordId = `${inputId}-password`;
 
   return (
-    <section>
+    <div className="auth-container">
       {/* ===== BEGIN: mirror of SignInFlow ===== */}
-      <form onSubmit={(e) => { e.preventDefault(); /* no-op in prototype */ }} noValidate>
+      <div className="auth-card">
+        <form onSubmit={(e) => { e.preventDefault(); /* no-op in prototype */ }} noValidate>
         <h1 id={`${inputId}-heading`}>Đăng nhập</h1>
         <p>Đăng nhập bằng số điện thoại/email và mật khẩu của bạn.</p>
 
@@ -58,8 +59,9 @@ export default function PrototypeSignInPage() {
             Đăng nhập
           </Button>
         </div>
-      </form>
+        </form>
+      </div>
       {/* ===== END ===== */}
-    </section>
+    </div>
   );
 }

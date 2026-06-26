@@ -27,9 +27,10 @@ export default function PrototypeSignUpPage() {
   const passwordId = `${inputId}-password`;
 
   return (
-    <section>
+    <div className="auth-container">
       {/* ===== BEGIN: mirror of SignUpFlow ===== */}
-      <form onSubmit={(e) => { e.preventDefault(); /* no-op in prototype */ }} noValidate>
+      <div className="auth-card">
+        <form onSubmit={(e) => { e.preventDefault(); /* no-op in prototype */ }} noValidate>
         <h1 id={`${inputId}-heading`}>Đăng ký</h1>
         <p>Tạo tài khoản cây gia phả mới của bạn.</p>
 
@@ -103,8 +104,9 @@ export default function PrototypeSignUpPage() {
         <Button type="submit" disabled={!acceptedTos || !acceptedPrivacy}>
           Đăng ký
         </Button>
-      </form>
+        </form>
+      </div>
       {/* ===== END ===== */}
-    </section>
+    </div>
   );
 }

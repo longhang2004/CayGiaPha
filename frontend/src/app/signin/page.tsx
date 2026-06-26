@@ -2,8 +2,8 @@ import { SignInFlow } from "@/components/auth/SignInFlow";
 
 export default function SignInPage() {
   return (
-    <section>
+    <div className="auth-container">
       <SignInFlow redirectTo="/tree" />
-    </section>
+    </div>
   );
 }

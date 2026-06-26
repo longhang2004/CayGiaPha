@@ -48,7 +48,8 @@ export function SignInFlow({ redirectTo = "/" }: SignInFlowProps) {
   }
 
   return (
-    <form onSubmit={handleSubmit} noValidate aria-labelledby={`${inputId}-heading`}>
+    <div className="auth-card">
+      <form onSubmit={handleSubmit} noValidate aria-labelledby={`${inputId}-heading`}>
       <h1 id={`${inputId}-heading`}>Đăng nhập</h1>
       <p>Đăng nhập bằng số điện thoại/email và mật khẩu của bạn.</p>
 
@@ -149,6 +150,7 @@ export function SignInFlow({ redirectTo = "/" }: SignInFlowProps) {
           Đăng nhập bằng Google
         </a>
       </div>
-    </form>
+      </form>
+    </div>
   );
 }
