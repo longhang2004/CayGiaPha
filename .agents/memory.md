@@ -41,3 +41,8 @@ Durable project knowledge for future AI agents. Keep entries short, verified, an
 - **Frontend Priority**: The backend is currently not used. Prioritize all development and updates in the frontend; syncing with the backend will be done later.
 - **Environment Configurations**: Environment variables are managed via `.env.development` and `.env.production`. The general `.env` file is redundant and has been removed/ignored.
 
+## 2026-06-26
+
+- **Spouse-Alignment Generation Depth Bug Fix**: Fixed a bug where a child node whose spouse has no parents in the tree was incorrectly pulled up to depth 0 (the parents' generation level) because the spouse was classified as a root node. Redesigned `layoutNodes` in `frontend/src/lib/graph.ts` to use a unit-DAG algorithm: it groups spouses into "marriage units", builds a directed graph of parent-child relationships between these units, determines the depth of each unit using a topological/longest-path BFS, and assigns individual node depths from their parent unit's depth.
+
+

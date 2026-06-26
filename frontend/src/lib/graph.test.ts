@@ -212,6 +212,62 @@ describe("layoutNodes", () => {
     // Parents are spouses: same y
     expect(fatherPos.y).toBe(motherPos.y);
   });
+
+  it("places parents ABOVE their child even when child has a spouse with no parents in the tree", () => {
+    const persons: Person[] = [
+      { id: "child", displayName: "Hàng Hữu Phương", gender: "male" },
+      { id: "spouse", displayName: "Phạm Thị Cẩm Tú", gender: "female" },
+      { id: "father", displayName: "Hàng Hữu Thiền", gender: "male" },
+      { id: "mother", displayName: "Lê Thị My", gender: "female" },
+    ];
+    const relationships: Relationship[] = [
+      {
+        id: "r-marriage-child",
+        type: "marriage",
+        sourceId: "child",
+        targetId: "spouse",
+        derivationState: "derived",
+      },
+      {
+        id: "r-marriage-parents",
+        type: "marriage",
+        sourceId: "father",
+        targetId: "mother",
+        derivationState: "derived",
+      },
+      {
+        id: "r-father",
+        type: "bloodline_father",
+        sourceId: "father",
+        targetId: "child",
+        derivationState: "derived",
+      },
+      {
+        id: "r-mother",
+        type: "bloodline_mother",
+        sourceId: "mother",
+        targetId: "child",
+        derivationState: "derived",
+      },
+    ];
+
+    const positions = layoutNodes(persons, relationships);
+
+    const childPos = positions.get("child")!;
+    const spousePos = positions.get("spouse")!;
+    const fatherPos = positions.get("father")!;
+    const motherPos = positions.get("mother")!;
+
+    // Parents must be ABOVE (smaller y) the child and spouse
+    expect(fatherPos.y).toBeLessThan(childPos.y);
+    expect(motherPos.y).toBeLessThan(childPos.y);
+
+    // Spouse must be at the same depth as the child
+    expect(spousePos.y).toBe(childPos.y);
+
+    // Parents are spouses: same y
+    expect(fatherPos.y).toBe(motherPos.y);
+  });
 });
 
 describe("fetchViewpointAddresses", () => {

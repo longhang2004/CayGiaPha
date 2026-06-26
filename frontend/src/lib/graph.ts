@@ -201,24 +201,10 @@ export function layoutNodes(
     return positions;
   }
 
-  // BƯỚC 1 — Xác định root nodes:
-  // Roots là các person có id không xuất hiện là target của bất kỳ bloodline relationship nào và có ít nhất một mối quan hệ.
-  const childIds = new Set(
-    relationships
-      .filter((r) => r.type === "bloodline_father" || r.type === "bloodline_mother")
-      .map((r) => r.targetId)
-  );
-  
-  const hasRelationships = (id: string): boolean => {
-    return relationships.some((r) => r.sourceId === id || r.targetId === id);
-  };
-
-  let roots = persons.filter((p) => !childIds.has(p.id) && hasRelationships(p.id));
-
-  // Build adjacency maps for BFS
-  const parentsOf = new Map<string, string[]>();
-  const childrenOf = new Map<string, string[]>();
+  // Build spouses lookup and check if there are relationships
   const spousesOf = new Map<string, string[]>();
+  const childrenOf = new Map<string, string[]>();
+  const parentsOf = new Map<string, string[]>();
 
   relationships.forEach((r) => {
     if (r.type === "bloodline_father" || r.type === "bloodline_mother") {
@@ -236,109 +222,149 @@ export function layoutNodes(
     }
   });
 
-  // If no roots exist but we have persons, pick the first person as root to start BFS
-  if (roots.length === 0 && persons.length > 0) {
-    roots = [persons[0]];
-  }
+  const hasRelationships = (id: string): boolean => {
+    return relationships.some((r) => r.sourceId === id || r.targetId === id);
+  };
 
-  // BƯỚC 2 — BFS để gán generation depth:
-  const depthMap = new Map<string, number>();
+  // Group persons into marriage units
+  const personUnitId = new Map<string, string>();
+  const units = new Map<string, string[]>();
+  const visitedForUnit = new Set<string>();
+
+  persons.forEach((p) => {
+    if (visitedForUnit.has(p.id)) return;
+
+    const unit: string[] = [];
+    const stack = [p.id];
+    visitedForUnit.add(p.id);
+
+    while (stack.length > 0) {
+      const curr = stack.pop()!;
+      unit.push(curr);
+
+      const spouses = spousesOf.get(curr) || [];
+      spouses.forEach((spId) => {
+        if (!visitedForUnit.has(spId)) {
+          // Only group if the spouse is actually in the persons list
+          if (persons.some((pe) => pe.id === spId)) {
+            visitedForUnit.add(spId);
+            stack.push(spId);
+          }
+        }
+      });
+    }
+
+    const unitId = unit[0];
+    units.set(unitId, unit);
+    unit.forEach((pid) => {
+      personUnitId.set(pid, unitId);
+    });
+  });
+
+  // Build directed graph of units
+  const unitChildren = new Map<string, Set<string>>();
+  const unitParents = new Map<string, Set<string>>();
+
+  units.forEach((_, uid) => {
+    unitChildren.set(uid, new Set());
+    unitParents.set(uid, new Set());
+  });
+
+  relationships.forEach((r) => {
+    if (r.type === "bloodline_father" || r.type === "bloodline_mother") {
+      const parentUnit = personUnitId.get(r.sourceId);
+      const childUnit = personUnitId.get(r.targetId);
+      if (parentUnit && childUnit && parentUnit !== childUnit) {
+        unitChildren.get(parentUnit)!.add(childUnit);
+        unitParents.get(childUnit)!.add(parentUnit);
+      }
+    }
+  });
+
+  const activeUnitIds = new Set<string>();
+  persons.forEach((p) => {
+    if (hasRelationships(p.id)) {
+      const uid = personUnitId.get(p.id);
+      if (uid) {
+        activeUnitIds.add(uid);
+      }
+    }
+  });
+
+  const unitDepthMap = new Map<string, number>();
   const queue: string[] = [];
 
-  roots.forEach((r) => {
-    depthMap.set(r.id, 0);
-    queue.push(r.id);
+  // Find all active units with no parents
+  const roots = Array.from(activeUnitIds).filter((uid) => {
+    const parents = unitParents.get(uid);
+    return !parents || parents.size === 0;
+  });
+
+  // If there are no roots but we have active units, pick one to start BFS
+  if (roots.length === 0 && activeUnitIds.size > 0) {
+    const sortedActive = Array.from(activeUnitIds).sort();
+    roots.push(sortedActive[0]);
+  }
+
+  roots.forEach((ruid) => {
+    unitDepthMap.set(ruid, 0);
+    queue.push(ruid);
   });
 
   while (queue.length > 0) {
-    const current = queue.shift()!;
-    const currDepth = depthMap.get(current)!;
+    const currUnit = queue.shift()!;
+    const currDepth = unitDepthMap.get(currUnit)!;
 
-    // Spouse of node depth N: depth = N
-    const spouses = spousesOf.get(current) || [];
-    spouses.forEach((sp) => {
-      const oldDepth = depthMap.get(sp);
-      if (oldDepth === undefined || currDepth < oldDepth) {
-        depthMap.set(sp, currDepth);
-        queue.push(sp);
-      }
-    });
-
-    // Con của node depth N: depth = N + 1
-    const children = childrenOf.get(current) || [];
-    children.forEach((ch) => {
-      const oldDepth = depthMap.get(ch);
-      if (oldDepth === undefined || currDepth + 1 < oldDepth) {
-        depthMap.set(ch, currDepth + 1);
-        queue.push(ch);
+    const children = unitChildren.get(currUnit) || new Set();
+    children.forEach((chUnit) => {
+      const oldDepth = unitDepthMap.get(chUnit);
+      // We want children to always be strictly below their parents, so we take the max depth possible
+      if (oldDepth === undefined || currDepth + 1 > oldDepth) {
+        unitDepthMap.set(chUnit, currDepth + 1);
+        queue.push(chUnit);
       }
     });
   }
 
-  // Xử lý các node không bị cô lập nhưng chưa được BFS duyệt qua (ví dụ: các component nhỏ không kết nối với root chính).
-  // Quan trọng: trước khi gán depth, đi ngược lên parentsOf để tìm tổ tiên cao nhất của component,
-  // tránh trường hợp cha/mẹ bị xếp cùng thế hệ với con cái.
+  // Handle any active units that were not reached (e.g. disconnected components with cycles)
+  let loopCount = 0;
+  while (unitDepthMap.size < activeUnitIds.size && loopCount < 1000) {
+    loopCount++;
+    const unreached = Array.from(activeUnitIds).filter((uid) => !unitDepthMap.has(uid));
+    if (unreached.length === 0) break;
+
+    // Find the one with the fewest parents among the unreached
+    unreached.sort((a, b) => {
+      const pa = unitParents.get(a)?.size || 0;
+      const pb = unitParents.get(b)?.size || 0;
+      return pa - pb;
+    });
+
+    const nextRoot = unreached[0];
+    unitDepthMap.set(nextRoot, 0);
+    queue.push(nextRoot);
+
+    while (queue.length > 0) {
+      const currUnit = queue.shift()!;
+      const currDepth = unitDepthMap.get(currUnit)!;
+
+      const children = unitChildren.get(currUnit) || new Set();
+      children.forEach((chUnit) => {
+        const oldDepth = unitDepthMap.get(chUnit);
+        if (oldDepth === undefined || currDepth + 1 > oldDepth) {
+          unitDepthMap.set(chUnit, currDepth + 1);
+          queue.push(chUnit);
+        }
+      });
+    }
+  }
+
+  // Map person depths from their units
+  const depthMap = new Map<string, number>();
   persons.forEach((p) => {
-    if (!depthMap.has(p.id) && hasRelationships(p.id)) {
-      // Walk UP the parent chain to find the topmost ancestor of this component
-      let componentRoot = p.id;
-      const visited = new Set<string>([p.id]);
-      let stack = [p.id];
-      while (stack.length > 0) {
-        const current = stack.pop()!;
-        const parents = parentsOf.get(current) || [];
-        for (const parentId of parents) {
-          if (!visited.has(parentId) && !depthMap.has(parentId)) {
-            visited.add(parentId);
-            stack.push(parentId);
-            // A parent is "higher" — it becomes the new root candidate
-            componentRoot = parentId;
-          }
-        }
-        // Also traverse spouse links to find spouse's parents
-        const spouses = spousesOf.get(current) || [];
-        for (const spId of spouses) {
-          if (!visited.has(spId) && !depthMap.has(spId)) {
-            visited.add(spId);
-            const spouseParents = parentsOf.get(spId) || [];
-            for (const spParentId of spouseParents) {
-              if (!visited.has(spParentId) && !depthMap.has(spParentId)) {
-                visited.add(spParentId);
-                stack.push(spParentId);
-                componentRoot = spParentId;
-              }
-            }
-          }
-        }
-      }
-
-      // Now BFS downward from the topmost ancestor
-      if (!depthMap.has(componentRoot)) {
-        depthMap.set(componentRoot, 0);
-        queue.push(componentRoot);
-        while (queue.length > 0) {
-          const current = queue.shift()!;
-          const currDepth = depthMap.get(current)!;
-
-          const spouses = spousesOf.get(current) || [];
-          spouses.forEach((sp) => {
-            const oldDepth = depthMap.get(sp);
-            if (oldDepth === undefined || currDepth < oldDepth) {
-              depthMap.set(sp, currDepth);
-              queue.push(sp);
-            }
-          });
-
-          const children = childrenOf.get(current) || [];
-          children.forEach((ch) => {
-            const oldDepth = depthMap.get(ch);
-            if (oldDepth === undefined || currDepth + 1 < oldDepth) {
-              depthMap.set(ch, currDepth + 1);
-              queue.push(ch);
-            }
-          });
-        }
-      }
+    const uid = personUnitId.get(p.id);
+    if (uid && unitDepthMap.has(uid)) {
+      depthMap.set(p.id, unitDepthMap.get(uid)!);
     }
   });
 
