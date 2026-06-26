@@ -275,32 +275,69 @@ export function layoutNodes(
     });
   }
 
-  // Xử lý các node không bị cô lập nhưng chưa được BFS duyệt qua (ví dụ: các component nhỏ không kết nối với root chính)
+  // Xử lý các node không bị cô lập nhưng chưa được BFS duyệt qua (ví dụ: các component nhỏ không kết nối với root chính).
+  // Quan trọng: trước khi gán depth, đi ngược lên parentsOf để tìm tổ tiên cao nhất của component,
+  // tránh trường hợp cha/mẹ bị xếp cùng thế hệ với con cái.
   persons.forEach((p) => {
     if (!depthMap.has(p.id) && hasRelationships(p.id)) {
-      depthMap.set(p.id, 0);
-      queue.push(p.id);
-      while (queue.length > 0) {
-        const current = queue.shift()!;
-        const currDepth = depthMap.get(current)!;
-
+      // Walk UP the parent chain to find the topmost ancestor of this component
+      let componentRoot = p.id;
+      const visited = new Set<string>([p.id]);
+      let stack = [p.id];
+      while (stack.length > 0) {
+        const current = stack.pop()!;
+        const parents = parentsOf.get(current) || [];
+        for (const parentId of parents) {
+          if (!visited.has(parentId) && !depthMap.has(parentId)) {
+            visited.add(parentId);
+            stack.push(parentId);
+            // A parent is "higher" — it becomes the new root candidate
+            componentRoot = parentId;
+          }
+        }
+        // Also traverse spouse links to find spouse's parents
         const spouses = spousesOf.get(current) || [];
-        spouses.forEach((sp) => {
-          const oldDepth = depthMap.get(sp);
-          if (oldDepth === undefined || currDepth < oldDepth) {
-            depthMap.set(sp, currDepth);
-            queue.push(sp);
+        for (const spId of spouses) {
+          if (!visited.has(spId) && !depthMap.has(spId)) {
+            visited.add(spId);
+            const spouseParents = parentsOf.get(spId) || [];
+            for (const spParentId of spouseParents) {
+              if (!visited.has(spParentId) && !depthMap.has(spParentId)) {
+                visited.add(spParentId);
+                stack.push(spParentId);
+                componentRoot = spParentId;
+              }
+            }
           }
-        });
+        }
+      }
 
-        const children = childrenOf.get(current) || [];
-        children.forEach((ch) => {
-          const oldDepth = depthMap.get(ch);
-          if (oldDepth === undefined || currDepth + 1 < oldDepth) {
-            depthMap.set(ch, currDepth + 1);
-            queue.push(ch);
-          }
-        });
+      // Now BFS downward from the topmost ancestor
+      if (!depthMap.has(componentRoot)) {
+        depthMap.set(componentRoot, 0);
+        queue.push(componentRoot);
+        while (queue.length > 0) {
+          const current = queue.shift()!;
+          const currDepth = depthMap.get(current)!;
+
+          const spouses = spousesOf.get(current) || [];
+          spouses.forEach((sp) => {
+            const oldDepth = depthMap.get(sp);
+            if (oldDepth === undefined || currDepth < oldDepth) {
+              depthMap.set(sp, currDepth);
+              queue.push(sp);
+            }
+          });
+
+          const children = childrenOf.get(current) || [];
+          children.forEach((ch) => {
+            const oldDepth = depthMap.get(ch);
+            if (oldDepth === undefined || currDepth + 1 < oldDepth) {
+              depthMap.set(ch, currDepth + 1);
+              queue.push(ch);
+            }
+          });
+        }
       }
     }
   });

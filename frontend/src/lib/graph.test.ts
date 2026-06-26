@@ -162,6 +162,56 @@ describe("layoutNodes", () => {
     // Isolated node should not crash and should be at the bottom (greatest y)
     expect(isolatedPos.y).toBeGreaterThan(childPos.y);
   });
+
+  it("places parents ABOVE their child even when parents are added as a separate family unit (isolated-component regression)", () => {
+    // This tests the bug where an isolated sub-tree (not connected to the main
+    // family) would incorrectly place parents at the same depth as their child.
+    // Previously the BFS started from an arbitrary node and only traversed
+    // downward, causing parents added later to appear at the same level.
+    const persons: Person[] = [
+      { id: "child", displayName: "Hàng Hữu Phương", gender: "male" },
+      { id: "father", displayName: "Hàng Hữu Thiền", gender: "male" },
+      { id: "mother", displayName: "Lê Thị My", gender: "female" },
+    ];
+    const relationships: Relationship[] = [
+      {
+        id: "r-marriage",
+        type: "marriage",
+        sourceId: "father",
+        targetId: "mother",
+        derivationState: "derived",
+      },
+      {
+        id: "r-father",
+        type: "bloodline_father",
+        sourceId: "father",
+        targetId: "child",
+        derivationState: "derived",
+      },
+      {
+        id: "r-mother",
+        type: "bloodline_mother",
+        sourceId: "mother",
+        targetId: "child",
+        derivationState: "derived",
+      },
+    ];
+
+    // The 'child' is listed FIRST in the persons array (simulating the case
+    // where parents were added AFTER the child was already in the tree).
+    const positions = layoutNodes(persons, relationships);
+
+    const childPos = positions.get("child")!;
+    const fatherPos = positions.get("father")!;
+    const motherPos = positions.get("mother")!;
+
+    // Parents must be ABOVE (smaller y) the child
+    expect(fatherPos.y).toBeLessThan(childPos.y);
+    expect(motherPos.y).toBeLessThan(childPos.y);
+
+    // Parents are spouses: same y
+    expect(fatherPos.y).toBe(motherPos.y);
+  });
 });
 
 describe("fetchViewpointAddresses", () => {
