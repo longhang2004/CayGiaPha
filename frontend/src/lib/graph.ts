@@ -401,38 +401,104 @@ export function layoutNodes(
     }
   });
   const maxWidth = maxGenCount * cellWidth;
+  const pageCenter = padding + maxWidth / 2;
 
-  // BƯỚC 4 & 5 — Tính x, y position và gán:
-  generationMap.forEach((genPersons, depth) => {
-    // Sắp xếp spouse đứng cạnh nhau trong cùng thế hệ
-    const orderedPersonsInGen: Person[] = [];
-    const visitedInGen = new Set<string>();
-
+  // BƯỚC 4 & 5 — Tính x, y position và gán (sắp xếp top-down để con căn giữa theo cha mẹ):
+  const depths = Array.from(generationMap.keys()).sort((a, b) => a - b);
+  depths.forEach((depth) => {
+    const genPersons = generationMap.get(depth) || [];
+    
+    // Group các person trong thế hệ này theo unit (cụm vợ chồng)
+    const unitsInGen = new Set<string>();
     genPersons.forEach((p) => {
-      if (visitedInGen.has(p.id)) return;
-
-      orderedPersonsInGen.push(p);
-      visitedInGen.add(p.id);
-
-      const spouses = spousesOf.get(p.id) || [];
-      spouses.forEach((spId) => {
-        if (visitedInGen.has(spId)) return;
-        const spousePerson = genPersons.find((gp) => gp.id === spId);
-        if (spousePerson) {
-          orderedPersonsInGen.push(spousePerson);
-          visitedInGen.add(spId);
-        }
-      });
+      const uid = personUnitId.get(p.id);
+      if (uid) {
+        unitsInGen.add(uid);
+      }
     });
 
-    // Tính vị trí x, y
-    const count = orderedPersonsInGen.length;
-    const startX = padding + (maxWidth - count * cellWidth) / 2;
-    const y = padding + depth * cellHeight;
+    // Sắp xếp các unit theo thứ tự xuất hiện ban đầu trong mảng persons để giữ tính ổn định
+    const activeUnits = Array.from(unitsInGen).sort((a, b) => {
+      const idxA = persons.findIndex((p) => p.id === a);
+      const idxB = persons.findIndex((p) => p.id === b);
+      return idxA - idxB;
+    });
 
-    orderedPersonsInGen.forEach((p, idx) => {
-      const x = startX + idx * cellWidth + cellWidth / 2;
-      positions.set(p.id, { id: p.id, x, y });
+    // Tính preferred X cho từng unit
+    const x = activeUnits.map((uid) => {
+      const unitMembers = units.get(uid) || [];
+      const membersInGen = unitMembers.filter((m) => genPersons.some((gp) => gp.id === m));
+
+      let midParentXSum = 0;
+      let parentCount = 0;
+
+      membersInGen.forEach((m) => {
+        const parents = parentsOf.get(m) || [];
+        let parentXSum = 0;
+        let parentXCount = 0;
+        parents.forEach((parentId) => {
+          const pos = positions.get(parentId);
+          if (pos) {
+            parentXSum += pos.x;
+            parentXCount++;
+          }
+        });
+
+        if (parentXCount > 0) {
+          const midParentX = parentXSum / parentXCount;
+          let preferredX = midParentX;
+          // Nếu có 2 người trong cụm (vợ chồng), căn chỉnh để người con đứng đúng vị trí giữa của cha mẹ
+          if (membersInGen.length === 2) {
+            const isFirst = membersInGen[0] === m;
+            preferredX = midParentX + (isFirst ? 1 : -1) * cellWidth / 2;
+          }
+          midParentXSum += preferredX;
+          parentCount++;
+        }
+      });
+
+      if (parentCount > 0) {
+        return midParentXSum / parentCount;
+      }
+      
+      // Fallback: nếu không có cha mẹ, căn giữa trang hoặc đặt cạnh nhau
+      // Để tránh tất cả các root không cha mẹ tụ vào chính giữa, ta dùng vị trí mặc định từ thứ tự
+      const idx = activeUnits.indexOf(uid);
+      return pageCenter + (idx - (activeUnits.length - 1) / 2) * cellWidth;
+    });
+
+    const widths = activeUnits.map((uid) => {
+      const unitMembers = units.get(uid) || [];
+      const membersInGen = unitMembers.filter((m) => genPersons.some((gp) => gp.id === m));
+      return membersInGen.length * cellWidth;
+    });
+
+    // Đẩy xa các cụm để tránh đè lên nhau (push-apart)
+    for (let iter = 0; iter < 50; iter++) {
+      for (let i = 0; i < activeUnits.length - 1; i++) {
+        const minDistance = (widths[i] + widths[i + 1]) / 2;
+        const actualDistance = x[i + 1] - x[i];
+        if (actualDistance < minDistance) {
+          const overlap = minDistance - actualDistance;
+          x[i] -= overlap / 2;
+          x[i + 1] += overlap / 2;
+        }
+      }
+    }
+
+    // Gán vị trí x, y chính thức cho các person trong thế hệ này
+    const y = padding + depth * cellHeight;
+    activeUnits.forEach((uid, idx) => {
+      const unitCenter = x[idx];
+      const unitMembers = units.get(uid) || [];
+      const membersInGen = unitMembers.filter((m) => genPersons.some((gp) => gp.id === m));
+
+      if (membersInGen.length === 1) {
+        positions.set(membersInGen[0], { id: membersInGen[0], x: unitCenter, y });
+      } else if (membersInGen.length === 2) {
+        positions.set(membersInGen[0], { id: membersInGen[0], x: unitCenter - cellWidth / 2, y });
+        positions.set(membersInGen[1], { id: membersInGen[1], x: unitCenter + cellWidth / 2, y });
+      }
     });
   });
 
