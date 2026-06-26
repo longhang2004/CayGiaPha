@@ -97,6 +97,14 @@ export function AddRelativeForm({ treeId, persons, preselectedPersonId, onCreate
   const [newPhotoFile, setNewPhotoFile] = useState<File | null>(null);
   const [newPhotoPreviewUrl, setNewPhotoPreviewUrl] = useState<string | null>(null);
 
+  const sourceName = isNewPerson && newPersonPosition === "source"
+    ? (newDisplayName.trim() || "Thành viên mới")
+    : (persons.find((p) => p.id === sourceId)?.displayName ?? "Thành viên A");
+
+  const targetName = isNewPerson && newPersonPosition === "target"
+    ? (newDisplayName.trim() || "Thành viên mới")
+    : (persons.find((p) => p.id === targetId)?.displayName ?? "Thành viên B");
+
   useEffect(() => {
     if (!newDeathStatus || !newDeathDay || !newDeathMonth) {
       setNewConversionPreview("");
@@ -416,11 +424,11 @@ export function AddRelativeForm({ treeId, persons, preselectedPersonId, onCreate
               value={derivedKind}
               onChange={(e) => setDerivedKind(e.target.value as DerivedKind)}
             >
-              <option value="bloodline_father">Từ người là CHA của Đến người</option>
-              <option value="bloodline_father_reverse">Từ người là CON của Đến người (Đến người là CHA)</option>
-              <option value="bloodline_mother">Từ người là MẸ của Đến người</option>
-              <option value="bloodline_mother_reverse">Từ người là CON của Đến người (Đến người là MẸ)</option>
-              <option value="marriage">Từ người và Đến người là VỢ CHỒNG</option>
+              <option value="bloodline_father">{sourceName} là CHA của {targetName}</option>
+              <option value="bloodline_father_reverse">{sourceName} là CON của {targetName} ({targetName} là CHA)</option>
+              <option value="bloodline_mother">{sourceName} là MẸ của {targetName}</option>
+              <option value="bloodline_mother_reverse">{sourceName} là CON của {targetName} ({targetName} là MẸ)</option>
+              <option value="marriage">{sourceName} và {targetName} là VỢ CHỒNG</option>
             </select>
           </div>
           {derivedKind === "marriage" ? (
