@@ -47,6 +47,8 @@ Durable project knowledge for future AI agents. Keep entries short, verified, an
 - **Single-Parent Married Joint Connector**: Updated the joint-edge connector logic in `TreeGraph.tsx` to detect when a parent is married even if the child only has a single parent edge explicitly in the database. Symmetrically branches both siblings from the parents' marriage midpoint, resolving the "lệch" (asymmetric/skewed) lines.
 - **Gender and Parent Role Consistency Constraints**: Enforced strict biological and role validations in `relationship.ts` to reject mother/father roles that conflict with the person's gender (e.g. female as father) or their existing roles in other relationships (e.g. same person as father to child A and mother to child B).
 - **Descriptive dropdown options**: Replaced abstract database terms ("Người bắt đầu" / "Người kết thúc") in `AddRelativeForm.tsx` with concrete labels ("Người nguồn/từ", "Người nhận/đến") and parent-child examples to make the interface clear for users.
+- **Bottom-Up Parent Centering**: Added a coordinate centering pass in `layoutNodes` that aligns each parent (or spouse couple) directly above the midpoint of their children's positions. This prevents single parent nodes (like a single maternal grandfather) from appearing offset or skewed from their child branches.
+- **Fullscreen Mode support**: Integrated HTML5 Fullscreen API with dedicated UI buttons and `:fullscreen` CSS class overrides to stretch the tree graph canvas over the entire viewport dynamically.
 
 
 
