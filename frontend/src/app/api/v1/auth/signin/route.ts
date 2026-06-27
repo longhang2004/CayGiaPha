@@ -9,8 +9,8 @@ export async function POST(request: Request) {
     const { identifier, password } = await request.json();
     const clientIp = request.headers.get("x-forwarded-for") || "127.0.0.1";
 
-    rateLimiter.check(`signin:${identifier}`);
-    rateLimiter.check(`ip:${clientIp}`);
+    await rateLimiter.check(`signin:${identifier}`);
+    await rateLimiter.check(`ip:${clientIp}`);
 
     const session = await authService.signInWithPassword(identifier, password);
 

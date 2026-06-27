@@ -1,41 +1,43 @@
 import { ApiException } from "./errors";
-
-interface WindowData {
-  start: number;
-  count: number;
-}
+import { redisClient } from "./redis";
 
 export class RateLimiter {
-  private windows = new Map<string, WindowData>();
   private maxRequests: number;
-  private windowMs: number;
+  private windowSeconds: number;
 
   constructor(maxRequests = 5, windowSeconds = 600) {
     this.maxRequests = maxRequests;
-    this.windowMs = windowSeconds * 1000;
+    this.windowSeconds = windowSeconds;
   }
 
-  check(key: string | null | undefined): void {
-    if (process.env.NODE_ENV !== "production") {
+  async check(key: string | null | undefined): Promise<void> {
+    const isLocal = process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "test";
+    const hasRedisConfig = !!(process.env.REDIS_URL || process.env.UPSTASH_REDIS_REST_URL);
+
+    if (isLocal && !hasRedisConfig) {
       return;
     }
+
     if (!key || key.trim() === "") {
       return;
     }
-    const now = Date.now();
-    const existing = this.windows.get(key);
 
-    let updated: WindowData;
-    if (!existing || now - existing.start >= this.windowMs) {
-      updated = { start: now, count: 1 };
-    } else {
-      updated = { start: existing.start, count: existing.count + 1 };
-    }
+    const redisKey = `rate_limit:${key}`;
 
-    this.windows.set(key, updated);
+    try {
+      const count = await redisClient.incr(redisKey);
+      if (count === 1) {
+        await redisClient.expire(redisKey, this.windowSeconds);
+      }
 
-    if (updated.count > this.maxRequests) {
-      throw ApiException.tooManyAttempts("Too many requests. Please wait a while and try again.");
+      if (count > this.maxRequests) {
+        throw ApiException.tooManyAttempts("Too many requests. Please wait a while and try again.");
+      }
+    } catch (error) {
+      if (error instanceof ApiException) {
+        throw error;
+      }
+      console.error("[RateLimiter] Error during rate limit check:", error);
     }
   }
 }
