@@ -292,71 +292,47 @@ export function layoutNodes(
   });
 
   const unitDepthMap = new Map<string, number>();
-  const queue: string[] = [];
+  activeUnitIds.forEach((uid) => unitDepthMap.set(uid, 0));
 
-  // Find all active units with no parents
-  const roots = Array.from(activeUnitIds).filter((uid) => {
-    const parents = unitParents.get(uid);
-    return !parents || parents.size === 0;
-  });
+  // Relax constraints to align generations:
+  // 1. If a parent has depth D, children must have depth >= D + 1
+  // 2. All children (siblings) of the same parent unit must have the exact same depth
+  for (let iter = 0; iter < 100; iter++) {
+    let changed = false;
 
-  // If there are no roots but we have active units, pick one to start BFS
-  if (roots.length === 0 && activeUnitIds.size > 0) {
-    const sortedActive = Array.from(activeUnitIds).sort();
-    roots.push(sortedActive[0]);
-  }
+    units.forEach((_, parentId) => {
+      if (!activeUnitIds.has(parentId)) return;
+      const parentDepth = unitDepthMap.get(parentId) || 0;
+      const children = unitChildren.get(parentId) || new Set();
+      if (children.size === 0) return;
 
-  roots.forEach((ruid) => {
-    unitDepthMap.set(ruid, 0);
-    queue.push(ruid);
-  });
-
-  while (queue.length > 0) {
-    const currUnit = queue.shift()!;
-    const currDepth = unitDepthMap.get(currUnit)!;
-
-    const children = unitChildren.get(currUnit) || new Set();
-    children.forEach((chUnit) => {
-      const oldDepth = unitDepthMap.get(chUnit);
-      // We want children to always be strictly below their parents, so we take the max depth possible
-      if (oldDepth === undefined || currDepth + 1 > oldDepth) {
-        unitDepthMap.set(chUnit, currDepth + 1);
-        queue.push(chUnit);
-      }
-    });
-  }
-
-  // Handle any active units that were not reached (e.g. disconnected components with cycles)
-  let loopCount = 0;
-  while (unitDepthMap.size < activeUnitIds.size && loopCount < 1000) {
-    loopCount++;
-    const unreached = Array.from(activeUnitIds).filter((uid) => !unitDepthMap.has(uid));
-    if (unreached.length === 0) break;
-
-    // Find the one with the fewest parents among the unreached
-    unreached.sort((a, b) => {
-      const pa = unitParents.get(a)?.size || 0;
-      const pb = unitParents.get(b)?.size || 0;
-      return pa - pb;
-    });
-
-    const nextRoot = unreached[0];
-    unitDepthMap.set(nextRoot, 0);
-    queue.push(nextRoot);
-
-    while (queue.length > 0) {
-      const currUnit = queue.shift()!;
-      const currDepth = unitDepthMap.get(currUnit)!;
-
-      const children = unitChildren.get(currUnit) || new Set();
+      // Find max depth among all children, and ensure it is at least parentDepth + 1
+      let targetChildDepth = parentDepth + 1;
       children.forEach((chUnit) => {
-        const oldDepth = unitDepthMap.get(chUnit);
-        if (oldDepth === undefined || currDepth + 1 > oldDepth) {
-          unitDepthMap.set(chUnit, currDepth + 1);
-          queue.push(chUnit);
+        const chDepth = unitDepthMap.get(chUnit) || 0;
+        if (chDepth > targetChildDepth) {
+          targetChildDepth = chDepth;
         }
       });
-    }
+
+      // Update all children to targetChildDepth
+      children.forEach((chUnit) => {
+        const chDepth = unitDepthMap.get(chUnit) || 0;
+        if (chDepth < targetChildDepth) {
+          unitDepthMap.set(chUnit, targetChildDepth);
+          changed = true;
+        }
+      });
+
+      // Push parent down if children are pushed down
+      const newParentDepth = targetChildDepth - 1;
+      if (parentDepth < newParentDepth) {
+        unitDepthMap.set(parentId, newParentDepth);
+        changed = true;
+      }
+    });
+
+    if (!changed) break;
   }
 
   // Map person depths from their units
