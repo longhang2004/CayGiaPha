@@ -397,9 +397,40 @@ export function layoutNodes(
 
   // BƯỚC 4 & 5 — Tính x, y position và gán (sắp xếp top-down để con căn giữa theo cha mẹ):
   const depths = Array.from(generationMap.keys()).sort((a, b) => a - b);
+
+  // Helper: midpoint X of all parents (including their spouse) for a given unit.
+  // Reads live from `positions`, so it gives correct values both during the
+  // top-down pass and after the bottom-up centering pass.
+  const getParentMidX = (uid: string): number => {
+    const unitMembers = units.get(uid) || [];
+    let parentXSum = 0;
+    let parentXCount = 0;
+
+    unitMembers.forEach((m) => {
+      const parents = parentsOf.get(m) || [];
+      parents.forEach((parentId) => {
+        const pos = positions.get(parentId);
+        const spouses = spousesOf.get(parentId) || [];
+        const spouseId = spouses.find((sId) => positions.has(sId));
+        const spousePos = spouseId ? positions.get(spouseId) : undefined;
+
+        if (pos && spousePos) {
+          parentXSum += (pos.x + spousePos.x) / 2;
+          parentXCount++;
+        } else if (pos) {
+          parentXSum += pos.x;
+          parentXCount++;
+        }
+      });
+    });
+
+    if (parentXCount > 0) return parentXSum / parentXCount;
+    return pageCenter;
+  };
+
   depths.forEach((depth) => {
     const genPersons = generationMap.get(depth) || [];
-    
+
     // Group các person trong thế hệ này theo unit (cụm vợ chồng)
     const unitsInGen = new Set<string>();
     genPersons.forEach((p) => {
@@ -409,40 +440,11 @@ export function layoutNodes(
       }
     });
 
-    const getParentMidX = (uid: string): number => {
-      const unitMembers = units.get(uid) || [];
-      let parentXSum = 0;
-      let parentXCount = 0;
-
-      unitMembers.forEach((m) => {
-        const parents = parentsOf.get(m) || [];
-        parents.forEach((parentId) => {
-          const pos = positions.get(parentId);
-          const spouses = spousesOf.get(parentId) || [];
-          const spouseId = spouses.find((sId) => positions.has(sId));
-          const spousePos = spouseId ? positions.get(spouseId) : undefined;
-
-          if (pos && spousePos) {
-            parentXSum += (pos.x + spousePos.x) / 2;
-            parentXCount++;
-          } else if (pos) {
-            parentXSum += pos.x;
-            parentXCount++;
-          }
-        });
-      });
-
-      if (parentXCount > 0) {
-        return parentXSum / parentXCount;
-      }
-      return pageCenter;
-    };
-
     // Sắp xếp các cụm (unit) theo tọa độ ngang trung bình của cha mẹ để gom cụm nhánh huyết thống
     const activeUnits = Array.from(unitsInGen).sort((a, b) => {
       const parentA = getParentMidX(a);
       const parentB = getParentMidX(b);
-      if (parentA !== parentB) {
+      if (Math.abs(parentA - parentB) > 0.1) {
         return parentA - parentB;
       }
       const idxA = persons.findIndex((p) => p.id === a);
@@ -601,6 +603,92 @@ export function layoutNodes(
         const pos1 = positions.get(membersInGen[1]);
         if (pos0) pos0.x = unitCenter - cellWidth / 2;
         if (pos1) pos1.x = unitCenter + cellWidth / 2;
+      }
+    });
+  }
+
+  // BƯỚC 8 — Re-anchor the deepest generation under bottom-up-adjusted parent positions.
+  //
+  // After the bottom-up centering pass, intermediate parents (e.g. ego) may have shifted
+  // significantly. The deepest generation nodes were placed based on parents' OLD positions,
+  // so they can end up far from their parents and produce long crossing connector lines.
+  // This pass re-sorts and re-places the leaf generation using the final parent positions.
+  if (depths.length >= 2) {
+    const deepestDepth = depths[depths.length - 1];
+    const deepGenPersons = generationMap.get(deepestDepth) || [];
+    const deepUnitsSet = new Set<string>();
+    deepGenPersons.forEach((p) => {
+      const uid = personUnitId.get(p.id);
+      if (uid) deepUnitsSet.add(uid);
+    });
+
+    const deepActiveUnits = Array.from(deepUnitsSet).sort((a, b) => {
+      const pA = getParentMidX(a);
+      const pB = getParentMidX(b);
+      if (Math.abs(pA - pB) > 0.1) return pA - pB;
+      return persons.findIndex((p) => p.id === a) - persons.findIndex((p) => p.id === b);
+    });
+
+    const deepX = deepActiveUnits.map((uid) => {
+      const unitMembers = units.get(uid) || [];
+      const membersInGen = unitMembers.filter((m) => deepGenPersons.some((gp) => gp.id === m));
+      let midParentXSum = 0;
+      let parentCount = 0;
+
+      membersInGen.forEach((m) => {
+        const parents = parentsOf.get(m) || [];
+        let parentXSum = 0;
+        let parentXCount = 0;
+        parents.forEach((parentId) => {
+          const pos = positions.get(parentId);
+          if (pos) { parentXSum += pos.x; parentXCount++; }
+        });
+        if (parentXCount > 0) {
+          let preferredX = parentXSum / parentXCount;
+          if (membersInGen.length === 2) {
+            preferredX += (membersInGen[0] === m ? 1 : -1) * cellWidth / 2;
+          }
+          midParentXSum += preferredX;
+          parentCount++;
+        }
+      });
+
+      if (parentCount > 0) return midParentXSum / parentCount;
+      const idx = deepActiveUnits.indexOf(uid);
+      return pageCenter + (idx - (deepActiveUnits.length - 1) / 2) * cellWidth;
+    });
+
+    const deepWidths = deepActiveUnits.map((uid) => {
+      const members = units.get(uid) || [];
+      const inGen = members.filter((m) => deepGenPersons.some((gp) => gp.id === m));
+      return inGen.length * cellWidth;
+    });
+
+    for (let iter = 0; iter < 50; iter++) {
+      for (let i = 0; i < deepActiveUnits.length - 1; i++) {
+        const minDist = (deepWidths[i] + deepWidths[i + 1]) / 2;
+        const actualDist = deepX[i + 1] - deepX[i];
+        if (actualDist < minDist) {
+          const overlap = minDist - actualDist;
+          deepX[i] -= overlap / 2;
+          deepX[i + 1] += overlap / 2;
+        }
+      }
+    }
+
+    const deepY = padding + deepestDepth * cellHeight;
+    deepActiveUnits.forEach((uid, idx) => {
+      const members = units.get(uid) || [];
+      const inGen = members.filter((m) => deepGenPersons.some((gp) => gp.id === m));
+      const center = deepX[idx];
+      if (inGen.length === 1) {
+        const pos = positions.get(inGen[0]);
+        if (pos) { pos.x = center; pos.y = deepY; }
+      } else if (inGen.length === 2) {
+        const pos0 = positions.get(inGen[0]);
+        const pos1 = positions.get(inGen[1]);
+        if (pos0) { pos0.x = center - cellWidth / 2; pos0.y = deepY; }
+        if (pos1) { pos1.x = center + cellWidth / 2; pos1.y = deepY; }
       }
     });
   }

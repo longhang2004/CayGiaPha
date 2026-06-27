@@ -104,4 +104,17 @@ test.describe("Prototype Pages — smoke tests (no auth required)", () => {
     // HelpGuide renders a heading about the guide
     await expect(page.locator("h1, h2").first()).toBeVisible();
   });
+
+  test("screenshot the family tree", async ({ page }) => {
+    // Set viewport to 2560x1440 for high definition screenshot
+    await page.setViewportSize({ width: 2560, height: 1440 });
+    await page.goto("/prototype/tree");
+    await page.waitForSelector(".tree-graph__canvas");
+
+    // Wait for layout and animations to settle
+    await page.waitForTimeout(2000);
+    await page.screenshot({
+      path: "/Users/longhang/.gemini/antigravity/brain/0c47392a-b161-4f7a-957f-471aeb2f0e40/tree_screenshot.png",
+    });
+  });
 });
