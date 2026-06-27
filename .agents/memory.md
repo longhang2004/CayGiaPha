@@ -43,7 +43,7 @@ Durable project knowledge for future AI agents. Keep entries short, verified, an
 
 ## 2026-06-27
 
-- **Branch-Grouping Layout Sort**: Sibling and marriage units in each generation are now sorted horizontally based on their parents' average horizontal coordinate (`midParentX`). This groups the paternal branch on the left and maternal branch on the right, preventing line crossovers.
+- **Branch-Grouping Layout Sort**: Sibling and marriage units in each generation are now sorted horizontally based on their parents' average horizontal coordinate (`midParentX`). When sorting coordinates, it resolves the parent's spouse in the tree even when only a single parent relationship is explicitly stored in the database, and uses the marriage midpoint to group paternal siblings on the left and maternal siblings on the right, preventing line crossovers.
 - **Single-Parent Married Joint Connector**: Updated the joint-edge connector logic in `TreeGraph.tsx` to detect when a parent is married even if the child only has a single parent edge explicitly in the database. Symmetrically branches both siblings from the parents' marriage midpoint, resolving the "lệch" (asymmetric/skewed) lines.
 - **Gender and Parent Role Consistency Constraints**: Enforced strict biological and role validations in `relationship.ts` to reject mother/father roles that conflict with the person's gender (e.g. female as father) or their existing roles in other relationships (e.g. same person as father to child A and mother to child B).
 - **Descriptive dropdown options**: Replaced abstract database terms ("Người bắt đầu" / "Người kết thúc") in `AddRelativeForm.tsx` with concrete labels ("Người nguồn/từ", "Người nhận/đến") and parent-child examples to make the interface clear for users.
