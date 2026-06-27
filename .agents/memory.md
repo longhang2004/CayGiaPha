@@ -11,7 +11,7 @@ Durable project knowledge for future AI agents. Keep entries short, verified, an
 
 ## 2026-06-22
 
-- Local environment `pnpm` version switcher might fail to switch to the specified version in `package.json` (e.g. `pnpm@11.5.0`) with `ENOENT`. If this happens, use `npx pnpm <command>` as a workaround, which successfully resolves the configured version.
+- Resolved local environment `pnpm` version switcher `ENOENT` failure by matching the `"packageManager"` field in `package.json` to the system's active `pnpm` version (e.g., `pnpm@10.12.2`).
 - The Spring Boot Java backend is currently disabled (`USE_BACKEND=false`). The frontend Next.js server handles routing and database queries full-stack using Drizzle ORM. Database updates must be made in the frontend Next.js project first, and mirrored to the Java backend's Flyway migrations directory (`backend/src/main/resources/db/migration/`) for future synchronization.
 
 ## 2026-06-23
@@ -41,8 +41,12 @@ Durable project knowledge for future AI agents. Keep entries short, verified, an
 - **Frontend Priority**: The backend is currently not used. Prioritize all development and updates in the frontend; syncing with the backend will be done later.
 - **Environment Configurations**: Environment variables are managed via `.env.development` and `.env.production`. The general `.env` file is redundant and has been removed/ignored.
 
-## 2026-06-26
+## 2026-06-27
 
-- **Spouse-Alignment Generation Depth Bug Fix**: Fixed a bug where a child node whose spouse has no parents in the tree was incorrectly pulled up to depth 0 (the parents' generation level) because the spouse was classified as a root node. Redesigned `layoutNodes` in `frontend/src/lib/graph.ts` to use a unit-DAG algorithm: it groups spouses into "marriage units", builds a directed graph of parent-child relationships between these units, determines the depth of each unit using a topological/longest-path BFS, and assigns individual node depths from their parent unit's depth.
+- **Branch-Grouping Layout Sort**: Sibling and marriage units in each generation are now sorted horizontally based on their parents' average horizontal coordinate (`midParentX`). This groups the paternal branch on the left and maternal branch on the right, preventing line crossovers.
+- **Single-Parent Married Joint Connector**: Updated the joint-edge connector logic in `TreeGraph.tsx` to detect when a parent is married even if the child only has a single parent edge explicitly in the database. Symmetrically branches both siblings from the parents' marriage midpoint, resolving the "lệch" (asymmetric/skewed) lines.
+- **Gender and Parent Role Consistency Constraints**: Enforced strict biological and role validations in `relationship.ts` to reject mother/father roles that conflict with the person's gender (e.g. female as father) or their existing roles in other relationships (e.g. same person as father to child A and mother to child B).
+- **Descriptive dropdown options**: Replaced abstract database terms ("Người bắt đầu" / "Người kết thúc") in `AddRelativeForm.tsx` with concrete labels ("Người nguồn/từ", "Người nhận/đến") and parent-child examples to make the interface clear for users.
+
 
 

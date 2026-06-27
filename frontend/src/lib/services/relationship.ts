@@ -255,6 +255,48 @@ export class RelationshipService {
         `Adding this bloodline edge would create a parent-child cycle: ${childId} is already an ancestor of ${parentId}.`
       );
     }
+
+    // Check gender consistency
+    const person = await db
+      .select()
+      .from(persons)
+      .where(eq(persons.id, parentId))
+      .then((rows) => rows[0]);
+    if (person && person.gender) {
+      if (type === "bloodline_father" && person.gender === "female") {
+        throw ApiException.validation(
+          "type",
+          "Cannot add relationship: a person with female gender cannot be registered as a father."
+        );
+      }
+      if (type === "bloodline_mother" && person.gender === "male") {
+        throw ApiException.validation(
+          "type",
+          "Cannot add relationship: a person with male gender cannot be registered as a mother."
+        );
+      }
+    }
+
+    // Check relationship type consistency (cannot be both a father and a mother)
+    const otherEdgeType = type === "bloodline_father" ? "bloodline_mother" : "bloodline_father";
+    const hasConflictingGenderEdge = await db
+      .select()
+      .from(relationships)
+      .where(
+        and(
+          eq(relationships.sourceId, parentId),
+          eq(relationships.type, otherEdgeType)
+        )
+      )
+      .then((rows) => rows.length > 0);
+
+    if (hasConflictingGenderEdge) {
+      const otherLabel = otherEdgeType === "bloodline_father" ? "father" : "mother";
+      throw ApiException.validation(
+        "type",
+        `Cannot add relationship: this person is already registered as a ${otherLabel} in another relationship.`
+      );
+    }
   }
 
   private async isBloodlineAncestor(candidateAncestorId: string, startId: string): Promise<boolean> {

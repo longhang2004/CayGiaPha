@@ -194,63 +194,72 @@ export function TreeGraph({
     const processedIds = new Set<string>();
 
     // Map children to their parent-child relationships
-    const childrenMap = new Map<string, { father?: Relationship; mother?: Relationship }>();
+    const childParentsMap = new Map<string, Relationship[]>();
     filteredData.relationships.forEach((rel) => {
-      if (rel.type === "bloodline_father") {
-        if (!childrenMap.has(rel.targetId)) childrenMap.set(rel.targetId, {});
-        childrenMap.get(rel.targetId)!.father = rel;
-      } else if (rel.type === "bloodline_mother") {
-        if (!childrenMap.has(rel.targetId)) childrenMap.set(rel.targetId, {});
-        childrenMap.get(rel.targetId)!.mother = rel;
+      if (rel.type === "bloodline_father" || rel.type === "bloodline_mother") {
+        if (!childParentsMap.has(rel.targetId)) {
+          childParentsMap.set(rel.targetId, []);
+        }
+        childParentsMap.get(rel.targetId)!.push(rel);
       }
     });
 
-    childrenMap.forEach((parents, childId) => {
-      if (parents.father && parents.mother) {
-        const fRel = parents.father;
-        const mRel = parents.mother;
+    childParentsMap.forEach((parentRels, childId) => {
+      let marriageRel: Relationship | undefined;
+      const parent1Rel = parentRels[0];
+      const parent2Rel = parentRels[1];
 
-        // Check if the parents are married
-        const areMarried = filteredData.relationships.some(
+      if (parent2Rel) {
+        // If they have both parents in the database, check if they are married
+        marriageRel = filteredData.relationships.find(
           (r) =>
             r.type === "marriage" &&
-            ((r.sourceId === fRel.sourceId && r.targetId === mRel.sourceId) ||
-              (r.sourceId === mRel.sourceId && r.targetId === fRel.sourceId))
+            ((r.sourceId === parent1Rel.sourceId && r.targetId === parent2Rel.sourceId) ||
+              (r.sourceId === parent2Rel.sourceId && r.targetId === parent1Rel.sourceId))
         );
+      } else {
+        // If they only have one parent edge, check if that parent has a spouse in the tree
+        marriageRel = filteredData.relationships.find(
+          (r) =>
+            r.type === "marriage" &&
+            (r.sourceId === parent1Rel.sourceId || r.targetId === parent1Rel.sourceId)
+        );
+      }
 
-        if (areMarried) {
-          const fatherPos = positions.get(fRel.sourceId);
-          const motherPos = positions.get(mRel.sourceId);
-          const childPos = positions.get(childId);
+      if (marriageRel) {
+        const fatherId = marriageRel.sourceId;
+        const motherId = marriageRel.targetId;
 
-          if (fatherPos && motherPos && childPos) {
-            processedIds.add(fRel.id);
-            processedIds.add(mRel.id);
+        const fatherPos = positions.get(fatherId);
+        const motherPos = positions.get(motherId);
+        const childPos = positions.get(childId);
 
-            const midParentX = (fatherPos.x + motherPos.x) / 2;
-            const parentY = (fatherPos.y + motherPos.y) / 2;
-            const midY = (parentY + childPos.y) / 2;
+        if (fatherPos && motherPos && childPos) {
+          // Mark all parent relationships for this child as processed
+          parentRels.forEach((r) => processedIds.add(r.id));
 
-            const fStyle = edgeStyleFor(fRel);
-            const mStyle = edgeStyleFor(mRel);
-            const style = fStyle === "dashed" || mStyle === "dashed" ? "dashed" : "solid";
-            const strokeDash = STROKE_DASHARRAY[style];
-            const className = EDGE_CLASS[style];
+          const midParentX = (fatherPos.x + motherPos.x) / 2;
+          const parentY = (fatherPos.y + motherPos.y) / 2;
+          const midY = (parentY + childPos.y) / 2;
 
-            const NODE_HEIGHT = 56;
-            const HALF_HEIGHT = NODE_HEIGHT / 2;
+          const isDashed = parentRels.some((r) => edgeStyleFor(r) === "dashed");
+          const style = isDashed ? "dashed" : "solid";
+          const strokeDash = STROKE_DASHARRAY[style];
+          const className = EDGE_CLASS[style];
 
-            const pathData = `M ${midParentX} ${parentY} L ${midParentX} ${midY} L ${childPos.x} ${midY} L ${childPos.x} ${childPos.y - HALF_HEIGHT}`;
+          const NODE_HEIGHT = 72;
+          const HALF_HEIGHT = NODE_HEIGHT / 2;
 
-            jointEdgesList.push({
-              key: `joint-${childId}`,
-              pathData,
-              className,
-              style,
-              strokeDash,
-              childId,
-            });
-          }
+          const pathData = `M ${midParentX} ${parentY} L ${midParentX} ${midY} L ${childPos.x} ${midY} L ${childPos.x} ${childPos.y - HALF_HEIGHT}`;
+
+          jointEdgesList.push({
+            key: `joint-${childId}`,
+            pathData,
+            className,
+            style,
+            strokeDash,
+            childId,
+          });
         }
       }
     });

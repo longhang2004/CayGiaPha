@@ -417,8 +417,35 @@ export function layoutNodes(
       }
     });
 
-    // Sắp xếp các unit theo thứ tự xuất hiện ban đầu trong mảng persons để giữ tính ổn định
+    const getParentMidX = (uid: string): number => {
+      const unitMembers = units.get(uid) || [];
+      let parentXSum = 0;
+      let parentXCount = 0;
+
+      unitMembers.forEach((m) => {
+        const parents = parentsOf.get(m) || [];
+        parents.forEach((parentId) => {
+          const pos = positions.get(parentId);
+          if (pos) {
+            parentXSum += pos.x;
+            parentXCount++;
+          }
+        });
+      });
+
+      if (parentXCount > 0) {
+        return parentXSum / parentXCount;
+      }
+      return pageCenter;
+    };
+
+    // Sắp xếp các cụm (unit) theo tọa độ ngang trung bình của cha mẹ để gom cụm nhánh huyết thống
     const activeUnits = Array.from(unitsInGen).sort((a, b) => {
+      const parentA = getParentMidX(a);
+      const parentB = getParentMidX(b);
+      if (parentA !== parentB) {
+        return parentA - parentB;
+      }
       const idxA = persons.findIndex((p) => p.id === a);
       const idxB = persons.findIndex((p) => p.id === b);
       return idxA - idxB;

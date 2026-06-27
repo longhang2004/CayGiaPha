@@ -366,14 +366,14 @@ export function AddRelativeForm({ treeId, persons, preselectedPersonId, onCreate
 
       {isNewPerson && (
         <div className="field">
-          <label htmlFor="newPersonPosition">Người mới là</label>
+          <label htmlFor="newPersonPosition">Vị trí của thành viên mới trong mối quan hệ</label>
           <select
             id="newPersonPosition"
             value={newPersonPosition}
             onChange={(e) => setNewPersonPosition(e.target.value as "source" | "target")}
           >
-            <option value="source">Người bắt đầu (Từ người)</option>
-            <option value="target">Người kết thúc (Đến người)</option>
+            <option value="target">Người nhận/đến (ví dụ: thêm Con của một người có sẵn)</option>
+            <option value="source">Người nguồn/từ (ví dụ: thêm Cha/Mẹ của một người có sẵn)</option>
           </select>
         </div>
       )}

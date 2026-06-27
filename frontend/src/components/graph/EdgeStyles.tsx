@@ -24,7 +24,7 @@ export interface GraphEdgeProps {
 }
 
 /** Offset so the line meets the node box edge rather than its center. */
-const NODE_HALF_HEIGHT = 18;
+const NODE_HALF_HEIGHT = 36;
 
 export function GraphEdge({ relationship, source, target }: GraphEdgeProps) {
   const style = edgeStyleFor(relationship);
@@ -50,7 +50,7 @@ export function GraphEdge({ relationship, source, target }: GraphEdgeProps) {
 
   // bloodline_father / bloodline_mother: elbow connector dọc
   if (relationship.type === "bloodline_father" || relationship.type === "bloodline_mother") {
-    const NODE_HEIGHT = 56;
+    const NODE_HEIGHT = 72;
     const HALF_HEIGHT = NODE_HEIGHT / 2;
     const midY = (source.y + target.y) / 2;
     const pathData = `M ${source.x} ${source.y + HALF_HEIGHT} L ${source.x} ${midY} L ${target.x} ${midY} L ${target.x} ${target.y - HALF_HEIGHT}`;
@@ -63,7 +63,7 @@ export function GraphEdge({ relationship, source, target }: GraphEdgeProps) {
 
   // marriage: đường ngang giữa 2 spouse với small indicator ╪ ở giữa
   if (relationship.type === "marriage") {
-    const NODE_WIDTH = 160;
+    const NODE_WIDTH = 180;
     const HALF_WIDTH = NODE_WIDTH / 2;
     const left = source.x < target.x ? source : target;
     const right = source.x < target.x ? target : source;
