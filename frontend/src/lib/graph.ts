@@ -426,7 +426,14 @@ export function layoutNodes(
         const parents = parentsOf.get(m) || [];
         parents.forEach((parentId) => {
           const pos = positions.get(parentId);
-          if (pos) {
+          const spouses = spousesOf.get(parentId) || [];
+          const spouseId = spouses.find((sId) => positions.has(sId));
+          const spousePos = spouseId ? positions.get(spouseId) : undefined;
+
+          if (pos && spousePos) {
+            parentXSum += (pos.x + spousePos.x) / 2;
+            parentXCount++;
+          } else if (pos) {
             parentXSum += pos.x;
             parentXCount++;
           }

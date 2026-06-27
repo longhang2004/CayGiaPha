@@ -268,6 +268,46 @@ describe("layoutNodes", () => {
     // Parents are spouses: same y
     expect(fatherPos.y).toBe(motherPos.y);
   });
+
+  it("places paternal relatives on the left and maternal relatives on the right in Generation 1", () => {
+    const persons: Person[] = [
+      { id: "ba", displayName: "Hàng Hữu Phương", gender: "male" },
+      { id: "ma", displayName: "Phạm Thị Cẩm Tú", gender: "female" },
+      { id: "ong-noi", displayName: "Hàng Hữu Thiền", gender: "male" },
+      { id: "ba-noi", displayName: "Lê Thị My", gender: "female" },
+      { id: "ong-ngoai", displayName: "Phạm Văn Tăng", gender: "male" },
+      { id: "co", displayName: "Hàng Hữu Phượng", gender: "female" },
+      { id: "di", displayName: "Phạm Thị Cẩm Linh", gender: "female" },
+    ];
+    const relationships: Relationship[] = [
+      { id: "r-m-ongba-noi", type: "marriage", sourceId: "ong-noi", targetId: "ba-noi", derivationState: "derived" },
+      { id: "r-m-bama", type: "marriage", sourceId: "ba", targetId: "ma", derivationState: "derived" },
+      { id: "r-f-ba", type: "bloodline_father", sourceId: "ong-noi", targetId: "ba", derivationState: "derived" },
+      { id: "r-m-ba", type: "bloodline_mother", sourceId: "ba-noi", targetId: "ba", derivationState: "derived" },
+      { id: "r-m-co", type: "bloodline_mother", sourceId: "ba-noi", targetId: "co", derivationState: "derived" },
+      { id: "r-f-ma", type: "bloodline_father", sourceId: "ong-ngoai", targetId: "ma", derivationState: "derived" },
+      { id: "r-f-di", type: "bloodline_father", sourceId: "ong-ngoai", targetId: "di", derivationState: "derived" },
+    ];
+
+    const positions = layoutNodes(persons, relationships, { cellWidth: 220, cellHeight: 130, padding: 100 });
+
+    const baPos = positions.get("ba")!;
+    const maPos = positions.get("ma")!;
+    const coPos = positions.get("co")!;
+    const diPos = positions.get("di")!;
+
+
+
+    // Paternal branch (ba, co) should be to the left of maternal branch (ma, di)
+    // To make sure they don't overlap, we should check their relative horizontal coordinates.
+    // Ideally, we want the paternal children (ba, co) to be on the left, and maternal children (ma, di) to be on the right.
+    // Let's verify the horizontal ordering of all Generation 1 nodes.
+    // If ba is married to ma, they will be placed next to each other: ba at x1, ma at x2 (x1 < x2).
+    // So the horizontal order should be: co < ba < ma < di.
+    expect(coPos.x).toBeLessThan(baPos.x);
+    expect(baPos.x).toBeLessThan(maPos.x);
+    expect(maPos.x).toBeLessThan(diPos.x);
+  });
 });
 
 describe("fetchViewpointAddresses", () => {
