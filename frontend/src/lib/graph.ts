@@ -222,6 +222,22 @@ export function layoutNodes(
     }
   });
 
+  // Automatically group parents who share a child as a unit for layout
+  parentsOf.forEach((parents) => {
+    if (parents.length >= 2) {
+      const p1 = parents[0];
+      const p2 = parents[1];
+      if (!spousesOf.has(p1)) spousesOf.set(p1, []);
+      if (!spousesOf.get(p1)!.includes(p2)) {
+        spousesOf.get(p1)!.push(p2);
+      }
+      if (!spousesOf.has(p2)) spousesOf.set(p2, []);
+      if (!spousesOf.get(p2)!.includes(p1)) {
+        spousesOf.get(p2)!.push(p1);
+      }
+    }
+  });
+
   const hasRelationships = (id: string): boolean => {
     return relationships.some((r) => r.sourceId === id || r.targetId === id);
   };

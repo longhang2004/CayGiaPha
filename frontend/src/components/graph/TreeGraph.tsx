@@ -205,31 +205,28 @@ export function TreeGraph({
     });
 
     childParentsMap.forEach((parentRels, childId) => {
-      let marriageRel: Relationship | undefined;
       const parent1Rel = parentRels[0];
       const parent2Rel = parentRels[1];
 
+      let fatherId: string | undefined;
+      let motherId: string | undefined;
+
       if (parent2Rel) {
-        // If they have both parents in the database, check if they are married
-        marriageRel = filteredData.relationships.find(
-          (r) =>
-            r.type === "marriage" &&
-            ((r.sourceId === parent1Rel.sourceId && r.targetId === parent2Rel.sourceId) ||
-              (r.sourceId === parent2Rel.sourceId && r.targetId === parent1Rel.sourceId))
-        );
+        fatherId = parent1Rel.sourceId;
+        motherId = parent2Rel.sourceId;
       } else {
-        // If they only have one parent edge, check if that parent has a spouse in the tree
-        marriageRel = filteredData.relationships.find(
+        const marriageRel = filteredData.relationships.find(
           (r) =>
             r.type === "marriage" &&
             (r.sourceId === parent1Rel.sourceId || r.targetId === parent1Rel.sourceId)
         );
+        if (marriageRel) {
+          fatherId = marriageRel.sourceId;
+          motherId = marriageRel.targetId;
+        }
       }
 
-      if (marriageRel) {
-        const fatherId = marriageRel.sourceId;
-        const motherId = marriageRel.targetId;
-
+      if (fatherId && motherId) {
         const fatherPos = positions.get(fatherId);
         const motherPos = positions.get(motherId);
         const childPos = positions.get(childId);
