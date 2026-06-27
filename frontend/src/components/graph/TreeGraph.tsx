@@ -388,15 +388,17 @@ export function TreeGraph({
     }
   }, []);
 
-  // Center the tree initially and on size changes
+  // Center and fit the tree initially and on size changes
   useEffect(() => {
     if (containerRef.current) {
       const containerWidth = containerRef.current.clientWidth;
       const containerHeight = containerRef.current.clientHeight;
-      const initialPanX = Math.max(20, (containerWidth - svgWidth) / 2);
-      const initialPanY = Math.max(20, (containerHeight - svgHeight) / 2);
+      const paddingX = 40;
+      const calculatedZoom = Math.min(1, (containerWidth - paddingX) / svgWidth);
+      const initialPanX = (containerWidth - svgWidth * calculatedZoom) / 2;
+      const initialPanY = Math.max(20, (containerHeight - svgHeight * calculatedZoom) / 2);
       setPan({ x: initialPanX, y: initialPanY });
-      setZoom(1);
+      setZoom(calculatedZoom);
     }
   }, [svgWidth, svgHeight, filteredData.persons.length]);
 
@@ -455,11 +457,12 @@ export function TreeGraph({
     if (containerRef.current) {
       const containerWidth = containerRef.current.clientWidth;
       const containerHeight = containerRef.current.clientHeight;
-      setPan({
-        x: Math.max(20, (containerWidth - svgWidth) / 2),
-        y: Math.max(20, (containerHeight - svgHeight) / 2),
-      });
-      setZoom(1);
+      const paddingX = 40;
+      const calculatedZoom = Math.min(1, (containerWidth - paddingX) / svgWidth);
+      const initialPanX = (containerWidth - svgWidth * calculatedZoom) / 2;
+      const initialPanY = Math.max(20, (containerHeight - svgHeight * calculatedZoom) / 2);
+      setPan({ x: initialPanX, y: initialPanY });
+      setZoom(calculatedZoom);
     }
   };
 
