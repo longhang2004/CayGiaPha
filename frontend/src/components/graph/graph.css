@@ -424,3 +424,26 @@
   color: var(--color-fg);
   margin-top: 2px;
 }
+
+/* Fullscreen Mode Styling */
+.tree-graph:fullscreen {
+  background-color: var(--color-surface-card);
+  padding: 1.5rem;
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  overflow: hidden;
+}
+
+.tree-graph:fullscreen .tree-graph__canvas {
+  flex-grow: 1;
+  height: 100% !important;
+  max-height: none !important;
+  border-radius: 12px;
+}
+
+.tree-graph:fullscreen .tree-graph__controls {
+  grid-column: auto;
+}

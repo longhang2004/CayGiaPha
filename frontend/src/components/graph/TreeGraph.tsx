@@ -37,7 +37,7 @@ import {
 } from "@/lib/graph";
 import { GraphEdge } from "./EdgeStyles";
 import { ViewpointSelector } from "./ViewpointSelector";
-import { SearchIcon, DownloadIcon } from "@/components/ui/Icons";
+import { SearchIcon, DownloadIcon, MaximizeIcon, MinimizeIcon } from "@/components/ui/Icons";
 
 export interface TreeGraphProps {
   treeId: string;
@@ -366,6 +366,30 @@ export function TreeGraph({
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const containerRef = useRef<HTMLDivElement>(null);
+  const fullscreenRef = useRef<HTMLDivElement>(null);
+
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+    document.addEventListener("fullscreenchange", handleFullscreenChange);
+    return () => {
+      document.removeEventListener("fullscreenchange", handleFullscreenChange);
+    };
+  }, []);
+
+  const handleToggleFullscreen = useCallback(() => {
+    if (!fullscreenRef.current) return;
+    if (!document.fullscreenElement) {
+      fullscreenRef.current.requestFullscreen().catch((err) => {
+        console.error("Error attempting to enable fullscreen:", err);
+      });
+    } else {
+      document.exitFullscreen();
+    }
+  }, []);
 
   // Center the tree initially and on size changes
   useEffect(() => {
@@ -509,7 +533,7 @@ export function TreeGraph({
   };
 
   return (
-    <div className="tree-graph">
+    <div ref={fullscreenRef} className="tree-graph">
       <div className="tree-graph__controls">
         {!hideViewpointSelector && (
           <ViewpointSelector
@@ -823,6 +847,24 @@ export function TreeGraph({
             title="Tải ảnh sơ đồ (SVG)"
           >
             <DownloadIcon size={18} />
+          </button>
+
+          {/* Fullscreen Toggle Button */}
+          <button
+            type="button"
+            onClick={handleToggleFullscreen}
+            className="btn btn-secondary"
+            style={{
+              minWidth: "40px",
+              minHeight: "40px",
+              padding: 0,
+              fontSize: "1rem",
+              borderRadius: "8px",
+              boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
+            }}
+            title={isFullscreen ? "Thoát toàn màn hình" : "Toàn màn hình"}
+          >
+            {isFullscreen ? <MinimizeIcon size={18} /> : <MaximizeIcon size={18} />}
           </button>
         </div>
       </div>
