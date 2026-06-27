@@ -536,5 +536,82 @@ export function layoutNodes(
     });
   });
 
+  // BƯỚC 7 — Căn chỉnh cha mẹ nằm giữa các con (Bottom-up alignment)
+  for (let d = depths.length - 2; d >= 0; d--) {
+    const depth = depths[d];
+    const genPersons = generationMap.get(depth) || [];
+    
+    const unitsInGen = new Set<string>();
+    genPersons.forEach((p) => {
+      const uid = personUnitId.get(p.id);
+      if (uid) unitsInGen.add(uid);
+    });
+    
+    const activeUnits = Array.from(unitsInGen);
+    if (activeUnits.length === 0) continue;
+
+    const x = activeUnits.map((uid) => {
+      const members = units.get(uid) || [];
+      const posList = members.map(m => positions.get(m)).filter(Boolean) as NodePosition[];
+      if (posList.length === 0) return pageCenter;
+      return posList.reduce((sum, p) => sum + p.x, 0) / posList.length;
+    });
+
+    const widths = activeUnits.map((uid) => {
+      const members = units.get(uid) || [];
+      return members.length * cellWidth;
+    });
+
+    activeUnits.forEach((uid, idx) => {
+      const children = unitChildren.get(uid) || new Set();
+      let childrenXSum = 0;
+      let childrenXCount = 0;
+
+      children.forEach((chUnit) => {
+        const chMembers = units.get(chUnit) || [];
+        chMembers.forEach((m) => {
+          const pos = positions.get(m);
+          if (pos) {
+            childrenXSum += pos.x;
+            childrenXCount++;
+          }
+        });
+      });
+
+      if (childrenXCount > 0) {
+        x[idx] = childrenXSum / childrenXCount;
+      }
+    });
+
+    // Run push-apart to resolve any overlap after bottom-up shifting
+    for (let iter = 0; iter < 50; iter++) {
+      for (let i = 0; i < activeUnits.length - 1; i++) {
+        const minDistance = (widths[i] + widths[i + 1]) / 2;
+        const actualDistance = x[i + 1] - x[i];
+        if (actualDistance < minDistance) {
+          const overlap = minDistance - actualDistance;
+          x[i] -= overlap / 2;
+          x[i + 1] += overlap / 2;
+        }
+      }
+    }
+
+    activeUnits.forEach((uid, idx) => {
+      const unitCenter = x[idx];
+      const members = units.get(uid) || [];
+      const membersInGen = members.filter((m) => genPersons.some((gp) => gp.id === m));
+
+      if (membersInGen.length === 1) {
+        const pos = positions.get(membersInGen[0]);
+        if (pos) pos.x = unitCenter;
+      } else if (membersInGen.length === 2) {
+        const pos0 = positions.get(membersInGen[0]);
+        const pos1 = positions.get(membersInGen[1]);
+        if (pos0) pos0.x = unitCenter - cellWidth / 2;
+        if (pos1) pos1.x = unitCenter + cellWidth / 2;
+      }
+    });
+  }
+
   return positions;
 }
