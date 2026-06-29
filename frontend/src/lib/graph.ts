@@ -530,193 +530,192 @@ export function layoutNodes(
     });
   });
 
-  // BƯỚC 7 — Căn chỉnh cha mẹ nằm giữa các con (Bottom-up alignment)
-  for (let d = depths.length - 2; d >= 0; d--) {
-    const depth = depths[d];
-    const genPersons = generationMap.get(depth) || [];
-    
-    const unitsInGen = new Set<string>();
-    genPersons.forEach((p) => {
-      const uid = personUnitId.get(p.id);
-      if (uid) unitsInGen.add(uid);
-    });
-    
-    // Sort parent units initially by their current average X coordinates to preserve layout order
-    const getUnitX = (uid: string): number => {
-      const members = units.get(uid) || [];
-      const posList = members.map(m => positions.get(m)).filter(Boolean) as NodePosition[];
-      if (posList.length === 0) return pageCenter;
-      return posList.reduce((sum, p) => sum + p.x, 0) / posList.length;
-    };
-    const activeUnits = Array.from(unitsInGen).sort((a, b) => getUnitX(a) - getUnitX(b));
-    if (activeUnits.length === 0) continue;
+  // Local helper functions to run bottom-up and top-down passes iteratively
+  const runBottomUp = () => {
+    for (let d = depths.length - 2; d >= 0; d--) {
+      const depth = depths[d];
+      const genPersons = generationMap.get(depth) || [];
+      
+      const unitsInGen = new Set<string>();
+      genPersons.forEach((p) => {
+        const uid = personUnitId.get(p.id);
+        if (uid) unitsInGen.add(uid);
+      });
+      
+      const getUnitX = (uid: string): number => {
+        const members = units.get(uid) || [];
+        const posList = members.map(m => positions.get(m)).filter(Boolean) as NodePosition[];
+        if (posList.length === 0) return pageCenter;
+        return posList.reduce((sum, p) => sum + p.x, 0) / posList.length;
+      };
+      const activeUnits = Array.from(unitsInGen).sort((a, b) => getUnitX(a) - getUnitX(b));
+      if (activeUnits.length === 0) continue;
 
-    const x = activeUnits.map((uid) => getUnitX(uid));
-
-    const widths = activeUnits.map((uid) => {
-      const members = units.get(uid) || [];
-      return members.length * cellWidth;
-    });
-
-    activeUnits.forEach((uid, idx) => {
-      const children = unitChildren.get(uid) || new Set();
-      const parentMembers = units.get(uid) || [];
-      let childrenXSum = 0;
-      let childrenXCount = 0;
-
-      children.forEach((chUnit) => {
-        const chMembers = units.get(chUnit) || [];
-        chMembers.forEach((m) => {
-          const mParents = parentsOf.get(m) || [];
-          const isActualChild = mParents.some(pId => parentMembers.includes(pId));
-          if (!isActualChild) return;
-
-          const pos = positions.get(m);
-          if (pos) {
-            childrenXSum += pos.x;
-            childrenXCount++;
-          }
-        });
+      const x = activeUnits.map((uid) => getUnitX(uid));
+      const widths = activeUnits.map((uid) => {
+        const members = units.get(uid) || [];
+        return members.length * cellWidth;
       });
 
-      if (childrenXCount > 0) {
-        x[idx] = childrenXSum / childrenXCount;
-      }
-    });
+      activeUnits.forEach((uid, idx) => {
+        const children = unitChildren.get(uid) || new Set();
+        const parentMembers = units.get(uid) || [];
+        let childrenXSum = 0;
+        let childrenXCount = 0;
 
-    // Pair and sort activeUnits, widths, and x by x values in ascending order.
-    // This handles any crossovers introduced by the children's positions
-    // and ensures the push-apart loop executes correctly.
-    const paired = activeUnits.map((uid, idx) => ({
-      uid,
-      width: widths[idx],
-      xVal: x[idx]
-    }));
-    paired.sort((a, b) => a.xVal - b.xVal);
+        children.forEach((chUnit) => {
+          const chMembers = units.get(chUnit) || [];
+          chMembers.forEach((m) => {
+            const mParents = parentsOf.get(m) || [];
+            const isActualChild = mParents.some(pId => parentMembers.includes(pId));
+            if (!isActualChild) return;
 
-    const sortedActiveUnits = paired.map(p => p.uid);
-    const sortedWidths = paired.map(p => p.width);
-    const sortedX = paired.map(p => p.xVal);
-
-    // Run push-apart to resolve any overlap after bottom-up shifting
-    for (let iter = 0; iter < 50; iter++) {
-      for (let i = 0; i < sortedActiveUnits.length - 1; i++) {
-        const minDistance = (sortedWidths[i] + sortedWidths[i + 1]) / 2;
-        const actualDistance = sortedX[i + 1] - sortedX[i];
-        if (actualDistance < minDistance) {
-          const overlap = minDistance - actualDistance;
-          sortedX[i] -= overlap / 2;
-          sortedX[i + 1] += overlap / 2;
-        }
-      }
-    }
-
-    sortedActiveUnits.forEach((uid, idx) => {
-      const unitCenter = sortedX[idx];
-      const members = units.get(uid) || [];
-      const membersInGen = members.filter((m) => genPersons.some((gp) => gp.id === m));
-
-      if (membersInGen.length === 1) {
-        const pos = positions.get(membersInGen[0]);
-        if (pos) pos.x = unitCenter;
-      } else if (membersInGen.length === 2) {
-        const pos0 = positions.get(membersInGen[0]);
-        const pos1 = positions.get(membersInGen[1]);
-        if (pos0) pos0.x = unitCenter - cellWidth / 2;
-        if (pos1) pos1.x = unitCenter + cellWidth / 2;
-      }
-    });
-  }
-
-  // BƯỚC 8 — Top-down refinement pass.
-  // Since parent nodes at higher generations may have shifted during bottom-up centering (Step 7),
-  // we align children generations under their parents' final positions from top to bottom.
-  for (let d = 1; d < depths.length; d++) {
-    const depth = depths[d];
-    const genPersons = generationMap.get(depth) || [];
-    const unitsInGen = new Set<string>();
-    genPersons.forEach((p) => {
-      const uid = personUnitId.get(p.id);
-      if (uid) unitsInGen.add(uid);
-    });
-
-    const activeUnits = Array.from(unitsInGen).sort((a, b) => {
-      const pA = getParentMidX(a);
-      const pB = getParentMidX(b);
-      if (Math.abs(pA - pB) > 0.1) return pA - pB;
-      const idxA = persons.findIndex((p) => p.id === a);
-      const idxB = persons.findIndex((p) => p.id === b);
-      return idxA - idxB;
-    });
-
-    const x = activeUnits.map((uid) => {
-      const unitMembers = units.get(uid) || [];
-      let parentXSum = 0;
-      let parentXCount = 0;
-      unitMembers.forEach((m) => {
-        const parents = parentsOf.get(m) || [];
-        parents.forEach((parentId) => {
-          const pos = positions.get(parentId);
-          const spouses = spousesOf.get(parentId) || [];
-          const spouseId = spouses.find((sId) => positions.has(sId));
-          const spousePos = spouseId ? positions.get(spouseId) : undefined;
-          if (pos && spousePos) {
-            parentXSum += (pos.x + spousePos.x) / 2;
-            parentXCount++;
-          } else if (pos) {
-            parentXSum += pos.x;
-            parentXCount++;
-          }
+            const pos = positions.get(m);
+            if (pos) {
+              childrenXSum += pos.x;
+              childrenXCount++;
+            }
+          });
         });
+
+        if (childrenXCount > 0) {
+          x[idx] = childrenXSum / childrenXCount;
+        }
       });
 
-      if (parentXCount > 0) {
-        return parentXSum / parentXCount;
-      }
+      const paired = activeUnits.map((uid, idx) => ({
+        uid,
+        width: widths[idx],
+        xVal: x[idx]
+      }));
+      paired.sort((a, b) => a.xVal - b.xVal);
 
-      // Fallback if no parents: keep its current average position in the generation
-      const genMembers = unitMembers.filter((m) => genPersons.some((gp) => gp.id === m));
-      const currentX = genMembers.reduce((sum, m) => sum + (positions.get(m)?.x || 0), 0) / (genMembers.length || 1);
-      return currentX;
-    });
+      const sortedActiveUnits = paired.map(p => p.uid);
+      const sortedWidths = paired.map(p => p.width);
+      const sortedX = paired.map(p => p.xVal);
 
-    const widths = activeUnits.map((uid) => {
-      const members = units.get(uid) || [];
-      const genMembers = members.filter((m) => genPersons.some((gp) => gp.id === m));
-      return genMembers.length * cellWidth;
-    });
-
-    // Run push-apart to prevent overlaps at this depth
-    for (let iter = 0; iter < 50; iter++) {
-      for (let i = 0; i < activeUnits.length - 1; i++) {
-        const minDistance = (widths[i] + widths[i + 1]) / 2;
-        const actualDistance = x[i + 1] - x[i];
-        if (actualDistance < minDistance) {
-          const overlap = minDistance - actualDistance;
-          x[i] -= overlap / 2;
-          x[i + 1] += overlap / 2;
+      for (let iter = 0; iter < 50; iter++) {
+        for (let i = 0; i < sortedActiveUnits.length - 1; i++) {
+          const minDistance = (sortedWidths[i] + sortedWidths[i + 1]) / 2;
+          const actualDistance = sortedX[i + 1] - sortedX[i];
+          if (actualDistance < minDistance) {
+            const overlap = minDistance - actualDistance;
+            sortedX[i] -= overlap / 2;
+            sortedX[i + 1] += overlap / 2;
+          }
         }
       }
+
+      sortedActiveUnits.forEach((uid, idx) => {
+        const unitCenter = sortedX[idx];
+        const members = units.get(uid) || [];
+        const membersInGen = members.filter((m) => genPersons.some((gp) => gp.id === m));
+
+        if (membersInGen.length === 1) {
+          const pos = positions.get(membersInGen[0]);
+          if (pos) pos.x = unitCenter;
+        } else if (membersInGen.length === 2) {
+          const pos0 = positions.get(membersInGen[0]);
+          const pos1 = positions.get(membersInGen[1]);
+          if (pos0) pos0.x = unitCenter - cellWidth / 2;
+          if (pos1) pos1.x = unitCenter + cellWidth / 2;
+        }
+      });
     }
+  };
 
-    // Apply the final adjusted positions
-    const genY = padding + depth * cellHeight;
-    activeUnits.forEach((uid, idx) => {
-      const unitCenter = x[idx];
-      const members = units.get(uid) || [];
-      const genMembers = members.filter((m) => genPersons.some((gp) => gp.id === m));
+  const runTopDown = () => {
+    for (let d = 1; d < depths.length; d++) {
+      const depth = depths[d];
+      const genPersons = generationMap.get(depth) || [];
+      const unitsInGen = new Set<string>();
+      genPersons.forEach((p) => {
+        const uid = personUnitId.get(p.id);
+        if (uid) unitsInGen.add(uid);
+      });
 
-      if (genMembers.length === 1) {
-        const pos = positions.get(genMembers[0]);
-        if (pos) { pos.x = unitCenter; pos.y = genY; }
-      } else if (genMembers.length === 2) {
-        const pos0 = positions.get(genMembers[0]);
-        const pos1 = positions.get(genMembers[1]);
-        if (pos0) { pos0.x = unitCenter - cellWidth / 2; pos0.y = genY; }
-        if (pos1) { pos1.x = unitCenter + cellWidth / 2; pos1.y = genY; }
+      const activeUnits = Array.from(unitsInGen).sort((a, b) => {
+        const pA = getParentMidX(a);
+        const pB = getParentMidX(b);
+        if (Math.abs(pA - pB) > 0.1) return pA - pB;
+        const idxA = persons.findIndex((p) => p.id === a);
+        const idxB = persons.findIndex((p) => p.id === b);
+        return idxA - idxB;
+      });
+
+      const x = activeUnits.map((uid) => {
+        const unitMembers = units.get(uid) || [];
+        let parentXSum = 0;
+        let parentXCount = 0;
+        unitMembers.forEach((m) => {
+          const parents = parentsOf.get(m) || [];
+          parents.forEach((parentId) => {
+            const pos = positions.get(parentId);
+            const spouses = spousesOf.get(parentId) || [];
+            const spouseId = spouses.find((sId) => positions.has(sId));
+            const spousePos = spouseId ? positions.get(spouseId) : undefined;
+            if (pos && spousePos) {
+              parentXSum += (pos.x + spousePos.x) / 2;
+              parentXCount++;
+            } else if (pos) {
+              parentXSum += pos.x;
+              parentXCount++;
+            }
+          });
+        });
+
+        if (parentXCount > 0) {
+          return parentXSum / parentXCount;
+        }
+
+        const genMembers = unitMembers.filter((m) => genPersons.some((gp) => gp.id === m));
+        const currentX = genMembers.reduce((sum, m) => sum + (positions.get(m)?.x || 0), 0) / (genMembers.length || 1);
+        return currentX;
+      });
+
+      const widths = activeUnits.map((uid) => {
+        const members = units.get(uid) || [];
+        const genMembers = members.filter((m) => genPersons.some((gp) => gp.id === m));
+        return genMembers.length * cellWidth;
+      });
+
+      for (let iter = 0; iter < 50; iter++) {
+        for (let i = 0; i < activeUnits.length - 1; i++) {
+          const minDistance = (widths[i] + widths[i + 1]) / 2;
+          const actualDistance = x[i + 1] - x[i];
+          if (actualDistance < minDistance) {
+            const overlap = minDistance - actualDistance;
+            x[i] -= overlap / 2;
+            x[i + 1] += overlap / 2;
+          }
+        }
       }
-    });
-  }
+
+      const genY = padding + depth * cellHeight;
+      activeUnits.forEach((uid, idx) => {
+        const unitCenter = x[idx];
+        const members = units.get(uid) || [];
+        const genMembers = members.filter((m) => genPersons.some((gp) => gp.id === m));
+
+        if (genMembers.length === 1) {
+          const pos = positions.get(genMembers[0]);
+          if (pos) { pos.x = unitCenter; pos.y = genY; }
+        } else if (genMembers.length === 2) {
+          const pos0 = positions.get(genMembers[0]);
+          const pos1 = positions.get(genMembers[1]);
+          if (pos0) { pos0.x = unitCenter - cellWidth / 2; pos0.y = genY; }
+          if (pos1) { pos1.x = unitCenter + cellWidth / 2; pos1.y = genY; }
+        }
+      });
+    }
+  };
+
+  // Perform multiple-pass convergence (Bottom-Up, then Top-Down, then a final Bottom-Up)
+  // to ensure that both parents and children are perfectly centered relative to each other,
+  // even after horizontal shifts from the push-apart overlap resolver.
+  runBottomUp();
+  runTopDown();
+  runBottomUp();
 
   return positions;
 }
