@@ -80,7 +80,7 @@ class TreeReadAccessProperties {
         lenient().when(shareTokenService.resolveTreeId("tok-unknown")).thenReturn(Optional.empty());
 
         AuthorizationService service = new AuthorizationService(
-                holder, claimService, treeRepository, shareTokenService,
+                holder, claimService, treeRepository, mock(com.caygiapha.familytree.repository.TreeCollaboratorRepository.class), shareTokenService,
                 mock(com.caygiapha.familytree.service.ConsentService.class));
 
         try {

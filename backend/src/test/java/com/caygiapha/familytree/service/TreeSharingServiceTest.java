@@ -38,7 +38,7 @@ class TreeSharingServiceTest {
     private final ClaimService claimService = mock(ClaimService.class);
     private final AuthorizationService authorizationService =
             new AuthorizationService(
-                    holder, claimService, mock(TreeRepository.class), mock(ShareTokenService.class),
+                    holder, claimService, mock(TreeRepository.class), mock(com.caygiapha.familytree.repository.TreeCollaboratorRepository.class), mock(ShareTokenService.class),
                     mock(ConsentService.class));
     private final TreeRepository treeRepository = mock(TreeRepository.class);
     private final ShareTokenService shareTokenService = mock(ShareTokenService.class);

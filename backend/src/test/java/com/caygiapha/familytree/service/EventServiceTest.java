@@ -26,7 +26,7 @@ class EventServiceTest {
         private Role roleToReturn = Role.NEITHER;
 
         public StubAuthorizationService() {
-            super(null, null, null, null, null);
+            super(null, null, null, null, null, null);
         }
 
         public void setRole(Role role) {

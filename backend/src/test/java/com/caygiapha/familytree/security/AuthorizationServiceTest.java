@@ -36,7 +36,7 @@ class AuthorizationServiceTest {
     private final ClaimService claimService = mock(ClaimService.class);
     private final ConsentService consentService = mock(ConsentService.class);
     private final AuthorizationService service = new AuthorizationService(
-            holder, claimService, mock(TreeRepository.class), mock(ShareTokenService.class),
+            holder, claimService, mock(TreeRepository.class), mock(com.caygiapha.familytree.repository.TreeCollaboratorRepository.class), mock(ShareTokenService.class),
             consentService);
 
     @AfterEach

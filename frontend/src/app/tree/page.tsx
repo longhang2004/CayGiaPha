@@ -20,6 +20,16 @@ import { api, ApiError } from "@/lib/apiClient";
 import type { Person, Relationship, Address } from "@/lib/graph";
 import type { Region } from "@/lib/region";
 import { getCookie, setCookie } from "@/lib/cookies";
+import {
+  inviteCollaborator,
+  getPendingInvitations,
+  approveInvitation,
+  rejectInvitation,
+  joinTreeGroup,
+  getCollaborators,
+  type CollaborationInvitation,
+  type TreeCollaborator
+} from "@/lib/collaboration";
 import "@/components/graph/graph.css";
 import { LightbulbIcon } from "@/components/ui/Icons";
 
@@ -101,6 +111,88 @@ function TreePageContent({ searchParams }: TreePageProps) {
     const query = params.toString() ? `?${params.toString()}` : "";
     router.replace(`${pathname}${query}`);
   };
+
+  const [collaborators, setCollaborators] = useState<TreeCollaborator[]>([]);
+  const [pendingInvites, setPendingInvites] = useState<CollaborationInvitation[]>([]);
+  const [inviteEmail, setInviteEmail] = useState("");
+  const [inviteCode, setInviteCode] = useState("");
+  const [loadingCollaborators, setLoadingCollaborators] = useState(false);
+
+  const fetchCollaborationData = useCallback(async () => {
+    if (!activeTreeId || !user) return;
+    setLoadingCollaborators(true);
+    try {
+      const collabs = await getCollaborators(activeTreeId);
+      setCollaborators(collabs);
+      if (user?.treeId === activeTreeId) {
+        const pendings = await getPendingInvitations(activeTreeId);
+        setPendingInvites(pendings);
+      }
+    } catch (err) {
+      console.error("Failed to load collaboration data", err);
+    } finally {
+      setLoadingCollaborators(false);
+    }
+  }, [activeTreeId, user]);
+
+  useEffect(() => {
+    if (isSettingsOpen) {
+      fetchCollaborationData();
+    }
+  }, [isSettingsOpen, fetchCollaborationData]);
+
+  async function handleSendInvite(e: React.FormEvent) {
+    e.preventDefault();
+    if (!activeTreeId || !inviteEmail.trim()) return;
+    try {
+      const result = await inviteCollaborator(activeTreeId, inviteEmail.trim());
+      alert(
+        result.status === "sent"
+          ? `Đã tạo mã mời thành công! Mã mời: ${result.code}`
+          : "Đã gửi yêu cầu mời cộng tác. Đang chờ chủ cây duyệt."
+      );
+      setInviteEmail("");
+      fetchCollaborationData();
+    } catch (err) {
+      alert(err instanceof ApiError ? err.message : "Không thể gửi lời mời.");
+    }
+  }
+
+  async function handleApproveInvite(inviteId: string) {
+    if (!activeTreeId) return;
+    try {
+      await approveInvitation(activeTreeId, inviteId);
+      alert("Đã duyệt lời mời cộng tác thành công!");
+      fetchCollaborationData();
+    } catch (err) {
+      alert(err instanceof ApiError ? err.message : "Thao tác thất bại.");
+    }
+  }
+
+  async function handleRejectInvite(inviteId: string) {
+    if (!activeTreeId) return;
+    try {
+      await rejectInvitation(activeTreeId, inviteId);
+      alert("Đã từ chối/hủy lời mời cộng tác!");
+      fetchCollaborationData();
+    } catch (err) {
+      alert(err instanceof ApiError ? err.message : "Thao tác thất bại.");
+    }
+  }
+
+  async function handleJoinTree(e: React.FormEvent) {
+    e.preventDefault();
+    if (!inviteCode.trim()) return;
+    try {
+      await joinTreeGroup(inviteCode.trim());
+      alert("Bạn đã tham gia nhóm cộng tác xây dựng cây thành công!");
+      setInviteCode("");
+      router.refresh();
+      window.location.reload();
+    } catch (err) {
+      alert(err instanceof ApiError ? err.message : "Mã mời không hợp lệ.");
+    }
+  }
 
   useEffect(() => {
     const dismissed = getCookie("tutorial_dismissed");
@@ -288,6 +380,8 @@ function TreePageContent({ searchParams }: TreePageProps) {
 
   const selectedPerson = selectedId ? persons.find((p) => p.id === selectedId) : null;
   const isOwner = user?.treeId === activeTreeId;
+  const isCollaborator = collaborators.some(c => c.userId === user?.userId);
+  const canEdit = isOwner || isCollaborator;
 
   // Map person option for relation dropdown selection
   const personOptions = persons.map((p) => ({ id: p.id, displayName: p.displayName, gender: p.gender }));
@@ -331,7 +425,7 @@ function TreePageContent({ searchParams }: TreePageProps) {
           <h1>Sơ đồ gia phả</h1>
           <p className="tree-workspace__hint">Chọn một người trên sơ đồ để xem chi tiết, sửa thông tin hoặc thêm người thân.</p>
         </div>
-        {isOwner && (
+        {canEdit && (
           <button
             type="button"
             className="btn btn-secondary"
@@ -367,7 +461,7 @@ function TreePageContent({ searchParams }: TreePageProps) {
               <ul>
                 <li><strong>Chọn người:</strong> Bấm vào bất kỳ thành viên nào trên sơ đồ để xem chi tiết, sửa thông tin hoặc thêm người thân.</li>
                 <li><strong>Cách xưng hô:</strong> Thay đổi góc nhìn ở bộ chọn phía trên sơ đồ để xem cách xưng hô của cả dòng họ đối với người đó.</li>
-                <li><strong>Thêm quan hệ:</strong> {isOwner ? "Sử dụng bảng bên phải để thêm thành viên mới hoặc kết nối các mối quan hệ." : "Bạn đang xem cây gia phả theo quyền chia sẻ."}</li>
+                <li><strong>Thêm quan hệ:</strong> {canEdit ? "Sử dụng bảng bên phải để thêm thành viên mới hoặc kết nối các mối quan hệ." : "Bạn đang xem cây gia phả theo quyền chia sẻ."}</li>
               </ul>
             </div>
             <div className="tutorial-popup__footer">
@@ -395,7 +489,7 @@ function TreePageContent({ searchParams }: TreePageProps) {
                 setEditMode(false);
                 setAddRelativeMode(false);
               }}
-              onAddMember={isOwner ? () => {
+              onAddMember={canEdit ? () => {
                 setSelectedId(null);
                 setCreateMode(true);
                 setAddRelativeMode(false);
@@ -503,7 +597,7 @@ function TreePageContent({ searchParams }: TreePageProps) {
                   />
 
                   <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem", marginTop: "1rem" }}>
-                    {isOwner && (
+                    {canEdit && (
                       <div className="person-actions">
                         <button
                           type="button"
@@ -718,6 +812,79 @@ function TreePageContent({ searchParams }: TreePageProps) {
                   )}
                 </section>
               )}
+
+              {/* Collaboration Section */}
+              <section className="settings-section" style={{ borderTop: "1px solid var(--color-hairline-soft)", paddingTop: "1.5rem", marginTop: "1.5rem" }}>
+                <h3>Cộng tác xây dựng cây</h3>
+                
+                <div style={{ marginBottom: "1rem" }}>
+                  <label style={{ fontWeight: "bold" }}>Thành viên tham gia xây dựng cây:</label>
+                  <ul style={{ paddingLeft: "1.2rem", margin: "0.5rem 0" }}>
+                    <li>
+                      Chủ cây (Owner)
+                    </li>
+                    {collaborators.map((c) => (
+                      <li key={c.id}>
+                        {c.userId} ({c.role === "owner" ? "Chủ cây" : "Cộng tác viên"})
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                {user && (
+                  <form onSubmit={handleSendInvite} style={{ display: "flex", flexDirection: "column", gap: "0.5rem", marginBottom: "1rem" }}>
+                    <label htmlFor="invite-email">Mời người khác qua email:</label>
+                    <div style={{ display: "flex", gap: "0.5rem" }}>
+                      <input
+                        id="invite-email"
+                        type="email"
+                        value={inviteEmail}
+                        onChange={(e) => setInviteEmail(e.target.value)}
+                        placeholder="email@example.com"
+                        required
+                        style={{ flex: 1, padding: "0.4rem 0.6rem" }}
+                      />
+                      <button type="submit" className="btn btn-secondary">Mời</button>
+                    </div>
+                  </form>
+                )}
+
+                {isOwner && pendingInvites.length > 0 && (
+                  <div style={{ marginBottom: "1rem", border: "1px solid var(--color-hairline-soft)", padding: "0.75rem", borderRadius: "4px" }}>
+                    <label style={{ fontWeight: "bold", color: "var(--color-danger)" }}>Yêu cầu mời đang chờ duyệt ({pendingInvites.length}):</label>
+                    <ul style={{ listStyle: "none", padding: 0, margin: "0.5rem 0" }}>
+                      {pendingInvites.map((invite) => (
+                        <li key={invite.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.5rem" }}>
+                          <span style={{ fontSize: "0.85rem" }}>{invite.email}</span>
+                          <div style={{ display: "flex", gap: "0.25rem" }}>
+                            <button type="button" className="btn" style={{ padding: "0.2rem 0.5rem", fontSize: "0.75rem" }} onClick={() => handleApproveInvite(invite.id)}>Duyệt</button>
+                            <button type="button" className="btn btn-secondary" style={{ padding: "0.2rem 0.5rem", fontSize: "0.75rem" }} onClick={() => handleRejectInvite(invite.id)}>Từ chối</button>
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {user && (
+                  <form onSubmit={handleJoinTree} style={{ display: "flex", flexDirection: "column", gap: "0.5rem", borderTop: "1px dashed var(--color-hairline-soft)", paddingTop: "1rem" }}>
+                    <label htmlFor="invite-code">Nhập mã mời để tham gia cây khác:</label>
+                    <div style={{ display: "flex", gap: "0.5rem" }}>
+                      <input
+                        id="invite-code"
+                        type="text"
+                        value={inviteCode}
+                        onChange={(e) => setInviteCode(e.target.value)}
+                        placeholder="Mã 6 số"
+                        maxLength={6}
+                        required
+                        style={{ flex: 1, padding: "0.4rem 0.6rem" }}
+                      />
+                      <button type="submit" className="btn btn-secondary">Tham gia</button>
+                    </div>
+                  </form>
+                )}
+              </section>
 
               <section className="settings-section" style={{ borderTop: "1px solid var(--color-hairline-soft)", paddingTop: "1.5rem", marginTop: "1.5rem" }}>
                 <h3>Cài đặt hiển thị</h3>

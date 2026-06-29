@@ -3,6 +3,7 @@ package com.caygiapha.familytree.security;
 import com.caygiapha.familytree.error.ApiException;
 import com.caygiapha.familytree.entity.Tree;
 import com.caygiapha.familytree.repository.TreeRepository;
+import com.caygiapha.familytree.repository.TreeCollaboratorRepository;
 import com.caygiapha.familytree.service.ClaimService;
 import com.caygiapha.familytree.service.ConsentService;
 import com.caygiapha.familytree.service.ShareTokenService;
@@ -13,22 +14,6 @@ import org.springframework.stereotype.Service;
 /**
  * Realizes the mutation-authorization model of the {@code Graph_Store} (design "Graph_Store —
  * Enforces authorization"; Property 18; Requirements 11.6, 13.4, 13.5).
- *
- * <p>Given the current {@link AuthContext} (the authenticated caller) and a target tree and
- * optionally a target person, the service {@linkplain #classify classifies} the caller as:
- * <ul>
- *   <li>{@link Role#OWNER} — the caller owns the target tree, so may create/edit/delete anything
- *       within it (13.4);</li>
- *   <li>{@link Role#LINKED_CLAIMED_USER} — the caller is the {@code Claimed_Node} user linked to the
- *       target person, so may edit <em>that node</em> (11.6);</li>
- *   <li>{@link Role#NEITHER} — everyone else.</li>
- * </ul>
- *
- * <p>{@link #requireMutationPermitted} throws {@link ApiException#notAuthorized} for
- * {@link Role#NEITHER}; because the calling mutation runs in a transaction, the rejection leaves the
- * tree contents unchanged (13.5). A linked user is only ever {@link Role#LINKED_CLAIMED_USER} for
- * their own node, so attempting to edit a different node — or to create/delete — falls through to
- * {@link Role#NEITHER} and is rejected, exactly as Property 18 requires.
  */
 @Service
 public class AuthorizationService {
@@ -37,6 +22,8 @@ public class AuthorizationService {
     public enum Role {
         /** Owns the target tree; may mutate anything within it (13.4). */
         OWNER,
+        /** Contributes to the target tree. */
+        CONTRIBUTOR,
         /** Linked user of the target {@code Claimed_Node}; may edit that node (11.6). */
         LINKED_CLAIMED_USER,
         /** Neither owner nor linked user; all mutations rejected (13.5). */
@@ -46,6 +33,7 @@ public class AuthorizationService {
     private final AuthContextHolder authContextHolder;
     private final ClaimService claimService;
     private final TreeRepository treeRepository;
+    private final TreeCollaboratorRepository collaboratorRepository;
     private final ShareTokenService shareTokenService;
     private final ConsentService consentService;
 
@@ -53,11 +41,13 @@ public class AuthorizationService {
             AuthContextHolder authContextHolder,
             ClaimService claimService,
             TreeRepository treeRepository,
+            TreeCollaboratorRepository collaboratorRepository,
             ShareTokenService shareTokenService,
             ConsentService consentService) {
         this.authContextHolder = authContextHolder;
         this.claimService = claimService;
         this.treeRepository = treeRepository;
+        this.collaboratorRepository = collaboratorRepository;
         this.shareTokenService = shareTokenService;
         this.consentService = consentService;
     }
@@ -84,6 +74,11 @@ public class AuthorizationService {
                 && context.ownedTreeId().map(targetTreeId::equals).orElse(false);
         if (ownsTargetTree) {
             return Role.OWNER;
+        }
+        // CONTRIBUTOR: check if the user is a registered collaborator for the target tree.
+        if (targetTreeId != null
+                && collaboratorRepository.existsByTreeIdAndUserId(targetTreeId, context.userId())) {
+            return Role.CONTRIBUTOR;
         }
         // LINKED_CLAIMED_USER: the target node is claimed by, and linked to, this user (11.6).
         if (targetPersonId != null

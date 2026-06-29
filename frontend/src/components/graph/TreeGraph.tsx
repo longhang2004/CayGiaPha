@@ -26,7 +26,7 @@ import {
   fetchViewpointAddresses,
   indexAddresses,
   isUnresolved,
-  layoutNodes,
+  layoutMultiTreeNodes,
   edgeStyleFor,
   EDGE_CLASS,
   STROKE_DASHARRAY,
@@ -183,7 +183,7 @@ export function TreeGraph({
   }, [persons, relationships, activeFocusId]);
 
   const positions = useMemo(
-    () => layoutNodes(filteredData.persons, filteredData.relationships, { cellWidth: 220, cellHeight: 130, padding: 100 }),
+    () => layoutMultiTreeNodes(filteredData.persons, filteredData.relationships, { cellWidth: 220, cellHeight: 130, padding: 100 }),
     [filteredData.persons, filteredData.relationships]
   );
 

@@ -149,6 +149,49 @@ function PrototypeTreeContent() {
     setIsSettingsOpen(false);
   }, []);
 
+  const [collaborators, setCollaborators] = useState<any[]>([
+    { id: "collab-1", userId: "contributor@example.com", role: "contributor", joinedAt: new Date().toISOString() }
+  ]);
+  const [pendingInvites, setPendingInvites] = useState<any[]>([
+    { id: "invite-1", email: "pending-contributor@example.com", code: "654321", status: "pending" }
+  ]);
+  const [inviteEmail, setInviteEmail] = useState("");
+  const [inviteCode, setInviteCode] = useState("");
+
+  const handleSendInvite = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!inviteEmail.trim()) return;
+    const newInvite = {
+      id: `invite-${Date.now()}`,
+      email: inviteEmail.trim(),
+      code: "111222",
+      status: "pending"
+    };
+    setPendingInvites(prev => [...prev, newInvite]);
+    alert("Đã tạo lời mời cộng tác thành công (đang chờ duyệt)!");
+    setInviteEmail("");
+  };
+
+  const handleApproveInvite = (id: string) => {
+    const invite = pendingInvites.find(i => i.id === id);
+    if (!invite) return;
+    setPendingInvites(prev => prev.filter(i => i.id !== id));
+    setCollaborators(prev => [...prev, { id: `collab-${Date.now()}`, userId: invite.email, role: "contributor" }]);
+    alert("Đã duyệt cộng tác viên thành công!");
+  };
+
+  const handleRejectInvite = (id: string) => {
+    setPendingInvites(prev => prev.filter(i => i.id !== id));
+    alert("Đã từ chối lời mời cộng tác!");
+  };
+
+  const handleJoinTree = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!inviteCode.trim()) return;
+    alert("Đã tham gia nhóm cộng tác cây thành công!");
+    setInviteCode("");
+  };
+
   const refreshTree = useCallback(() => {
     /* no-op in prototype */
   }, []);
@@ -546,6 +589,75 @@ function PrototypeTreeContent() {
                   </div>
                 </section>
               )}
+
+              {/* Collaboration Section */}
+              <section className="settings-section" style={{ borderTop: "1px solid var(--color-hairline-soft)", paddingTop: "1.5rem", marginTop: "1.5rem" }}>
+                <h3>Cộng tác xây dựng cây</h3>
+                
+                <div style={{ marginBottom: "1rem" }}>
+                  <label style={{ fontWeight: "bold" }}>Thành viên tham gia xây dựng cây:</label>
+                  <ul style={{ paddingLeft: "1.2rem", margin: "0.5rem 0" }}>
+                    <li>
+                      Chủ cây (Owner)
+                    </li>
+                    {collaborators.map((c) => (
+                      <li key={c.id}>
+                        {c.userId} ({c.role === "owner" ? "Chủ cây" : "Cộng tác viên"})
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                <form onSubmit={handleSendInvite} style={{ display: "flex", flexDirection: "column", gap: "0.5rem", marginBottom: "1rem" }}>
+                  <label htmlFor="invite-email">Mời người khác qua email:</label>
+                  <div style={{ display: "flex", gap: "0.5rem" }}>
+                    <input
+                      id="invite-email"
+                      type="email"
+                      value={inviteEmail}
+                      onChange={(e) => setInviteEmail(e.target.value)}
+                      placeholder="email@example.com"
+                      required
+                      style={{ flex: 1, padding: "0.4rem 0.6rem" }}
+                    />
+                    <button type="submit" className="btn btn-secondary">Mời</button>
+                  </div>
+                </form>
+
+                {pendingInvites.length > 0 && (
+                  <div style={{ marginBottom: "1rem", border: "1px solid var(--color-hairline-soft)", padding: "0.75rem", borderRadius: "4px" }}>
+                    <label style={{ fontWeight: "bold", color: "var(--color-danger)" }}>Yêu cầu mời đang chờ duyệt ({pendingInvites.length}):</label>
+                    <ul style={{ listStyle: "none", padding: 0, margin: "0.5rem 0" }}>
+                      {pendingInvites.map((invite) => (
+                        <li key={invite.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.5rem" }}>
+                          <span style={{ fontSize: "0.85rem" }}>{invite.email}</span>
+                          <div style={{ display: "flex", gap: "0.25rem" }}>
+                            <button type="button" className="btn" style={{ padding: "0.2rem 0.5rem", fontSize: "0.75rem" }} onClick={() => handleApproveInvite(invite.id)}>Duyệt</button>
+                            <button type="button" className="btn btn-secondary" style={{ padding: "0.2rem 0.5rem", fontSize: "0.75rem" }} onClick={() => handleRejectInvite(invite.id)}>Từ chối</button>
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                <form onSubmit={handleJoinTree} style={{ display: "flex", flexDirection: "column", gap: "0.5rem", borderTop: "1px dashed var(--color-hairline-soft)", paddingTop: "1rem" }}>
+                  <label htmlFor="invite-code">Nhập mã mời để tham gia cây khác:</label>
+                  <div style={{ display: "flex", gap: "0.5rem" }}>
+                    <input
+                      id="invite-code"
+                      type="text"
+                      value={inviteCode}
+                      onChange={(e) => setInviteCode(e.target.value)}
+                      placeholder="Mã 6 số"
+                      maxLength={6}
+                      required
+                      style={{ flex: 1, padding: "0.4rem 0.6rem" }}
+                    />
+                    <button type="submit" className="btn btn-secondary">Tham gia</button>
+                  </div>
+                </form>
+              </section>
 
               <section
                 className="settings-section"

@@ -723,3 +723,98 @@ export function layoutNodes(
 
   return positions;
 }
+
+export function layoutMultiTreeNodes(
+  persons: Person[],
+  relationships: Relationship[] = [],
+  opts: { cellWidth?: number; cellHeight?: number; padding?: number } = {}
+): Map<string, NodePosition> {
+  if (persons.length === 0) {
+    return new Map();
+  }
+
+  // 1. Build adjacency list of connected persons (ignoring cross-tree/unidentified relations)
+  const adj = new Map<string, string[]>();
+  const addEdge = (u: string, v: string) => {
+    if (!adj.has(u)) adj.set(u, []);
+    if (!adj.has(v)) adj.set(v, []);
+    adj.get(u)!.push(v);
+    adj.get(v)!.push(u);
+  };
+
+  relationships.forEach((r) => {
+    // Ignore cross-tree / unidentified relationships
+    if (
+      (r.derivationState as string) === "unidentified" ||
+      (r.type === "asserted" && (r.assertedLabel || "").toLowerCase().includes("chưa xác định"))
+    ) {
+      return;
+    }
+    addEdge(r.sourceId, r.targetId);
+  });
+
+  // 2. Find connected components (DFS/BFS)
+  const visited = new Set<string>();
+  const components: string[][] = [];
+
+  persons.forEach((p) => {
+    if (visited.has(p.id)) return;
+    const comp: string[] = [];
+    const queue = [p.id];
+    visited.add(p.id);
+
+    while (queue.length > 0) {
+      const curr = queue.shift()!;
+      comp.push(curr);
+      const neighbors = adj.get(curr) || [];
+      neighbors.forEach((n) => {
+        if (!visited.has(n)) {
+          visited.add(n);
+          queue.push(n);
+        }
+      });
+    }
+    components.push(comp);
+  });
+
+  // 3. Layout each component and offset them horizontally
+  const finalPositions = new Map<string, NodePosition>();
+  const cellWidth = opts.cellWidth ?? 160;
+  const padding = opts.padding ?? 40;
+  const horizontalSpacing = 300; // Spacing between different trees
+
+  let offsetX = padding;
+
+  components.forEach((compIds) => {
+    const compPersons = persons.filter((p) => compIds.includes(p.id));
+    const compRelationships = relationships.filter((r) =>
+      compIds.includes(r.sourceId) && compIds.includes(r.targetId)
+    );
+
+    const compPositions = layoutNodes(compPersons, compRelationships, opts);
+    if (compPositions.size === 0) return;
+
+    // Find bounding box of this component
+    let minX = Infinity;
+    let maxX = -Infinity;
+    compPositions.forEach((pos) => {
+      if (pos.x < minX) minX = pos.x;
+      if (pos.x > maxX) maxX = pos.x;
+    });
+
+    const compWidth = (maxX - minX) + cellWidth;
+
+    // Shift coordinates and add to final positions
+    compPositions.forEach((pos, id) => {
+      finalPositions.set(id, {
+        id,
+        x: pos.x - minX + offsetX,
+        y: pos.y,
+      });
+    });
+
+    offsetX += compWidth + horizontalSpacing;
+  });
+
+  return finalPositions;
+}

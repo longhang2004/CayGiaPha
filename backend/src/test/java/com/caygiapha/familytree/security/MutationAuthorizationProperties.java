@@ -142,7 +142,7 @@ class MutationAuthorizationProperties {
 
         AuthContextHolder holder = new AuthContextHolder();
         AuthorizationService service = new AuthorizationService(
-                holder, claimService, mock(TreeRepository.class), mock(ShareTokenService.class),
+                holder, claimService, mock(TreeRepository.class), mock(com.caygiapha.familytree.repository.TreeCollaboratorRepository.class), mock(ShareTokenService.class),
                 mock(ConsentService.class));
 
         // ----- Independent oracle (does not consult the service under test) -----

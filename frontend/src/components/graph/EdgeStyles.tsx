@@ -27,6 +27,10 @@ export interface GraphEdgeProps {
 const NODE_HALF_HEIGHT = 36;
 
 export function GraphEdge({ relationship, source, target }: GraphEdgeProps) {
+  const isUnidentified =
+    (relationship.derivationState as string) === "unidentified" ||
+    (relationship.type === "asserted" && (relationship.assertedLabel || "").toLowerCase().includes("chưa xác định"));
+
   const style = edgeStyleFor(relationship);
   const label =
     relationship.type === "asserted"
@@ -47,6 +51,49 @@ export function GraphEdge({ relationship, source, target }: GraphEdgeProps) {
   };
 
   const titleElement = label ? <title>{label}</title> : null;
+
+  if (isUnidentified) {
+    const x1 = source.x;
+    const y1 = source.y;
+    const x2 = target.x;
+    const y2 = target.y;
+    const midX = (x1 + x2) / 2;
+    const midY = (y1 + y2) / 2;
+    return (
+      <g>
+        <line
+          x1={x1}
+          y1={y1}
+          x2={x2}
+          y2={y2}
+          {...props}
+          strokeDasharray="4,4"
+          className="edge-unidentified"
+          style={{ stroke: "#94a3b8" }}
+        />
+        <rect
+          x={midX - 45}
+          y={midY - 8}
+          width={90}
+          height={16}
+          rx={4}
+          fill="var(--color-surface, #ffffff)"
+          stroke="#cbd5e1"
+        />
+        <text
+          x={midX}
+          y={midY}
+          textAnchor="middle"
+          dominantBaseline="central"
+          fill="#64748b"
+          fontSize="10"
+          style={{ pointerEvents: "none", userSelect: "none" }}
+        >
+          Chưa xác định
+        </text>
+      </g>
+    );
+  }
 
   // bloodline_father / bloodline_mother: elbow connector dọc (fail-safe fallback)
   if (relationship.type === "bloodline_father" || relationship.type === "bloodline_mother") {
