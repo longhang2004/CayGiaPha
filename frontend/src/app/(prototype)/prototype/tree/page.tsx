@@ -49,7 +49,49 @@ async function mockFetchAddresses(
   _treeId: string,
   egoId: string,
 ): Promise<ViewpointAddresses> {
-  return { egoId, addresses: [] };
+  return {
+    egoId,
+    addresses: [
+      { personId: "cu-noi-ong", resolved: "cụ nội ông", status: "resolved" },
+      { personId: "cu-noi-ba", resolved: "cụ nội bà", status: "resolved" },
+      { personId: "ong-noi", resolved: "ông nội", status: "resolved" },
+      { personId: "ba-noi", resolved: "bà nội", status: "resolved" },
+      { personId: "ong-ngoai", resolved: "ông ngoại", status: "resolved" },
+      { personId: "bac", resolved: "bác", status: "resolved" },
+      { personId: "bac-dau", resolved: "bác dâu", status: "resolved" },
+      { personId: "ba", resolved: "ba", status: "resolved" },
+      { personId: "ma", resolved: "má", status: "resolved" },
+      { personId: "co", resolved: "cô", status: "resolved" },
+      { personId: "duong", resolved: "dượng", status: "resolved" },
+      { personId: "chu", resolved: "chú", status: "resolved" },
+      { personId: "thim", resolved: "thím", status: "resolved" },
+      { personId: "di", resolved: "dì", status: "resolved" },
+      { personId: "cau", resolved: "cậu", status: "resolved" },
+      { personId: "mo", resolved: "mợ", status: "resolved" },
+      { personId: "anh-ho", resolved: "anh họ", status: "resolved" },
+      { personId: "chi-dau-ho", resolved: "chị dâu họ", status: "resolved" },
+      { personId: "anh-ruot", resolved: "anh ruột", status: "resolved" },
+      { personId: "chi-dau", resolved: "chị dâu", status: "resolved" },
+      { personId: "ego", resolved: "bản thân", status: "resolved" },
+      { personId: "vo", resolved: "vợ", status: "resolved" },
+      { personId: "em", resolved: "em gái", status: "resolved" },
+      { personId: "em-re", resolved: "em rể", status: "resolved" },
+      { personId: "em-ho-noi", resolved: "em họ", status: "resolved" },
+      { personId: "em-ho-noi-vo", resolved: "mợ họ", status: "resolved" },
+      { personId: "em-ho-ngoai", resolved: "em họ", status: "resolved" },
+      { personId: "em-ho-ngoai-chong", resolved: "dượng họ", status: "resolved" },
+      { personId: "con-trai", resolved: "con trai", status: "resolved" },
+      { personId: "con-gai", resolved: "con gái", status: "resolved" },
+      { personId: "chau-ho-nam", resolved: "cháu họ", status: "resolved" },
+      { personId: "chau-ruot-khôi", resolved: "cháu ruột", status: "resolved" },
+      { personId: "chau-ngoai-mai", resolved: "cháu ngoại", status: "resolved" },
+      { personId: "chau-ho-tien", resolved: "cháu họ", status: "resolved" },
+      { personId: "chau-ho-dat", resolved: "cháu họ", status: "resolved" },
+      { personId: "chau-ho-ngoai-an", resolved: "cháu họ", status: "resolved" },
+      { personId: "con-co-tuan", resolved: "anh/em họ", status: "resolved" },
+      { personId: "con-co-lan", resolved: "chị/em họ", status: "resolved" },
+    ],
+  };
 }
 
 /** Stub PersonForm that shows a success message after "submit". */
@@ -94,7 +136,7 @@ function PrototypeTreeContent() {
   const [addRelativeMode, setAddRelativeMode] = useState(false);
   const [createMode, setCreateMode] = useState(false);
   const [overflowOpen, setOverflowOpen] = useState(false);
-  const [egoId, setEgoId] = useState<string>(MOCK_PERSONS[0].id);
+  const [egoId, setEgoId] = useState<string>("ego");
   const [addressLoading] = useState(false);
   const [addressRefreshKey, setAddressRefreshKey] = useState(0);
 

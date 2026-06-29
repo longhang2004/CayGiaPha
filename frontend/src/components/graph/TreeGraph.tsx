@@ -193,72 +193,123 @@ export function TreeGraph({
     }[] = [];
     const processedIds = new Set<string>();
 
-    // Map children to their parent-child relationships
-    const childParentsMap = new Map<string, Relationship[]>();
+    // Map children to their parent-child relationships and parent IDs
+    const childParentsMap = new Map<string, string[]>();
+    const childRelsMap = new Map<string, Relationship[]>();
+
     filteredData.relationships.forEach((rel) => {
       if (rel.type === "bloodline_father" || rel.type === "bloodline_mother") {
-        if (!childParentsMap.has(rel.targetId)) {
-          childParentsMap.set(rel.targetId, []);
-        }
-        childParentsMap.get(rel.targetId)!.push(rel);
+        if (!childParentsMap.has(rel.targetId)) childParentsMap.set(rel.targetId, []);
+        childParentsMap.get(rel.targetId)!.push(rel.sourceId);
+
+        if (!childRelsMap.has(rel.targetId)) childRelsMap.set(rel.targetId, []);
+        childRelsMap.get(rel.targetId)!.push(rel);
       }
     });
 
-    childParentsMap.forEach((parentRels, childId) => {
-      const parent1Rel = parentRels[0];
-      const parent2Rel = parentRels[1];
-
-      let fatherId: string | undefined;
-      let motherId: string | undefined;
-
-      if (parent2Rel) {
-        fatherId = parent1Rel.sourceId;
-        motherId = parent2Rel.sourceId;
-      } else {
+    // Group children by parentUnitId (either sorted fatherId-motherId or single parentId)
+    // If a child has only 1 parent, check if that parent has a marriage relationship in the tree.
+    // If they do, we treat the couple as the parent unit so they share the midpoint.
+    const parentUnitChildren = new Map<string, { childId: string; rels: Relationship[] }[]>();
+    childParentsMap.forEach((parents, childId) => {
+      let resolvedParents = [...parents];
+      if (resolvedParents.length === 1) {
+        const p1 = resolvedParents[0];
         const marriageRel = filteredData.relationships.find(
           (r) =>
             r.type === "marriage" &&
-            (r.sourceId === parent1Rel.sourceId || r.targetId === parent1Rel.sourceId)
+            (r.sourceId === p1 || r.targetId === p1)
         );
         if (marriageRel) {
-          fatherId = marriageRel.sourceId;
-          motherId = marriageRel.targetId;
+          resolvedParents = [marriageRel.sourceId, marriageRel.targetId];
         }
       }
 
-      if (fatherId && motherId) {
-        const fatherPos = positions.get(fatherId);
-        const motherPos = positions.get(motherId);
+      const parentUnitId = resolvedParents.sort().join("-");
+      if (!parentUnitChildren.has(parentUnitId)) {
+        parentUnitChildren.set(parentUnitId, []);
+      }
+      parentUnitChildren.get(parentUnitId)!.push({
+        childId,
+        rels: childRelsMap.get(childId) || []
+      });
+    });
+
+    // Group parent units by their parent generation Y coordinate so we can assign tracks
+    const parentUnitsByY = new Map<number, string[]>();
+    parentUnitChildren.forEach((_, parentUnitId) => {
+      const parents = parentUnitId.split("-");
+      const firstParentPos = positions.get(parents[0]);
+      if (firstParentPos) {
+        const y = firstParentPos.y;
+        if (!parentUnitsByY.has(y)) parentUnitsByY.set(y, []);
+        parentUnitsByY.get(y)!.push(parentUnitId);
+      }
+    });
+
+    // Assign a unique track index for each parent unit at each Y level
+    const parentUnitTrackIdx = new Map<string, number>();
+    parentUnitsByY.forEach((unitIds, y) => {
+      unitIds.sort((a, b) => {
+        const getMidX = (uid: string) => {
+          const parents = uid.split("-");
+          const pos0 = positions.get(parents[0]);
+          const pos1 = parents[1] ? positions.get(parents[1]) : undefined;
+          if (pos0 && pos1) return (pos0.x + pos1.x) / 2;
+          if (pos0) return pos0.x;
+          return 0;
+        };
+        return getMidX(a) - getMidX(b);
+      });
+      unitIds.forEach((uid, idx) => {
+        parentUnitTrackIdx.set(uid, idx);
+      });
+    });
+
+    // Draw the joint elbow connectors
+    parentUnitChildren.forEach((childrenInfo, parentUnitId) => {
+      const parents = parentUnitId.split("-");
+      const pos0 = positions.get(parents[0]);
+      const pos1 = parents[1] ? positions.get(parents[1]) : undefined;
+
+      if (!pos0) return;
+
+      const midParentX = pos1 ? (pos0.x + pos1.x) / 2 : pos0.x;
+      const parentY = pos1 ? (pos0.y + pos1.y) / 2 : pos0.y;
+
+      const trackIdx = parentUnitTrackIdx.get(parentUnitId) ?? 0;
+      // Offset alternates vertically between -14, 0, and +14 pixels
+      const trackOffset = 14 * ((trackIdx % 3) - 1);
+
+      childrenInfo.forEach(({ childId, rels }) => {
         const childPos = positions.get(childId);
+        if (!childPos) return;
 
-        if (fatherPos && motherPos && childPos) {
-          // Mark all parent relationships for this child as processed
-          parentRels.forEach((r) => processedIds.add(r.id));
+        // Mark relationships as processed
+        rels.forEach((r) => processedIds.add(r.id));
 
-          const midParentX = (fatherPos.x + motherPos.x) / 2;
-          const parentY = (fatherPos.y + motherPos.y) / 2;
-          const midY = (parentY + childPos.y) / 2;
+        const midY = (parentY + childPos.y) / 2 + trackOffset;
 
-          const isDashed = parentRels.some((r) => edgeStyleFor(r) === "dashed");
-          const style = isDashed ? "dashed" : "solid";
-          const strokeDash = STROKE_DASHARRAY[style];
-          const className = EDGE_CLASS[style];
+        const isDashed = rels.some((r) => edgeStyleFor(r) === "dashed");
+        const style = isDashed ? "dashed" : "solid";
+        const strokeDash = STROKE_DASHARRAY[style];
+        const className = EDGE_CLASS[style];
 
-          const NODE_HEIGHT = 72;
-          const HALF_HEIGHT = NODE_HEIGHT / 2;
+        const NODE_HEIGHT = 72;
+        const HALF_HEIGHT = NODE_HEIGHT / 2;
 
-          const pathData = `M ${midParentX} ${parentY} L ${midParentX} ${midY} L ${childPos.x} ${midY} L ${childPos.x} ${childPos.y - HALF_HEIGHT}`;
+        const pathData = `M ${midParentX} ${parentY} L ${midParentX} ${midY} L ${childPos.x} ${midY} L ${childPos.x} ${childPos.y - HALF_HEIGHT}`;
 
-          jointEdgesList.push({
-            key: `joint-${childId}`,
-            pathData,
-            className,
-            style,
-            strokeDash,
-            childId,
-          });
-        }
-      }
+        jointEdgesList.push({
+          key: `joint-${childId}`,
+          pathData,
+          className,
+          style,
+          strokeDash,
+          childId,
+          relationshipIds: rels.map((r) => r.id).join(","),
+        });
+      });
     });
 
     return { jointEdges: jointEdgesList, processedRelIds: processedIds };
@@ -639,6 +690,7 @@ export function TreeGraph({
                   className={edge.className}
                   data-edge-style={edge.style}
                   data-joint-child-id={edge.childId}
+                  data-relationship-id={edge.relationshipIds}
                   stroke="currentColor"
                   strokeWidth={2}
                   strokeDasharray={edge.strokeDash}

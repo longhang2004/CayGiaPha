@@ -48,18 +48,7 @@ export function GraphEdge({ relationship, source, target }: GraphEdgeProps) {
 
   const titleElement = label ? <title>{label}</title> : null;
 
-  // bloodline_father / bloodline_mother: elbow connector dọc
-  if (relationship.type === "bloodline_father" || relationship.type === "bloodline_mother") {
-    const NODE_HEIGHT = 72;
-    const HALF_HEIGHT = NODE_HEIGHT / 2;
-    const midY = (source.y + target.y) / 2;
-    const pathData = `M ${source.x} ${source.y + HALF_HEIGHT} L ${source.x} ${midY} L ${target.x} ${midY} L ${target.x} ${target.y - HALF_HEIGHT}`;
-    return (
-      <path d={pathData} fill="none" {...props}>
-        {titleElement}
-      </path>
-    );
-  }
+
 
   // marriage: đường ngang giữa 2 spouse với small indicator ╪ ở giữa
   if (relationship.type === "marriage") {
