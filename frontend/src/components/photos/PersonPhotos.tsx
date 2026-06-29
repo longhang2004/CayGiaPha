@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useMemo } from "react";
 import { ApiError } from "@/lib/apiClient";
 import {
   deletePhoto,
@@ -34,6 +34,11 @@ export function PersonPhotos({ treeId, personId, canEdit = false }: PersonPhotos
   const [busy, setBusy] = useState(false);
   const fileInput = useRef<HTMLInputElement>(null);
 
+  // Upload metadata form states
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [yearInput, setYearInput] = useState<string>("");
+  const [descriptionInput, setDescriptionInput] = useState<string>("");
+
   useEffect(() => {
     let active = true;
     setLoading(true);
@@ -63,12 +68,17 @@ export function PersonPhotos({ treeId, personId, canEdit = false }: PersonPhotos
     setPhotos(await listPhotos(treeId, personId));
   }
 
-  async function handleUpload(file: File) {
+  async function handleConfirmUpload() {
+    if (!selectedFile) return;
     setError(null);
     setBusy(true);
     try {
-      await uploadPhoto(treeId, personId, file);
+      const yearVal = yearInput ? parseInt(yearInput, 10) : undefined;
+      await uploadPhoto(treeId, personId, selectedFile, yearVal, descriptionInput || undefined);
       await refresh();
+      setSelectedFile(null);
+      setYearInput("");
+      setDescriptionInput("");
     } catch (err) {
       setError(messageOf(err));
     } finally {
@@ -105,6 +115,26 @@ export function PersonPhotos({ treeId, personId, canEdit = false }: PersonPhotos
     }
   }
 
+  // Group photos by year for timeline display
+  const { groups, sortedYears } = useMemo(() => {
+    const groups: { [key: string]: Photo[] } = {};
+    photos.forEach((photo) => {
+      const year = photo.photoYear ? photo.photoYear.toString() : "Chưa rõ năm";
+      if (!groups[year]) {
+        groups[year] = [];
+      }
+      groups[year].push(photo);
+    });
+
+    const sortedYears = Object.keys(groups).sort((a, b) => {
+      if (a === "Chưa rõ năm") return 1;
+      if (b === "Chưa rõ năm") return -1;
+      return parseInt(b, 10) - parseInt(a, 10);
+    });
+
+    return { groups, sortedYears };
+  }, [photos]);
+
   return (
     <section aria-label="Ảnh">
       <h2>Ảnh</h2>
@@ -116,27 +146,103 @@ export function PersonPhotos({ treeId, personId, canEdit = false }: PersonPhotos
       ) : null}
 
       {canEdit ? (
-        <div className="field photo-upload-container">
-          <input
-            id="photo-upload"
-            ref={fileInput}
-            type="file"
-            accept="image/jpeg,image/png"
-            disabled={busy}
-            className="photo-upload-input"
-            onChange={(e) => {
-              const file = e.target.files?.[0];
-              if (file) {
-                void handleUpload(file);
-              }
+        selectedFile ? (
+          <div
+            className="surface-card photo-upload-metadata-form"
+            style={{
+              padding: "1rem",
+              border: "1px solid var(--color-hairline)",
+              borderRadius: "8px",
+              marginBottom: "1rem"
             }}
-          />
-          <label htmlFor="photo-upload" className={`photo-upload-zone ${busy ? "photo-upload-zone--disabled" : ""}`}>
-            <span className="photo-upload-zone__icon">📤</span>
-            <span className="photo-upload-zone__title">Tải ảnh lên (JPEG hoặc PNG)</span>
-            <span className="photo-upload-zone__subtitle">Kéo thả file hoặc click vào đây để chọn ảnh</span>
-          </label>
-        </div>
+          >
+            <h4 style={{ margin: "0 0 1rem 0" }}>Tải ảnh lên: {selectedFile.name}</h4>
+
+            <div className="field" style={{ marginBottom: "1rem" }}>
+              <label
+                htmlFor="photo-year-input"
+                className="label"
+                style={{ display: "block", marginBottom: "0.25rem", fontSize: "0.875rem" }}
+              >
+                Năm chụp (tùy chọn)
+              </label>
+              <input
+                id="photo-year-input"
+                type="number"
+                className="input"
+                placeholder="Ví dụ: 1995"
+                value={yearInput}
+                onChange={(e) => setYearInput(e.target.value)}
+                style={{ width: "100%" }}
+              />
+            </div>
+
+            <div className="field" style={{ marginBottom: "1rem" }}>
+              <label
+                htmlFor="photo-description-input"
+                className="label"
+                style={{ display: "block", marginBottom: "0.25rem", fontSize: "0.875rem" }}
+              >
+                Mô tả ảnh (tùy chọn)
+              </label>
+              <textarea
+                id="photo-description-input"
+                className="input"
+                placeholder="Ví dụ: Họp mặt gia đình, ông bà nội..."
+                value={descriptionInput}
+                onChange={(e) => setDescriptionInput(e.target.value)}
+                style={{ width: "100%", minHeight: "60px", padding: "0.5rem", resize: "vertical" }}
+              />
+            </div>
+
+            <div style={{ display: "flex", gap: "0.5rem", justifyContent: "flex-end" }}>
+              <button
+                type="button"
+                className="btn btn-secondary"
+                onClick={() => {
+                  setSelectedFile(null);
+                  if (fileInput.current) fileInput.current.value = "";
+                }}
+                disabled={busy}
+              >
+                Hủy
+              </button>
+              <button
+                type="button"
+                className="btn"
+                onClick={() => void handleConfirmUpload()}
+                disabled={busy}
+              >
+                {busy ? "Đang tải lên..." : "Xác nhận tải lên"}
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="field photo-upload-container">
+            <input
+              id="photo-upload"
+              ref={fileInput}
+              type="file"
+              accept="image/jpeg,image/png"
+              disabled={busy}
+              className="photo-upload-input"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) {
+                  setSelectedFile(file);
+                  const suggestedYear = new Date(file.lastModified).getFullYear();
+                  setYearInput(suggestedYear.toString());
+                  setDescriptionInput("");
+                }
+              }}
+            />
+            <label htmlFor="photo-upload" className={`photo-upload-zone ${busy ? "photo-upload-zone--disabled" : ""}`}>
+              <span className="photo-upload-zone__icon">📤</span>
+              <span className="photo-upload-zone__title">Tải ảnh lên (JPEG hoặc PNG)</span>
+              <span className="photo-upload-zone__subtitle">Kéo thả file hoặc click vào đây để chọn ảnh</span>
+            </label>
+          </div>
+        )
       ) : null}
 
       {loading ? (
@@ -144,39 +250,77 @@ export function PersonPhotos({ treeId, personId, canEdit = false }: PersonPhotos
       ) : photos.length === 0 ? (
         <p>Chưa có ảnh nào.</p>
       ) : (
-        <ul className="photo-grid">
-          {photos.map((photo) => (
-            <li key={photo.id} data-testid="photo-item">
-              <img
-                src={photoUrl(treeId, personId, photo.id)}
-                alt={photo.primary ? "Ảnh đại diện" : "Ảnh"}
-                width={photo.width ?? undefined}
-                height={photo.height ?? undefined}
-              />
-              {photo.primary ? <span data-testid="primary-badge">Ảnh đại diện</span> : null}
-              {canEdit ? (
-                <div>
-                  {!photo.primary ? (
-                    <button
-                      type="button"
-                      disabled={busy}
-                      onClick={() => void handleSetPrimary(photo.id)}
-                    >
-                      Đặt làm ảnh đại diện
-                    </button>
-                  ) : null}
-                  <button
-                    type="button"
-                    disabled={busy}
-                    onClick={() => void handleDelete(photo.id)}
-                  >
-                    Xóa
-                  </button>
-                </div>
-              ) : null}
-            </li>
+        <div className="photo-timeline">
+          {sortedYears.map((year) => (
+            <div key={year} className="photo-timeline-group" style={{ marginBottom: "1.5rem" }}>
+              <h3
+                className="photo-timeline-year-heading"
+                style={{
+                  fontSize: "1rem",
+                  fontWeight: 600,
+                  color: "var(--color-brand)",
+                  borderBottom: "1px solid var(--color-hairline)",
+                  paddingBottom: "0.25rem",
+                  margin: "1rem 0 0.5rem 0"
+                }}
+              >
+                {year === "Chưa rõ năm" ? "Chưa rõ năm chụp" : `Năm ${year}`}
+              </h3>
+              <ul className="photo-grid" style={{ margin: "0" }}>
+                {groups[year].map((photo) => (
+                  <li key={photo.id} data-testid="photo-item">
+                    <img
+                      src={photoUrl(treeId, personId, photo.id)}
+                      alt={photo.primary ? "Ảnh đại diện" : "Ảnh"}
+                      width={photo.width ?? undefined}
+                      height={photo.height ?? undefined}
+                    />
+                    {photo.primary ? <span data-testid="primary-badge">Ảnh đại diện</span> : null}
+                    
+                    {photo.description && (
+                      <p
+                        className="photo-item__description"
+                        style={{
+                          fontSize: "0.75rem",
+                          color: "var(--color-fg-muted)",
+                          margin: "4px",
+                          whiteSpace: "nowrap",
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          padding: "0 4px"
+                        }}
+                        title={photo.description}
+                      >
+                        {photo.description}
+                      </p>
+                    )}
+
+                    {canEdit ? (
+                      <div>
+                        {!photo.primary ? (
+                          <button
+                            type="button"
+                            disabled={busy}
+                            onClick={() => void handleSetPrimary(photo.id)}
+                          >
+                            Đặt làm ảnh đại diện
+                          </button>
+                        ) : null}
+                        <button
+                          type="button"
+                          disabled={busy}
+                          onClick={() => void handleDelete(photo.id)}
+                        >
+                          Xóa
+                        </button>
+                      </div>
+                    ) : null}
+                  </li>
+                ))}
+              </ul>
+            </div>
           ))}
-        </ul>
+        </div>
       )}
     </section>
   );

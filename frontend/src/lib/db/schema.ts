@@ -291,6 +291,8 @@ export const personPhotos = pgTable(
     width: integer("width"),
     height: integer("height"),
     isPrimary: boolean("is_primary").notNull().default(false),
+    photoYear: integer("photo_year"),
+    description: text("description"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => ({

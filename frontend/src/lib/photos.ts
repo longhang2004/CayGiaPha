@@ -18,6 +18,8 @@ export interface Photo {
   width: number | null;
   height: number | null;
   primary: boolean;
+  photoYear?: number | null;
+  description?: string | null;
 }
 
 function photosPath(treeId: string, personId: string): string {
@@ -69,13 +71,21 @@ export async function uploadPhoto(
   treeId: string,
   personId: string,
   file: File,
+  photoYear?: number,
+  description?: string,
 ): Promise<Photo> {
   const form = new FormData();
   form.append("file", file);
 
-  const url =
+  let url =
     `${API_BASE_PATH}/persons/${encodeURIComponent(personId)}/photos` +
     `?treeId=${encodeURIComponent(treeId)}`;
+  if (photoYear !== undefined && photoYear !== null) {
+    url += `&photoYear=${encodeURIComponent(photoYear)}`;
+  }
+  if (description !== undefined && description !== null) {
+    url += `&description=${encodeURIComponent(description)}`;
+  }
   const response = await fetch(url, {
     method: "POST",
     credentials: "include",

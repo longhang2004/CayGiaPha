@@ -47,6 +47,12 @@ public class PersonPhoto {
     @Column(name = "is_primary", nullable = false)
     private boolean primary = false;
 
+    @Column(name = "photo_year")
+    private Integer photoYear;
+
+    @Column(name = "description")
+    private String description;
+
     @Column(name = "created_at", nullable = false, insertable = false, updatable = false)
     private Instant createdAt;
 
@@ -62,6 +68,18 @@ public class PersonPhoto {
         this.byteSize = byteSize;
         this.width = width;
         this.height = height;
+    }
+
+    public PersonPhoto(UUID personId, String objectKey, String contentType, long byteSize,
+            Integer width, Integer height, Integer photoYear, String description) {
+        this.personId = personId;
+        this.objectKey = objectKey;
+        this.contentType = contentType;
+        this.byteSize = byteSize;
+        this.width = width;
+        this.height = height;
+        this.photoYear = photoYear;
+        this.description = description;
     }
 
     public UUID getId() {
@@ -98,6 +116,22 @@ public class PersonPhoto {
 
     public void setPrimary(boolean primary) {
         this.primary = primary;
+    }
+
+    public Integer getPhotoYear() {
+        return photoYear;
+    }
+
+    public void setPhotoYear(Integer photoYear) {
+        this.photoYear = photoYear;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
     }
 
     public Instant getCreatedAt() {

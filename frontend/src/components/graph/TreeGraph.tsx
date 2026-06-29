@@ -69,6 +69,8 @@ export interface TreeGraphProps {
    * immediately without a full tree reload.
    */
   addressRefreshKey?: number;
+  focusId?: string | null;
+  onFocusChange?: (id: string | null) => void;
 }
 
 const NODE_WIDTH = 180;
@@ -90,6 +92,8 @@ export function TreeGraph({
   hideViewpointSelector = false,
   onAddressesLoaded,
   addressRefreshKey = 0,
+  focusId,
+  onFocusChange,
 }: TreeGraphProps) {
   const firstId = persons[0]?.id ?? "";
   const [internalEgoId, setInternalEgoId] = useState<string>(initialEgoId ?? firstId);
@@ -104,7 +108,9 @@ export function TreeGraph({
   const [error, setError] = useState<string | null>(null);
 
   // Focus Branch State
-  const [focusId, setFocusId] = useState<string | null>(null);
+  const [internalFocusId, setInternalFocusId] = useState<string | null>(null);
+  const activeFocusId = focusId !== undefined ? focusId : internalFocusId;
+  const activeSetFocusId = onFocusChange ?? setInternalFocusId;
 
   // Notify parent of address loading state changes
   useEffect(() => {
@@ -113,10 +119,10 @@ export function TreeGraph({
 
   // Reset focusId if it's no longer in the list of persons
   useEffect(() => {
-    if (focusId && !persons.some((p) => p.id === focusId)) {
-      setFocusId(null);
+    if (activeFocusId && !persons.some((p) => p.id === activeFocusId)) {
+      activeSetFocusId(null);
     }
-  }, [persons, focusId]);
+  }, [persons, activeFocusId, activeSetFocusId]);
 
   const personById = useMemo(() => {
     const map = new Map<string, Person>();
@@ -128,12 +134,12 @@ export function TreeGraph({
 
   // Branch focus filtering logic: keeps the focused person, their descendants, and descendants' spouses
   const filteredData = useMemo(() => {
-    if (!focusId) {
+    if (!activeFocusId) {
       return { persons, relationships };
     }
 
     const descendantIds = new Set<string>();
-    descendantIds.add(focusId);
+    descendantIds.add(activeFocusId);
 
     const childrenOf = new Map<string, string[]>();
     relationships.forEach((r) => {
@@ -143,7 +149,7 @@ export function TreeGraph({
       }
     });
 
-    const queue = [focusId];
+    const queue = [activeFocusId];
     while (queue.length > 0) {
       const current = queue.shift()!;
       const children = childrenOf.get(current) || [];
@@ -174,7 +180,7 @@ export function TreeGraph({
     );
 
     return { persons: filteredPersons, relationships: filteredRels };
-  }, [persons, relationships, focusId]);
+  }, [persons, relationships, activeFocusId]);
 
   const positions = useMemo(
     () => layoutNodes(filteredData.persons, filteredData.relationships, { cellWidth: 220, cellHeight: 130, padding: 100 }),
@@ -599,12 +605,12 @@ export function TreeGraph({
           {loading ? "Đang tính cách xưng hô…" : error ?? ""}
         </p>
 
-        {/* Branch Focus Mode Controls */}
-        {activeSelectedId && (
+        {/* Branch Focus Mode Controls (only shown if not controlled externally by parent) */}
+        {!onFocusChange && activeSelectedId && (
           <button
             type="button"
-            className={`btn btn-secondary tree-graph__focus-toggle-btn ${focusId === activeSelectedId ? "tree-graph__focus-toggle-btn--active" : ""}`}
-            onClick={() => setFocusId(focusId === activeSelectedId ? null : activeSelectedId)}
+            className={`btn btn-secondary tree-graph__focus-toggle-btn ${activeFocusId === activeSelectedId ? "tree-graph__focus-toggle-btn--active" : ""}`}
+            onClick={() => activeSetFocusId(activeFocusId === activeSelectedId ? null : activeSelectedId)}
             style={{
               marginLeft: "auto",
               fontSize: "0.8125rem",
@@ -613,10 +619,10 @@ export function TreeGraph({
               display: "flex",
               alignItems: "center",
               gap: "0.25rem",
-              border: focusId === activeSelectedId ? "1px solid var(--color-brand)" : undefined
+              border: activeFocusId === activeSelectedId ? "1px solid var(--color-brand)" : undefined
             }}
           >
-            {focusId === activeSelectedId ? (
+            {activeFocusId === activeSelectedId ? (
               <>
                 <span>✕</span> Hiện toàn bộ cây
               </>
@@ -627,7 +633,7 @@ export function TreeGraph({
             )}
           </button>
         )}
-        {focusId && !activeSelectedId && (
+        {!onFocusChange && activeFocusId && !activeSelectedId && (
           <div
             className="tree-graph__focus-badge-container"
             style={{
@@ -645,7 +651,7 @@ export function TreeGraph({
               type="button"
               className="btn btn-secondary"
               style={{ padding: "0 0.5rem", minHeight: "28px", minWidth: "28px" }}
-              onClick={() => setFocusId(null)}
+              onClick={() => activeSetFocusId(null)}
               title="Hiện toàn bộ cây"
             >
               ✕

@@ -14,11 +14,13 @@ public record PhotoResponse(
         long byteSize,
         Integer width,
         Integer height,
-        boolean primary) {
+        boolean primary,
+        Integer photoYear,
+        String description) {
 
     public static PhotoResponse from(PersonPhoto p) {
         return new PhotoResponse(
                 p.getId(), p.getPersonId(), p.getContentType(), p.getByteSize(),
-                p.getWidth(), p.getHeight(), p.isPrimary());
+                p.getWidth(), p.getHeight(), p.isPrimary(), p.getPhotoYear(), p.getDescription());
     }
 }

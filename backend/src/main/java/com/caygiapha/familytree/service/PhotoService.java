@@ -56,7 +56,7 @@ public class PhotoService {
 
     /** Upload a validated, metadata-stripped image for the node (24.1, 24.3, 24.4, 24.8). */
     @Mutation
-    public PersonPhoto upload(UUID treeId, UUID personId, byte[] bytes) {
+    public PersonPhoto upload(UUID treeId, UUID personId, byte[] bytes, Integer photoYear, String description) {
         authorizationService.requireMutationPermitted(treeId, personId); // 24.8
         requirePerson(treeId, personId);
 
@@ -66,7 +66,7 @@ public class PhotoService {
 
         PersonPhoto photo = new PersonPhoto(
                 personId, objectKey, image.contentType(), image.bytes().length,
-                image.width(), image.height());
+                image.width(), image.height(), photoYear, description);
         if (photoRepository.findByPersonId(personId).isEmpty()) {
             photo.setPrimary(true); // first photo becomes the primary by default
         }

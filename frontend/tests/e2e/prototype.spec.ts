@@ -65,10 +65,10 @@ test.describe("Prototype Pages — smoke tests (no auth required)", () => {
     await expect(page.locator(".tree-graph__canvas")).toBeVisible();
     // Mock persons appear as nodes
     await expect(
-      page.locator(".tree-graph__node-name").filter({ hasText: "Ông Tổ" }),
+      page.locator(".tree-graph__node-name").filter({ hasText: "Hàng Hữu Thiền" }),
     ).toBeVisible();
     await expect(
-      page.locator(".tree-graph__node-name").filter({ hasText: "Bà Tổ" }),
+      page.locator(".tree-graph__node-name").filter({ hasText: "Lê Thị My" }),
     ).toBeVisible();
   });
 
@@ -76,9 +76,9 @@ test.describe("Prototype Pages — smoke tests (no auth required)", () => {
     page,
   }) => {
     await page.goto("/prototype/tree");
-    await page.click('button:has-text("Ông Tổ")');
-    // side panel title should show the selected person
-    await expect(page.locator(".side-panel__title")).toContainText("Ông Tổ");
+    await page.click('button:has-text("Hàng Hữu Thiền")');
+    // side panel name header should show the selected person
+    await expect(page.locator(".person-info__header-name")).toContainText("Hàng Hữu Thiền");
   });
 
   test("tree prototype — settings modal opens via ?panel=settings", async ({

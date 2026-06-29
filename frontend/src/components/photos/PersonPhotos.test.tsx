@@ -71,7 +71,10 @@ describe("PersonPhotos", () => {
     const file = new File(["bytes"], "face.png", { type: "image/png" });
     await userEvent.upload(screen.getByLabelText(/Tải ảnh lên/), file);
 
-    expect(uploadPhoto).toHaveBeenCalledWith("t1", "person1", file);
+    const year = new Date(file.lastModified).getFullYear();
+    await userEvent.click(screen.getByRole("button", { name: "Xác nhận tải lên" }));
+
+    expect(uploadPhoto).toHaveBeenCalledWith("t1", "person1", file, year, undefined);
     await waitFor(() => expect(screen.getByTestId("photo-item")).toBeInTheDocument());
   });
 
@@ -120,6 +123,8 @@ describe("PersonPhotos", () => {
 
     const file = new File(["x"], "bad.png", { type: "image/png" });
     await userEvent.upload(screen.getByLabelText(/Tải ảnh lên/), file);
+
+    await userEvent.click(screen.getByRole("button", { name: "Xác nhận tải lên" }));
 
     expect(await screen.findByRole("alert")).toHaveTextContent(
       "Unsupported image type; only JPEG and PNG are accepted.",

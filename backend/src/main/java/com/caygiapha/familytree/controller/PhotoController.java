@@ -53,8 +53,10 @@ public class PhotoController {
     public PhotoResponse upload(
             @PathVariable("personId") UUID personId,
             @RequestParam("treeId") UUID treeId,
-            @RequestParam("file") MultipartFile file) {
-        return PhotoResponse.from(photoService.upload(treeId, personId, bytesOf(file)));
+            @RequestParam("file") MultipartFile file,
+            @RequestParam(value = "photoYear", required = false) Integer photoYear,
+            @RequestParam(value = "description", required = false) String description) {
+        return PhotoResponse.from(photoService.upload(treeId, personId, bytesOf(file), photoYear, description));
     }
 
     @GetMapping
