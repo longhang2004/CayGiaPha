@@ -541,15 +541,17 @@ export function layoutNodes(
       if (uid) unitsInGen.add(uid);
     });
     
-    const activeUnits = Array.from(unitsInGen);
-    if (activeUnits.length === 0) continue;
-
-    const x = activeUnits.map((uid) => {
+    // Sort parent units initially by their current average X coordinates to preserve layout order
+    const getUnitX = (uid: string): number => {
       const members = units.get(uid) || [];
       const posList = members.map(m => positions.get(m)).filter(Boolean) as NodePosition[];
       if (posList.length === 0) return pageCenter;
       return posList.reduce((sum, p) => sum + p.x, 0) / posList.length;
-    });
+    };
+    const activeUnits = Array.from(unitsInGen).sort((a, b) => getUnitX(a) - getUnitX(b));
+    if (activeUnits.length === 0) continue;
+
+    const x = activeUnits.map((uid) => getUnitX(uid));
 
     const widths = activeUnits.map((uid) => {
       const members = units.get(uid) || [];
@@ -577,21 +579,35 @@ export function layoutNodes(
       }
     });
 
+    // Pair and sort activeUnits, widths, and x by x values in ascending order.
+    // This handles any crossovers introduced by the children's positions
+    // and ensures the push-apart loop executes correctly.
+    const paired = activeUnits.map((uid, idx) => ({
+      uid,
+      width: widths[idx],
+      xVal: x[idx]
+    }));
+    paired.sort((a, b) => a.xVal - b.xVal);
+
+    const sortedActiveUnits = paired.map(p => p.uid);
+    const sortedWidths = paired.map(p => p.width);
+    const sortedX = paired.map(p => p.xVal);
+
     // Run push-apart to resolve any overlap after bottom-up shifting
     for (let iter = 0; iter < 50; iter++) {
-      for (let i = 0; i < activeUnits.length - 1; i++) {
-        const minDistance = (widths[i] + widths[i + 1]) / 2;
-        const actualDistance = x[i + 1] - x[i];
+      for (let i = 0; i < sortedActiveUnits.length - 1; i++) {
+        const minDistance = (sortedWidths[i] + sortedWidths[i + 1]) / 2;
+        const actualDistance = sortedX[i + 1] - sortedX[i];
         if (actualDistance < minDistance) {
           const overlap = minDistance - actualDistance;
-          x[i] -= overlap / 2;
-          x[i + 1] += overlap / 2;
+          sortedX[i] -= overlap / 2;
+          sortedX[i + 1] += overlap / 2;
         }
       }
     }
 
-    activeUnits.forEach((uid, idx) => {
-      const unitCenter = x[idx];
+    sortedActiveUnits.forEach((uid, idx) => {
+      const unitCenter = sortedX[idx];
       const members = units.get(uid) || [];
       const membersInGen = members.filter((m) => genPersons.some((gp) => gp.id === m));
 
@@ -664,23 +680,35 @@ export function layoutNodes(
       return inGen.length * cellWidth;
     });
 
+    // Pair and sort deepActiveUnits, deepWidths, and deepX by deepX values
+    const deepPaired = deepActiveUnits.map((uid, idx) => ({
+      uid,
+      width: deepWidths[idx],
+      xVal: deepX[idx]
+    }));
+    deepPaired.sort((a, b) => a.xVal - b.xVal);
+
+    const sortedDeepUnits = deepPaired.map(p => p.uid);
+    const sortedDeepWidths = deepPaired.map(p => p.width);
+    const sortedDeepX = deepPaired.map(p => p.xVal);
+
     for (let iter = 0; iter < 50; iter++) {
-      for (let i = 0; i < deepActiveUnits.length - 1; i++) {
-        const minDist = (deepWidths[i] + deepWidths[i + 1]) / 2;
-        const actualDist = deepX[i + 1] - deepX[i];
+      for (let i = 0; i < sortedDeepUnits.length - 1; i++) {
+        const minDist = (sortedDeepWidths[i] + sortedDeepWidths[i + 1]) / 2;
+        const actualDist = sortedDeepX[i + 1] - sortedDeepX[i];
         if (actualDist < minDist) {
           const overlap = minDist - actualDist;
-          deepX[i] -= overlap / 2;
-          deepX[i + 1] += overlap / 2;
+          sortedDeepX[i] -= overlap / 2;
+          sortedDeepX[i + 1] += overlap / 2;
         }
       }
     }
 
     const deepY = padding + deepestDepth * cellHeight;
-    deepActiveUnits.forEach((uid, idx) => {
+    sortedDeepUnits.forEach((uid, idx) => {
       const members = units.get(uid) || [];
       const inGen = members.filter((m) => deepGenPersons.some((gp) => gp.id === m));
-      const center = deepX[idx];
+      const center = sortedDeepX[idx];
       if (inGen.length === 1) {
         const pos = positions.get(inGen[0]);
         if (pos) { pos.x = center; pos.y = deepY; }
