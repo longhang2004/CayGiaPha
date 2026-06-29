@@ -566,6 +566,10 @@ export function layoutNodes(
       children.forEach((chUnit) => {
         const chMembers = units.get(chUnit) || [];
         chMembers.forEach((m) => {
+          const mParents = parentsOf.get(m) || [];
+          const isActualChild = mParents.some(pId => uid.split(":").includes(pId));
+          if (!isActualChild) return;
+
           const pos = positions.get(m);
           if (pos) {
             childrenXSum += pos.x;

@@ -10,6 +10,7 @@ const PUBLIC_API_ROUTES = [
   "/api/v1/auth/signup/verify",
   "/api/v1/auth/signin",
   "/api/v1/auth/signin/verify",
+  "/api/migration",
 ];
 
 // Returns true if path is a public API route or matches claim verification
