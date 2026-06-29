@@ -560,6 +560,7 @@ export function layoutNodes(
 
     activeUnits.forEach((uid, idx) => {
       const children = unitChildren.get(uid) || new Set();
+      const parentMembers = units.get(uid) || [];
       let childrenXSum = 0;
       let childrenXCount = 0;
 
@@ -567,7 +568,7 @@ export function layoutNodes(
         const chMembers = units.get(chUnit) || [];
         chMembers.forEach((m) => {
           const mParents = parentsOf.get(m) || [];
-          const isActualChild = mParents.some(pId => uid.split(":").includes(pId));
+          const isActualChild = mParents.some(pId => parentMembers.includes(pId));
           if (!isActualChild) return;
 
           const pos = positions.get(m);
