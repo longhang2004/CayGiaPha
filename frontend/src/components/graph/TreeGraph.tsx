@@ -226,7 +226,7 @@ export function TreeGraph({
         }
       }
 
-      const parentUnitId = resolvedParents.sort().join("-");
+      const parentUnitId = resolvedParents.sort().join(":");
       if (!parentUnitChildren.has(parentUnitId)) {
         parentUnitChildren.set(parentUnitId, []);
       }
@@ -239,7 +239,7 @@ export function TreeGraph({
     // Group parent units by their parent generation Y coordinate so we can assign tracks
     const parentUnitsByY = new Map<number, string[]>();
     parentUnitChildren.forEach((_, parentUnitId) => {
-      const parents = parentUnitId.split("-");
+      const parents = parentUnitId.split(":");
       const firstParentPos = positions.get(parents[0]);
       if (firstParentPos) {
         const y = firstParentPos.y;
@@ -253,7 +253,7 @@ export function TreeGraph({
     parentUnitsByY.forEach((unitIds, y) => {
       unitIds.sort((a, b) => {
         const getMidX = (uid: string) => {
-          const parents = uid.split("-");
+          const parents = uid.split(":");
           const pos0 = positions.get(parents[0]);
           const pos1 = parents[1] ? positions.get(parents[1]) : undefined;
           if (pos0 && pos1) return (pos0.x + pos1.x) / 2;
@@ -269,7 +269,7 @@ export function TreeGraph({
 
     // Draw the joint elbow connectors
     parentUnitChildren.forEach((childrenInfo, parentUnitId) => {
-      const parents = parentUnitId.split("-");
+      const parents = parentUnitId.split(":");
       const pos0 = positions.get(parents[0]);
       const pos1 = parents[1] ? positions.get(parents[1]) : undefined;
 
