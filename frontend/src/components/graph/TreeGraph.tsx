@@ -190,6 +190,7 @@ export function TreeGraph({
       style: string;
       strokeDash: string;
       childId: string;
+      relationshipIds: string;
     }[] = [];
     const processedIds = new Set<string>();
 
