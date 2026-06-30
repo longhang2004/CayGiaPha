@@ -43,6 +43,7 @@ import {
   MOCK_USER,
 } from "@/lib/prototype/mockData";
 import "@/components/graph/graph.css";
+import { LightbulbIcon } from "@/components/ui/Icons";
 
 /** Stub fetchAddresses that resolves immediately with no addresses. */
 async function mockFetchAddresses(
@@ -140,6 +141,8 @@ function PrototypeTreeContent() {
   const [addressLoading] = useState(false);
   const [addressRefreshKey, setAddressRefreshKey] = useState(0);
   const [focusId, setFocusId] = useState<string | null>(null);
+  const [showTutorial, setShowTutorial] = useState(false);
+  const handleDismissTutorial = () => setShowTutorial(false);
 
   const [isSettingsOpen, setIsSettingsOpen] = useState(
     () => nextSearchParams.get("panel") === "settings",
@@ -239,48 +242,33 @@ function PrototypeTreeContent() {
       }
     : undefined;
 
+  const isPanelOpen = !!(createMode || selectedPerson || addRelativeMode);
+
   return (
     /* ===== BEGIN: mirror of src/app/tree/page.tsx (populated branch) ===== */
     <section className="tree-workspace">
-      <div className="tree-workspace__header">
-        <div>
-          <p className="eyebrow">{persons.length} thành viên</p>
-          <h1>Sơ đồ gia phả</h1>
-          <p className="tree-workspace__hint">
-            Chọn một người trên sơ đồ để xem chi tiết, sửa thông tin hoặc thêm
-            người thân.
-          </p>
+      {/* Redesigned Header: Brand logo + Tree Name + viewpoint switcher + Search Bar + Action buttons */}
+      <div className="tree-page-header">
+        <div className="tree-page-header__left">
+          <div className="tree-page-header__brand">
+            <img src="/logo.png" alt="Logo Cây Gia Phả" className="tree-page-header__logo" />
+            <div className="tree-page-header__title-container">
+              <h1 className="tree-page-header__title">Gia Phả Dòng Họ</h1>
+              <span className="tree-page-header__count">{persons.length} thành viên</span>
+            </div>
+          </div>
+          <div className="tree-page-header__viewpoint">
+            <ViewpointSelector
+              persons={persons}
+              egoId={egoId}
+              onChange={setEgoId}
+              disabled={addressLoading}
+            />
+          </div>
         </div>
-        <div style={{ display: "flex", gap: "0.5rem" }}>
-          <button
-            type="button"
-            className="btn btn-secondary"
-            onClick={() => setIsCollaborationOpen(true)}
-          >
-            Cộng tác
-          </button>
-          {isOwner && (
-            <button
-              type="button"
-              className="btn btn-secondary"
-              onClick={() => {
-                setSelectedId(null);
-                setAddRelativeMode(true);
-                setEditMode(false);
-                setCreateMode(false);
-              }}
-            >
-              Thêm quan hệ mới
-            </button>
-          )}
-        </div>
-      </div>
 
-      <div className="tree-workspace__layout">
-        {/* Left/Center: Main Toolbar & Graph */}
-        <div className="tree-workspace__main">
-          {/* Search & Filter Toolbar */}
-          <div className="surface-card tree-workspace__toolbar-container">
+        <div className="tree-page-header__right">
+          <div className="tree-page-header__search-container">
             <SearchPanel
               treeId={PROTOTYPE_TREE_ID}
               persons={persons}
@@ -292,27 +280,69 @@ function PrototypeTreeContent() {
                 setEditMode(false);
                 setAddRelativeMode(false);
               }}
-              onAddMember={
-                isOwner
-                  ? () => {
-                      setSelectedId(null);
-                      setCreateMode(true);
-                      setAddRelativeMode(false);
-                      setEditMode(false);
-                    }
-                  : undefined
-              }
-              viewpointSelector={
-                <ViewpointSelector
-                  persons={persons}
-                  egoId={egoId}
-                  onChange={setEgoId}
-                  disabled={addressLoading}
-                />
-              }
             />
           </div>
+          <div className="tree-page-header__actions">
+            <button
+              type="button"
+              className="btn btn-secondary"
+              onClick={() => setIsCollaborationOpen(true)}
+            >
+              Cộng tác
+            </button>
+            {isOwner && (
+              <button
+                type="button"
+                className="btn btn-primary btn-terracotta"
+                onClick={() => {
+                  setSelectedId(null);
+                  setCreateMode(true);
+                  setAddRelativeMode(false);
+                  setEditMode(false);
+                }}
+              >
+                + Thêm thành viên
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
 
+      {showTutorial && (
+        <div className="tutorial-popup-overlay">
+          <div className="tutorial-popup">
+            <div className="tutorial-popup__header">
+              <h4 style={{ display: "flex", alignItems: "center", gap: "0.4rem", margin: 0 }}>
+                <LightbulbIcon size={16} /> Hướng dẫn nhanh
+              </h4>
+              <button
+                type="button"
+                className="tutorial-popup__close"
+                onClick={handleDismissTutorial}
+                aria-label="Đóng hướng dẫn"
+              >
+                &times;
+              </button>
+            </div>
+            <div className="tutorial-popup__body">
+              <ul>
+                <li><strong>Chọn người:</strong> Bấm vào bất kỳ thành viên nào trên sơ đồ để xem chi tiết, sửa thông tin hoặc thêm người thân.</li>
+                <li><strong>Cách xưng hô:</strong> Thay đổi góc nhìn ở bộ chọn phía trên sơ đồ để xem cách xưng hô của cả dòng họ đối với người đó.</li>
+                <li><strong>Thêm quan hệ:</strong> {isOwner ? "Sử dụng bảng bên phải để thêm thành viên mới hoặc kết nối các mối quan hệ." : "Bạn đang xem cây gia phả theo quyền chia sẻ."}</li>
+              </ul>
+            </div>
+            <div className="tutorial-popup__footer">
+              <button type="button" className="btn" onClick={handleDismissTutorial}>
+                Đã hiểu
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div className="tree-workspace__layout">
+        {/* Left/Center: Main Graph */}
+        <div className="tree-workspace__main">
           {/* Interactive SVG graph area */}
           <div className="tree-workspace__graph">
             <TreeGraph
@@ -342,7 +372,7 @@ function PrototypeTreeContent() {
         </div>
 
         {/* Right Side: Member Details and Actions Panel */}
-        <div className="tree-workspace__info-panel">
+        <div className={`tree-workspace__info-panel ${isPanelOpen ? "tree-workspace__info-panel--open" : ""}`}>
           {createMode ? (
             <div className="surface-card side-panel">
               <h3 className="side-panel__title">Tạo thành viên mới</h3>

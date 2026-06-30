@@ -73,8 +73,8 @@ export interface TreeGraphProps {
   onFocusChange?: (id: string | null) => void;
 }
 
-const NODE_WIDTH = 180;
-const NODE_HEIGHT = 72;
+const NODE_WIDTH = 220;
+const NODE_HEIGHT = 90;
 
 export function TreeGraph({
   treeId,
@@ -183,7 +183,7 @@ export function TreeGraph({
   }, [persons, relationships, activeFocusId]);
 
   const positions = useMemo(
-    () => layoutMultiTreeNodes(filteredData.persons, filteredData.relationships, { cellWidth: 220, cellHeight: 130, padding: 100 }),
+    () => layoutMultiTreeNodes(filteredData.persons, filteredData.relationships, { cellWidth: 260, cellHeight: 150, padding: 100 }),
     [filteredData.persons, filteredData.relationships]
   );
 
@@ -302,7 +302,7 @@ export function TreeGraph({
         const strokeDash = STROKE_DASHARRAY[style];
         const className = EDGE_CLASS[style];
 
-        const NODE_HEIGHT = 72;
+        const NODE_HEIGHT = 90;
         const HALF_HEIGHT = NODE_HEIGHT / 2;
 
         const pathData = `M ${midParentX} ${parentY} L ${midParentX} ${midY} L ${childPos.x} ${midY} L ${childPos.x} ${childPos.y - HALF_HEIGHT}`;
@@ -757,8 +757,10 @@ export function TreeGraph({
                         aria-pressed={isSelected}
                         onClick={() => activeSetSelectedId(person.id)}
                       >
-                        {/* Left gender status stripe */}
-                        <div className="tree-graph__node-gender-strip" />
+                        {/* Avatar tròn với chữ cái đầu */}
+                        <div className="tree-graph__node-avatar" aria-hidden="true">
+                          {person.displayName ? person.displayName.trim().charAt(0).toUpperCase() : "?"}
+                        </div>
                         
                         <div className="tree-graph__node-content">
                           <div className="tree-graph__node-row-top">
@@ -784,13 +786,15 @@ export function TreeGraph({
                             )}
                           </div>
                           <div className="tree-graph__node-row-bottom">
-                            <span
-                              className="tree-graph__node-address"
-                              data-address
-                              data-unresolved={unresolved ? "true" : "false"}
-                            >
-                              {label}
-                            </span>
+                            {label && (
+                              <span
+                                className="tree-graph__node-address"
+                                data-address
+                                data-unresolved={unresolved ? "true" : "false"}
+                              >
+                                {label}
+                              </span>
+                            )}
                             {person.birthYear && (
                               <span className="tree-graph__node-lifespan">
                                 {person.deceased ? `(${person.birthYear} - †)` : `(s. ${person.birthYear})`}
@@ -799,6 +803,20 @@ export function TreeGraph({
                           </div>
                         </div>
                       </button>
+
+                      {/* Tooltip Hover/Focus */}
+                      <div className="tree-graph__node-tooltip" role="tooltip">
+                        <div style={{ fontWeight: "bold" }}>{person.displayName}</div>
+                        <div style={{ fontSize: "0.75rem", opacity: 0.9 }}>
+                          {isEgo ? "Góc nhìn: Bạn" : label ? `Cách xưng hô: ${label}` : "Chưa rõ cách xưng hô"}
+                        </div>
+                        {person.birthYear && (
+                          <div style={{ fontSize: "0.75rem", opacity: 0.9 }}>
+                            {person.deceased ? `Mất năm: ${person.deathYear || "không rõ"}` : `Sinh năm: ${person.birthYear}`}
+                          </div>
+                        )}
+                        {person.claimed && <div style={{ fontSize: "0.7rem", color: "#60a5fa", marginTop: "2px" }}>✓ Đã xác minh</div>}
+                      </div>
                     </foreignObject>
                   </g>
                 );
@@ -825,8 +843,8 @@ export function TreeGraph({
             onClick={handleZoomIn}
             className="btn btn-secondary"
             style={{
-              minWidth: "40px",
-              minHeight: "40px",
+              minWidth: "48px",
+              minHeight: "48px",
               padding: 0,
               fontSize: "1.25rem",
               borderRadius: "8px",
@@ -841,8 +859,8 @@ export function TreeGraph({
             onClick={handleZoomOut}
             className="btn btn-secondary"
             style={{
-              minWidth: "40px",
-              minHeight: "40px",
+              minWidth: "48px",
+              minHeight: "48px",
               padding: 0,
               fontSize: "1.25rem",
               borderRadius: "8px",
@@ -860,8 +878,8 @@ export function TreeGraph({
               onClick={() => handleCenterOnNode(activeSelectedId)}
               className="btn btn-secondary"
               style={{
-                minWidth: "40px",
-                minHeight: "40px",
+                minWidth: "48px",
+                minHeight: "48px",
                 padding: 0,
                 fontSize: "1rem",
                 borderRadius: "8px",
@@ -878,8 +896,8 @@ export function TreeGraph({
             onClick={handleReset}
             className="btn btn-secondary"
             style={{
-              minWidth: "40px",
-              minHeight: "40px",
+              minWidth: "48px",
+              minHeight: "48px",
               padding: 0,
               fontSize: "1rem",
               borderRadius: "8px",
@@ -896,8 +914,8 @@ export function TreeGraph({
             onClick={handleExportSVG}
             className="btn btn-secondary"
             style={{
-              minWidth: "40px",
-              minHeight: "40px",
+              minWidth: "48px",
+              minHeight: "48px",
               padding: 0,
               fontSize: "1rem",
               borderRadius: "8px",
@@ -914,8 +932,8 @@ export function TreeGraph({
             onClick={handleToggleFullscreen}
             className="btn btn-secondary"
             style={{
-              minWidth: "40px",
-              minHeight: "40px",
+              minWidth: "48px",
+              minHeight: "48px",
               padding: 0,
               fontSize: "1rem",
               borderRadius: "8px",

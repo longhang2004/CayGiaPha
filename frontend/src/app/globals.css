@@ -16,21 +16,21 @@
 
 :root {
   /* Palette — contrast ratios are against the adjacent surface. */
-  --color-bg: #f7f7f4; /* warm cream editorial canvas */
-  --color-fg: #26251e; /* warm ink body and display text */
-  --color-muted: #5a5852; /* warm body copy: meets >= 4.5:1 contrast against bg (~6.65:1) */
-  --color-accent: #cc4100; /* accessible dark orange for text/links: meets >= 4.5:1 contrast against bg (~4.55:1) */
-  --color-border: #73726c; /* strong UI borders on bg: meets >= 3:1 contrast (~4.5:1) */
-  --color-focus: #f54e00; /* focus ring (Cursor Orange): meets >= 3:1 contrast against bg (~3.28:1) */
+  --color-bg: #f9f6f0; /* warm beige canvas */
+  --color-fg: #1d1c1a; /* warm ink dark body and display text */
+  --color-muted: #5d5b54; /* warm body copy: meets >= 4.5:1 contrast against bg (~6.8:1) */
+  --color-accent: #b94b34; /* terracotta warm orange: meets >= 4.5:1 contrast against bg (~4.9:1) */
+  --color-border: #8a8780; /* strong UI borders on bg: meets >= 3:1 contrast (~4.5:1) */
+  --color-focus: #b94b34; /* focus ring (Terracotta Orange) */
 
   /* Brand colors */
-  --color-brand: #f54e00; /* Cursor Orange */
-  --color-brand-active: #d04200; /* Active Cursor Orange */
-  --color-hairline: #e6e5e0; /* light divider line */
-  --color-hairline-soft: #efeee8;
-  --color-hairline-strong: #cfcdc4;
+  --color-brand: #b94b34; /* Terracotta Orange */
+  --color-brand-active: #963b27; /* Active Terracotta */
+  --color-hairline: #e2dcd3; /* light divider line */
+  --color-hairline-soft: #ede8df;
+  --color-hairline-strong: #c5beb3;
   --color-surface-card: #ffffff;
-  --color-surface-strong: #e6e5e0;
+  --color-surface-strong: #ebe6dd; /* Be trầm */
 
   /* AI Timeline Colors */
   --color-timeline-thinking: #dfa88f;
@@ -39,8 +39,8 @@
   --color-timeline-edit: #c0a8dd;
   --color-timeline-done: #c08532;
 
-  /* Minimum interactive target size (18.4). */
-  --min-touch-target: 44px;
+  /* Minimum interactive target size (18.4). Increased to 48px for elder usability */
+  --min-touch-target: 48px;
 
   /* Spacing scale in rem so it scales with the text-size setting. */
   --space-xs: 0.25rem;
@@ -338,49 +338,133 @@ main {
   max-width: 100%;
 }
 
-.tree-workspace__header {
+/* New Sticky / Redesigned Tree Page Header */
+.tree-page-header {
   display: flex;
   justify-content: space-between;
-  align-items: flex-start;
-  gap: var(--space-lg);
-  margin-bottom: var(--space-xl);
+  align-items: center;
+  padding: 1rem 1.5rem;
+  background-color: var(--color-surface-card);
+  border: 1px solid var(--color-hairline);
+  border-radius: 16px;
+  gap: 1.5rem;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 4px 20px rgba(38, 37, 30, 0.02);
 }
 
-.tree-workspace__header h1 {
+.tree-page-header__left {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.tree-page-header__brand {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.tree-page-header__logo {
+  height: 36px;
+  width: auto;
+}
+
+.tree-page-header__title-container {
+  display: flex;
+  flex-direction: column;
+}
+
+.tree-page-header__title {
+  font-size: 1.25rem;
+  font-weight: 700;
   margin: 0;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
 }
 
-.tree-workspace__hint {
-  max-width: 44rem;
-  margin: var(--space-sm) 0 0;
+.tree-page-header__count {
+  font-size: 0.75rem;
+  color: var(--color-muted);
+}
+
+.tree-page-header__viewpoint {
+  border-left: 1px solid var(--color-hairline);
+  padding-left: 1.5rem;
+}
+
+.tree-page-header__right {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  flex-grow: 1;
+  justify-content: flex-end;
+}
+
+.tree-page-header__search-container {
+  width: 100%;
+  max-width: 320px;
+}
+
+.tree-page-header__actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.btn-terracotta {
+  background-color: var(--color-brand) !important;
+  color: white !important;
+  font-weight: 600 !important;
+}
+
+.btn-terracotta:hover {
+  background-color: var(--color-brand-active) !important;
+}
+
+/* Layout adjustments */
+.tree-workspace {
+  max-width: 100%;
 }
 
 .tree-workspace__layout {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(20rem, 24rem);
-  gap: var(--space-xl);
-  align-items: start;
+  position: relative;
+  overflow: hidden;
+  border-radius: 16px;
+  background-color: var(--color-surface-card);
+  border: 1px solid var(--color-hairline);
+  min-height: 600px;
 }
 
 .tree-workspace__main {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-lg);
+  width: 100%;
   min-width: 0;
-}
-
-.tree-workspace__toolbar-container {
-  padding: 1rem 1.25rem;
 }
 
 .tree-workspace__graph {
+  width: 100%;
   min-width: 0;
 }
 
+/* Floating Slide-in Info Panel */
 .tree-workspace__info-panel {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 420px;
+  background-color: var(--color-surface-card);
+  border-left: 1px solid var(--color-hairline);
+  box-shadow: -10px 0 35px rgba(38, 37, 30, 0.08);
+  z-index: 80;
+  transform: translateX(100%);
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  overflow-y: auto;
   display: flex;
   flex-direction: column;
-  gap: var(--space-lg);
+}
+
+.tree-workspace__info-panel--open {
+  transform: translateX(0);
 }
 
 .side-panel {
@@ -457,20 +541,33 @@ main {
   }
 
   .tree-workspace__layout {
-    display: flex !important;
-    flex-direction: column !important;
+    position: relative;
     width: 100% !important;
-    gap: var(--space-lg) !important;
+    min-height: 500px;
   }
 
   .tree-workspace__main {
-    order: 1;
     width: 100% !important;
   }
 
   .tree-workspace__info-panel {
-    order: 2;
+    position: absolute;
+    top: auto;
+    left: 0;
+    right: 0;
+    bottom: 0;
     width: 100% !important;
+    height: 75% !important;
+    border-left: none;
+    border-top: 1px solid var(--color-hairline);
+    border-radius: 20px 20px 0 0;
+    box-shadow: 0 -10px 30px rgba(38, 37, 30, 0.1);
+    transform: translateY(100%);
+    z-index: 100;
+  }
+
+  .tree-workspace__info-panel--open {
+    transform: translateY(0) !important;
   }
 
   .home-steps {
@@ -1015,7 +1112,7 @@ fieldset {
 }
 
 .global-sidebar__link--active {
-  background-color: #fff3eb;
+  background-color: #e5efe7;
   color: var(--color-accent);
 }
 

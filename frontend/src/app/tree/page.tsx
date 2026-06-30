@@ -415,6 +415,9 @@ function TreePageContent({ searchParams }: TreePageProps) {
       }
     : undefined;
 
+  // Panel open state for slide-in effect
+  const isPanelOpen = !!(createMode || selectedPerson || addRelativeMode);
+
   return (
     <>
       {showLoadingOverlay && (
@@ -424,36 +427,66 @@ function TreePageContent({ searchParams }: TreePageProps) {
         </div>
       )}
     <section className="tree-workspace" style={showLoadingOverlay ? { visibility: "hidden" } : undefined}>
-      <div className="tree-workspace__header">
-        <div>
-          <p className="eyebrow">{persons.length} thành viên</p>
-          <h1>Sơ đồ gia phả</h1>
-          <p className="tree-workspace__hint">Chọn một người trên sơ đồ để xem chi tiết, sửa thông tin hoặc thêm người thân.</p>
+      {/* Redesigned Header: Brand logo + Tree Name + viewpoint switcher + Search Bar + Action buttons */}
+      <div className="tree-page-header">
+        <div className="tree-page-header__left">
+          <div className="tree-page-header__brand">
+            <img src="/logo.png" alt="Logo Cây Gia Phả" className="tree-page-header__logo" />
+            <div className="tree-page-header__title-container">
+              <h1 className="tree-page-header__title">Gia Phả Dòng Họ</h1>
+              <span className="tree-page-header__count">{persons.length} thành viên</span>
+            </div>
+          </div>
+          <div className="tree-page-header__viewpoint">
+            <ViewpointSelector
+              persons={persons}
+              egoId={egoId}
+              onChange={setEgoId}
+              disabled={addressLoading}
+            />
+          </div>
         </div>
-        <div style={{ display: "flex", gap: "0.5rem" }}>
-          {user && (
-            <button
-              type="button"
-              className="btn btn-secondary"
-              onClick={() => setIsCollaborationOpen(true)}
-            >
-              Cộng tác
-            </button>
-          )}
-          {canEdit && (
-            <button
-              type="button"
-              className="btn btn-secondary"
-              onClick={() => {
-                setSelectedId(null);
-                setAddRelativeMode(true);
+
+        <div className="tree-page-header__right">
+          <div className="tree-page-header__search-container">
+            <SearchPanel
+              treeId={activeTreeId}
+              persons={persons}
+              addresses={addresses}
+              egoId={egoId}
+              viewpointId={selectedId || undefined}
+              onSelectResult={(id) => {
+                setSelectedId(id);
                 setEditMode(false);
-                setCreateMode(false);
+                setAddRelativeMode(false);
               }}
-            >
-              Thêm quan hệ mới
-            </button>
-          )}
+            />
+          </div>
+          <div className="tree-page-header__actions">
+            {user && (
+              <button
+                type="button"
+                className="btn btn-secondary"
+                onClick={() => setIsCollaborationOpen(true)}
+              >
+                Cộng tác
+              </button>
+            )}
+            {canEdit && (
+              <button
+                type="button"
+                className="btn btn-primary btn-terracotta"
+                onClick={() => {
+                  setSelectedId(null);
+                  setCreateMode(true);
+                  setAddRelativeMode(false);
+                  setEditMode(false);
+                }}
+              >
+                + Thêm thành viên
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
@@ -490,38 +523,8 @@ function TreePageContent({ searchParams }: TreePageProps) {
       )}
 
       <div className="tree-workspace__layout">
-        {/* Left/Center: Main Toolbar & Graph */}
+        {/* Left/Center: Main Graph */}
         <div className="tree-workspace__main">
-          {/* Search & Filter Toolbar */}
-          <div className="surface-card tree-workspace__toolbar-container">
-            <SearchPanel
-              treeId={activeTreeId}
-              persons={persons}
-              addresses={addresses}
-              egoId={egoId}
-              viewpointId={selectedId || undefined}
-              onSelectResult={(id) => {
-                setSelectedId(id);
-                setEditMode(false);
-                setAddRelativeMode(false);
-              }}
-              onAddMember={canEdit ? () => {
-                setSelectedId(null);
-                setCreateMode(true);
-                setAddRelativeMode(false);
-                setEditMode(false);
-              } : undefined}
-              viewpointSelector={
-                <ViewpointSelector
-                  persons={persons}
-                  egoId={egoId}
-                  onChange={setEgoId}
-                  disabled={addressLoading}
-                />
-              }
-            />
-          </div>
-
           {/* Interactive SVG graph area */}
           <div className="tree-workspace__graph">
             <TreeGraph
@@ -550,7 +553,7 @@ function TreePageContent({ searchParams }: TreePageProps) {
         </div>
 
         {/* Right Side: Member Details and Actions Panel */}
-        <div className="tree-workspace__info-panel">
+        <div className={`tree-workspace__info-panel ${isPanelOpen ? "tree-workspace__info-panel--open" : ""}`}>
           {createMode ? (
             <div className="surface-card side-panel">
               <h3 className="side-panel__title">Tạo thành viên mới</h3>

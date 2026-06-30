@@ -72,7 +72,7 @@
 .tree-graph__node-button {
   display: flex;
   flex-direction: row;
-  align-items: stretch;
+  align-items: center;
   position: relative;
   overflow: hidden;
   min-height: 0 !important;
@@ -80,37 +80,64 @@
   width: calc(100% - 6px);
   height: calc(100% - 6px);
   margin: 3px;
-  padding: 0;
+  padding: 0.5rem 0.75rem;
   border: 1px solid var(--color-hairline-strong);
-  border-radius: 8px;
+  border-radius: 12px;
   background: var(--color-surface-card);
   color: var(--color-fg);
   cursor: pointer;
   transition: border-color 0.15s ease, background-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
-  box-shadow: 0 2px 5px rgba(38, 37, 30, 0.04);
+  box-shadow: 0 4px 10px rgba(38, 37, 30, 0.03);
+  gap: 0.75rem;
 }
 
 .tree-graph__node-button:hover {
-  background: var(--color-hairline-soft);
-  border-color: var(--color-hairline-strong);
-  box-shadow: 0 6px 14px rgba(38, 37, 30, 0.1);
-  transform: translateY(-1px);
+  box-shadow: 0 8px 20px rgba(38, 37, 30, 0.08);
+  transform: translateY(-2px);
 }
 
-/* Gender Indicator Strips */
-.tree-graph__node-gender-strip {
-  width: 5px;
-  height: 100%;
+/* Avatar styling */
+.tree-graph__node-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 1.125rem;
   flex-shrink: 0;
-  background-color: var(--color-border);
+  border: 2px solid var(--color-hairline-strong);
+  color: white;
 }
 
-.tree-graph__node--male .tree-graph__node-gender-strip {
-  background-color: var(--color-timeline-read); /* Elegant soft blue */
+.tree-graph__node--male .tree-graph__node-avatar {
+  background-color: #0284c7;
+  border-color: #bae6fd;
 }
 
-.tree-graph__node--female .tree-graph__node-gender-strip {
-  background-color: #f472b6; /* Elegant soft pink */
+.tree-graph__node--female .tree-graph__node-avatar {
+  background-color: #db2777;
+  border-color: #fbcfe8;
+}
+
+/* Male & Female Node Background Colors */
+.tree-graph__node--male .tree-graph__node-button {
+  background-color: #e9f5ff; /* soft blue */
+  border-color: #bae6fd;
+}
+
+.tree-graph__node--male .tree-graph__node-button:hover {
+  background-color: #dbeafe;
+}
+
+.tree-graph__node--female .tree-graph__node-button {
+  background-color: #fff0f6; /* soft pink */
+  border-color: #fbcfe8;
+}
+
+.tree-graph__node--female .tree-graph__node-button:hover {
+  background-color: #ffe4e6;
 }
 
 /* Main Card Content Layout */
@@ -119,9 +146,9 @@
   flex-direction: column;
   justify-content: center;
   flex-grow: 1;
-  padding: 6px 10px;
   min-width: 0;
   text-align: left;
+  gap: 2px;
 }
 
 .tree-graph__node-row-top {
@@ -134,16 +161,15 @@
 
 .tree-graph__node-row-bottom {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 4px;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
   width: 100%;
-  margin-top: 4px;
 }
 
 .tree-graph__node-name {
-  font-weight: 600;
-  font-size: 0.8125rem;
+  font-weight: 700;
+  font-size: 1rem; /* 16px - highly readable for elder users */
   color: var(--color-fg);
   white-space: nowrap;
   overflow: hidden;
@@ -153,32 +179,35 @@
 }
 
 .tree-graph__node-address {
-  font-size: 0.75rem;
+  font-size: 0.8125rem; /* 13px */
   color: var(--color-muted);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: 65%;
+  max-width: 100%;
+  background: var(--color-surface-strong);
+  padding: 1px 6px;
+  border-radius: 4px;
 }
 
 /* Lifespan text */
 .tree-graph__node-lifespan {
-  font-size: 0.6875rem;
+  font-size: 0.75rem; /* 12px */
   color: var(--color-muted);
-  opacity: 0.8;
+  opacity: 0.85;
   white-space: nowrap;
   font-family: ui-monospace, monospace;
 }
 
 /* Deceased State Styling */
 .tree-graph__node--deceased .tree-graph__node-button {
-  background-color: var(--color-hairline-soft);
-  border-color: var(--color-hairline-strong);
-  opacity: 0.75;
+  background-color: #f3f2ef;
+  border-color: #d1cfc9;
+  opacity: 0.8;
 }
 
 .tree-graph__node--deceased .tree-graph__node-name {
-  color: var(--color-muted);
+  color: #787670;
   text-decoration: line-through;
 }
 
@@ -446,4 +475,50 @@
 
 .tree-graph:fullscreen .tree-graph__controls {
   grid-column: auto;
+}
+
+/* Tooltip styles */
+.tree-graph__node {
+  position: relative;
+}
+
+.tree-graph__node-tooltip {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%) translateY(-10px);
+  background-color: #2b2922;
+  color: #ffffff;
+  padding: 0.6rem 0.8rem;
+  border-radius: 8px;
+  font-size: 0.8125rem;
+  line-height: 1.4;
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.15s ease, visibility 0.15s ease, transform 0.15s ease;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+  z-index: 100;
+  width: max-content;
+  max-width: 240px;
+  text-align: left;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.tree-graph__node-tooltip::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border-width: 6px;
+  border-style: solid;
+  border-color: #2b2922 transparent transparent transparent;
+}
+
+.tree-graph__node:hover .tree-graph__node-tooltip,
+.tree-graph__node:focus-within .tree-graph__node-tooltip {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(-50%) translateY(-5px);
 }

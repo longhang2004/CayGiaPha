@@ -78,6 +78,48 @@ export function SearchPanel({
   const [isFilterDropdownOpen, setIsFilterDropdownOpen] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
   const toolbarRef = useRef<HTMLDivElement>(null);
+  const [isListening, setIsListening] = useState(false);
+
+  const startVoiceSearch = () => {
+    if (typeof window !== "undefined" && ("SpeechRecognition" in window || "webkitSpeechRecognition" in window)) {
+      const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+      const recognition = new SpeechRecognition();
+      recognition.lang = "vi-VN";
+      recognition.interimResults = false;
+      recognition.maxAlternatives = 1;
+
+      recognition.onstart = () => {
+        setIsListening(true);
+      };
+
+      recognition.onerror = (e: any) => {
+        console.error("Speech recognition error", e);
+        setIsListening(false);
+      };
+
+      recognition.onend = () => {
+        setIsListening(false);
+      };
+
+      recognition.onresult = (event: any) => {
+        const text = event.results[0][0].transcript;
+        setSearchQuery(text);
+        setShowDropdown(true);
+      };
+
+      recognition.start();
+    } else {
+      setIsListening(true);
+      setTimeout(() => {
+        const sampleNames = ["Nguyễn", "Trần", "Bác", "Chú", "Cô"];
+        const randomName = sampleNames[Math.floor(Math.random() * sampleNames.length)];
+        setSearchQuery(randomName);
+        setShowDropdown(true);
+        setIsListening(false);
+        alert(`Giả lập giọng nói nhận diện từ khóa: "${randomName}" (Trình duyệt không hỗ trợ trực tiếp Web Speech API).`);
+      }, 1500);
+    }
+  };
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -307,7 +349,7 @@ export function SearchPanel({
           {/* Row 1 — Toolbar chính */}
           <div className="search-panel-toolbar__fields">
             <div className="field search-field">
-              <div className="search-input-wrapper">
+              <div className="search-input-wrapper" style={{ position: "relative", display: "flex", alignItems: "center", width: "100%" }}>
                 {/* Two sr-only labels pointing to the same input to support test queries */}
                 <label htmlFor="nameQuery" className="sr-only">Tên</label>
                 <label htmlFor="nameQuery" className="sr-only">Cách xưng hô</label>
@@ -323,7 +365,31 @@ export function SearchPanel({
                     setSearchQuery(e.target.value);
                     if (e.target.value) setShowDropdown(true);
                   }}
+                  style={{ paddingRight: "40px", width: "100%" }}
                 />
+                <button
+                  type="button"
+                  onClick={startVoiceSearch}
+                  className={`voice-search-btn ${isListening ? "voice-search-btn--listening" : ""}`}
+                  style={{
+                    position: "absolute",
+                    right: "10px",
+                    background: "none",
+                    border: "none",
+                    cursor: "pointer",
+                    fontSize: "1.1rem",
+                    padding: "4px",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    color: isListening ? "var(--color-brand)" : "var(--color-muted)",
+                    animation: isListening ? "pulse-animation 1.5s infinite" : "none"
+                  }}
+                  title="Tìm kiếm bằng giọng nói"
+                  aria-label="Tìm kiếm bằng giọng nói"
+                >
+                  {isListening ? "🔴" : "🎤"}
+                </button>
               </div>
 
               <button
