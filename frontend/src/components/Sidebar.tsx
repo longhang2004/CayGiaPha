@@ -88,31 +88,23 @@ export function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse }: Side
           </div>
 
           <nav className="global-sidebar__nav" aria-label="Danh mục ứng dụng">
-             <Link
+            <Link
               href="/tree"
-              className={`global-sidebar__link ${pathname === "/tree" ? "global-sidebar__link--active" : ""}`}
+              className={`global-sidebar__link ${isTreeActive ? "global-sidebar__link--active" : ""}`}
               onClick={onClose}
-              title={isCollapsed ? "Sơ đồ gia phả" : undefined}
+              title={isCollapsed ? (pathname === "/tree" ? "Danh sách cây" : "Quay về danh sách") : undefined}
             >
-              <span className="global-sidebar__link-icon" aria-hidden="true"><TreeIcon size={18} /></span>
-              <span className="global-sidebar__link-text">Sơ đồ gia phả</span>
-            </Link>
-            {pathname !== "/tree" && pathname.startsWith("/tree/") && (
-              <Link
-                href="/tree"
-                className="global-sidebar__link"
-                onClick={onClose}
-                title={isCollapsed ? "Danh sách cây" : undefined}
-                style={{ borderTop: "1px solid var(--color-hairline-soft)", marginTop: "0.25rem", paddingTop: "0.5rem" }}
-              >
-                <span className="global-sidebar__link-icon" aria-hidden="true" style={{ color: "var(--color-brand)" }}>
+              <span className="global-sidebar__link-icon" aria-hidden="true">
+                {pathname === "/tree" ? (
+                  <TreeIcon size={18} />
+                ) : (
                   <ChevronLeftIcon size={18} />
-                </span>
-                <span className="global-sidebar__link-text" style={{ fontWeight: 600, color: "var(--color-brand)" }}>
-                  Quay lại danh sách cây
-                </span>
-              </Link>
-            )}
+                )}
+              </span>
+              <span className="global-sidebar__link-text">
+                {pathname === "/tree" ? "Danh sách cây" : "Quay về danh sách"}
+              </span>
+            </Link>
             <Link
               href="/help"
               className={`global-sidebar__link ${isHelpActive ? "global-sidebar__link--active" : ""}`}
