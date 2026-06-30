@@ -29,10 +29,17 @@ export default function PrototypeSignUpPage() {
   return (
     <div className="auth-container">
       {/* ===== BEGIN: mirror of SignUpFlow ===== */}
-      <div className="auth-card">
-        <form onSubmit={(e) => { e.preventDefault(); /* no-op in prototype */ }} noValidate>
-        <h1 id={`${inputId}-heading`}>Đăng ký</h1>
-        <p>Tạo tài khoản cây gia phả mới của bạn.</p>
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%", maxWidth: "28rem" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "1.5rem" }}>
+          <a href="/" style={{ display: "flex", alignItems: "center", gap: "0.5rem", textDecoration: "none", color: "var(--color-fg)" }}>
+            <img src="/logo.png" alt="Logo Cây Gia Phả" style={{ height: "32px", width: "auto" }} />
+            <span style={{ fontSize: "1.5rem", fontWeight: 700, letterSpacing: "-0.03em" }}>Cây Gia Phả</span>
+          </a>
+        </div>
+        <div className="auth-card">
+          <form onSubmit={(e) => { e.preventDefault(); /* no-op in prototype */ }} noValidate>
+          <h1 id={`${inputId}-heading`}>Đăng ký</h1>
+          <p>Tạo tài khoản cây gia phả mới của bạn.</p>
 
         <div className="field" style={{ marginBottom: "1rem" }}>
           <label htmlFor="signup-region">Vùng miền (cách xưng hô)</label>
@@ -103,6 +110,7 @@ export default function PrototypeSignUpPage() {
         </Button>
         </form>
       </div>
+    </div>
       {/* ===== END ===== */}
     </div>
   );

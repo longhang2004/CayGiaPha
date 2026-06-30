@@ -29,9 +29,10 @@ export function AppLayoutWrapper({ children }: { children: React.ReactNode }) {
   };
 
   const isAuthPage = pathname === "/signin" || pathname === "/signup";
+  const isLegalPage = pathname.startsWith("/legal/");
   const isLandingPage = pathname === "/";
 
-  if (isAuthPage) {
+  if (isAuthPage || isLegalPage) {
     return <div id="main-content">{children}</div>;
   }
 
