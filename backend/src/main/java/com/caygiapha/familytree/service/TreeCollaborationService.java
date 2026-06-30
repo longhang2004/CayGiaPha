@@ -150,11 +150,46 @@ public class TreeCollaborationService {
         }
     }
 
+    private static final String CODE_CHARS = "abcdefghijklmnopqrstuvwxyz123456789";
+
     private String generateRandomCode() {
         StringBuilder sb = new StringBuilder(CODE_LENGTH);
         for (int i = 0; i < CODE_LENGTH; i++) {
-            sb.append(secureRandom.nextInt(10));
+            int index = secureRandom.nextInt(CODE_CHARS.length());
+            sb.append(CODE_CHARS.charAt(index));
         }
         return sb.toString();
+    }
+
+    @Transactional(readOnly = true)
+    public CollaborationInvitation getInvitation(UUID invitationId) {
+        return invitationRepository.findById(invitationId)
+                .orElseThrow(() -> ApiException.validation("invitationId", "Lời mời không tồn tại."));
+    }
+
+    @Transactional
+    public TreeCollaborator joinTreeWithLink(UUID invitationId, UUID userId) {
+        CollaborationInvitation invite = invitationRepository.findById(invitationId)
+                .orElseThrow(() -> ApiException.validation("invitationId", "Lời mời không tồn tại."));
+
+        if (!invite.getStatus().equals("sent")) {
+            throw ApiException.validation("invitationId", "Lời mời này đã được sử dụng hoặc chưa được duyệt.");
+        }
+
+        if (invite.isExpired()) {
+            invite.setStatus("expired");
+            invitationRepository.save(invite);
+            throw ApiException.validation("invitationId", "Liên kết mời đã hết hạn sử dụng.");
+        }
+
+        // Add user as a collaborator
+        TreeCollaborator collaborator = new TreeCollaborator(invite.getTreeId(), userId, "contributor");
+        TreeCollaborator saved = collaboratorRepository.save(collaborator);
+
+        // Update invite status
+        invite.setStatus("joined");
+        invitationRepository.save(invite);
+
+        return saved;
     }
 }

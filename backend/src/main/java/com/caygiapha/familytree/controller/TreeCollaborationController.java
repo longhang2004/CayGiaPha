@@ -70,6 +70,17 @@ public class TreeCollaborationController {
         return collaborationService.joinTree(code, currentUserId);
     }
 
+    @GetMapping("/collaborators/invitations/{inviteId}")
+    public CollaborationInvitation getInvitation(@PathVariable("inviteId") UUID inviteId) {
+        return collaborationService.getInvitation(inviteId);
+    }
+
+    @PostMapping("/collaborators/join-link")
+    public TreeCollaborator joinWithLink(@RequestParam("inviteId") UUID inviteId) {
+        UUID currentUserId = authorizationService.currentContext().userId();
+        return collaborationService.joinTreeWithLink(inviteId, currentUserId);
+    }
+
     @GetMapping("/{treeId}/collaborators")
     public List<TreeCollaborator> getCollaborators(@PathVariable("treeId") UUID treeId) {
         // Enforce reader permissions

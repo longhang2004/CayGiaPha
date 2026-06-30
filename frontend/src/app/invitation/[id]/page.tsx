@@ -1,0 +1,137 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { getInvitationDetails, joinTreeWithLink, type CollaborationInvitation } from "@/lib/collaboration";
+import { useSession } from "@/app/providers";
+
+interface InvitationPageProps {
+  params: {
+    id: string;
+  };
+}
+
+export default function InvitationPage({ params }: InvitationPageProps) {
+  const router = useRouter();
+  const inviteId = params.id;
+
+  const { user, loading: sessionLoading } = useSession();
+  const [invitation, setInvitation] = useState<CollaborationInvitation | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [joining, setJoining] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    // Fetch invitation details
+    getInvitationDetails(inviteId)
+      .then((details) => {
+        setInvitation(details);
+        setLoading(false);
+      })
+      .catch((err) => {
+        setError(err.message || "Lời mời không tồn tại hoặc đã hết hạn.");
+        setLoading(false);
+      });
+  }, [inviteId]);
+
+  const handleJoin = async () => {
+    if (!invitation) return;
+    setJoining(true);
+    try {
+      await joinTreeWithLink(inviteId);
+      // Redirect directly to the tree workspace page
+      router.push(`/tree?treeId=${invitation.treeId}`);
+    } catch (err: any) {
+      setError(err.message || "Đã xảy ra lỗi khi tham gia cây.");
+      setJoining(false);
+    }
+  };
+
+  const handleSignInRedirect = () => {
+    router.push(`/signin?redirect=/invitation/${inviteId}`);
+  };
+
+  if (loading || sessionLoading) {
+    return (
+      <section className="center-state" aria-live="polite">
+        <div className="center-state__card">
+          <span className="center-state__spinner" aria-hidden="true" />
+          <p>Đang xác thực thông tin lời mời…</p>
+        </div>
+      </section>
+    );
+  }
+
+  return (
+    <main className="center-layout" style={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: "100vh", backgroundColor: "var(--color-bg)" }}>
+      <div className="surface-card" style={{ maxWidth: "480px", width: "100%", padding: "2.5rem", borderRadius: "16px", boxShadow: "0 10px 30px rgba(0, 0, 0, 0.05)", border: "1px solid var(--color-hairline)", textAlign: "center" }}>
+        <h2 style={{ fontSize: "1.5rem", fontWeight: 700, color: "var(--color-brand)", marginBottom: "1rem" }}>
+          👥 Cộng tác xây dựng Cây Gia Phả
+        </h2>
+
+        {error ? (
+          <div style={{ margin: "1.5rem 0" }}>
+            <p style={{ color: "red", fontSize: "0.95rem", marginBottom: "1.5rem" }}>{error}</p>
+            <button
+              type="button"
+              className="btn btn-secondary"
+              style={{ width: "100%" }}
+              onClick={() => router.push("/")}
+            >
+              Về trang chủ
+            </button>
+          </div>
+        ) : (
+          invitation && (
+            <div>
+              <p style={{ fontSize: "1rem", lineHeight: "1.6", color: "var(--color-fg)", marginBottom: "1.5rem" }}>
+                Bạn đã nhận được lời mời tham gia cộng tác biên soạn sơ đồ dòng họ từ email <strong>{invitation.email}</strong>.
+              </p>
+
+              {user ? (
+                <div>
+                  <p style={{ fontSize: "0.9rem", color: "var(--color-muted)", marginBottom: "2rem" }}>
+                    Tài khoản hiện tại: <strong>{user.identifier}</strong>
+                  </p>
+                  <button
+                    type="button"
+                    className="btn btn-primary btn-terracotta"
+                    style={{ width: "100%", minHeight: "44px" }}
+                    onClick={handleJoin}
+                    disabled={joining}
+                  >
+                    {joining ? "Đang tham gia…" : "Chấp nhận lời mời & Đồng ý tham gia"}
+                  </button>
+                </div>
+              ) : (
+                <div>
+                  <p style={{ fontSize: "0.9rem", color: "var(--color-muted)", marginBottom: "2rem" }}>
+                    Vui lòng đăng nhập hoặc đăng ký tài khoản mới để chấp nhận lời mời cộng tác này.
+                  </p>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+                    <button
+                      type="button"
+                      className="btn btn-primary btn-terracotta"
+                      style={{ width: "100%", minHeight: "44px" }}
+                      onClick={handleSignInRedirect}
+                    >
+                      Đăng nhập để tham gia
+                    </button>
+                    <button
+                      type="button"
+                      className="btn btn-secondary"
+                      style={{ width: "100%", minHeight: "44px" }}
+                      onClick={() => router.push(`/signup?redirect=/invitation/${inviteId}`)}
+                    >
+                      Đăng ký tài khoản mới
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )
+        )}
+      </div>
+    </main>
+  );
+}

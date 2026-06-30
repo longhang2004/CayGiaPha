@@ -77,3 +77,20 @@ export function getCollaborators(
     `/trees/${encodeURIComponent(treeId)}/collaborators`
   );
 }
+
+export function getInvitationDetails(
+  inviteId: string
+): Promise<CollaborationInvitation> {
+  return api.get<CollaborationInvitation>(
+    `/trees/collaborators/invitations/${encodeURIComponent(inviteId)}`
+  );
+}
+
+export function joinTreeWithLink(
+  inviteId: string
+): Promise<TreeCollaborator> {
+  return api.post<TreeCollaborator>(
+    `/trees/collaborators/join-link?inviteId=${encodeURIComponent(inviteId)}`,
+    {}
+  );
+}

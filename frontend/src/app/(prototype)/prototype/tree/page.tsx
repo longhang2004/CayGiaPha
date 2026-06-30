@@ -249,73 +249,73 @@ function PrototypeTreeContent() {
   return (
     /* ===== BEGIN: mirror of src/app/tree/page.tsx (populated branch) ===== */
     <section className="tree-workspace">
-      {/* Redesigned 2-Row Header: Row 1 for Brand & Search/Actions, Row 2 for Viewpoint & Grouping Toggle */}
-      <div className="tree-page-header">
-        <div className="tree-page-header__row-one">
-          <div className="tree-page-header__brand">
-            <img src="/logo.png" alt="Logo Cây Gia Phả" className="tree-page-header__logo" />
-            <div className="tree-page-header__title-container">
-              <h1 className="tree-page-header__title">Gia Phả Dòng Họ</h1>
-              <span className="tree-page-header__count">{persons.length} thành viên</span>
-            </div>
-          </div>
-
-          <div className="tree-page-header__row-one-right">
-            <div className="tree-page-header__search-container">
-              <SearchPanel
-                treeId={PROTOTYPE_TREE_ID}
-                persons={persons}
-                addresses={addresses}
-                egoId={egoId}
-                viewpointId={selectedId || undefined}
-                onSelectResult={(id) => {
-                  setSelectedId(id);
-                  setEditMode(false);
-                  setAddRelativeMode(false);
-                }}
-              />
-            </div>
-            <div className="tree-page-header__actions">
-              <button
-                type="button"
-                className="btn btn-secondary"
-                onClick={() => setIsCollaborationOpen(true)}
-              >
-                Cộng tác
-              </button>
-              {isOwner && (
-                <button
-                  type="button"
-                  className="btn btn-primary btn-terracotta"
-                  onClick={() => {
-                    setSelectedId(null);
-                    setCreateMode(true);
-                    setAddRelativeMode(false);
-                    setEditMode(false);
-                  }}
-                >
-                  + Thêm thành viên
-                </button>
-              )}
-            </div>
-          </div>
-        </div>
-
-        <div className="tree-page-header__row-two">
-          <div className="tree-page-header__viewpoint">
-            <ViewpointSelector
-              persons={persons}
-              egoId={egoId}
-              onChange={setEgoId}
-              disabled={addressLoading}
-            />
-          </div>
-        </div>
-      </div>
-
       <OnboardingModal isOpen={showTutorial} onClose={handleDismissTutorial} />
 
       <div className="tree-workspace__layout">
+        {/* Floating Island Header/Toolbar */}
+        <div className="tree-page-header">
+          <div className="tree-page-header__row-one">
+            <div className="tree-page-header__brand">
+              <img src="/logo.png" alt="Logo Cây Gia Phả" className="tree-page-header__logo" />
+              <div className="tree-page-header__title-container">
+                <h1 className="tree-page-header__title">Gia Phả Dòng Họ</h1>
+                <span className="tree-page-header__count">{persons.length} thành viên</span>
+              </div>
+            </div>
+
+            <div className="tree-page-header__row-one-right">
+              <div className="tree-page-header__search-container">
+                <SearchPanel
+                  treeId={PROTOTYPE_TREE_ID}
+                  persons={persons}
+                  addresses={addresses}
+                  egoId={egoId}
+                  viewpointId={selectedId || undefined}
+                  onSelectResult={(id) => {
+                    setSelectedId(id);
+                    setEditMode(false);
+                    setAddRelativeMode(false);
+                  }}
+                />
+              </div>
+              <div className="tree-page-header__actions">
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  onClick={() => setIsCollaborationOpen(true)}
+                >
+                  👥 <span>Cộng tác</span>
+                </button>
+                {isOwner && (
+                  <button
+                    type="button"
+                    className="btn btn-primary btn-terracotta"
+                    onClick={() => {
+                      setSelectedId(null);
+                      setCreateMode(true);
+                      setAddRelativeMode(false);
+                      setEditMode(false);
+                    }}
+                  >
+                    ➕ <span>Thêm thành viên</span>
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+
+          <div className="tree-page-header__row-two">
+            <div className="tree-page-header__viewpoint">
+              <ViewpointSelector
+                persons={persons}
+                egoId={egoId}
+                onChange={setEgoId}
+                disabled={addressLoading}
+              />
+            </div>
+          </div>
+        </div>
+
         {/* Left/Center: Main Graph */}
         <div className="tree-workspace__main">
           {/* Interactive SVG graph area */}
@@ -350,7 +350,16 @@ function PrototypeTreeContent() {
         {/* Right Side: Member Details and Actions Panel */}
         <div className={`tree-workspace__info-panel ${isPanelOpen ? "tree-workspace__info-panel--open" : ""}`}>
           {createMode ? (
-            <div className="surface-card side-panel">
+            <div className="surface-card side-panel" style={{ position: "relative" }}>
+              <button
+                type="button"
+                className="side-panel__close"
+                onClick={() => setCreateMode(false)}
+                aria-label="Hủy bỏ"
+                title="Hủy bỏ"
+              >
+                &times;
+              </button>
               <h3 className="side-panel__title">Tạo thành viên mới</h3>
               <PrototypePersonForm
                 mode="create"
@@ -360,10 +369,26 @@ function PrototypeTreeContent() {
                   setCreateMode(false);
                 }}
                 onCancel={() => setCreateMode(false)}
+                hideCancelButton={true}
               />
             </div>
           ) : selectedPerson ? (
-            <div className="surface-card side-panel">
+            <div className="surface-card side-panel" style={{ position: "relative" }}>
+              <button
+                type="button"
+                className="side-panel__close"
+                onClick={() => {
+                  if (editMode) setEditMode(false);
+                  else if (addRelativeMode) setAddRelativeMode(false);
+                  else setSelectedId(null);
+                }}
+                aria-label="Bỏ chọn"
+                title="Bỏ chọn"
+              >
+                &times;
+                <span className="sr-only">Bỏ chọn</span>
+              </button>
+
               {(editMode || addRelativeMode) && (
                 <h3 className="side-panel__title">{selectedPerson.displayName}</h3>
               )}
@@ -380,6 +405,7 @@ function PrototypeTreeContent() {
                       setEditMode(false);
                     }}
                     onCancel={() => setEditMode(false)}
+                    hideCancelButton={true}
                   />
                 </div>
               ) : addRelativeMode ? (
@@ -395,6 +421,7 @@ function PrototypeTreeContent() {
                       setAddRelativeMode(false);
                     }}
                     onCancel={() => setAddRelativeMode(false)}
+                    hideCancelButton={true}
                   />
                 </div>
               ) : (
@@ -474,14 +501,6 @@ function PrototypeTreeContent() {
                         </div>
                       </div>
                     )}
-                    <button
-                      type="button"
-                      className="btn btn-secondary"
-                      style={{ width: "100%" }}
-                      onClick={() => setSelectedId(null)}
-                    >
-                      Bỏ chọn
-                    </button>
                   </div>
 
                   <div
@@ -501,7 +520,16 @@ function PrototypeTreeContent() {
               )}
             </div>
           ) : addRelativeMode ? (
-            <div className="surface-card side-panel">
+            <div className="surface-card side-panel" style={{ position: "relative" }}>
+              <button
+                type="button"
+                className="side-panel__close"
+                onClick={() => setAddRelativeMode(false)}
+                aria-label="Hủy bỏ"
+                title="Hủy bỏ"
+              >
+                &times;
+              </button>
               <h3 className="side-panel__title">Thêm quan hệ mới</h3>
               <AddRelativeForm
                 treeId={PROTOTYPE_TREE_ID}
@@ -510,15 +538,8 @@ function PrototypeTreeContent() {
                   setAddRelativeMode(false);
                   refreshTree();
                 }}
+                hideCancelButton={true}
               />
-              <button
-                type="button"
-                className="btn btn-secondary"
-                style={{ width: "100%", marginTop: "0.5rem" }}
-                onClick={() => setAddRelativeMode(false)}
-              >
-                Hủy bỏ
-              </button>
             </div>
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>

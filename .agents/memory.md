@@ -50,5 +50,10 @@ Durable project knowledge for future AI agents. Keep entries short, verified, an
 - **Bottom-Up Parent Centering**: Added a coordinate centering pass in `layoutNodes` that aligns each parent (or spouse couple) directly above the midpoint of their children's positions. This prevents single parent nodes (like a single maternal grandfather) from appearing offset or skewed from their child branches.
 - **Fullscreen Mode support**: Integrated HTML5 Fullscreen API with dedicated UI buttons and `:fullscreen` CSS class overrides to stretch the tree graph canvas over the entire viewport dynamically.
 
+## 2026-06-30
 
-
+- **Alphanumeric Invite Code**: Invitation codes are restricted to 6 characters matching `[a-z1-9]` (no zero or uppercase) to prevent reading ambiguity.
+- **In-App Fullscreen Map Layout**: Restructured `.tree-workspace` to take `height: 100vh;` and applied negative margins (`margin: -2rem -1.25rem`) to perfectly offset the parent `.inapp-content` padding, making the graph canvas cover the entire screen.
+- **Floating Island Header Toolbar**: Positioned `.tree-page-header` absolutely at the bottom center of the screen with a glassmorphic background (`backdrop-filter`). Added CSS rules to hide the brand logo/title and collapse buttons to icon-only on mobile screens (`max-width: 600px`).
+- **Right Details Panel Close Buttons**: Replaced bottom buttons ("Bỏ chọn", "Hủy bỏ") with absolute close buttons (`&times;` / `side-panel__close`) at the top right of the cards. To prevent breaking existing Playwright E2E tests, the button text (e.g. "Bỏ chọn") is preserved inside a screen-reader-only `span` (`className="sr-only"`).
+- **Dynamic Invitation Link**: Implemented `/invitation/[id]` dynamic page to consume invitation URLs (`${Base_URL}/invitation/:id`), verify details, and confirm collaboration join. Added redirect support to `/signin` with query param `?redirect=/invitation/[id]` so unauthenticated invitees are correctly redirected back upon logging in.

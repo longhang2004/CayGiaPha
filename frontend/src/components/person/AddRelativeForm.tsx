@@ -52,6 +52,7 @@ interface AddRelativeFormProps {
   preselectedPersonId?: string;
   onCreated?: (relationshipId: string) => void;
   onCancel?: () => void;
+  hideCancelButton?: boolean;
 }
 
 function parseOptionalInt(value: string): number | undefined {
@@ -60,7 +61,7 @@ function parseOptionalInt(value: string): number | undefined {
   return Number.isFinite(n) ? n : undefined;
 }
 
-export function AddRelativeForm({ treeId, persons, preselectedPersonId, onCreated, onCancel }: AddRelativeFormProps) {
+export function AddRelativeForm({ treeId, persons, preselectedPersonId, onCreated, onCancel, hideCancelButton = false }: AddRelativeFormProps) {
   const [mode, setMode] = useState<Mode>("derived");
   const [derivedKind, setDerivedKind] = useState<DerivedKind>("bloodline_father");
   const [maritalStatus, setMaritalStatus] = useState<MaritalStatus>("married");
@@ -735,10 +736,10 @@ export function AddRelativeForm({ treeId, persons, preselectedPersonId, onCreate
       )}
 
       <div className="form-actions">
-        <Button type="submit" disabled={submitting} style={onCancel ? { flex: 1 } : undefined}>
+        <Button type="submit" disabled={submitting} style={(onCancel && !hideCancelButton) ? { flex: 1 } : undefined}>
           {isNewPerson ? "Tạo và Thêm" : "Thêm"}
         </Button>
-        {onCancel && (
+        {onCancel && !hideCancelButton && (
           <Button
             type="button"
             className="btn-secondary"

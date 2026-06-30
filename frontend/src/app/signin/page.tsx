@@ -1,9 +1,16 @@
 import { SignInFlow } from "@/components/auth/SignInFlow";
 
-export default function SignInPage() {
+interface SignInPageProps {
+  searchParams: {
+    redirect?: string;
+  };
+}
+
+export default function SignInPage({ searchParams }: SignInPageProps) {
+  const redirectTo = searchParams.redirect || "/tree";
   return (
     <div className="auth-container">
-      <SignInFlow redirectTo="/tree" />
+      <SignInFlow redirectTo={redirectTo} />
     </div>
   );
 }

@@ -64,6 +64,7 @@ interface PersonFormProps {
   onSuccess?: (personId: string) => void;
   onCancel?: () => void;
   persons?: PersonOption[];
+  hideCancelButton?: boolean;
 }
 
 function parseOptionalInt(value: string): number | undefined {
@@ -80,6 +81,7 @@ export function PersonForm({
   onSuccess,
   onCancel,
   persons = [],
+  hideCancelButton = false,
 }: PersonFormProps) {
   const [displayName, setDisplayName] = useState(initialValues?.displayName ?? "");
   const [gender, setGender] = useState<Gender>(initialValues?.gender ?? "male");
@@ -670,10 +672,10 @@ export function PersonForm({
       />
 
       <div className="form-actions">
-        <Button type="submit" disabled={submitting} style={onCancel ? { flex: 1 } : undefined}>
+        <Button type="submit" disabled={submitting} style={(onCancel && !hideCancelButton) ? { flex: 1 } : undefined}>
           {mode === "create" ? "Tạo" : "Lưu"}
         </Button>
-        {onCancel && (
+        {onCancel && !hideCancelButton && (
           <Button
             type="button"
             className="btn-secondary"
