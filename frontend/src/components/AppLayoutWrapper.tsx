@@ -30,9 +30,12 @@ export function AppLayoutWrapper({ children }: { children: React.ReactNode }) {
 
   const isAuthPage = pathname === "/signin" || pathname === "/signup";
   const isLandingPage = pathname === "/";
-  const showHeader = isLandingPage || isAuthPage;
 
-  if (showHeader) {
+  if (isAuthPage) {
+    return <div id="main-content">{children}</div>;
+  }
+
+  if (isLandingPage) {
     return (
       <>
         <Header />

@@ -234,6 +234,10 @@ function TreePageContent({ params, searchParams }: TreePageProps) {
       setSharing(data.sharing);
     } catch (err) {
       if (err instanceof ApiError) {
+        if (err.status === 401) {
+          router.push("/");
+          return;
+        }
         setError(err.message);
       } else {
         setError("Không thể tải sơ đồ gia phả. Vui lòng thử lại.");

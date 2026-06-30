@@ -117,7 +117,7 @@ export function SignUpFlow({ redirectTo = "/" }: SignUpFlowProps) {
         ) : null}
       </div>
 
-      <div className="field" style={{ marginBottom: "1.5rem" }}>
+      <div className="field" style={{ marginBottom: "1rem" }}>
         <label htmlFor={passwordId}>Mật khẩu</label>
         <input
           id={passwordId}
@@ -138,7 +138,7 @@ export function SignUpFlow({ redirectTo = "/" }: SignUpFlowProps) {
         ) : null}
       </div>
 
-      <div className="field" style={{ marginBottom: "1.5rem", display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+      <div className="field" style={{ marginBottom: "1rem", display: "flex", flexDirection: "column", gap: "0.5rem" }}>
         <label style={{ display: "flex", alignItems: "center", gap: "0.5rem", margin: 0, cursor: "pointer", fontWeight: "normal", color: "var(--color-muted)" }}>
           <input
             type="checkbox"
@@ -159,11 +159,6 @@ export function SignUpFlow({ redirectTo = "/" }: SignUpFlowProps) {
           />
           <span>Tôi đồng ý với <a href="/legal/privacy" onClick={(e) => e.stopPropagation()}>Chính sách bảo mật</a>.</span>
         </label>
-        {(!acceptedTos || !acceptedPrivacy) && (
-          <p className="field-error" style={{ margin: 0 }}>
-            Bạn cần đồng ý với cả hai để tạo cây gia phả.
-          </p>
-        )}
       </div>
 
       <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
