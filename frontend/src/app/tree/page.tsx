@@ -26,6 +26,7 @@ export default function TreeListPage() {
   const [newTreeName, setNewTreeName] = useState("");
   const [newTreeRegion, setNewTreeRegion] = useState<"Bac" | "Trung" | "Nam">("Bac");
   const [creating, setCreating] = useState(false);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
   const fetchTrees = async () => {
     setLoading(true);
@@ -98,12 +99,20 @@ export default function TreeListPage() {
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "2rem" }}>
         <div>
           <h1 style={{ fontSize: "2rem", fontWeight: 700, color: "var(--color-brand)" }}>
-            🌳 Danh Sách Cây Gia Phả
+            Danh Sách Cây Gia Phả
           </h1>
           <p style={{ color: "var(--color-muted)", fontSize: "0.95rem", marginTop: "0.25rem" }}>
             Lưu giữ và chia sẻ cội nguồn gia đình của bạn.
           </p>
         </div>
+        <button
+          type="button"
+          className="btn btn-primary btn-terracotta"
+          onClick={() => setIsCreateModalOpen(true)}
+          style={{ padding: "0.6rem 1.2rem", fontSize: "0.95rem", fontWeight: 600 }}
+        >
+          + Tạo cây mới
+        </button>
       </div>
 
       {error && (
@@ -120,7 +129,7 @@ export default function TreeListPage() {
               Bạn chưa sở hữu hoặc tham gia cộng tác bất kỳ cây gia phả nào.
             </p>
             <p style={{ fontSize: "0.9rem", color: "var(--color-muted)" }}>
-              Hãy tạo cây gia phả đầu tiên của dòng họ bằng biểu mẫu phía dưới.
+              Hãy tạo cây gia phả đầu tiên của dòng họ bằng nút phía trên.
             </p>
           </div>
         ) : (
@@ -176,65 +185,111 @@ export default function TreeListPage() {
         )}
       </div>
 
-      {/* Create New Tree Card */}
-      <div className="surface-card" style={{ padding: "2rem", borderRadius: "16px", border: "1px solid var(--color-hairline)" }}>
-        <h2 style={{ fontSize: "1.35rem", fontWeight: 700, color: "var(--color-fg)", marginBottom: "1.5rem" }}>
-          ➕ Tạo Cây Gia Phả Mới
-        </h2>
-        <form onSubmit={handleCreateTree} style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
-          <div>
-            <label htmlFor="tree-name" style={{ display: "block", fontWeight: 600, fontSize: "0.9rem", marginBottom: "0.5rem" }}>
-              Tên cây gia phả dòng họ:
-            </label>
-            <input
-              id="tree-name"
-              type="text"
-              value={newTreeName}
-              onChange={(e) => setNewTreeName(e.target.value)}
-              placeholder="Ví dụ: Gia phả họ Nguyễn Văn"
-              required
+      {/* Create New Tree Popup Modal */}
+      {isCreateModalOpen && (
+        <div
+          className="modal-backdrop"
+          onClick={() => setIsCreateModalOpen(false)}
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: "rgba(0, 0, 0, 0.4)",
+            backdropFilter: "blur(4px)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 1000,
+          }}
+        >
+          <div
+            className="surface-card"
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              width: "100%",
+              maxWidth: "500px",
+              padding: "2rem",
+              borderRadius: "16px",
+              boxShadow: "0 10px 30px rgba(0, 0, 0, 0.1)",
+              border: "1px solid var(--color-hairline)",
+              position: "relative",
+            }}
+          >
+            <button
+              type="button"
+              className="side-panel__close"
+              onClick={() => setIsCreateModalOpen(false)}
+              aria-label="Đóng"
+              title="Đóng"
               style={{
-                width: "100%",
-                padding: "0.75rem 1rem",
-                borderRadius: "8px",
-                border: "1px solid var(--color-hairline)",
-                backgroundColor: "var(--color-surface)",
-              }}
-            />
-          </div>
-
-          <div>
-            <label htmlFor="tree-region" style={{ display: "block", fontWeight: 600, fontSize: "0.9rem", marginBottom: "0.5rem" }}>
-              Phương ngữ chính (Xưng hô):
-            </label>
-            <select
-              id="tree-region"
-              value={newTreeRegion}
-              onChange={(e) => setNewTreeRegion(e.target.value as any)}
-              style={{
-                width: "100%",
-                padding: "0.75rem 1rem",
-                borderRadius: "8px",
-                border: "1px solid var(--color-hairline)",
-                backgroundColor: "var(--color-surface)",
+                position: "absolute",
+                top: "1.25rem",
+                right: "1.25rem",
               }}
             >
-              <option value="Bac">Miền Bắc (Bố, Mẹ,...)</option>
-              <option value="Trung">Miền Trung (Ba, Mạ,...)</option>
-              <option value="Nam">Miền Nam (Tía, Má,...)</option>
-            </select>
-          </div>
+              &times;
+            </button>
+            <h2 style={{ fontSize: "1.35rem", fontWeight: 700, color: "var(--color-fg)", marginBottom: "1.5rem" }}>
+              Tạo Cây Gia Phả Mới
+            </h2>
+            <form onSubmit={handleCreateTree} style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
+              <div>
+                <label htmlFor="tree-name" style={{ display: "block", fontWeight: 600, fontSize: "0.9rem", marginBottom: "0.5rem" }}>
+                  Tên cây gia phả dòng họ:
+                </label>
+                <input
+                  id="tree-name"
+                  type="text"
+                  value={newTreeName}
+                  onChange={(e) => setNewTreeName(e.target.value)}
+                  placeholder="Ví dụ: Gia phả họ Nguyễn Văn"
+                  required
+                  style={{
+                    width: "100%",
+                    padding: "0.75rem 1rem",
+                    borderRadius: "8px",
+                    border: "1px solid var(--color-hairline)",
+                    backgroundColor: "var(--color-surface)",
+                  }}
+                />
+              </div>
 
-          <button
-            type="submit"
-            className="btn btn-primary btn-terracotta"
-            style={{ width: "100%", padding: "0.75rem", fontSize: "1rem", fontWeight: 600 }}
-            disabled={creating}
-          >
-            {creating ? "Đang tạo…" : "Tạo Cây Gia Phả"}
-          </button>
-        </form>
-      </div>
+              <div>
+                <label htmlFor="tree-region" style={{ display: "block", fontWeight: 600, fontSize: "0.9rem", marginBottom: "0.5rem" }}>
+                  Phương ngữ chính (Xưng hô):
+                </label>
+                <select
+                  id="tree-region"
+                  value={newTreeRegion}
+                  onChange={(e) => setNewTreeRegion(e.target.value as any)}
+                  style={{
+                    width: "100%",
+                    padding: "0.75rem 1rem",
+                    borderRadius: "8px",
+                    border: "1px solid var(--color-hairline)",
+                    backgroundColor: "var(--color-surface)",
+                  }}
+                >
+                  <option value="Bac">Miền Bắc (Bố, Mẹ,...)</option>
+                  <option value="Trung">Miền Trung (Ba, Mạ,...)</option>
+                  <option value="Nam">Miền Nam (Tía, Má,...)</option>
+                </select>
+              </div>
+
+              <button
+                type="submit"
+                className="btn btn-primary btn-terracotta"
+                style={{ width: "100%", padding: "0.75rem", fontSize: "1rem", fontWeight: 600 }}
+                disabled={creating}
+              >
+                {creating ? "Đang tạo…" : "Tạo Cây Gia Phả"}
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
     </main>
   );
 }

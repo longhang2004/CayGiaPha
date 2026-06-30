@@ -24,11 +24,6 @@
   background: var(--color-surface-card);
 }
 
-.tree-graph__controls::after {
-  content: "Kéo ngang trong vùng sơ đồ nếu cây rộng hơn màn hình.";
-  color: var(--color-muted);
-  font-size: 0.8125rem;
-}
 
 .viewpoint-selector label {
   margin-right: 0.5rem;
@@ -307,9 +302,7 @@
     max-height: 60vh;
   }
 
-  .tree-graph__controls::after {
-    content: "Mẹo: kéo ngang hoặc dọc trong sơ đồ để xem thêm thành viên.";
-  }
+
 }
 
 @media (prefers-reduced-motion: reduce) {
