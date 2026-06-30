@@ -748,6 +748,17 @@ textarea {
   transition: border-color 0.15s ease;
 }
 
+select {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%231d1c1a' stroke-width='2.5'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M19.5 8.25l-7.5 7.5-7.5-7.5'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 1rem center;
+  background-size: 1.1rem;
+  padding-right: 2.75rem !important;
+}
+
 input:not([type="checkbox"]):not([type="radio"]):focus,
 select:focus,
 textarea:focus {
@@ -878,7 +889,7 @@ fieldset {
 }
 
 .text-size-control__slider {
-  min-height: var(--min-touch-target);
+  display: none !important;
 }
 
 .text-size-control__value {
@@ -2123,7 +2134,6 @@ fieldset .field {
 }
 
 .onboarding-title {
-  font-family: 'Merriweather', 'Playfair Display', serif;
   font-size: 1.375rem;
   font-weight: 700;
   color: var(--color-fg);

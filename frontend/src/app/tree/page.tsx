@@ -99,6 +99,7 @@ function TreePageContent({ searchParams }: TreePageProps) {
   const [showTutorial, setShowTutorial] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isCollaborationOpen, setIsCollaborationOpen] = useState(false);
+  const [showBirthYears, setShowBirthYears] = useState(true);
 
   const handleCloseCollaboration = () => {
     setIsCollaborationOpen(false);
@@ -522,6 +523,7 @@ function TreePageContent({ searchParams }: TreePageProps) {
               addressRefreshKey={addressRefreshKey}
               focusId={focusId}
               onFocusChange={setFocusId}
+              showBirthYears={showBirthYears}
             />
           </div>
         </div>
@@ -811,6 +813,31 @@ function TreePageContent({ searchParams }: TreePageProps) {
               <section className="settings-section" style={{ borderTop: "1px solid var(--color-hairline-soft)", paddingTop: "1.5rem", marginTop: "1.5rem" }}>
                 <h3>Cài đặt hiển thị</h3>
                 <TextSizeControl />
+                
+                <div className="field" style={{ marginTop: "1rem" }}>
+                  <label style={{ display: "flex", alignItems: "center", gap: "0.5rem", cursor: "pointer", fontSize: "0.95rem" }}>
+                    <input
+                      type="checkbox"
+                      checked={showBirthYears}
+                      onChange={(e) => setShowBirthYears(e.target.checked)}
+                    />
+                    <span>Hiển thị năm sinh/năm mất trực tiếp trên các node cây</span>
+                  </label>
+                </div>
+
+                <div style={{ marginTop: "1rem" }}>
+                  <button
+                    type="button"
+                    className="btn btn-secondary"
+                    style={{ width: "100%", justifyContent: "center" }}
+                    onClick={() => {
+                      setShowTutorial(true);
+                      setIsSettingsOpen(false);
+                    }}
+                  >
+                    📖 Xem lại hướng dẫn sử dụng
+                  </button>
+                </div>
               </section>
 
               <section className="settings-section" style={{ borderTop: "1px solid var(--color-hairline-soft)", paddingTop: "1.5rem", marginTop: "1.5rem" }}>

@@ -71,6 +71,7 @@ export interface TreeGraphProps {
   addressRefreshKey?: number;
   focusId?: string | null;
   onFocusChange?: (id: string | null) => void;
+  showBirthYears?: boolean;
 }
 
 const NODE_WIDTH = 220;
@@ -94,6 +95,7 @@ export function TreeGraph({
   addressRefreshKey = 0,
   focusId,
   onFocusChange,
+  showBirthYears = true,
 }: TreeGraphProps) {
   const firstId = persons[0]?.id ?? "";
   const [internalEgoId, setInternalEgoId] = useState<string>(initialEgoId ?? firstId);
@@ -795,7 +797,7 @@ export function TreeGraph({
                                 {label}
                               </span>
                             )}
-                            {person.birthYear && (
+                            {showBirthYears && person.birthYear && (
                               <span className="tree-graph__node-lifespan">
                                 {person.deceased ? `(${person.birthYear} - †)` : `(s. ${person.birthYear})`}
                               </span>
