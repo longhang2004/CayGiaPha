@@ -594,73 +594,75 @@ export function TreeGraph({
 
   return (
     <div ref={fullscreenRef} className="tree-graph">
-      <div className="tree-graph__controls">
-        {!hideViewpointSelector && (
-          <ViewpointSelector
-            persons={persons}
-            egoId={activeEgoId}
-            onChange={handleSelectViewpoint}
-            disabled={loading}
-          />
-        )}
-        <p role="status" aria-live="polite" className="tree-graph__status">
-          {loading ? "Đang tính cách xưng hô…" : error ?? ""}
-        </p>
+      {!hideViewpointSelector && (
+        <div className="tree-graph__controls">
+          {!hideViewpointSelector && (
+            <ViewpointSelector
+              persons={persons}
+              egoId={activeEgoId}
+              onChange={handleSelectViewpoint}
+              disabled={loading}
+            />
+          )}
+          <p role="status" aria-live="polite" className="tree-graph__status">
+            {loading ? "Đang tính cách xưng hô…" : error ?? ""}
+          </p>
 
-        {/* Branch Focus Mode Controls (only shown if not controlled externally by parent) */}
-        {!onFocusChange && activeSelectedId && (
-          <button
-            type="button"
-            className={`btn btn-secondary tree-graph__focus-toggle-btn ${activeFocusId === activeSelectedId ? "tree-graph__focus-toggle-btn--active" : ""}`}
-            onClick={() => activeSetFocusId(activeFocusId === activeSelectedId ? null : activeSelectedId)}
-            style={{
-              marginLeft: "auto",
-              fontSize: "0.8125rem",
-              padding: "0.25rem 0.75rem",
-              minHeight: "36px",
-              display: "flex",
-              alignItems: "center",
-              gap: "0.25rem",
-              border: activeFocusId === activeSelectedId ? "1px solid var(--color-brand)" : undefined
-            }}
-          >
-            {activeFocusId === activeSelectedId ? (
-              <>
-                <span>✕</span> Hiện toàn bộ cây
-              </>
-            ) : (
-              <>
-                <span>👁</span> Xem riêng nhánh này
-              </>
-            )}
-          </button>
-        )}
-        {!onFocusChange && activeFocusId && !activeSelectedId && (
-          <div
-            className="tree-graph__focus-badge-container"
-            style={{
-              marginLeft: "auto",
-              display: "flex",
-              alignItems: "center",
-              gap: "0.5rem",
-              fontSize: "0.8125rem",
-              color: "var(--color-brand)",
-              fontWeight: 600
-            }}
-          >
-            <span>Đang xem một nhánh</span>
+          {/* Branch Focus Mode Controls (only shown if not controlled externally by parent) */}
+          {!onFocusChange && activeSelectedId && (
             <button
               type="button"
-              className="btn btn-secondary"
-              style={{ padding: "0 0.5rem", minHeight: "28px", minWidth: "28px" }}
-              onClick={() => activeSetFocusId(null)}
-              title="Hiện toàn bộ cây"
+              className={`btn btn-secondary tree-graph__focus-toggle-btn ${activeFocusId === activeSelectedId ? "tree-graph__focus-toggle-btn--active" : ""}`}
+              onClick={() => activeSetFocusId(activeFocusId === activeSelectedId ? null : activeSelectedId)}
+              style={{
+                marginLeft: "auto",
+                fontSize: "0.8125rem",
+                padding: "0.25rem 0.75rem",
+                minHeight: "36px",
+                display: "flex",
+                alignItems: "center",
+                gap: "0.25rem",
+                border: activeFocusId === activeSelectedId ? "1px solid var(--color-brand)" : undefined
+              }}
             >
-              ✕
+              {activeFocusId === activeSelectedId ? (
+                <>
+                  <span>✕</span> Hiện toàn bộ cây
+                </>
+              ) : (
+                <>
+                  <span>👁</span> Xem riêng nhánh này
+                </>
+              )}
             </button>
-          </div>
-        )}
-      </div>
+          )}
+          {!onFocusChange && activeFocusId && !activeSelectedId && (
+            <div
+              className="tree-graph__focus-badge-container"
+              style={{
+                marginLeft: "auto",
+                display: "flex",
+                alignItems: "center",
+                gap: "0.5rem",
+                fontSize: "0.8125rem",
+                color: "var(--color-brand)",
+                fontWeight: 600
+              }}
+            >
+              <span>Đang xem một nhánh</span>
+              <button
+                type="button"
+                className="btn btn-secondary"
+                style={{ padding: "0 0.5rem", minHeight: "28px", minWidth: "28px" }}
+                onClick={() => activeSetFocusId(null)}
+                title="Hiện toàn bộ cây"
+              >
+                ✕
+              </button>
+            </div>
+          )}
+        </div>
+      )}
 
       <div
         ref={containerRef}
@@ -668,7 +670,7 @@ export function TreeGraph({
         style={{
           position: "relative",
           width: "100%",
-          height: "550px",
+          height: "100%",
           overflow: "hidden",
           touchAction: "none",
         }}

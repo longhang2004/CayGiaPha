@@ -1106,7 +1106,9 @@ fieldset {
 /* In-App Sidebar Layout */
 .inapp-layout {
   display: flex;
-  min-height: 100vh;
+  height: 100vh;
+  max-height: 100vh;
+  overflow: hidden;
   background-color: var(--color-bg);
 }
 
@@ -1115,6 +1117,10 @@ fieldset {
   margin-left: 260px; /* Width of the sidebar */
   padding: var(--space-xl) var(--space-md);
   min-width: 0;
+  height: 100vh;
+  max-height: 100vh;
+  overflow-y: auto;
+  position: relative;
   transition: margin-left 0.2s ease;
 }
 
