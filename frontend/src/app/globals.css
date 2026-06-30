@@ -451,18 +451,26 @@ main {
     grid-template-columns: 1fr;
   }
 
+  .tree-workspace {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
   .tree-workspace__layout {
-    grid-template-columns: 1fr;
-    display: flex;
-    flex-direction: column;
+    display: flex !important;
+    flex-direction: column !important;
+    width: 100% !important;
+    gap: var(--space-lg) !important;
   }
 
   .tree-workspace__main {
     order: 1;
+    width: 100% !important;
   }
 
   .tree-workspace__info-panel {
     order: 2;
+    width: 100% !important;
   }
 
   .home-steps {
@@ -1083,13 +1091,24 @@ fieldset {
 
 /* Mobile responsive styles */
 @media (max-width: 900px) {
+  html, body {
+    overflow-x: hidden;
+  }
+
+  .inapp-layout {
+    overflow-x: hidden;
+    width: 100%;
+  }
+
   .inapp-content {
-    margin-left: 0;
-    padding-top: calc(60px + var(--space-md));
+    margin-left: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    padding-top: calc(60px + var(--space-md)) !important;
   }
 
   .inapp-content--collapsed {
-    margin-left: 0;
+    margin-left: 0 !important;
   }
 
   .global-sidebar {
