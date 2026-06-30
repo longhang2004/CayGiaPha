@@ -4,7 +4,7 @@ import { useEffect, useState, useRef } from "react";
 import { getReminders, markReminderAsRead, deleteReminder, type InAppReminder } from "@/lib/persons";
 import { BellIcon, TrashIcon } from "@/components/ui/Icons";
 
-export function NotificationBell() {
+export function NotificationBell({ align = "right" }: { align?: "left" | "right" }) {
   const [reminders, setReminders] = useState<InAppReminder[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -116,14 +116,15 @@ export function NotificationBell() {
           style={{
             position: "absolute",
             top: "100%",
-            right: 0,
+            right: align === "right" ? 0 : "auto",
+            left: align === "left" ? 0 : "auto",
             marginTop: "0.5rem",
             width: "320px",
-            background: "rgba(25, 25, 25, 0.95)",
-            backdropFilter: "blur(12px)",
+            background: "var(--color-surface-card)",
+            color: "var(--color-fg)",
             border: "1px solid var(--color-hairline)",
             borderRadius: "12px",
-            boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.5)",
+            boxShadow: "0 12px 32px rgba(0, 0, 0, 0.12)",
             zIndex: 1000,
             overflow: "hidden",
             display: "flex",
@@ -162,8 +163,8 @@ export function NotificationBell() {
                   key={reminder.id}
                   style={{
                     padding: "0.75rem 1rem",
-                    borderBottom: "1px solid rgba(255, 255, 255, 0.05)",
-                    background: reminder.isRead ? "transparent" : "rgba(255, 255, 255, 0.02)",
+                    borderBottom: "1px solid var(--color-hairline)",
+                    background: reminder.isRead ? "transparent" : "var(--color-surface-strong)",
                     display: "flex",
                     flexDirection: "column",
                     gap: "0.25rem",

@@ -69,7 +69,7 @@ export function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse }: Side
               alignItems: "center",
               gap: isCollapsed ? "0.75rem" : "0.5rem"
             }}>
-              {user && <NotificationBell />}
+              {user && <NotificationBell align="left" />}
               <button
                 type="button"
                 className="sidebar-toggle-btn"

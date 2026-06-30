@@ -517,3 +517,39 @@
   visibility: visible;
   transform: translateX(-50%) translateY(-5px);
 }
+
+@media (prefers-color-scheme: dark) {
+  .node-male {
+    background-color: #0d2238 !important;
+    border-color: #2b567d !important;
+    color: #bae6fd !important;
+  }
+  .node-male-deceased {
+    background-color: #1a222e !important;
+    border-color: #3f4e66 !important;
+    color: #8fa0ba !important;
+  }
+  .node-female {
+    background-color: #331320 !important;
+    border-color: #7d2a4a !important;
+    color: #fbcfe8 !important;
+  }
+  .node-female-deceased {
+    background-color: #1a222e !important;
+    border-color: #3f4e66 !important;
+    color: #8fa0ba !important;
+  }
+  .node-unknown {
+    background-color: #1a222e !important;
+    border-color: #334155 !important;
+    color: #cbd5e1 !important;
+  }
+  .tree-graph__node-tooltip {
+    background-color: var(--color-surface-card) !important;
+    color: var(--color-fg) !important;
+    border: 1px solid var(--color-hairline) !important;
+  }
+  .tree-graph__node-tooltip::after {
+    border-color: var(--color-hairline) transparent transparent transparent !important;
+  }
+}

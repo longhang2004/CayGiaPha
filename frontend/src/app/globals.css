@@ -51,6 +51,25 @@
   --space-section: 5rem; /* 80px section spacing rhythm */
 }
 
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-bg: #141412; /* Nền tối ấm áp */
+    --color-fg: #f5f4f0; /* Chữ sáng ấm áp */
+    --color-muted: #a5a298; /* Chữ phụ */
+    --color-accent: #e06c53; /* Đất nung sáng cho chế độ tối */
+    --color-border: #6d6b63;
+    --color-focus: #e06c53;
+
+    --color-brand: #e06c53;
+    --color-brand-active: #f38f7a;
+    --color-hairline: #2d2b27;
+    --color-hairline-soft: #23221e;
+    --color-hairline-strong: #44423c;
+    --color-surface-card: #1e1d1b;
+    --color-surface-strong: #2a2824;
+  }
+}
+
 * {
   box-sizing: border-box;
 }
@@ -686,7 +705,7 @@ main {
   }
 }
 
-@media (max-width: 600px) {
+@media (max-width: 900px) {
   .tree-page-header__brand {
     display: none !important;
   }
