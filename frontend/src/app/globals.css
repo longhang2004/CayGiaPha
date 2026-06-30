@@ -1924,3 +1924,175 @@ fieldset .field {
   color: var(--color-muted);
 }
 
+/* Onboarding Tutorial Modal Styles */
+.onboarding-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(38, 37, 30, 0.4);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: fade-in 0.25s ease;
+}
+
+.onboarding-popup {
+  width: 420px;
+  height: 520px;
+  background-color: var(--color-bg);
+  border: 1px solid var(--color-hairline);
+  border-radius: 20px;
+  box-shadow: 0 20px 50px rgba(38, 37, 30, 0.15);
+  padding: 2.25rem 2rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  position: relative;
+  overflow: hidden;
+  animation: scale-up 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.onboarding-close-x {
+  position: absolute;
+  top: 1rem;
+  right: 1.25rem;
+  background: none;
+  border: none;
+  font-size: 1.75rem;
+  color: var(--color-muted);
+  cursor: pointer;
+  z-index: 10;
+  line-height: 1;
+  padding: 4px;
+}
+.onboarding-close-x:hover {
+  color: var(--color-fg);
+}
+
+.onboarding-carousel {
+  flex-grow: 1;
+  overflow: hidden;
+  position: relative;
+  width: 100%;
+}
+
+.onboarding-carousel__track {
+  display: flex;
+  height: 100%;
+  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.onboarding-slide {
+  flex-shrink: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 0 0.5rem;
+}
+
+.onboarding-illustration {
+  height: 150px;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 2rem;
+  background-color: var(--color-surface-card);
+  border-radius: 12px;
+  border: 1px solid var(--color-hairline);
+}
+
+.onboarding-title {
+  font-family: 'Merriweather', 'Playfair Display', serif;
+  font-size: 1.375rem;
+  font-weight: 700;
+  color: var(--color-fg);
+  margin: 0 0 1rem;
+  line-height: 1.3;
+}
+
+.onboarding-description {
+  font-size: 0.95rem;
+  color: var(--color-muted);
+  margin: 0;
+  line-height: 1.6;
+}
+
+.onboarding-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-top: 1px solid var(--color-hairline-soft);
+  padding-top: 1.25rem;
+  margin-top: 1rem;
+  min-height: 3.5rem;
+}
+
+.onboarding-btn-nav {
+  min-width: 90px;
+  font-size: 0.875rem !important;
+  font-weight: 600 !important;
+  padding: 0.5rem 1rem !important;
+  min-height: 40px !important;
+}
+
+.onboarding-dots {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  justify-content: center;
+}
+
+.onboarding-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: var(--color-hairline-strong);
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.onboarding-dot--active {
+  background-color: var(--color-brand);
+  transform: scale(1.2);
+}
+
+/* Animations */
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes scale-up {
+  from { transform: scale(0.95); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+@media (max-width: 480px) {
+  .onboarding-popup {
+    width: 90%;
+    height: auto;
+    min-height: 480px;
+    padding: 2rem 1.25rem 1.25rem;
+  }
+  .onboarding-illustration {
+    margin-bottom: 1.25rem;
+    height: 120px;
+  }
+  .onboarding-title {
+    font-size: 1.2rem;
+  }
+  .onboarding-description {
+    font-size: 0.875rem;
+  }
+}
+

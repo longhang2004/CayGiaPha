@@ -32,6 +32,7 @@ import {
 } from "@/lib/collaboration";
 import "@/components/graph/graph.css";
 import { LightbulbIcon } from "@/components/ui/Icons";
+import { OnboardingModal } from "@/components/onboarding/OnboardingModal";
 
 interface TreePageProps {
   searchParams: {
@@ -490,37 +491,7 @@ function TreePageContent({ searchParams }: TreePageProps) {
         </div>
       </div>
 
-      {showTutorial && (
-        <div className="tutorial-popup-overlay">
-          <div className="tutorial-popup">
-            <div className="tutorial-popup__header">
-              <h4 style={{ display: "flex", alignItems: "center", gap: "0.4rem", margin: 0 }}>
-                <LightbulbIcon size={16} /> Hướng dẫn nhanh
-              </h4>
-              <button
-                type="button"
-                className="tutorial-popup__close"
-                onClick={handleDismissTutorial}
-                aria-label="Đóng hướng dẫn"
-              >
-                &times;
-              </button>
-            </div>
-            <div className="tutorial-popup__body">
-              <ul>
-                <li><strong>Chọn người:</strong> Bấm vào bất kỳ thành viên nào trên sơ đồ để xem chi tiết, sửa thông tin hoặc thêm người thân.</li>
-                <li><strong>Cách xưng hô:</strong> Thay đổi góc nhìn ở bộ chọn phía trên sơ đồ để xem cách xưng hô của cả dòng họ đối với người đó.</li>
-                <li><strong>Thêm quan hệ:</strong> {canEdit ? "Sử dụng bảng bên phải để thêm thành viên mới hoặc kết nối các mối quan hệ." : "Bạn đang xem cây gia phả theo quyền chia sẻ."}</li>
-              </ul>
-            </div>
-            <div className="tutorial-popup__footer">
-              <button type="button" className="btn" onClick={handleDismissTutorial}>
-                Đã hiểu
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <OnboardingModal isOpen={showTutorial} onClose={handleDismissTutorial} />
 
       <div className="tree-workspace__layout">
         {/* Left/Center: Main Graph */}
