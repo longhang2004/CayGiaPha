@@ -341,23 +341,43 @@ main {
 /* New Sticky / Redesigned Tree Page Header */
 .tree-page-header {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  flex-wrap: wrap; /* Cho phép xuống hàng nếu màn hình chật */
-  padding: 1rem 1.5rem;
+  flex-direction: column;
+  padding: 1.25rem 1.5rem;
   background-color: var(--color-surface-card);
   border: 1px solid var(--color-hairline);
   border-radius: 16px;
-  gap: 1rem 1.5rem;
+  gap: 1rem;
   margin-bottom: 1.5rem;
   box-shadow: 0 4px 20px rgba(38, 37, 30, 0.02);
 }
 
-.tree-page-header__left {
+.tree-page-header__row-one {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem 1.5rem;
+  width: 100%;
+}
+
+.tree-page-header__row-one-right {
   display: flex;
   align-items: center;
   gap: 1.5rem;
   flex-wrap: wrap;
+  flex-grow: 1;
+  justify-content: flex-end;
+}
+
+.tree-page-header__row-two {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+  width: 100%;
+  border-top: 1px solid var(--color-hairline-soft);
+  padding-top: 0.85rem;
 }
 
 .tree-page-header__brand {
@@ -391,22 +411,18 @@ main {
 }
 
 .tree-page-header__viewpoint {
-  border-left: 1px solid var(--color-hairline);
-  padding-left: 1.5rem;
-}
-
-.tree-page-header__right {
   display: flex;
   align-items: center;
-  gap: 1.5rem;
-  flex-wrap: wrap;
-  flex-grow: 1;
-  justify-content: flex-end;
+}
+
+.tree-page-header__group-toggle {
+  display: flex;
+  align-items: center;
 }
 
 .tree-page-header__search-container {
   width: 100%;
-  max-width: 460px; /* Tăng từ 320px để ô tìm kiếm rộng rãi hơn */
+  max-width: 480px;
   flex-grow: 1;
 }
 
@@ -1400,6 +1416,22 @@ fieldset .field {
   z-index: 100;
   max-height: 250px;
   overflow-y: auto;
+}
+
+/* Floating Filter Popover to avoid layout shift */
+.search-filter-popover {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  width: 320px;
+  background-color: var(--color-surface-card);
+  border: 1px solid var(--color-hairline);
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(38, 37, 30, 0.12);
+  padding: 1.25rem;
+  z-index: 110;
+  margin-top: 0.5rem;
+  animation: fade-in 0.2s ease;
 }
 
 .search-results-dropdown__list {

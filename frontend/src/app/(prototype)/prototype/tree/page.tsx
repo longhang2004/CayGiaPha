@@ -149,6 +149,7 @@ function PrototypeTreeContent() {
     () => nextSearchParams.get("panel") === "settings",
   );
   const [isCollaborationOpen, setIsCollaborationOpen] = useState(false);
+  const [showGroups, setShowGroups] = useState(true);
 
   const handleCloseCollaboration = () => {
     setIsCollaborationOpen(false);
@@ -248,9 +249,9 @@ function PrototypeTreeContent() {
   return (
     /* ===== BEGIN: mirror of src/app/tree/page.tsx (populated branch) ===== */
     <section className="tree-workspace">
-      {/* Redesigned Header: Brand logo + Tree Name + viewpoint switcher + Search Bar + Action buttons */}
+      {/* Redesigned 2-Row Header: Row 1 for Brand & Search/Actions, Row 2 for Viewpoint & Grouping Toggle */}
       <div className="tree-page-header">
-        <div className="tree-page-header__left">
+        <div className="tree-page-header__row-one">
           <div className="tree-page-header__brand">
             <img src="/logo.png" alt="Logo Cây Gia Phả" className="tree-page-header__logo" />
             <div className="tree-page-header__title-container">
@@ -258,6 +259,49 @@ function PrototypeTreeContent() {
               <span className="tree-page-header__count">{persons.length} thành viên</span>
             </div>
           </div>
+
+          <div className="tree-page-header__row-one-right">
+            <div className="tree-page-header__search-container">
+              <SearchPanel
+                treeId={PROTOTYPE_TREE_ID}
+                persons={persons}
+                addresses={addresses}
+                egoId={egoId}
+                viewpointId={selectedId || undefined}
+                onSelectResult={(id) => {
+                  setSelectedId(id);
+                  setEditMode(false);
+                  setAddRelativeMode(false);
+                }}
+              />
+            </div>
+            <div className="tree-page-header__actions">
+              <button
+                type="button"
+                className="btn btn-secondary"
+                onClick={() => setIsCollaborationOpen(true)}
+              >
+                Cộng tác
+              </button>
+              {isOwner && (
+                <button
+                  type="button"
+                  className="btn btn-primary btn-terracotta"
+                  onClick={() => {
+                    setSelectedId(null);
+                    setCreateMode(true);
+                    setAddRelativeMode(false);
+                    setEditMode(false);
+                  }}
+                >
+                  + Thêm thành viên
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+
+        <div className="tree-page-header__row-two">
           <div className="tree-page-header__viewpoint">
             <ViewpointSelector
               persons={persons}
@@ -266,45 +310,16 @@ function PrototypeTreeContent() {
               disabled={addressLoading}
             />
           </div>
-        </div>
-
-        <div className="tree-page-header__right">
-          <div className="tree-page-header__search-container">
-            <SearchPanel
-              treeId={PROTOTYPE_TREE_ID}
-              persons={persons}
-              addresses={addresses}
-              egoId={egoId}
-              viewpointId={selectedId || undefined}
-              onSelectResult={(id) => {
-                setSelectedId(id);
-                setEditMode(false);
-                setAddRelativeMode(false);
-              }}
-            />
-          </div>
-          <div className="tree-page-header__actions">
-            <button
-              type="button"
-              className="btn btn-secondary"
-              onClick={() => setIsCollaborationOpen(true)}
-            >
-              Cộng tác
-            </button>
-            {isOwner && (
-              <button
-                type="button"
-                className="btn btn-primary btn-terracotta"
-                onClick={() => {
-                  setSelectedId(null);
-                  setCreateMode(true);
-                  setAddRelativeMode(false);
-                  setEditMode(false);
-                }}
-              >
-                + Thêm thành viên
-              </button>
-            )}
+          <div className="tree-page-header__group-toggle">
+            <label style={{ display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "0.9rem", color: "var(--color-fg)", cursor: "pointer", fontWeight: 500 }}>
+              <input
+                type="checkbox"
+                checked={showGroups}
+                onChange={(e) => setShowGroups(e.target.checked)}
+                style={{ width: "18px", height: "18px", margin: 0, cursor: "pointer" }}
+              />
+              <span>Hiển thị nhóm gia đình 📦</span>
+            </label>
           </div>
         </div>
       </div>
@@ -338,6 +353,7 @@ function PrototypeTreeContent() {
               addressRefreshKey={addressRefreshKey}
               focusId={focusId}
               onFocusChange={setFocusId}
+              showGroups={showGroups}
             />
           </div>
         </div>
