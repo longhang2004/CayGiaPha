@@ -45,6 +45,27 @@ export async function GET() {
     `);
     console.log("collaboration_invitations table created/verified.");
 
+    // V16: Allow multiple trees and tree name
+    try {
+      await db.execute(sql`ALTER TABLE trees DROP CONSTRAINT IF EXISTS trees_owner_user_id_key;`);
+    } catch (e) {}
+    try {
+      await db.execute(sql`ALTER TABLE trees DROP CONSTRAINT IF EXISTS trees_owner_user_id_unique;`);
+    } catch (e) {}
+    try {
+      await db.execute(sql`ALTER TABLE trees DROP CONSTRAINT IF EXISTS trees_owner_user_id_uq;`);
+    } catch (e) {}
+    try {
+      await db.execute(sql`DROP INDEX IF EXISTS trees_owner_user_id_key;`);
+    } catch (e) {}
+    try {
+      await db.execute(sql`DROP INDEX IF EXISTS trees_owner_user_id_unique_idx;`);
+    } catch (e) {}
+    try {
+      await db.execute(sql`ALTER TABLE trees ADD COLUMN IF NOT EXISTS name TEXT NOT NULL DEFAULT 'Cây Gia Phả';`);
+    } catch (e) {}
+    console.log("V16 applied.");
+
     return NextResponse.json({ success: true, message: "Migrations executed successfully." });
   } catch (error: any) {
     console.error("Migration error:", error);

@@ -29,6 +29,24 @@ if (databaseUrl) {
   Promise.resolve().then(async () => {
     try {
       console.log("[drizzle] Auto-applying schema migrations...");
+      try {
+        await dbInstance.execute(sql`ALTER TABLE trees DROP CONSTRAINT IF EXISTS trees_owner_user_id_key;`);
+      } catch (e) {}
+      try {
+        await dbInstance.execute(sql`ALTER TABLE trees DROP CONSTRAINT IF EXISTS trees_owner_user_id_unique;`);
+      } catch (e) {}
+      try {
+        await dbInstance.execute(sql`ALTER TABLE trees DROP CONSTRAINT IF EXISTS trees_owner_user_id_uq;`);
+      } catch (e) {}
+      try {
+        await dbInstance.execute(sql`DROP INDEX IF EXISTS trees_owner_user_id_key;`);
+      } catch (e) {}
+      try {
+        await dbInstance.execute(sql`DROP INDEX IF EXISTS trees_owner_user_id_unique_idx;`);
+      } catch (e) {}
+      try {
+        await dbInstance.execute(sql`ALTER TABLE trees ADD COLUMN IF NOT EXISTS name TEXT NOT NULL DEFAULT 'Cây Gia Phả';`);
+      } catch (e) {}
       await dbInstance.execute(sql`ALTER TABLE person_photos ADD COLUMN IF NOT EXISTS photo_year INTEGER;`);
       await dbInstance.execute(sql`ALTER TABLE person_photos ADD COLUMN IF NOT EXISTS description TEXT;`);
       await dbInstance.execute(sql`

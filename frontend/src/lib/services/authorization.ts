@@ -1,5 +1,5 @@
 import { db } from "../db";
-import { trees, claims, treeShareTokens, userConsents, legalDocuments, persons, users } from "../db/schema";
+import { trees, claims, treeShareTokens, userConsents, legalDocuments, persons, users, treeCollaborators } from "../db/schema";
 import { eq, and, desc } from "drizzle-orm";
 import { ApiException } from "./errors";
 import { consentService } from "./consent";
@@ -62,9 +62,38 @@ export class AuthorizationService {
       return "NEITHER";
     }
 
-    // OWNER: user owns at most one tree, so check if they own targetTreeId
-    if (targetTreeId && ownedTreeId === targetTreeId) {
-      return "OWNER";
+    let treeId = targetTreeId;
+    if (!treeId && targetPersonId) {
+      const p = await db
+        .select({ treeId: persons.treeId })
+        .from(persons)
+        .where(eq(persons.id, targetPersonId))
+        .then((rows) => rows[0]);
+      if (p) {
+        treeId = p.treeId;
+      }
+    }
+
+    if (treeId) {
+      // Check if user is the direct owner of the tree
+      const isOwner = await db
+        .select({ id: trees.id })
+        .from(trees)
+        .where(and(eq(trees.id, treeId), eq(trees.ownerUserId, currentUserId)))
+        .then((rows) => rows.length > 0);
+      if (isOwner) {
+        return "OWNER";
+      }
+
+      // Check if user is a collaborator with write access
+      const isCollab = await db
+        .select({ id: treeCollaborators.id })
+        .from(treeCollaborators)
+        .where(and(eq(treeCollaborators.treeId, treeId), eq(treeCollaborators.userId, currentUserId)))
+        .then((rows) => rows.length > 0);
+      if (isCollab) {
+        return "OWNER";
+      }
     }
 
     // LINKED_CLAIMED_USER: check if the target person is claimed by this user
@@ -131,8 +160,23 @@ export class AuthorizationService {
       return false;
     }
 
-    // Owner always has access
-    if (ownedTreeId === targetTreeId) {
+    // Owner check
+    const isOwner = await db
+      .select({ id: trees.id })
+      .from(trees)
+      .where(and(eq(trees.id, targetTreeId), eq(trees.ownerUserId, currentUserId)))
+      .then((rows) => rows.length > 0);
+    if (isOwner) {
+      return true;
+    }
+
+    // Collaborator check
+    const isCollab = await db
+      .select({ id: treeCollaborators.id })
+      .from(treeCollaborators)
+      .where(and(eq(treeCollaborators.treeId, targetTreeId), eq(treeCollaborators.userId, currentUserId)))
+      .then((rows) => rows.length > 0);
+    if (isCollab) {
       return true;
     }
 

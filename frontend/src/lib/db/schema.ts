@@ -57,8 +57,8 @@ export const trees = pgTable("trees", {
   id: uuid("id").primaryKey().defaultRandom(),
   ownerUserId: uuid("owner_user_id")
     .notNull()
-    .unique()
     .references(() => users.id),
+  name: text("name").notNull().default("Cây Gia Phả"),
   region: text("region").notNull().default("Bac"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   sharing: text("sharing").notNull().default("private"),
@@ -332,5 +332,47 @@ export const inAppReminders = pgTable(
       table.daysUntil
     ),
   })
+);
+
+// ==========================================
+// TREE COLLABORATORS
+// ==========================================
+export const treeCollaborators = pgTable(
+  "tree_collaborators",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    treeId: uuid("tree_id")
+      .notNull()
+      .references(() => trees.id, { onDelete: "cascade" }),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    role: text("role").notNull().default("contributor"),
+    joinedAt: timestamp("joined_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => ({
+    treeUserUniqueIdx: uniqueIndex("uq_tree_collaborators_tree_user").on(table.treeId, table.userId),
+  })
+);
+
+// ==========================================
+// COLLABORATION INVITATIONS
+// ==========================================
+export const collaborationInvitations = pgTable(
+  "collaboration_invitations",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    treeId: uuid("tree_id")
+      .notNull()
+      .references(() => trees.id, { onDelete: "cascade" }),
+    inviterUserId: uuid("inviter_user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    email: text("email").notNull(),
+    code: text("code").notNull(),
+    status: text("status").notNull().default("pending"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  }
 );
 
