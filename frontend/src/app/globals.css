@@ -335,8 +335,8 @@ main {
 }
 
 .tree-workspace {
-  margin: -2rem -1.25rem -2rem -1.25rem;
-  height: calc(100vh + 4rem);
+  margin: 0 !important;
+  height: 100vh;
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -1126,6 +1126,10 @@ fieldset {
 
 .inapp-content--collapsed {
   margin-left: 72px;
+}
+
+.inapp-content--no-padding {
+  padding: 0 !important;
 }
 
 .global-sidebar {

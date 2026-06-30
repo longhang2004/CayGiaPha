@@ -40,7 +40,7 @@
 }
 
 .tree-graph__canvas {
-  overflow: auto;
+  overflow: hidden;
   border: none;
   border-radius: 0;
   background-color: transparent;

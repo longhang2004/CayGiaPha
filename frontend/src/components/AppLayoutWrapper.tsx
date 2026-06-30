@@ -70,12 +70,19 @@ export function AppLayoutWrapper({ children }: { children: React.ReactNode }) {
         onToggleCollapse={handleToggleCollapse}
       />
 
-      <div
-        id="main-content"
-        className={`inapp-content ${isSidebarCollapsed ? "inapp-content--collapsed" : ""}`}
-      >
-        {children}
-      </div>
+      {
+        (() => {
+          const isTreeWorkspacePage = pathname.startsWith("/tree/") && pathname !== "/tree";
+          return (
+            <div
+              id="main-content"
+              className={`inapp-content ${isSidebarCollapsed ? "inapp-content--collapsed" : ""} ${isTreeWorkspacePage ? "inapp-content--no-padding" : ""}`}
+            >
+              {children}
+            </div>
+          );
+        })()
+      }
     </div>
   );
 }
