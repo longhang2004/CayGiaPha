@@ -561,20 +561,51 @@ export function SearchPanel({
 
             {results && results.length > 0 ? (
               <ul aria-label="Kết quả tìm kiếm" className="search-results-dropdown__list">
-                {results.map((r) => (
-                  <li key={r.personId}>
-                    <button
-                      type="button"
-                      className="search-results-dropdown__item"
-                      onClick={() => {
-                        onSelectResult?.(r.personId);
-                        setShowDropdown(false);
-                      }}
-                    >
-                      {r.displayName}
-                    </button>
-                  </li>
-                ))}
+                {results.map((r) => {
+                  const person = persons?.find((p) => p.id === r.personId);
+                  const isEgo = r.personId === (egoId || viewpointId);
+                  const addressesMap = addresses || new Map<string, Address>();
+                  const address = addressesMap.get(r.personId);
+                  const label = isEgo ? "bản thân" : (address ? addressLabel(address) : "");
+
+                  return (
+                    <li key={r.personId}>
+                      <button
+                        type="button"
+                        className="search-results-dropdown__item"
+                        onClick={() => {
+                          onSelectResult?.(r.personId);
+                          setShowDropdown(false);
+                        }}
+                      >
+                        {/* Avatar tròn phân biệt giới tính */}
+                        <div className={`search-results-dropdown__avatar search-results-dropdown__avatar--${person?.gender || "unknown"}`}>
+                          {person?.displayName ? person.displayName.charAt(0).toUpperCase() : "?"}
+                        </div>
+
+                        {/* Tên thành viên và Vai vế xưng hô */}
+                        <div className="search-results-dropdown__info">
+                          <span className="search-results-dropdown__name">
+                            {r.displayName}
+                          </span>
+                          {label && (
+                            <span className="search-results-dropdown__label">
+                              {label.charAt(0).toUpperCase() + label.slice(1)}
+                            </span>
+                          )}
+                        </div>
+
+                        {/* Năm sinh - Năm mất */}
+                        {person && (
+                          <div className="search-results-dropdown__meta">
+                            {person.birthYear || "—"}
+                            {person.deceased ? ` - ${person.deathYear || "Mất"}` : ""}
+                          </div>
+                        )}
+                      </button>
+                    </li>
+                  );
+                })}
               </ul>
             ) : null}
           </div>
