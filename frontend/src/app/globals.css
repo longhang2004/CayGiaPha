@@ -32,6 +32,14 @@
   --color-surface-card: #ffffff;
   --color-surface-strong: #ebe6dd; /* Be trầm */
 
+  /* Theme-aware backgrounds */
+  --color-island-bg: rgba(255, 255, 255, 0.85);
+  --color-header-bg: rgba(247, 247, 244, 0.85);
+  --color-hero-card-bg: linear-gradient(145deg, #fffaf4, var(--color-surface-card));
+  --color-surface-card-translucent: rgba(255, 255, 255, 0.72);
+  --color-step-num-bg: #fff3eb;
+  --color-step-num-text: var(--color-accent);
+
   /* AI Timeline Colors */
   --color-timeline-thinking: #dfa88f;
   --color-timeline-grep: #9fc9a2;
@@ -51,8 +59,32 @@
   --space-section: 5rem; /* 80px section spacing rhythm */
 }
 
+html.dark :root {
+  --color-bg: #141412; /* Nền tối ấm áp */
+  --color-fg: #f5f4f0; /* Chữ sáng ấm áp */
+  --color-muted: #a5a298; /* Chữ phụ */
+  --color-accent: #e06c53; /* Đất nung sáng cho chế độ tối */
+  --color-border: #6d6b63;
+  --color-focus: #e06c53;
+
+  --color-brand: #e06c53;
+  --color-brand-active: #f38f7a;
+  --color-hairline: #2d2b27;
+  --color-hairline-soft: #23221e;
+  --color-hairline-strong: #44423c;
+  --color-surface-card: #1e1d1b;
+  --color-surface-strong: #2a2824;
+
+  --color-island-bg: rgba(30, 29, 27, 0.85);
+  --color-header-bg: rgba(20, 20, 18, 0.85);
+  --color-hero-card-bg: linear-gradient(145deg, #1e1d1b, #141412);
+  --color-surface-card-translucent: rgba(30, 29, 27, 0.85);
+  --color-step-num-bg: #3a2218;
+  --color-step-num-text: #ff9b85;
+}
+
 @media (prefers-color-scheme: dark) {
-  :root {
+  html:not(.light) :root {
     --color-bg: #141412; /* Nền tối ấm áp */
     --color-fg: #f5f4f0; /* Chữ sáng ấm áp */
     --color-muted: #a5a298; /* Chữ phụ */
@@ -67,6 +99,13 @@
     --color-hairline-strong: #44423c;
     --color-surface-card: #1e1d1b;
     --color-surface-strong: #2a2824;
+
+    --color-island-bg: rgba(30, 29, 27, 0.85);
+    --color-header-bg: rgba(20, 20, 18, 0.85);
+    --color-hero-card-bg: linear-gradient(145deg, #1e1d1b, #141412);
+    --color-surface-card-translucent: rgba(30, 29, 27, 0.85);
+    --color-step-num-bg: #3a2218;
+    --color-step-num-text: #ff9b85;
   }
 }
 
@@ -217,7 +256,7 @@ main {
   border-radius: 24px;
   background:
     radial-gradient(circle at 20% 10%, rgba(245, 78, 0, 0.16), transparent 32%),
-    linear-gradient(145deg, #fffaf4, var(--color-surface-card));
+    var(--color-hero-card-bg);
   box-shadow: 0 24px 70px rgba(38, 37, 30, 0.1);
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
@@ -246,7 +285,7 @@ main {
   padding: var(--space-md);
   border: 1px solid var(--color-hairline-soft);
   border-radius: 12px;
-  background: rgba(255, 255, 255, 0.72);
+  background: var(--color-surface-card-translucent);
   color: var(--color-fg);
   font-size: 0.9375rem;
 }
@@ -263,7 +302,7 @@ main {
   padding: var(--space-lg);
   border: 1px solid var(--color-hairline);
   border-radius: 18px;
-  background: rgba(255, 255, 255, 0.72);
+  background: var(--color-surface-card-translucent);
   transition: border-color 0.18s ease, transform 0.18s ease;
 }
 
@@ -279,8 +318,8 @@ main {
   min-height: 2rem;
   padding: 0.25rem 0.75rem;
   border-radius: 999px;
-  background: #fff3eb;
-  color: var(--color-accent);
+  background: var(--color-step-num-bg);
+  color: var(--color-step-num-text);
   font-size: 0.8125rem;
   font-weight: 700;
 }
@@ -372,7 +411,7 @@ main {
   z-index: 75 !important;
   width: calc(100% - 4rem) !important;
   max-width: 900px !important;
-  background-color: rgba(255, 255, 255, 0.85) !important;
+  background-color: var(--color-island-bg) !important;
   backdrop-filter: blur(12px) !important;
   -webkit-backdrop-filter: blur(12px) !important;
   border: 1px solid var(--color-hairline) !important;
@@ -1118,7 +1157,7 @@ fieldset {
   z-index: 100;
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  background-color: rgba(247, 247, 244, 0.85);
+  background-color: var(--color-header-bg);
   box-shadow: 0 1px 0 rgba(0, 0, 0, 0.05);
 }
 

@@ -29,6 +29,10 @@ export function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse }: Side
   const isTreeActive = pathname.startsWith("/tree");
   const isHelpActive = pathname.startsWith("/help");
 
+  const pathParts = pathname.split("/");
+  const activeTreeId = (pathParts.length > 2 && pathParts[1] === "tree") ? pathParts[2] : null;
+  const settingsHref = activeTreeId ? `/tree/${activeTreeId}?settings=true` : `/tree?settings=true`;
+
   // On mobile the sidebar is an open drawer (isOpen=true). In that mode the
   // toggle button closes the drawer rather than collapsing it to icon-only
   // width (which is a desktop-only concept).
@@ -116,7 +120,7 @@ export function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse }: Side
             </Link>
             {user && (
               <Link
-                href="/tree?settings=true"
+                href={settingsHref}
                 className="global-sidebar__link"
                 onClick={onClose}
                 title={isCollapsed ? "Cài đặt" : undefined}
