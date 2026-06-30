@@ -14,7 +14,7 @@ export function OnboardingModal({ isOpen, onClose }: OnboardingModalProps) {
 
   const steps = [
     {
-      title: "Chào mừng bạn đến với Cây Gia Phả 🌳",
+      title: "Chào mừng bạn đến với Cây Gia Phả\u00a0🌳",
       description: "Nơi lưu giữ và kết nối những ký ức gia đình ấm áp qua nhiều thế hệ Việt.",
       illustration: (
         <svg viewBox="0 0 200 120" width="100%" height="120" fill="none" xmlns="http://www.w3.org/2000/svg">
