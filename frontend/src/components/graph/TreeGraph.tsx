@@ -71,7 +71,6 @@ export interface TreeGraphProps {
   addressRefreshKey?: number;
   focusId?: string | null;
   onFocusChange?: (id: string | null) => void;
-  showGroups?: boolean;
 }
 
 const NODE_WIDTH = 220;
@@ -95,7 +94,6 @@ export function TreeGraph({
   addressRefreshKey = 0,
   focusId,
   onFocusChange,
-  showGroups = true,
 }: TreeGraphProps) {
   const firstId = persons[0]?.id ?? "";
   const [internalEgoId, setInternalEgoId] = useState<string>(initialEgoId ?? firstId);
@@ -188,91 +186,6 @@ export function TreeGraph({
     () => layoutMultiTreeNodes(filteredData.persons, filteredData.relationships, { cellWidth: 260, cellHeight: 150, padding: 100 }),
     [filteredData.persons, filteredData.relationships]
   );
-
-  // Compute group boxes for nuclear families (parents + children)
-  const familyBoxes = useMemo(() => {
-    if (!showGroups) return [];
-
-    const boxes: {
-      key: string;
-      x: number;
-      y: number;
-      width: number;
-      height: number;
-      label: string;
-    }[] = [];
-
-    // Map children to their parent-child relationships and parent IDs
-    const childParentsMap = new Map<string, string[]>();
-    filteredData.relationships.forEach((rel) => {
-      if (rel.type === "bloodline_father" || rel.type === "bloodline_mother") {
-        if (!childParentsMap.has(rel.targetId)) childParentsMap.set(rel.targetId, []);
-        childParentsMap.get(rel.targetId)!.push(rel.sourceId);
-      }
-    });
-
-    const parentUnitChildren = new Map<string, string[]>();
-    childParentsMap.forEach((parents, childId) => {
-      let resolvedParents = [...parents];
-      if (resolvedParents.length === 1) {
-        const p1 = resolvedParents[0];
-        const marriageRel = filteredData.relationships.find(
-          (r) =>
-            r.type === "marriage" &&
-            (r.sourceId === p1 || r.targetId === p1)
-        );
-        if (marriageRel) {
-          resolvedParents = [marriageRel.sourceId, marriageRel.targetId];
-        }
-      }
-      const parentUnitId = resolvedParents.sort().join(":");
-      if (!parentUnitChildren.has(parentUnitId)) {
-        parentUnitChildren.set(parentUnitId, []);
-      }
-      parentUnitChildren.get(parentUnitId)!.push(childId);
-    });
-
-    parentUnitChildren.forEach((childrenList, parentUnitId) => {
-      const parents = parentUnitId.split(":");
-      const members = [...parents, ...childrenList].filter(id => positions.has(id));
-      if (members.length <= 1) return;
-
-      let minX = Infinity, maxX = -Infinity;
-      let minY = Infinity, maxY = -Infinity;
-      members.forEach((id) => {
-        const pos = positions.get(id);
-        if (pos) {
-          minX = Math.min(minX, pos.x - NODE_WIDTH / 2);
-          maxX = Math.max(maxX, pos.x + NODE_WIDTH / 2);
-          minY = Math.min(minY, pos.y - NODE_HEIGHT / 2);
-          maxY = Math.max(maxY, pos.y + NODE_HEIGHT / 2);
-        }
-      });
-
-      const padding = 20;
-      const x = minX - padding;
-      const y = minY - padding;
-      const width = (maxX - minX) + 2 * padding;
-      const height = (maxY - minY) + 2 * padding;
-
-      const parentNames = parents
-        .map(id => filteredData.persons.find(p => p.id === id)?.displayName)
-        .filter(Boolean)
-        .join(" & ");
-      const label = parentNames ? `Gia đình ${parentNames}` : "Gia đình";
-
-      boxes.push({
-        key: parentUnitId,
-        x,
-        y,
-        width,
-        height,
-        label,
-      });
-    });
-
-    return boxes;
-  }, [showGroups, filteredData.relationships, filteredData.persons, positions]);
 
   // Group parent-child relationships for joint rendering
   const { jointEdges, processedRelIds } = useMemo(() => {
@@ -775,50 +688,6 @@ export function TreeGraph({
           style={{ cursor: isDragging ? "grabbing" : "grab" }}
         >
           <g transform={`translate(${pan.x}, ${pan.y}) scale(${zoom})`}>
-            {/* Group Bounding Boxes rendered behind nodes/edges */}
-            {showGroups && (
-              <g className="tree-graph__family-groups" style={{ pointerEvents: "none" }}>
-                {familyBoxes.map((box) => (
-                  <g key={box.key}>
-                    <rect
-                      x={box.x}
-                      y={box.y}
-                      width={box.width}
-                      height={box.height}
-                      fill="rgba(45, 106, 79, 0.02)"
-                      stroke="rgba(45, 106, 79, 0.22)"
-                      strokeWidth="2"
-                      strokeDasharray="6 4"
-                      rx="16"
-                      ry="16"
-                    />
-                    {/* Label Badge on upper border */}
-                    <rect
-                      x={box.x + 16}
-                      y={box.y - 11}
-                      width={Math.min(box.width - 32, 220)}
-                      height={20}
-                      rx="6"
-                      ry="6"
-                      fill="var(--color-surface-card)"
-                      stroke="var(--color-hairline)"
-                      strokeWidth="1"
-                    />
-                    <text
-                      x={box.x + 24}
-                      y={box.y + 3}
-                      fontSize="11"
-                      fontWeight="bold"
-                      fill="var(--color-muted)"
-                      alignmentBaseline="middle"
-                    >
-                      {box.label.length > 28 ? box.label.slice(0, 25) + "..." : box.label}
-                    </text>
-                  </g>
-                ))}
-              </g>
-            )}
-
             <g className="tree-graph__edges">
               {jointEdges.map((edge) => (
                 <path

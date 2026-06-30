@@ -149,7 +149,6 @@ function PrototypeTreeContent() {
     () => nextSearchParams.get("panel") === "settings",
   );
   const [isCollaborationOpen, setIsCollaborationOpen] = useState(false);
-  const [showGroups, setShowGroups] = useState(true);
 
   const handleCloseCollaboration = () => {
     setIsCollaborationOpen(false);
@@ -310,17 +309,6 @@ function PrototypeTreeContent() {
               disabled={addressLoading}
             />
           </div>
-          <div className="tree-page-header__group-toggle">
-            <label style={{ display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "0.9rem", color: "var(--color-fg)", cursor: "pointer", fontWeight: 500 }}>
-              <input
-                type="checkbox"
-                checked={showGroups}
-                onChange={(e) => setShowGroups(e.target.checked)}
-                style={{ width: "18px", height: "18px", margin: 0, cursor: "pointer" }}
-              />
-              <span>Hiển thị nhóm gia đình 📦</span>
-            </label>
-          </div>
         </div>
       </div>
 
@@ -353,7 +341,6 @@ function PrototypeTreeContent() {
               addressRefreshKey={addressRefreshKey}
               focusId={focusId}
               onFocusChange={setFocusId}
-              showGroups={showGroups}
             />
           </div>
         </div>

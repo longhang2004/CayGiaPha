@@ -99,7 +99,6 @@ function TreePageContent({ searchParams }: TreePageProps) {
   const [showTutorial, setShowTutorial] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isCollaborationOpen, setIsCollaborationOpen] = useState(false);
-  const [showGroups, setShowGroups] = useState(true);
 
   const handleCloseCollaboration = () => {
     setIsCollaborationOpen(false);
@@ -492,17 +491,6 @@ function TreePageContent({ searchParams }: TreePageProps) {
               disabled={addressLoading}
             />
           </div>
-          <div className="tree-page-header__group-toggle">
-            <label style={{ display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "0.9rem", color: "var(--color-fg)", cursor: "pointer", fontWeight: 500 }}>
-              <input
-                type="checkbox"
-                checked={showGroups}
-                onChange={(e) => setShowGroups(e.target.checked)}
-                style={{ width: "18px", height: "18px", margin: 0, cursor: "pointer" }}
-              />
-              <span>Hiển thị nhóm gia đình 📦</span>
-            </label>
-          </div>
         </div>
       </div>
 
@@ -534,7 +522,6 @@ function TreePageContent({ searchParams }: TreePageProps) {
               addressRefreshKey={addressRefreshKey}
               focusId={focusId}
               onFocusChange={setFocusId}
-              showGroups={showGroups}
             />
           </div>
         </div>
