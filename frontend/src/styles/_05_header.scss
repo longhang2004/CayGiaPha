@@ -1,0 +1,106 @@
+/* App header / primary navigation — flex layout that wraps on narrow or
+ * highly-zoomed viewports so no content is lost (18.1/18.2). */
+.app-header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  background-color: var(--color-header-bg);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--color-hairline);
+  z-index: 100;
+  min-height: 4rem;
+  display: flex;
+  align-items: center;
+  transition: all 0.3s var(--ease-spring);
+}
+
+.app-nav {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  width: 100%;
+  max-width: 70rem;
+  margin: 0 auto;
+  padding: 0.5rem var(--space-md);
+}
+
+.app-nav__brand {
+  font-weight: 600;
+  font-size: 0.875rem;
+  color: var(--color-fg);
+  text-decoration: none;
+  letter-spacing: -0.01em;
+}
+
+.app-nav__brand:hover {
+  color: var(--color-brand);
+}
+
+.app-nav__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-md);
+}
+
+/* Text-size setting control (18.1/18.2). */
+.text-size-control {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.text-size-control__label {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--color-muted);
+}
+
+.text-size-control__slider {
+  display: none !important;
+}
+
+.text-size-control__value {
+  min-width: 3.5ch;
+  font-variant-numeric: tabular-nums;
+  font-size: 0.875rem;
+  color: var(--color-muted);
+}
+
+/* Accessible skip link: visible only when focused (18.6). */
+.skip-link {
+  position: absolute;
+  left: -999px;
+  top: 0;
+  padding: var(--space-sm) var(--space-md);
+  background: var(--color-fg);
+  color: var(--color-bg);
+  text-decoration: none;
+}
+
+.skip-link:focus {
+  left: 0;
+  z-index: 100;
+}
+
+.nav-link {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--color-fg);
+  text-decoration: none;
+  transition: color 0.15s ease;
+}
+
+.nav-link:hover {
+  color: var(--color-brand);
+}
+
+.user-email {
+  font-size: 0.875rem;
+}
+

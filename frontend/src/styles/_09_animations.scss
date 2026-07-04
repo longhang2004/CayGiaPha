@@ -1,0 +1,31 @@
+/* Animations */
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes scale-up {
+  from { transform: scale(0.95); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+@media (max-width: 480px) {
+  .onboarding-popup {
+    width: 90%;
+    height: auto;
+    min-height: 480px;
+    padding: 2rem 1.25rem 1.25rem;
+  }
+  .onboarding-illustration {
+    margin-bottom: 1.25rem;
+    height: 120px;
+  }
+  .onboarding-title {
+    font-size: 1.2rem;
+  }
+  .onboarding-description {
+    font-size: 0.875rem;
+  }
+}
+
+

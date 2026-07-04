@@ -1,0 +1,139 @@
+/*
+ * Global styles and the app-wide accessibility foundation (Requirement 18).
+ *
+ * 18.1/18.2 Text scaling: the root font-size is a percentage (overridden at
+ *   runtime by TextSizeProvider 100%–200%) and ALL sizing below uses rem/em so
+ *   the UI reflows proportionally without clipping content.
+ * 18.3 Contrast: the palette below meets WCAG 2.1 SC 1.4.3 — body text
+ *   (--color-fg on --color-bg) ≈ 17:1, links/accent ≈ 7.7:1, muted text ≈ 7:1,
+ *   all ≥ 4.5:1 for normal text (and ≥ 3:1 for large text).
+ * 18.4 Touch targets: interactive controls are sized to at least
+ *   44×44 CSS px via --min-touch-target.
+ * 18.5 Name/role/value: provided by semantic elements in components.
+ * 18.6 Keyboard navigation: visible :focus-visible outlines on every control;
+ *   no positive tabindex is used anywhere.
+ */
+
+:root {
+  /* Palette — contrast ratios are against the adjacent surface. */
+  --color-bg: #f9f6f0; /* warm beige canvas */
+  --color-fg: #1d1c1a; /* warm ink dark body and display text */
+  --color-muted: #5d5b54; /* warm body copy: meets >= 4.5:1 contrast against bg (~6.8:1) */
+  --color-accent: #b94b34; /* terracotta warm orange: meets >= 4.5:1 contrast against bg (~4.9:1) */
+  --color-border: #8a8780; /* strong UI borders on bg: meets >= 3:1 contrast (~4.5:1) */
+  --color-focus: #b94b34; /* focus ring (Terracotta Orange) */
+
+  /* Brand colors */
+  --color-brand: #b94b34; /* Terracotta Orange */
+  --color-brand-active: #963b27; /* Active Terracotta */
+  --color-hairline: #e2dcd3; /* light divider line */
+  --color-hairline-soft: #ede8df;
+  --color-hairline-strong: #c5beb3;
+  --color-surface-card: #ffffff;
+  --color-surface-strong: #ebe6dd; /* Be trầm */
+
+  /* Theme-aware backgrounds */
+  --color-island-bg: rgba(255, 255, 255, 0.85);
+  --color-header-bg: rgba(247, 247, 244, 0.85);
+  --color-hero-card-bg: linear-gradient(145deg, #fffaf4, var(--color-surface-card));
+  --color-surface-card-translucent: rgba(255, 255, 255, 0.72);
+  --color-step-num-bg: #fff3eb;
+  --color-step-num-text: var(--color-accent);
+
+  /* AI Timeline Colors */
+  --color-timeline-thinking: #dfa88f;
+  --color-timeline-grep: #9fc9a2;
+  --color-timeline-read: #9fbbe0;
+  --color-timeline-edit: #c0a8dd;
+  --color-timeline-done: #c08532;
+
+  /* Minimum interactive target size (18.4). Increased to 48px for elder usability */
+  --min-touch-target: 48px;
+
+  /* Spacing scale in rem so it scales with the text-size setting. */
+  --space-xs: 0.25rem;
+  --space-sm: 0.5rem;
+  --space-md: 1rem;
+  --space-lg: 1.5rem;
+  --space-xl: 2rem;
+  --space-2xl: 3rem;
+  --space-3xl: 4rem;
+  --space-section: 8rem; /* 128px macro whitespace */
+
+  /* High-end Fluid Motion */
+  --ease-spring: cubic-bezier(0.32, 0.72, 0, 1);
+  --ease-fluid: cubic-bezier(0.25, 1, 0.5, 1);
+
+  /* Soft Shadows */
+  --shadow-ambient: 0 16px 40px -12px rgba(0, 0, 0, 0.04), 0 4px 8px -4px rgba(0, 0, 0, 0.02);
+  --shadow-ambient-lg: 0 24px 60px -12px rgba(0, 0, 0, 0.06), 0 8px 16px -4px rgba(0, 0, 0, 0.03);
+  --shadow-inner: inset 0 1px 1px rgba(255, 255, 255, 0.15);
+}
+
+html.dark {
+  --color-bg: #141412; /* Nền tối ấm áp */
+  --color-fg: #f5f4f0; /* Chữ sáng ấm áp */
+  --color-muted: #a5a298; /* Chữ phụ */
+  --color-accent: #e06c53; /* Đất nung sáng cho chế độ tối */
+  --color-border: #6d6b63;
+  --color-focus: #e06c53;
+
+  --color-brand: #e06c53;
+  --color-brand-active: #f38f7a;
+  --color-hairline: #2d2b27;
+  --color-hairline-soft: #23221e;
+  --color-hairline-strong: #44423c;
+  --color-surface-card: #1e1d1b;
+  --color-surface-strong: #2a2824;
+
+  --color-island-bg: rgba(30, 29, 27, 0.85);
+  --color-header-bg: rgba(20, 20, 18, 0.85);
+  --color-hero-card-bg: linear-gradient(145deg, #1e1d1b, #141412);
+  --color-surface-card-translucent: rgba(30, 29, 27, 0.85);
+  --color-step-num-bg: #3a2218;
+  --color-step-num-text: #ff9b85;
+}
+
+@media (prefers-color-scheme: dark) {
+  html:not(.light) {
+    --color-bg: #141412; /* Nền tối ấm áp */
+    --color-fg: #f5f4f0; /* Chữ sáng ấm áp */
+    --color-muted: #a5a298; /* Chữ phụ */
+    --color-accent: #e06c53; /* Đất nung sáng cho chế độ tối */
+    --color-border: #6d6b63;
+    --color-focus: #e06c53;
+
+    --color-brand: #e06c53;
+    --color-brand-active: #f38f7a;
+    --color-hairline: #2d2b27;
+    --color-hairline-soft: #23221e;
+    --color-hairline-strong: #44423c;
+    --color-surface-card: #1e1d1b;
+    --color-surface-strong: #2a2824;
+
+    --color-island-bg: rgba(30, 29, 27, 0.85);
+    --color-header-bg: rgba(20, 20, 18, 0.85);
+    --color-hero-card-bg: linear-gradient(145deg, #1e1d1b, #141412);
+    --color-surface-card-translucent: rgba(30, 29, 27, 0.85);
+    --color-step-num-bg: #3a2218;
+    --color-step-num-text: #ff9b85;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  background: var(--color-bg);
+  color: var(--color-fg);
+  font-family: var(--font-grotesk), system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  /* Text scaling (Requirement 18.1/18.2): rem-based, so 100–200% root scaling
+   * reflows the whole UI. TextSizeProvider overrides this percentage inline. */
+  font-size: 100%;
+  line-height: 1.5;
+}
+

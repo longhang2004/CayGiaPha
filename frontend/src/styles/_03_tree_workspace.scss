@@ -1,0 +1,463 @@
+/* Redesigned Floating Island Header */
+.tree-page-header {
+  position: absolute !important;
+  bottom: 2rem !important;
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+  z-index: 75 !important;
+  width: calc(100% - 4rem) !important;
+  max-width: 900px !important;
+  background-color: var(--color-island-bg) !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+  border: 1px solid var(--color-hairline) !important;
+  border-radius: 20px !important;
+  box-shadow: 0 16px 48px rgba(38, 37, 30, 0.15) !important;
+  margin-bottom: 0 !important;
+  padding: 0.4rem 1.25rem !important;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  transition: all 0.25s ease !important;
+}
+
+.tree-page-header__row-one {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
+  width: 100%;
+}
+
+.tree-page-header__row-one-right {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+  flex-grow: 1;
+  justify-content: flex-end;
+}
+
+.tree-page-header__row-two {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  width: 100%;
+  border-top: 1px solid var(--color-hairline-soft);
+  padding-top: 0.4rem;
+}
+
+.tree-page-header__brand {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.tree-page-header__logo {
+  height: 36px;
+  width: auto;
+}
+
+.tree-page-header__title-container {
+  display: flex;
+  flex-direction: column;
+}
+
+.tree-page-header__title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin: 0;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+  white-space: nowrap;
+}
+
+.tree-page-header__count {
+  font-size: 0.75rem;
+  color: var(--color-muted);
+}
+
+.tree-page-header__viewpoint {
+  display: flex;
+  align-items: center;
+}
+
+.tree-page-header__group-toggle {
+  display: flex;
+  align-items: center;
+}
+
+.tree-page-header__search-container {
+  width: 100%;
+  max-width: 480px;
+  flex-grow: 1;
+}
+
+.tree-page-header__actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: nowrap;
+}
+
+/* Ngăn chặn text của button tự xuống hàng làm nút bị cao */
+.tree-page-header .btn, 
+.tree-page-header button, 
+.tree-page-header__actions .btn {
+  white-space: nowrap !important;
+}
+
+.btn-terracotta {
+  background-color: var(--color-brand) !important;
+  color: white !important;
+  font-weight: 600 !important;
+}
+
+.btn-terracotta:hover {
+  background-color: var(--color-brand-active) !important;
+}
+
+/* Layout adjustments */
+.tree-workspace__layout {
+  position: relative;
+  overflow: hidden;
+  border-radius: 0;
+  background-color: var(--color-surface-card);
+  border: none;
+  height: 100%;
+  width: 100%;
+  display: flex;
+  min-height: auto;
+}
+
+.tree-workspace__main {
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+}
+
+.tree-workspace__graph {
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+}
+
+/* Close button for details panel */
+.side-panel__close {
+  display: flex !important;
+  margin-left: auto;
+  margin-bottom: 0.5rem;
+  width: 2.5rem;
+  height: 2.5rem;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-hairline) !important;
+  border-radius: 50% !important;
+  color: var(--color-fg) !important;
+  cursor: pointer;
+  border: none !important;
+  padding: 0 !important;
+  transition: all 0.2s ease;
+}
+.side-panel__close:hover {
+  background: var(--color-hairline-strong) !important;
+}
+
+/* Floating Slide-in Info Panel */
+.tree-workspace__info-panel {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 420px;
+  background-color: var(--color-surface-card);
+  border-left: 1px solid var(--color-hairline);
+  box-shadow: -10px 0 35px rgba(38, 37, 30, 0.08);
+  transform: translateX(100%);
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  z-index: 80;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Floating Zoom & Pan Controls */
+.tree-graph__nav-controls {
+  position: absolute;
+  bottom: 1rem;
+  right: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  z-index: 10;
+}
+
+.tree-workspace__info-panel--open {
+  transform: translateX(0);
+}
+
+.side-panel {
+  padding: var(--space-lg);
+}
+
+.side-panel,
+.empty-tree__form,
+.center-state__card {
+  animation: rise-in 0.28s ease both;
+}
+
+.side-panel--stacked {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.side-panel__title {
+  margin-top: 0;
+  border-bottom: 1px solid var(--color-hairline-soft);
+  padding-bottom: var(--space-sm);
+}
+
+.side-panel__title--flush {
+  margin-bottom: 0;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(0.5rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fade-up-heavy {
+  from {
+    opacity: 0;
+    transform: translateY(4rem);
+    filter: blur(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+    filter: blur(0);
+  }
+}
+
+.animate-fade-up-heavy {
+  animation: fade-up-heavy 1s var(--ease-spring) both;
+}
+
+.stagger-1 { animation-delay: 0.1s; }
+.stagger-2 { animation-delay: 0.2s; }
+.stagger-3 { animation-delay: 0.3s; }
+
+.double-bezel-card {
+  padding: 0.375rem;
+  border-radius: 2rem;
+  background-color: rgba(0,0,0,0.03);
+  border: 1px solid var(--color-hairline);
+}
+
+.double-bezel-card__inner {
+  border-radius: calc(2rem - 0.375rem);
+  background-color: var(--color-surface-card);
+  box-shadow: var(--shadow-inner), var(--shadow-ambient);
+  padding: var(--space-xl);
+  height: 100%;
+}
+
+html.dark .double-bezel-card {
+  background-color: rgba(255,255,255,0.03);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
+
+  button:hover:not(:disabled),
+  .btn:hover:not(:disabled),
+  [role="button"]:hover:not(:disabled),
+  a.button:hover:not(:disabled),
+  .home-hero__card:hover,
+  .home-steps article:hover {
+    transform: none;
+  }
+}
+
+@media (max-width: 900px) {
+  .home-hero {
+    grid-template-columns: 1fr;
+  }
+
+  .tree-workspace {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  .tree-workspace__layout {
+    position: relative;
+    width: 100% !important;
+    min-height: 500px;
+  }
+
+  .tree-workspace__main {
+    width: 100% !important;
+  }
+
+  .tree-workspace__info-panel {
+    position: absolute;
+    top: auto;
+    left: 0;
+    bottom: 0;
+    width: 100%;
+    height: 60vh;
+    border-left: none;
+    border-top: 1px solid var(--color-hairline);
+    border-radius: 20px 20px 0 0;
+    box-shadow: 0 -10px 30px rgba(38, 37, 30, 0.1);
+    transform: translateY(100%);
+    z-index: 100;
+  }
+
+  .tree-graph__nav-controls {
+    bottom: auto;
+    top: 50%;
+    transform: translateY(-50%);
+  }
+
+  .tree-workspace__info-panel--open {
+    transform: translateY(0) !important;
+  }
+
+  .home-steps {
+    grid-template-columns: 1fr;
+  }
+
+  .tree-workspace__header {
+    flex-direction: column;
+  }
+
+  .tree-workspace__header > .btn {
+    width: 100%;
+  }
+}
+
+@media (max-width: 640px) {
+  main {
+    padding-inline: var(--space-sm);
+  }
+
+  .home-hero {
+    min-height: auto;
+    padding-top: var(--space-xl);
+  }
+
+  .home-hero__actions .btn,
+  .home-hero__loading {
+    width: 100%;
+  }
+
+  .onboarding-strip {
+    display: grid;
+  }
+
+  .onboarding-strip span {
+    justify-content: center;
+  }
+
+  .center-state {
+    margin-block: var(--space-xl);
+  }
+}
+
+@media (max-width: 900px) {
+  .tree-page-header__brand {
+    display: none !important;
+  }
+  
+  .tree-page-header {
+    bottom: 1rem !important;
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+    width: calc(100% - 2rem) !important;
+    padding: 0.75rem !important;
+    border-radius: 16px !important;
+  }
+
+  .tree-page-header__actions button span {
+    display: none !important;
+  }
+
+  .tree-page-header__actions {
+    gap: 0.35rem !important;
+  }
+
+  .tree-page-header__row-one-right {
+    gap: 0.5rem !important;
+    width: 100% !important;
+    justify-content: space-between !important;
+  }
+
+  .tree-page-header__search-container {
+    max-width: none !important;
+  }
+}
+
+/* Secondary/explanatory text still meets the 4.5:1 normal-text threshold. */
+.text-muted,
+small {
+  color: var(--color-muted);
+}
+
+/*
+ * Touch targets (18.4): every interactive control is at least 44×44 CSS px.
+ */
+button,
+.btn,
+[role="button"],
+a.button,
+input:not([type="checkbox"]):not([type="radio"]),
+select,
+textarea,
+summary {
+  min-height: var(--min-touch-target);
+  font-size: 0.875rem; /* button typography */
+}
+
+button,
+.btn,
+[role="button"],
+a.button,
+select {
+  min-width: var(--min-touch-target);
+}
+
+button,
+.btn,
+[role="button"],
+a.button,
+input,
+select,
+textarea {
+  padding: 0.75rem 1.5rem; /* High-end padding */
+  border-radius: 9999px; /* Pill shape for double-bezel compatibility */
+}
+

@@ -158,3 +158,20 @@ export const MinimizeIcon = icon(
     <path d="M4 14h6v6m10-6h-6v6M4 10h6V4m10 6h-6V4" />
   </>
 );
+
+/** ✅ Check Circle / Success */
+export const CheckCircleIcon = icon(
+  <>
+    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+    <polyline points="22 4 12 14.01 9 11.01" />
+  </>
+);
+
+/** ❌ Error / Danger */
+export const ErrorIcon = icon(
+  <>
+    <circle cx="12" cy="12" r="10" />
+    <line x1="15" y1="9" x2="9" y2="15" />
+    <line x1="9" y1="9" x2="15" y2="15" />
+  </>
+);
