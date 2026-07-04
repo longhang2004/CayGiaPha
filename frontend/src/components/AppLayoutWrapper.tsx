@@ -73,7 +73,9 @@ export function AppLayoutWrapper({ children }: { children: React.ReactNode }) {
 
       {
         (() => {
-          const isTreeWorkspacePage = pathname.startsWith("/tree/") && pathname !== "/tree";
+          const isTreeWorkspacePage =
+            (pathname.startsWith("/tree/") && pathname !== "/tree") ||
+            pathname === "/prototype/tree";
           return (
             <div
               id="main-content"

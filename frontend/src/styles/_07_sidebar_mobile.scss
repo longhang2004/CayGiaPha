@@ -93,6 +93,15 @@
   font-size: 1.125rem;
   color: var(--color-fg);
   text-decoration: none;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.global-sidebar__brand span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .global-sidebar--collapsed .global-sidebar__brand {
@@ -134,6 +143,21 @@
 .global-sidebar__link:hover {
   background-color: var(--color-hairline-soft);
   color: var(--color-fg);
+}
+
+.global-sidebar__link--support {
+  color: #fff;
+  background: linear-gradient(100deg, #ff4d8d, #ffb000, #23c7d9, #5b6cff);
+  background-size: 260% 260%;
+  box-shadow: 0 10px 24px rgba(92, 76, 198, 0.2);
+  animation: support-gradient-drift 10s ease-in-out infinite;
+}
+
+.global-sidebar__link--support:hover,
+.global-sidebar__link--support.global-sidebar__link--active {
+  color: #fff;
+  background: linear-gradient(100deg, #ff4d8d, #ffb000, #23c7d9, #5b6cff);
+  background-size: 260% 260%;
 }
 
 .global-sidebar__link--active {
@@ -316,6 +340,66 @@
   gap: 1rem;
 }
 
+.hamburger-menu__links {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.hamburger-menu__link {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  min-height: var(--min-touch-target);
+  padding: 0.65rem 0.75rem;
+  border-radius: 10px;
+  border: 1px solid var(--color-hairline);
+  color: var(--color-fg);
+  background: var(--color-surface-card);
+  text-decoration: none;
+  font-weight: 700;
+}
+
+.hamburger-menu__link:hover {
+  background: var(--color-surface-hover);
+}
+
+.hamburger-menu__link--support {
+  color: #fff;
+  border: 0;
+  background: linear-gradient(100deg, #ff4d8d, #ffb000, #23c7d9, #5b6cff);
+  background-size: 220% 220%;
+  box-shadow: 0 10px 24px rgba(92, 76, 198, 0.2);
+  animation: support-gradient-drift 10s ease-in-out infinite;
+}
+
+.hamburger-menu__link--support:hover {
+  background: linear-gradient(100deg, #ff4d8d, #ffb000, #23c7d9, #5b6cff);
+}
+
+.hamburger-menu__links [data-testid="help-entry-point"] {
+  display: flex;
+  align-items: center;
+  min-height: var(--min-touch-target);
+  padding: 0.65rem 0.75rem;
+  border-radius: 10px;
+  border: 1px solid var(--color-hairline);
+  color: var(--color-fg);
+  background: var(--color-surface-card);
+  text-decoration: none;
+  font-weight: 700;
+}
+
+.hamburger-menu__links [data-testid="help-entry-point"]:hover {
+  background: var(--color-surface-hover);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .global-sidebar__link--support,
+  .hamburger-menu__link--support {
+    animation: none;
+  }
+}
+
 /* Spacing fixes for form inputs in general */
 .field select,
 .field input:not([type="checkbox"]):not([type="radio"]) {
@@ -327,4 +411,3 @@
 fieldset .field {
   margin-bottom: 0;
 }
-

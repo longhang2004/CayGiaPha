@@ -1,14 +1,15 @@
 "use client";
 
 import { useSession } from "@/app/providers";
-import { HelpEntryPoint } from "@/components/help/HelpEntryPoint";
 import {
   MenuIcon,
   CloseIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
+  FeedbackIcon,
   TreeIcon,
   InfoIcon,
+  MoneyIcon,
   SettingsIcon,
 } from "@/components/ui/Icons";
 import Link from "next/link";
@@ -29,6 +30,8 @@ export function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse }: Side
 
   const isTreeActive = pathname.startsWith("/tree");
   const isHelpActive = pathname.startsWith("/help");
+  const isSupportActive = pathname.startsWith("/support");
+  const isFeedbackActive = pathname.startsWith("/feedback");
   const isAdminActive = pathname.startsWith("/admin");
 
   const pathParts = pathname.split("/");
@@ -119,6 +122,24 @@ export function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse }: Side
             >
               <span className="global-sidebar__link-icon" aria-hidden="true"><InfoIcon size={18} /></span>
               <span className="global-sidebar__link-text">Trợ giúp</span>
+            </Link>
+            <Link
+              href="/support"
+              className={`global-sidebar__link global-sidebar__link--support ${isSupportActive ? "global-sidebar__link--active" : ""}`}
+              onClick={onClose}
+              title={isCollapsed ? "Ủng hộ" : undefined}
+            >
+              <span className="global-sidebar__link-icon" aria-hidden="true"><MoneyIcon size={18} /></span>
+              <span className="global-sidebar__link-text">Ủng hộ</span>
+            </Link>
+            <Link
+              href="/feedback"
+              className={`global-sidebar__link ${isFeedbackActive ? "global-sidebar__link--active" : ""}`}
+              onClick={onClose}
+              title={isCollapsed ? "Feedback" : undefined}
+            >
+              <span className="global-sidebar__link-icon" aria-hidden="true"><FeedbackIcon size={18} /></span>
+              <span className="global-sidebar__link-text">Feedback</span>
             </Link>
 
             {user && (

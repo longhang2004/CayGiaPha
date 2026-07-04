@@ -1,41 +1,39 @@
 /* Redesigned Floating Island Header */
 .tree-page-header {
   position: absolute;
-  top: 1.5rem;
+  top: auto;
+  bottom: 1.25rem;
   left: 50%;
   transform: translateX(-50%);
   z-index: 80;
-  width: calc(100% - 3rem);
-  max-width: 900px;
+  width: min(calc(100% - 2rem), 1040px);
+  max-width: 1040px;
   background-color: var(--color-island-bg);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border: 1px solid var(--color-hairline);
-  border-radius: 1.5rem;
-  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.08);
-  padding: 0.75rem 1rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
+  border-radius: 1.25rem;
+  box-shadow: 0 18px 44px rgba(38, 37, 30, 0.12);
+  padding: 0.65rem;
+  display: grid;
+  gap: 0.55rem;
   transition: all 0.25s ease;
 }
 
 .tree-page-header__row-one {
-  display: flex;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
   align-items: center;
-  flex-wrap: wrap;
-  gap: 1rem;
+  gap: 0.75rem;
   width: 100%;
 }
 
 .tree-page-header__row-one-right {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
-  gap: 0.75rem;
-  flex-wrap: wrap;
-  flex-grow: 1;
-  justify-content: flex-end;
+  gap: 0.55rem;
+  min-width: 0;
 }
 
 .tree-page-header__row-two {
@@ -46,17 +44,18 @@
   gap: 0.5rem;
   width: 100%;
   border-top: 1px solid var(--color-hairline-soft);
-  padding-top: 0.75rem;
+  padding-top: 0.55rem;
 }
 
 .tree-page-header__brand {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: 0.6rem;
+  min-width: 13rem;
 }
 
 .tree-page-header__logo {
-  height: 36px;
+  height: 30px;
   width: auto;
 }
 
@@ -66,7 +65,7 @@
 }
 
 .tree-page-header__title {
-  font-size: 1.25rem;
+  font-size: 1.05rem;
   font-weight: 700;
   margin: 0;
   line-height: 1.2;
@@ -82,6 +81,7 @@
 .tree-page-header__viewpoint {
   display: flex;
   align-items: center;
+  min-width: 0;
 }
 
 .tree-page-header__group-toggle {
@@ -91,15 +91,15 @@
 
 .tree-page-header__search-container {
   width: 100%;
-  max-width: 480px;
-  flex-grow: 1;
+  max-width: none;
+  min-width: 0;
 }
 
 .tree-page-header__actions {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  flex-wrap: wrap;
+  gap: 0.4rem;
+  flex-wrap: nowrap;
 }
 
 /* Ensure buttons don't wrap their text */
@@ -107,6 +107,54 @@
 .tree-page-header button, 
 .tree-page-header__actions .btn {
   white-space: nowrap;
+}
+
+.tree-page-header .search-panel-toolbar__fields,
+.tree-page-header .search-panel-toolbar__fields .field.search-field {
+  flex-wrap: nowrap;
+  gap: 0.45rem;
+  min-width: 0;
+}
+
+.tree-page-header .search-panel-toolbar__fields .field.search-field {
+  flex: 1 1 auto;
+}
+
+.tree-page-header .search-input-wrapper,
+.tree-page-header .search-input-wrapper input {
+  min-width: 0;
+}
+
+.tree-page-header .search-panel-toolbar__fields .btn,
+.tree-page-header .voice-search-btn-simple {
+  min-height: 44px;
+  border-radius: 999px;
+}
+
+.tree-page-header .voice-search-btn-simple {
+  flex: 0 0 44px;
+  width: 44px;
+  padding-inline: 0 !important;
+}
+
+.tree-page-header .viewpoint-selector {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  min-width: 0;
+}
+
+.tree-page-header .viewpoint-selector label {
+  color: var(--color-fg);
+  font-size: 0.88rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.tree-page-header .viewpoint-selector select {
+  width: clamp(12rem, 28vw, 18rem);
+  margin: 0;
+  border-radius: 999px;
 }
 
 .btn-terracotta {
@@ -122,16 +170,61 @@
 
 @media (max-width: 900px) {
   .tree-page-header {
-    top: calc(60px + 1rem);
-    width: calc(100% - 2rem);
+    top: auto;
+    bottom: max(0.75rem, env(safe-area-inset-bottom));
+    width: calc(100% - 1rem);
     border-radius: 1rem;
-    padding: 0.75rem;
+    padding: 0.55rem;
+    max-height: none;
+    overflow: visible;
   }
   .tree-page-header__brand {
     display: none !important;
   }
+  .tree-page-header__row-one {
+    grid-template-columns: 1fr;
+  }
   .tree-page-header__row-one-right {
-    justify-content: space-between;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 0.45rem;
+  }
+  .tree-page-header__actions {
+    justify-content: flex-start;
+  }
+  .tree-page-header__actions .btn {
+    width: 3.2rem;
+    min-width: 3.2rem;
+    padding-inline: 0;
+    border-radius: 999px;
+  }
+  .tree-page-header__row-two {
+    padding-top: 0.5rem;
+  }
+  .tree-page-header .search-panel-toolbar__fields .btn {
+    padding-inline: 0.7rem;
+  }
+  .tree-page-header .search-submit-btn {
+    min-width: 5.2rem;
+  }
+  .tree-page-header .filter-toggle-btn {
+    min-width: 4.7rem;
+  }
+  .tree-page-header .viewpoint-selector {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    width: 100%;
+  }
+  .tree-page-header .viewpoint-selector label {
+    flex: 0 1 11rem;
+    font-size: 0.82rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .tree-page-header .viewpoint-selector select {
+    flex: 1 1 auto;
+    min-width: 0;
+    width: auto;
   }
   .hide-on-mobile {
     display: none !important;
@@ -205,8 +298,10 @@
 /* Floating Zoom & Pan Controls */
 .tree-graph__nav-controls {
   position: absolute;
-  bottom: 1rem;
+  top: 50%;
+  bottom: auto;
   right: 1rem;
+  transform: translateY(-50%);
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
@@ -411,31 +506,55 @@ html.dark .double-bezel-card {
     display: none !important;
   }
   
-  .tree-page-header {
-    bottom: 1rem !important;
-    left: 50% !important;
-    transform: translateX(-50%) !important;
-    width: calc(100% - 2rem) !important;
-    padding: 0.75rem !important;
-    border-radius: 16px !important;
-  }
-
   .tree-page-header__actions button span {
     display: none !important;
   }
 
-  .tree-page-header__actions {
-    gap: 0.35rem !important;
-  }
-
-  .tree-page-header__row-one-right {
-    gap: 0.5rem !important;
-    width: 100% !important;
-    justify-content: space-between !important;
-  }
-
   .tree-page-header__search-container {
     max-width: none !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .tree-page-header {
+    width: calc(100% - 0.75rem);
+    border-radius: 14px;
+  }
+
+  .tree-page-header .search-panel-toolbar__fields,
+  .tree-page-header .search-panel-toolbar__fields .field.search-field {
+    gap: 0.35rem;
+  }
+
+  .tree-page-header .search-panel-toolbar__fields .btn {
+    padding-inline: 0.6rem;
+  }
+
+  .tree-page-header .voice-search-btn-simple {
+    flex-basis: 42px;
+    width: 42px;
+  }
+
+  .tree-page-header .filter-toggle-btn {
+    min-width: 4.25rem;
+  }
+
+  .tree-page-header .search-submit-btn {
+    min-width: 4.9rem;
+  }
+}
+
+@media (max-width: 540px) {
+  .tree-page-header__row-one-right {
+    grid-template-columns: 1fr;
+  }
+
+  .tree-page-header__actions {
+    width: 100%;
+  }
+
+  .tree-page-header .viewpoint-selector label {
+    flex-basis: 9.25rem;
   }
 }
 
@@ -478,4 +597,3 @@ textarea {
   padding: 0.75rem 1.5rem; /* High-end padding */
   border-radius: 9999px; /* Pill shape for double-bezel compatibility */
 }
-

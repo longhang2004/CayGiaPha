@@ -84,6 +84,15 @@ export const InfoIcon = icon(
   </>
 );
 
+/** Feedback / message */
+export const FeedbackIcon = icon(
+  <>
+    <path d="M21 12a8 8 0 0 1-8 8H7l-4 3v-6.2A8 8 0 1 1 21 12Z" />
+    <path d="M8 10h8" />
+    <path d="M8 14h5" />
+  </>
+);
+
 /** ⚙️ Settings / gear */
 export const SettingsIcon = icon(
   <>

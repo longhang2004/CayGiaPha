@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { useSession } from "@/app/providers";
-import { SupportFeedbackSection } from "@/components/support/SupportFeedbackSection";
 
 export default function HomePage() {
   const { user, loading } = useSession();
@@ -86,7 +85,6 @@ export default function HomePage() {
         </article>
       </div>
     </section>
-    <SupportFeedbackSection />
     </>
   );
 }

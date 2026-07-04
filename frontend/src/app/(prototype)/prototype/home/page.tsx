@@ -15,7 +15,6 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { SupportFeedbackSection } from "@/components/support/SupportFeedbackSection";
 
 export default function PrototypeHomePage() {
   const [loggedIn, setLoggedIn] = useState(false);
@@ -174,7 +173,6 @@ export default function PrototypeHomePage() {
           </article>
         </div>
       </section>
-      <SupportFeedbackSection prototype mockEmail="prototype@caygipha.dev" />
       </>
       {/* ===== END: mirror of src/app/page.tsx ===== */}
     </>

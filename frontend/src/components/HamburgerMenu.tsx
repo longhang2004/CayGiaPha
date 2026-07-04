@@ -3,8 +3,9 @@
 import { useState, useRef, useEffect } from "react";
 import { TextSizeControl } from "@/components/a11y/TextSizeControl";
 import { HelpEntryPoint } from "@/components/help/HelpEntryPoint";
-import { MenuIcon } from "@/components/ui/Icons";
+import { FeedbackIcon, MenuIcon, MoneyIcon } from "@/components/ui/Icons";
 import { Card } from "@/components/ui/Card";
+import Link from "next/link";
 
 export function HamburgerMenu() {
   const [isOpen, setIsOpen] = useState(false);
@@ -53,7 +54,17 @@ export function HamburgerMenu() {
           </div>
           <div>
             <h3 style={{ fontSize: "0.9rem", fontWeight: 600, margin: "0 0 0.5rem" }}>Hỗ trợ</h3>
-            <HelpEntryPoint />
+            <div className="hamburger-menu__links">
+              <Link href="/support" className="hamburger-menu__link hamburger-menu__link--support" onClick={() => setIsOpen(false)}>
+                <MoneyIcon size={18} />
+                <span>Ủng hộ</span>
+              </Link>
+              <Link href="/feedback" className="hamburger-menu__link" onClick={() => setIsOpen(false)}>
+                <FeedbackIcon size={18} />
+                <span>Feedback</span>
+              </Link>
+              <HelpEntryPoint />
+            </div>
           </div>
         </Card>
       )}
