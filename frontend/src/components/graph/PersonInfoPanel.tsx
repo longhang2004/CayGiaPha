@@ -67,7 +67,7 @@ export function PersonInfoPanel({ person, ego, address, loading, hideHeading = f
         <div className="person-info__header-text">
           <span className="person-info__header-name">{person.displayName}</span>
           <span className="person-info__header-subtitle">
-            {person.deceased ? "Họ hàng (Đã mất)" : "Họ hàng (Còn sống)"}
+            {person.deceased ? "Thành viên (đã qua đời)" : "Thành viên (Còn sống)"}
           </span>
         </div>
       </div>
@@ -118,7 +118,7 @@ export function PersonInfoPanel({ person, ego, address, loading, hideHeading = f
           {person.deceased != null ? (
             <div>
               <dt>Tình trạng</dt>
-              <dd>{person.deceased ? "Đã mất" : "Còn sống"}</dd>
+              <dd>{person.deceased ? "Đã qua đời" : "Còn sống"}</dd>
             </div>
           ) : null}
           <div>
@@ -142,7 +142,7 @@ export function PersonInfoPanel({ person, ego, address, loading, hideHeading = f
             </div>
           ) : (
             <p style={{ fontStyle: "italic", fontSize: "0.875rem", margin: 0, padding: "0.5rem 0", color: "var(--color-muted)" }}>
-              Không có sự kiện tiểu sử nào được ghi nhận. Hãy chỉnh sửa thông tin để thêm năm sinh hoặc trạng thái.
+              Chưa có sự kiện nào. Thêm năm sinh hoặc thông tin qua đời để xem tiểu sử.
             </p>
           )}
         </div>

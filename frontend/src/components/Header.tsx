@@ -19,7 +19,7 @@ export function Header() {
 
         <div className="app-nav__actions" style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
           {loading ? (
-            <div className="center-state__spinner" style={{ width: "1.25rem", height: "1.25rem", borderWidth: "2px" }} aria-label="Đang tải..." />
+            <div className="center-state__spinner" style={{ width: "1.25rem", height: "1.25rem", borderWidth: "2px" }} aria-label="Đang tải…" />
           ) : (
             <>
               {user ? (

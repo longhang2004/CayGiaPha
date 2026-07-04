@@ -43,7 +43,7 @@ export function RegionSelector({ treeId, region, onChange }: RegionSelectorProps
       if (err instanceof ApiError) {
         setError(err.message);
       } else {
-        setError("Không thể đổi vùng. Vui lòng thử lại.");
+        setError("Không thể thay đổi cách xưng hô. Vui lòng thử lại.");
       }
     } finally {
       setSaving(false);
@@ -52,7 +52,7 @@ export function RegionSelector({ treeId, region, onChange }: RegionSelectorProps
 
   return (
     <div className="field">
-      <label htmlFor="region-select">Vùng phương ngữ</label>
+      <label htmlFor="region-select">Cách xưng hô theo vùng miền</label>
       <select
         id="region-select"
         value={value}
@@ -75,7 +75,7 @@ export function RegionSelector({ treeId, region, onChange }: RegionSelectorProps
       {saved ? (
         <div style={{ marginTop: "0.25rem" }}>
           <span role="status" data-testid="region-saved" style={{ color: "var(--color-muted)", fontSize: "0.875rem" }}>
-            Đã lưu vùng.
+            Đã lưu cách xưng hô.
           </span>
         </div>
       ) : null}

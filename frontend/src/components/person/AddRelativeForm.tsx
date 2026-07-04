@@ -100,11 +100,11 @@ export function AddRelativeForm({ treeId, persons, preselectedPersonId, onCreate
 
   const sourceName = isNewPerson && newPersonPosition === "source"
     ? (newDisplayName.trim() || "Thành viên mới")
-    : (persons.find((p) => p.id === sourceId)?.displayName ?? "Thành viên A");
+    : (persons.find((p) => p.id === sourceId)?.displayName ?? "Người 1");
 
   const targetName = isNewPerson && newPersonPosition === "target"
     ? (newDisplayName.trim() || "Thành viên mới")
-    : (persons.find((p) => p.id === targetId)?.displayName ?? "Thành viên B");
+    : (persons.find((p) => p.id === targetId)?.displayName ?? "Người 2");
 
   useEffect(() => {
     if (!newDeathStatus || !newDeathDay || !newDeathMonth) {
@@ -326,7 +326,7 @@ export function AddRelativeForm({ treeId, persons, preselectedPersonId, onCreate
       ) : null}
 
       <fieldset>
-        <legend>Kiểu quan hệ</legend>
+        <legend>Kiểu kết nối</legend>
         <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
           <label htmlFor="mode-derived" style={{ display: "flex", alignItems: "center", gap: "0.25rem", cursor: "pointer", fontWeight: "normal", color: "var(--color-muted)", minHeight: "auto" }}>
             <input
@@ -337,7 +337,7 @@ export function AddRelativeForm({ treeId, persons, preselectedPersonId, onCreate
               checked={mode === "derived"}
               onChange={() => setMode("derived")}
             />
-            {" Quan hệ suy ra (nét liền)"}
+            {" Quan hệ trực tiếp — cha/mẹ, con, vợ/chồng"}
           </label>
           <label htmlFor="mode-asserted" style={{ display: "flex", alignItems: "center", gap: "0.25rem", cursor: "pointer", fontWeight: "normal", color: "var(--color-muted)", minHeight: "auto" }}>
             <input
@@ -348,7 +348,7 @@ export function AddRelativeForm({ treeId, persons, preselectedPersonId, onCreate
               checked={mode === "asserted"}
               onChange={() => setMode("asserted")}
             />
-            {" Quan hệ khai báo (nét đứt)"}
+            {" Quan hệ khác — cần tự điền tên gọi"}
           </label>
         </div>
       </fieldset>
@@ -361,27 +361,27 @@ export function AddRelativeForm({ treeId, persons, preselectedPersonId, onCreate
             checked={isNewPerson}
             onChange={(e) => setIsNewPerson(e.target.checked)}
           />
-          <span>Tạo và kết nối thành viên mới</span>
+          <span>Thêm người thân mới vào cây</span>
         </label>
       </div>
 
       {isNewPerson && (
         <div className="field">
-          <label htmlFor="newPersonPosition">Vị trí của thành viên mới trong mối quan hệ</label>
+          <label htmlFor="newPersonPosition">Thành viên mới đóng vai trò là</label>
           <select
             id="newPersonPosition"
             value={newPersonPosition}
             onChange={(e) => setNewPersonPosition(e.target.value as "source" | "target")}
           >
-            <option value="target">Người nhận/đến (ví dụ: thêm Con của một người có sẵn)</option>
-            <option value="source">Người nguồn/từ (ví dụ: thêm Cha/Mẹ của một người có sẵn)</option>
+            <option value="target">Con cái / Vai vế thấp hơn (ví dụ: thêm Con)</option>
+            <option value="source">Cha mẹ / Vai vế cao hơn (ví dụ: thêm Cha, Mẹ)</option>
           </select>
         </div>
       )}
 
       {(!isNewPerson || newPersonPosition !== "source") && (
         <div className="field">
-          <label htmlFor="sourceId">Từ người</label>
+          <label htmlFor="sourceId">Người thứ nhất</label>
           <select
             id="sourceId"
             name="sourceId"
@@ -399,7 +399,7 @@ export function AddRelativeForm({ treeId, persons, preselectedPersonId, onCreate
 
       {(!isNewPerson || newPersonPosition !== "target") && (
         <div className="field">
-          <label htmlFor="targetId">Đến người</label>
+          <label htmlFor="targetId">Người thứ hai</label>
           <select
             id="targetId"
             name="targetId"
@@ -529,7 +529,7 @@ export function AddRelativeForm({ treeId, persons, preselectedPersonId, onCreate
               onChange={(e) => setNewBirthOrder(e.target.value)}
             />
             <p className="field-hint" style={{ fontSize: "0.75rem", marginTop: "4px" }}>
-              Lưu ý: Người sinh thứ 1 (đầu lòng) là con cả/Anh Hai/Chị Hai (nhập số 1).
+              Số 1 = con đầu lòng (miền Nam gọi là Anh/Chị Hai).
             </p>
           </div>
 
@@ -737,7 +737,7 @@ export function AddRelativeForm({ treeId, persons, preselectedPersonId, onCreate
 
       <div className="form-actions">
         <Button type="submit" disabled={submitting} style={(onCancel && !hideCancelButton) ? { flex: 1 } : undefined}>
-          {isNewPerson ? "Tạo và Thêm" : "Thêm"}
+          {isNewPerson ? "Thêm thành viên mới" : "Thêm kết nối"}
         </Button>
         {onCancel && !hideCancelButton && (
           <Button
@@ -747,7 +747,7 @@ export function AddRelativeForm({ treeId, persons, preselectedPersonId, onCreate
             disabled={submitting}
             style={{ flex: 1 }}
           >
-            Hủy bỏ
+            Hủy
           </Button>
         )}
       </div>

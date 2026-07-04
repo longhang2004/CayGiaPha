@@ -206,7 +206,7 @@ describe("TreeGraph renderer", () => {
 
     // Change the viewpoint to p2.
     await userEvent.selectOptions(
-      screen.getByLabelText(/Góc nhìn/),
+      screen.getByLabelText(/Cách xưng hô hiển thị theo/),
       "p2",
     );
 

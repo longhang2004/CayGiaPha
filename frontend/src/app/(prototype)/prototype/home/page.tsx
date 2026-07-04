@@ -65,7 +65,7 @@ export default function PrototypeHomePage() {
           <div className="home-hero__actions">
             {loggedIn ? (
               <Link href="/tree" className="btn">
-                Xem sơ đồ gia phả
+                Mở cây gia phả
               </Link>
             ) : (
               <>

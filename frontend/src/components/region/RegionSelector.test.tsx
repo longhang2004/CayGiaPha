@@ -35,7 +35,7 @@ describe("RegionSelector", () => {
 
     render(<RegionSelector treeId="t1" region="Bac" />);
 
-    await userEvent.selectOptions(screen.getByLabelText("Vùng phương ngữ"), "Nam");
+    await userEvent.selectOptions(screen.getByLabelText("Cách xưng hô theo vùng miền"), "Nam");
 
     const [url, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
     expect(url).toBe("/api/v1/trees/t1/region");
@@ -53,7 +53,7 @@ describe("RegionSelector", () => {
 
     render(<RegionSelector treeId="t1" region="Bac" />);
 
-    const select = screen.getByLabelText("Vùng phương ngữ") as HTMLSelectElement;
+    const select = screen.getByLabelText("Cách xưng hô theo vùng miền") as HTMLSelectElement;
     await userEvent.selectOptions(select, "Trung");
 
     expect(await screen.findByTestId("region-error")).toHaveTextContent("Vùng không hợp lệ");

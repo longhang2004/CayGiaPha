@@ -31,8 +31,8 @@ interface VisibilityTogglesProps {
 
 const FIELDS: { key: keyof VisibilityState; label: string }[] = [
   { key: "visMarital", label: "Tình trạng hôn nhân" },
-  { key: "visAdoption", label: "Tình trạng nhận nuôi" },
-  { key: "visDeath", label: "Tình trạng mất" },
+  { key: "visAdoption", label: "Thông tin nhận nuôi (con nuôi)" },
+  { key: "visDeath", label: "Thông tin qua đời" },
 ];
 
 export function VisibilityToggles({
@@ -42,7 +42,7 @@ export function VisibilityToggles({
 }: VisibilityTogglesProps) {
   return (
     <fieldset>
-      <legend>Quyền riêng tư (mặc định: riêng tư)</legend>
+      <legend>Ai có thể xem thông tin này?</legend>
       {FIELDS.map(({ key, label }) => {
         const isPublic = value[key] === "public";
         const id = `vis-${key}`;
@@ -63,7 +63,7 @@ export function VisibilityToggles({
                 }
               />
               {` ${label}: `}
-              <span>{isPublic ? "công khai" : "riêng tư"}</span>
+              <span>{isPublic ? "Mọi người xem được" : "Chỉ gia đình"}</span>
             </label>
           </p>
         );

@@ -111,12 +111,8 @@ export function SearchPanel({
     } else {
       setIsListening(true);
       setTimeout(() => {
-        const sampleNames = ["Nguyễn", "Trần", "Bác", "Chú", "Cô"];
-        const randomName = sampleNames[Math.floor(Math.random() * sampleNames.length)];
-        setSearchQuery(randomName);
-        setShowDropdown(true);
         setIsListening(false);
-        alert(`Giả lập giọng nói nhận diện từ khóa: "${randomName}" (Trình duyệt không hỗ trợ trực tiếp Web Speech API).`);
+        setFormError("Trình duyệt của bạn chưa hỗ trợ tìm kiếm bằng giọng nói.");
       }, 1500);
     }
   };
@@ -403,15 +399,15 @@ export function SearchPanel({
                 className={`btn btn-secondary filter-toggle-btn ${hasActiveFilters() ? "filter-toggle-btn--active" : ""}`}
                 onClick={() => setIsFilterDropdownOpen(!isFilterDropdownOpen)}
                 aria-expanded={isFilterDropdownOpen}
-                aria-label="Lọc"
+                aria-label="Bộ lọc"
                 title="Bộ lọc"
                 style={{ display: "flex", alignItems: "center", gap: "0.25rem" }}
               >
-                Lọc {hasActiveFilters() ? "•" : ""}
+                Bộ lọc {hasActiveFilters() ? "●" : ""}
               </button>
 
               <button type="submit" className="btn search-submit-btn" disabled={submitting}>
-                Tìm
+                Tìm kiếm
               </button>
             </div>
 
@@ -503,7 +499,7 @@ export function SearchPanel({
                     onChange={(e) => setDeathStatus(e.target.value)}
                   >
                     <option value="">Tất cả</option>
-                    <option value="true">Đã mất</option>
+                    <option value="true">Đã qua đời</option>
                     <option value="false">Còn sống</option>
                   </select>
 

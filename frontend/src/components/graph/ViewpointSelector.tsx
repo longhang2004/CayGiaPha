@@ -26,7 +26,7 @@ export function ViewpointSelector({
 
   return (
     <div className="viewpoint-selector">
-      <label htmlFor="viewpoint-select">Góc nhìn (xưng hô theo)</label>
+      <label htmlFor="viewpoint-select">Cách xưng hô hiển thị theo</label>
       <select
         id="viewpoint-select"
         value={egoId}

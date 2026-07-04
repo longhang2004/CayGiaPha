@@ -42,24 +42,6 @@ export default function PrototypeSignUpPage() {
           <p>Tạo tài khoản cây gia phả mới của bạn.</p>
 
         <div className="field" style={{ marginBottom: "1rem" }}>
-          <label htmlFor="signup-region">Vùng miền (cách xưng hô)</label>
-          <select
-            id="signup-region"
-            value={region}
-            onChange={(e) => setRegion(e.target.value as Region)}
-          >
-            {REGION_OPTIONS.map((o) => (
-              <option key={o.value} value={o.value}>
-                {o.label}
-              </option>
-            ))}
-          </select>
-          <p className="field-hint">
-            Chọn vùng miền của bạn — điều này quyết định cách xưng hô (ví dụ bố/ba, mẹ/má).
-          </p>
-        </div>
-
-        <div className="field" style={{ marginBottom: "1rem" }}>
           <label htmlFor={inputId}>Số điện thoại hoặc email</label>
           <input
             id={inputId}

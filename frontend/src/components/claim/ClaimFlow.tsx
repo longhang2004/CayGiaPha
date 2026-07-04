@@ -129,7 +129,7 @@ export function ClaimFlow({ personId, treeId, onInvited, onClaimed }: ClaimFlowP
       </form>
 
       <form onSubmit={handleClaim} aria-label="Xác nhận bằng mã">
-        <h3>Xác nhận node bằng mã</h3>
+        <h3>Xác nhận danh tính bằng mã mời</h3>
         {claimError ? (
           <p role="alert" data-testid="claim-error">
             {claimError}
@@ -137,7 +137,7 @@ export function ClaimFlow({ personId, treeId, onInvited, onClaimed }: ClaimFlowP
         ) : null}
         {claimedOk ? (
           <p role="status" data-testid="claim-success">
-            Đã xác nhận node thành công.
+            Xác nhận thành công! Hồ sơ đã được liên kết với tài khoản của bạn.
           </p>
         ) : null}
         <p>

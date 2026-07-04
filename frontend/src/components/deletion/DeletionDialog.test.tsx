@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { DeletionDialog } from "./DeletionDialog";
 
@@ -49,8 +49,8 @@ describe("DeletionDialog", () => {
 
     // Both options are presented (15.1).
     expect(await screen.findByRole("dialog")).toBeInTheDocument();
-    expect(screen.getByLabelText(/cascade/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/preservation/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/Xóa theo dây chuyền/)).toBeInTheDocument();
+    expect(screen.getByLabelText(/giữ lại những người liên quan/)).toBeInTheDocument();
 
     // No execute POST has been made yet.
     expect(fetchMock).toHaveBeenCalledTimes(1);
@@ -81,8 +81,9 @@ describe("DeletionDialog", () => {
     await userEvent.click(screen.getByRole("button", { name: "Xóa" }));
     await screen.findByRole("dialog");
 
-    await userEvent.click(screen.getByLabelText(/preservation/i));
-    await userEvent.click(screen.getByRole("button", { name: "Xác nhận xóa" }));
+    await userEvent.click(screen.getByLabelText(/giữ lại những người liên quan/));
+    const dialog = await screen.findByRole("dialog");
+    await userEvent.click(within(dialog).getByRole("button", { name: "Xóa thành viên" }));
 
     expect(fetchMock).toHaveBeenCalledTimes(2);
     const [url, init] = fetchMock.mock.calls[1] as unknown as [string, RequestInit];

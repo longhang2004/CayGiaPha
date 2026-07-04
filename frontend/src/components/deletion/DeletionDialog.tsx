@@ -37,14 +37,14 @@ interface DeletionDialogProps {
 
 const STRATEGY_LABELS: Record<DeletionStrategy, { title: string; description: string }> = {
   cascade: {
-    title: "Xóa lan truyền (cascade)",
+    title: "Xóa theo dây chuyền",
     description:
-      "Xóa người này, mọi liên kết của họ, rồi xóa tiếp những người trở nên không còn liên kết do thao tác này.",
+      "Xóa người này cùng với các thành viên chỉ còn liên kết qua họ. Thao tác này không thể hoàn tác.",
   },
   preserve: {
-    title: "Giữ lại người lân cận (neighbor preservation)",
+    title: "Chỉ xóa người này, giữ lại những người liên quan",
     description:
-      "Xóa người này nhưng giữ lại tất cả người từng liên kết với họ; tạo liên kết khai báo (nét đứt) cho các cặp chỉ nối với nhau qua người bị xóa.",
+      "Xóa người này nhưng vẫn giữ nguyên những thành viên liên quan — hệ thống sẽ tự động tạo đường kết nối mờ giữa họ.",
   },
 };
 
@@ -123,8 +123,8 @@ export function DeletionDialog({
       </Button>
 
       {open && choice ? (
-        <div role="dialog" aria-modal="true" aria-label="Chọn cách xóa">
-          <h2>Chọn cách xóa</h2>
+        <div role="dialog" aria-modal="true" aria-label="Xác nhận xóa thành viên">
+          <h2>Xác nhận xóa thành viên</h2>
           {error ? (
             <p role="alert" data-testid="deletion-error">
               {error}
@@ -132,7 +132,7 @@ export function DeletionDialog({
           ) : null}
 
           <fieldset>
-            <legend>Phương án</legend>
+            <legend>Chọn cách xử lý các mối liên hệ</legend>
             {(["cascade", "preserve"] as DeletionStrategy[]).map((s) => (
               <label key={s} htmlFor={`deletion-${s}`} style={{ display: "block" }}>
                 <input
@@ -151,7 +151,7 @@ export function DeletionDialog({
           </fieldset>
 
           <Button type="button" onClick={handleConfirm} disabled={executing || !strategy}>
-            Xác nhận xóa
+            Xóa thành viên
           </Button>
           <Button type="button" onClick={handleDismiss} disabled={executing} className="btn-secondary">
             Hủy

@@ -22,7 +22,7 @@ export default function HomePage() {
             <span className="btn btn-secondary home-hero__loading">Đang kiểm tra phiên đăng nhập…</span>
           ) : user ? (
             <Link href="/tree" className="btn">
-              Xem sơ đồ gia phả
+              Mở cây gia phả
             </Link>
           ) : (
             <>

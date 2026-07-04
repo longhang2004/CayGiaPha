@@ -47,7 +47,7 @@ export function UpcomingEventsWidget({ treeId }: UpcomingEventsWidgetProps) {
     return (
       <div className="surface-card side-panel" style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
         <h3 className="side-panel__title" style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-          <span>🕯️</span> Ngày Giỗ Sắp Tới
+          <span>🕯️</span> Ngày giỗ sắp tới
         </h3>
         <Skeleton style={{ height: "40px", borderRadius: "6px" }} />
         <Skeleton style={{ height: "40px", borderRadius: "6px" }} />
@@ -59,7 +59,7 @@ export function UpcomingEventsWidget({ treeId }: UpcomingEventsWidgetProps) {
     return (
       <div className="surface-card side-panel">
         <h3 className="side-panel__title" style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-          <span>🕯️</span> Ngày Giỗ Sắp Tới
+          <span>🕯️</span> Ngày giỗ sắp tới
         </h3>
         <p style={{ color: "var(--color-danger)", fontSize: "0.875rem", margin: 0 }}>{error}</p>
       </div>
@@ -69,7 +69,7 @@ export function UpcomingEventsWidget({ treeId }: UpcomingEventsWidgetProps) {
   return (
     <div className="surface-card side-panel" style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
       <h3 className="side-panel__title" style={{ display: "flex", alignItems: "center", gap: "0.5rem", margin: 0 }}>
-        <span>🕯️</span> Ngày Giỗ Sắp Tới (30 ngày)
+        <span>🕯️</span> Ngày giỗ trong 30 ngày tới
       </h3>
       {events.length === 0 ? (
         <p style={{ color: "var(--color-muted)", fontSize: "0.875rem", margin: 0, textAlign: "center", padding: "1rem 0" }}>

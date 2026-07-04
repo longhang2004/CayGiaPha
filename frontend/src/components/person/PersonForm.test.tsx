@@ -37,7 +37,7 @@ describe("PersonForm (create)", () => {
     render(<PersonForm mode="create" treeId="t1" onSuccess={onSuccess} />);
 
     await userEvent.type(screen.getByLabelText("Họ và tên"), "Anh");
-    await userEvent.click(screen.getByRole("button", { name: "Tạo" }));
+    await userEvent.click(screen.getByRole("button", { name: "Lưu thành viên" }));
 
     // Default visibility stays private, so exactly one request is made.
     expect(fetchMock).toHaveBeenCalledTimes(1);
@@ -61,8 +61,8 @@ describe("PersonForm (create)", () => {
     await userEvent.click(screen.getByLabelText("Nữ"));
     await userEvent.type(screen.getByLabelText(/Thứ tự sinh/), "2");
     await userEvent.type(screen.getByLabelText(/Năm sinh/), "1990");
-    await userEvent.click(screen.getByLabelText(/Đã mất/));
-    await userEvent.click(screen.getByRole("button", { name: "Tạo" }));
+    await userEvent.click(screen.getByLabelText(/Đã qua đời/));
+    await userEvent.click(screen.getByRole("button", { name: "Lưu thành viên" }));
 
     const [, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
     expect(JSON.parse(init.body as string)).toEqual({
@@ -83,8 +83,8 @@ describe("PersonForm (create)", () => {
     render(<PersonForm mode="create" treeId="t1" />);
 
     await userEvent.type(screen.getByLabelText("Họ và tên"), "Châu");
-    await userEvent.click(screen.getByLabelText(/Tình trạng mất/));
-    await userEvent.click(screen.getByRole("button", { name: "Tạo" }));
+    await userEvent.click(screen.getByLabelText(/Thông tin qua đời/));
+    await userEvent.click(screen.getByRole("button", { name: "Lưu thành viên" }));
 
     expect(fetchMock).toHaveBeenCalledTimes(2);
     const [url, init] = fetchMock.mock.calls[1] as unknown as [string, RequestInit];
@@ -107,7 +107,7 @@ describe("PersonForm (create)", () => {
     render(<PersonForm mode="create" treeId="t1" />);
 
     await userEvent.type(screen.getByLabelText("Họ và tên"), "X");
-    await userEvent.click(screen.getByRole("button", { name: "Tạo" }));
+    await userEvent.click(screen.getByRole("button", { name: "Lưu thành viên" }));
 
     expect(await screen.findByText("Tên quá dài")).toBeInTheDocument();
     expect(screen.getByLabelText("Họ và tên")).toHaveAttribute("aria-invalid", "true");
@@ -130,7 +130,7 @@ describe("PersonForm (edit)", () => {
     const nameInput = screen.getByLabelText("Họ và tên");
     await userEvent.clear(nameInput);
     await userEvent.type(nameInput, "Mới");
-    await userEvent.click(screen.getByRole("button", { name: "Lưu" }));
+    await userEvent.click(screen.getByRole("button", { name: "Cập nhật thông tin" }));
 
     const [url, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
     expect(url).toBe("/api/v1/persons/p9?treeId=t9");

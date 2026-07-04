@@ -151,7 +151,7 @@ export function NotificationBell({ align = "right" }: { align?: "left" | "right"
           <div style={{ maxHeight: "300px", overflowY: "auto", display: "flex", flexDirection: "column" }}>
             {loading && reminders.length === 0 ? (
               <p style={{ padding: "2rem", textAlign: "center", color: "var(--color-muted)", margin: 0, fontSize: "0.875rem" }}>
-                Đang tải...
+                Đang tải…
               </p>
             ) : reminders.length === 0 ? (
               <p style={{ padding: "2rem", textAlign: "center", color: "var(--color-muted)", margin: 0, fontSize: "0.875rem" }}>

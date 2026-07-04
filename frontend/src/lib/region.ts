@@ -17,9 +17,9 @@ export type Region = "Bac" | "Trung" | "Nam";
 
 /** Ordered region options with their display labels (Bắc/Trung/Nam). */
 export const REGION_OPTIONS: ReadonlyArray<{ value: Region; label: string }> = [
-  { value: "Bac", label: "Phổ thông (miền Bắc)" },
-  { value: "Trung", label: "Miền Trung" },
-  { value: "Nam", label: "Miền Nam" },
+  { value: "Bac", label: "Miền Bắc — Bố, Mẹ" },
+  { value: "Trung", label: "Miền Trung — Ba, Mạ" },
+  { value: "Nam", label: "Miền Nam — Tía, Má" },
 ];
 
 /** The valid region values as a set, for validation. */

@@ -39,7 +39,7 @@ describe("AddRelativeForm", () => {
     });
 
     render(<AddRelativeForm treeId="t1" persons={PERSONS} />);
-    await userEvent.click(screen.getByRole("button", { name: "Thêm" }));
+    await userEvent.click(screen.getByRole("button", { name: "Thêm kết nối" }));
 
     const [url, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
     expect(url).toBe("/api/v1/relationships");
@@ -61,9 +61,9 @@ describe("AddRelativeForm", () => {
 
     render(<AddRelativeForm treeId="t1" persons={PERSONS} />);
 
-    await userEvent.click(screen.getByLabelText(/khai báo/));
+    await userEvent.click(screen.getByLabelText(/tự điền tên gọi/));
     await userEvent.type(screen.getByLabelText(/Nhãn xưng hô/), "bác");
-    await userEvent.click(screen.getByRole("button", { name: "Thêm" }));
+    await userEvent.click(screen.getByRole("button", { name: "Thêm kết nối" }));
 
     const [url, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
     expect(url).toBe("/api/v1/relationships");
@@ -91,7 +91,7 @@ describe("AddRelativeForm", () => {
     });
 
     render(<AddRelativeForm treeId="t1" persons={PERSONS} />);
-    await userEvent.click(screen.getByRole("button", { name: "Thêm" }));
+    await userEvent.click(screen.getByRole("button", { name: "Thêm kết nối" }));
 
     const alert = await screen.findByRole("alert");
     expect(alert).toBeInTheDocument();
@@ -109,9 +109,9 @@ describe("AddRelativeForm", () => {
     });
 
     render(<AddRelativeForm treeId="t1" persons={PERSONS} />);
-    await userEvent.click(screen.getByLabelText(/khai báo/));
+    await userEvent.click(screen.getByLabelText(/tự điền tên gọi/));
     await userEvent.type(screen.getByLabelText(/Nhãn xưng hô/), "x");
-    await userEvent.click(screen.getByRole("button", { name: "Thêm" }));
+    await userEvent.click(screen.getByRole("button", { name: "Thêm kết nối" }));
 
     expect(await screen.findByText("Nhãn không hợp lệ")).toBeInTheDocument();
   });

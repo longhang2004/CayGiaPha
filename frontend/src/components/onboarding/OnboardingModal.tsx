@@ -194,7 +194,7 @@ export function OnboardingModal({ isOpen, onClose }: OnboardingModalProps) {
               className="btn btn-secondary onboarding-btn-nav"
               onClick={handleNext}
             >
-              Tiếp tục
+              Tiếp theo
             </button>
           ) : (
             <button

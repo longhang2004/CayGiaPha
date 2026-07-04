@@ -32,7 +32,7 @@ export default function PrototypeInvitationPage({ params }: InvitationPageProps)
     setLoading(false);
   }, [inviteId]);
 
-  if (loading) return <div>Loading...</div>;
+  if (loading) return <div>Loading…</div>;
 
   return (
     <main className="center-layout" style={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: "100vh", backgroundColor: "var(--color-bg)" }}>

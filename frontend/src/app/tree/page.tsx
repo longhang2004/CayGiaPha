@@ -188,7 +188,7 @@ function TreeListContent() {
       <section className="center-state" aria-live="polite">
         <div className="center-state__card">
           <span className="center-state__spinner" aria-hidden="true" />
-          <p>Đang tải danh sách cây gia phả…</p>
+          <p>Đang lấy dữ liệu cây gia phả…</p>
         </div>
       </section>
     );
@@ -199,7 +199,7 @@ function TreeListContent() {
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "2rem" }}>
         <div>
           <h1 style={{ fontSize: "2rem", fontWeight: 700, color: "var(--color-brand)" }}>
-            Danh Sách Cây Gia Phả
+            Cây Gia Phả Của Bạn
           </h1>
           <p style={{ color: "var(--color-muted)", fontSize: "0.95rem", marginTop: "0.25rem" }}>
             Lưu giữ và chia sẻ cội nguồn gia đình của bạn.
@@ -337,14 +337,14 @@ function TreeListContent() {
             <form onSubmit={handleCreateTree} style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
               <div>
                 <label htmlFor="tree-name" style={{ display: "block", fontWeight: 600, fontSize: "0.9rem", marginBottom: "0.5rem" }}>
-                  Tên cây gia phả dòng họ:
+                  Tên cây gia phả:
                 </label>
                 <input
                   id="tree-name"
                   type="text"
                   value={newTreeName}
                   onChange={(e) => setNewTreeName(e.target.value)}
-                  placeholder="Ví dụ: Gia phả họ Nguyễn Văn"
+                  placeholder="Ví dụ: Gia phả họ Nguyễn"
                   required
                   style={{
                     width: "100%",
@@ -358,7 +358,7 @@ function TreeListContent() {
 
               <div>
                 <label htmlFor="tree-region" style={{ display: "block", fontWeight: 600, fontSize: "0.9rem", marginBottom: "0.5rem" }}>
-                  Phương ngữ chính (Xưng hô):
+                  Cách xưng hô hiển thị theo vùng miền:
                 </label>
                 <select
                   id="tree-region"
@@ -372,9 +372,9 @@ function TreeListContent() {
                     backgroundColor: "var(--color-surface)",
                   }}
                 >
-                  <option value="Bac">Miền Bắc (Bố, Mẹ,...)</option>
-                  <option value="Trung">Miền Trung (Ba, Mạ,...)</option>
-                  <option value="Nam">Miền Nam (Tía, Má,...)</option>
+                  <option value="Bac">Miền Bắc — Bố, Mẹ</option>
+                  <option value="Trung">Miền Trung — Ba, Mạ</option>
+                  <option value="Nam">Miền Nam — Tía, Má</option>
                 </select>
               </div>
 

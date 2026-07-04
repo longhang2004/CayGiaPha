@@ -72,7 +72,7 @@ describe("PersonPhotos", () => {
     await userEvent.upload(screen.getByLabelText(/Tải ảnh lên/), file);
 
     const year = new Date(file.lastModified).getFullYear();
-    await userEvent.click(screen.getByRole("button", { name: "Xác nhận tải lên" }));
+    await userEvent.click(screen.getByRole("button", { name: "Lưu ảnh" }));
 
     expect(uploadPhoto).toHaveBeenCalledWith("t1", "person1", file, year, undefined);
     await waitFor(() => expect(screen.getByTestId("photo-item")).toBeInTheDocument());
@@ -103,7 +103,7 @@ describe("PersonPhotos", () => {
     render(<PersonPhotos treeId="t1" personId="person1" canEdit />);
     await waitFor(() => expect(screen.getByTestId("photo-item")).toBeInTheDocument());
 
-    await userEvent.click(screen.getByRole("button", { name: "Xóa" }));
+    await userEvent.click(screen.getByRole("button", { name: "Xóa ảnh này" }));
 
     expect(deletePhoto).toHaveBeenCalledWith("t1", "person1", "a");
   });
@@ -124,7 +124,7 @@ describe("PersonPhotos", () => {
     const file = new File(["x"], "bad.png", { type: "image/png" });
     await userEvent.upload(screen.getByLabelText(/Tải ảnh lên/), file);
 
-    await userEvent.click(screen.getByRole("button", { name: "Xác nhận tải lên" }));
+    await userEvent.click(screen.getByRole("button", { name: "Lưu ảnh" }));
 
     expect(await screen.findByRole("alert")).toHaveTextContent(
       "Unsupported image type; only JPEG and PNG are accepted.",

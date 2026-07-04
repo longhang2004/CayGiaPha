@@ -162,7 +162,7 @@ function TreePageContent({ params, searchParams }: TreePageProps) {
       setInviteEmail("");
       fetchCollaborationData();
     } catch (err) {
-      alert(err instanceof ApiError ? err.message : "Không thể gửi lời mời.");
+      console.warn(err instanceof ApiError ? err.message : "Không thể gửi lời mời.");
     }
   }
 
@@ -198,7 +198,7 @@ function TreePageContent({ params, searchParams }: TreePageProps) {
       router.refresh();
       window.location.reload();
     } catch (err) {
-      alert(err instanceof ApiError ? err.message : "Mã mời không hợp lệ.");
+      console.warn(err instanceof ApiError ? err.message : "Mã mời không hợp lệ.");
     }
   }
 
@@ -276,7 +276,7 @@ function TreePageContent({ params, searchParams }: TreePageProps) {
         setShareToken(null);
       }
     } catch (err) {
-      alert(err instanceof ApiError ? err.message : "Không thể thay đổi cấu hình chia sẻ.");
+      console.warn(err instanceof ApiError ? err.message : "Không thể thay đổi cấu hình chia sẻ.");
     } finally {
       setUpdatingSharing(false);
     }
@@ -290,7 +290,7 @@ function TreePageContent({ params, searchParams }: TreePageProps) {
       setLivingRedaction(result.enabled);
       refreshTree();
     } catch (err) {
-      alert(err instanceof ApiError ? err.message : "Không thể cập nhật cấu hình bảo vệ.");
+      console.warn(err instanceof ApiError ? err.message : "Không thể cập nhật cấu hình bảo vệ.");
     } finally {
       setUpdatingRedaction(false);
     }
@@ -303,7 +303,7 @@ function TreePageContent({ params, searchParams }: TreePageProps) {
       const result = await api.post<{ token: string }>(`/trees/${activeTreeId}/share-token`);
       setShareToken(result.token);
     } catch (err) {
-      alert(err instanceof ApiError ? err.message : "Không thể tạo liên kết chia sẻ.");
+      console.warn(err instanceof ApiError ? err.message : "Không thể tạo liên kết chia sẻ.");
     } finally {
       setGeneratingToken(false);
     }
@@ -317,7 +317,7 @@ function TreePageContent({ params, searchParams }: TreePageProps) {
       setShareToken(null);
       alert("Đã hủy bỏ tất cả liên kết chia sẻ trước đó.");
     } catch (err) {
-      alert(err instanceof ApiError ? err.message : "Không thể hủy bỏ liên kết chia sẻ.");
+      console.warn(err instanceof ApiError ? err.message : "Không thể hủy bỏ liên kết chia sẻ.");
     } finally {
       setGeneratingToken(false);
     }
@@ -541,12 +541,12 @@ function TreePageContent({ params, searchParams }: TreePageProps) {
                 type="button"
                 className="side-panel__close"
                 onClick={() => setCreateMode(false)}
-                aria-label="Hủy bỏ"
-                title="Hủy bỏ"
+                aria-label="Hủy"
+                title="Hủy"
               >
                 &times;
               </button>
-              <h3 className="side-panel__title">Tạo thành viên mới</h3>
+              <h3 className="side-panel__title">Thêm thành viên mới</h3>
               <PersonForm
                 mode="create"
                 treeId={activeTreeId}
@@ -584,7 +584,7 @@ function TreePageContent({ params, searchParams }: TreePageProps) {
 
               {editMode ? (
                 <div>
-                  <h4 style={{ margin: "1rem 0" }}>Sửa thông tin</h4>
+                  <h4 style={{ margin: "1rem 0" }}>Chỉnh sửa thông tin</h4>
                   <PersonForm
                     mode="edit"
                     treeId={activeTreeId}
@@ -600,7 +600,7 @@ function TreePageContent({ params, searchParams }: TreePageProps) {
                 </div>
               ) : addRelativeMode ? (
                 <div>
-                  <h4 style={{ margin: "1rem 0" }}>Thêm quan hệ cho {selectedPerson.displayName}</h4>
+                  <h4 style={{ margin: "1rem 0" }}>Thêm kết nối cho {selectedPerson.displayName}</h4>
                   <AddRelativeForm
                     treeId={activeTreeId}
                     persons={personOptions}
@@ -631,7 +631,7 @@ function TreePageContent({ params, searchParams }: TreePageProps) {
                           className="btn"
                           onClick={() => setEditMode(true)}
                         >
-                          Sửa thông tin
+                          Chỉnh sửa thông tin
                         </button>
                         <button
                           type="button"
@@ -696,12 +696,12 @@ function TreePageContent({ params, searchParams }: TreePageProps) {
                 type="button"
                 className="side-panel__close"
                 onClick={() => setAddRelativeMode(false)}
-                aria-label="Hủy bỏ"
-                title="Hủy bỏ"
+                aria-label="Hủy"
+                title="Hủy"
               >
                 &times;
               </button>
-              <h3 className="side-panel__title">Thêm quan hệ mới</h3>
+              <h3 className="side-panel__title">Thêm kết nối mới</h3>
               <AddRelativeForm
                 treeId={activeTreeId}
                 persons={personOptions}
@@ -743,7 +743,7 @@ function TreePageContent({ params, searchParams }: TreePageProps) {
             <div className="settings-modal__body">
               {isOwner && (
                 <section className="settings-section">
-                  <h3>Cấu hình dòng họ</h3>
+                  <h3>Cài đặt gia phả</h3>
                   <RegionSelector
                     treeId={activeTreeId}
                     region={region}
@@ -892,7 +892,7 @@ function TreePageContent({ params, searchParams }: TreePageProps) {
         <div className="settings-modal-overlay" onClick={handleCloseCollaboration}>
           <div className="settings-modal" onClick={(e) => e.stopPropagation()}>
             <div className="settings-modal__header">
-              <h2>Cộng tác xây dựng cây</h2>
+              <h2>Quản lý cộng tác viên</h2>
               <button
                 type="button"
                 className="settings-modal__close"
@@ -904,7 +904,7 @@ function TreePageContent({ params, searchParams }: TreePageProps) {
             </div>
             <div className="settings-modal__body">
               <section className="settings-section">
-                <h3>Thành viên tham gia xây dựng cây</h3>
+                <h3>Thành viên hiện tại</h3>
                 <div style={{ marginBottom: "1.5rem" }}>
                   <ul style={{ paddingLeft: "1.2rem", margin: "0.5rem 0", lineHeight: "1.6" }}>
                     <li>
@@ -920,7 +920,7 @@ function TreePageContent({ params, searchParams }: TreePageProps) {
 
                 {user && (
                   <form onSubmit={handleSendInvite} style={{ display: "flex", flexDirection: "column", gap: "0.5rem", marginBottom: "1.5rem", borderTop: "1px solid var(--color-hairline-soft)", paddingTop: "1.5rem" }}>
-                    <label htmlFor="invite-email" style={{ fontWeight: "bold" }}>Mời người khác qua email:</label>
+                    <label htmlFor="invite-email" style={{ fontWeight: "bold" }}>Thêm cộng tác viên mới</label>
                     <div style={{ display: "flex", gap: "0.5rem" }}>
                       <input
                         id="invite-email"
@@ -938,7 +938,7 @@ function TreePageContent({ params, searchParams }: TreePageProps) {
 
                 {isOwner && pendingInvites.length > 0 && (
                   <div style={{ marginBottom: "1.5rem", border: "1px solid var(--color-hairline-soft)", padding: "0.75rem", borderRadius: "4px" }}>
-                    <label style={{ fontWeight: "bold", color: "var(--color-danger)" }}>Yêu cầu mời đang chờ duyệt ({pendingInvites.length}):</label>
+                    <label style={{ fontWeight: "bold", color: "var(--color-danger)" }}>Đang chờ duyệt ({pendingInvites.length} lời mời):</label>
                     <ul style={{ listStyle: "none", padding: 0, margin: "0.5rem 0" }}>
                       {pendingInvites.map((invite) => (
                         <li key={invite.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.5rem" }}>
@@ -955,14 +955,14 @@ function TreePageContent({ params, searchParams }: TreePageProps) {
 
                 {user && (
                   <form onSubmit={handleJoinTree} style={{ display: "flex", flexDirection: "column", gap: "0.5rem", borderTop: "1px dashed var(--color-hairline-soft)", paddingTop: "1.5rem" }}>
-                    <label htmlFor="invite-code" style={{ fontWeight: "bold" }}>Nhập mã mời để tham gia cây khác:</label>
+                    <label htmlFor="invite-code" style={{ fontWeight: "bold" }}>Tham gia gia phả bằng mã mời</label>
                     <div style={{ display: "flex", gap: "0.5rem" }}>
                       <input
                         id="invite-code"
                         type="text"
                         value={inviteCode}
                         onChange={(e) => setInviteCode(e.target.value)}
-                        placeholder="Mã 6 số"
+                        placeholder="Nhập mã 6 chữ số"
                         maxLength={6}
                         required
                         style={{ flex: 1, padding: "0.4rem 0.6rem" }}

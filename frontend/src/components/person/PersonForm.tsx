@@ -303,7 +303,7 @@ export function PersonForm({
   }
 
   return (
-    <form onSubmit={handleSubmit} aria-label={mode === "create" ? "Tạo người" : "Sửa người"}>
+    <form onSubmit={handleSubmit} aria-label={mode === "create" ? "Thêm thành viên mới" : "Chỉnh sửa thông tin thành viên"}>
       {formError ? (
         <p role="alert" data-testid="form-error" className="form-error">
           {formError}
@@ -363,29 +363,6 @@ export function PersonForm({
       </fieldset>
 
       <div className="field">
-        <label htmlFor="birthOrder">Thứ tự sinh (tùy chọn)</label>
-        <input
-          id="birthOrder"
-          name="birthOrder"
-          type="number"
-          min={1}
-          max={99}
-          value={birthOrder}
-          aria-invalid={fieldErrors.birthOrder ? true : undefined}
-          aria-describedby={describedBy("birthOrder")}
-          onChange={(e) => setBirthOrder(e.target.value)}
-        />
-        <p className="field-hint" style={{ fontSize: "0.75rem", marginTop: "4px" }}>
-          Lưu ý: Người sinh thứ 1 (đầu lòng) là con cả/Anh Hai/Chị Hai (nhập số 1).
-        </p>
-        {fieldErrors.birthOrder ? (
-          <span id="birthOrder-error" role="alert" className="field-error">
-            {fieldErrors.birthOrder}
-          </span>
-        ) : null}
-      </div>
-
-      <div className="field">
         <label htmlFor="birthYear">Năm sinh (tùy chọn)</label>
         <input
           id="birthYear"
@@ -405,61 +382,26 @@ export function PersonForm({
       </div>
 
       <div className="field">
-        <label htmlFor="phone">Số điện thoại (tùy chọn)</label>
+        <label htmlFor="birthOrder">Thứ tự sinh (tùy chọn)</label>
         <input
-          id="phone"
-          name="phone"
-          type="tel"
-          value={phone}
-          onChange={(e) => setPhone(e.target.value)}
+          id="birthOrder"
+          name="birthOrder"
+          type="number"
+          min={1}
+          max={99}
+          value={birthOrder}
+          aria-invalid={fieldErrors.birthOrder ? true : undefined}
+          aria-describedby={describedBy("birthOrder")}
+          onChange={(e) => setBirthOrder(e.target.value)}
         />
-      </div>
-
-      <div className="field">
-        <label htmlFor="email">Email (tùy chọn)</label>
-        <input
-          id="email"
-          name="email"
-          type="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-        />
-      </div>
-
-      <div className="field photo-upload-container">
-        <input
-          id="photo"
-          name="photo"
-          type="file"
-          accept="image/jpeg,image/png"
-          className="photo-upload-input"
-          onChange={(e) => {
-            const file = e.target.files?.[0];
-            if (file) {
-              setPhotoFile(file);
-              setPhotoPreviewUrl(URL.createObjectURL(file));
-            } else {
-              setPhotoFile(null);
-              setPhotoPreviewUrl(null);
-            }
-          }}
-        />
-        <label htmlFor="photo" className="photo-upload-zone">
-          <span className="photo-upload-zone__icon">📤</span>
-          <span className="photo-upload-zone__title">
-            {photoFile ? `Đã chọn: ${photoFile.name}` : "Hình ảnh đại diện (tùy chọn)"}
+        <p className="field-hint" style={{ fontSize: "0.75rem", marginTop: "4px" }}>
+          Số 1 = con đầu lòng (miền Nam gọi là Anh/Chị Hai).
+        </p>
+        {fieldErrors.birthOrder ? (
+          <span id="birthOrder-error" role="alert" className="field-error">
+            {fieldErrors.birthOrder}
           </span>
-          <span className="photo-upload-zone__subtitle">Kéo thả file hoặc click để chọn ảnh đại diện</span>
-        </label>
-        {photoPreviewUrl && (
-          <div style={{ marginTop: "0.5rem" }}>
-            <img
-              src={photoPreviewUrl}
-              alt="Xem trước ảnh"
-              style={{ width: "80px", height: "80px", objectFit: "cover", borderRadius: "8px", border: "1px solid var(--color-hairline)" }}
-            />
-          </div>
-        )}
+        ) : null}
       </div>
 
       <div className="field">
@@ -471,7 +413,7 @@ export function PersonForm({
             checked={deathStatus}
             onChange={(e) => setDeathStatus(e.target.checked)}
           />
-          <span>Đã mất</span>
+          <span>Đã qua đời</span>
         </label>
       </div>
 
@@ -487,7 +429,7 @@ export function PersonForm({
           gap: "1rem"
         }}>
           <div className="field">
-            <label style={{ fontWeight: "600", fontSize: "0.875rem" }}>Lịch ngày mất</label>
+            <label style={{ fontWeight: "600", fontSize: "0.875rem" }}>Nhập theo lịch</label>
             <div style={{ display: "flex", gap: "1.5rem", marginTop: "0.5rem" }}>
               <label htmlFor="calendar-lunar" style={{ display: "flex", alignItems: "center", gap: "0.35rem", cursor: "pointer", fontWeight: "normal", color: "var(--color-muted)", minHeight: "auto" }}>
                 <input
@@ -598,6 +540,64 @@ export function PersonForm({
         </div>
       )}
 
+      <div className="field">
+        <label htmlFor="phone">Số điện thoại (tùy chọn)</label>
+        <input
+          id="phone"
+          name="phone"
+          type="tel"
+          value={phone}
+          onChange={(e) => setPhone(e.target.value)}
+        />
+      </div>
+
+      <div className="field">
+        <label htmlFor="email">Email (tùy chọn)</label>
+        <input
+          id="email"
+          name="email"
+          type="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+        />
+      </div>
+
+      <div className="field photo-upload-container">
+        <input
+          id="photo"
+          name="photo"
+          type="file"
+          accept="image/jpeg,image/png"
+          className="photo-upload-input"
+          onChange={(e) => {
+            const file = e.target.files?.[0];
+            if (file) {
+              setPhotoFile(file);
+              setPhotoPreviewUrl(URL.createObjectURL(file));
+            } else {
+              setPhotoFile(null);
+              setPhotoPreviewUrl(null);
+            }
+          }}
+        />
+        <label htmlFor="photo" className="photo-upload-zone">
+          <span className="photo-upload-zone__icon">📤</span>
+          <span className="photo-upload-zone__title">
+            {photoFile ? `Đã chọn: ${photoFile.name}` : "Hình ảnh đại diện (tùy chọn)"}
+          </span>
+          <span className="photo-upload-zone__subtitle">Kéo thả file hoặc click để chọn ảnh đại diện</span>
+        </label>
+        {photoPreviewUrl && (
+          <div style={{ marginTop: "0.5rem" }}>
+            <img
+              src={photoPreviewUrl}
+              alt="Xem trước ảnh"
+              style={{ width: "80px", height: "80px", objectFit: "cover", borderRadius: "8px", border: "1px solid var(--color-hairline)" }}
+            />
+          </div>
+        )}
+      </div>
+
       {mode === "create" && persons.length > 0 && (
         <fieldset style={{ marginTop: "1.5rem", border: "1px dashed var(--color-hairline-strong)", borderRadius: "8px", padding: "1rem" }}>
           <legend style={{ padding: "0 0.5rem", fontSize: "0.875rem", fontWeight: "600", color: "var(--color-muted)" }}>
@@ -673,7 +673,7 @@ export function PersonForm({
 
       <div className="form-actions">
         <Button type="submit" disabled={submitting} style={(onCancel && !hideCancelButton) ? { flex: 1 } : undefined}>
-          {mode === "create" ? "Tạo" : "Lưu"}
+          {mode === "create" ? "Lưu thành viên" : "Cập nhật thông tin"}
         </Button>
         {onCancel && !hideCancelButton && (
           <Button
@@ -683,7 +683,7 @@ export function PersonForm({
             disabled={submitting}
             style={{ flex: 1 }}
           >
-            Hủy bỏ
+            Hủy
           </Button>
         )}
       </div>

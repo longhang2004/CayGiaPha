@@ -136,8 +136,8 @@ export function PersonPhotos({ treeId, personId, canEdit = false }: PersonPhotos
   }, [photos]);
 
   return (
-    <section aria-label="Ảnh">
-      <h2>Ảnh</h2>
+    <section aria-label="Thư viện ảnh">
+      <h2>Thư viện ảnh</h2>
 
       {error ? (
         <p role="alert" className="form-error">
@@ -156,7 +156,7 @@ export function PersonPhotos({ treeId, personId, canEdit = false }: PersonPhotos
               marginBottom: "1rem"
             }}
           >
-            <h4 style={{ margin: "0 0 1rem 0" }}>Tải ảnh lên: {selectedFile.name}</h4>
+            <h4 style={{ margin: "0 0 1rem 0" }}>Thêm thông tin cho ảnh: {selectedFile.name}</h4>
 
             <div className="field" style={{ marginBottom: "1rem" }}>
               <label
@@ -213,7 +213,7 @@ export function PersonPhotos({ treeId, personId, canEdit = false }: PersonPhotos
                 onClick={() => void handleConfirmUpload()}
                 disabled={busy}
               >
-                {busy ? "Đang tải lên..." : "Xác nhận tải lên"}
+                {busy ? "Đang tải lên…" : "Lưu ảnh"}
               </button>
             </div>
           </div>
@@ -238,8 +238,8 @@ export function PersonPhotos({ treeId, personId, canEdit = false }: PersonPhotos
             />
             <label htmlFor="photo-upload" className={`photo-upload-zone ${busy ? "photo-upload-zone--disabled" : ""}`}>
               <span className="photo-upload-zone__icon">📤</span>
-              <span className="photo-upload-zone__title">Tải ảnh lên (JPEG hoặc PNG)</span>
-              <span className="photo-upload-zone__subtitle">Kéo thả file hoặc click vào đây để chọn ảnh</span>
+              <span className="photo-upload-zone__title">Tải ảnh lên</span>
+              <span className="photo-upload-zone__subtitle">Kéo thả hoặc click để chọn ảnh (JPEG, PNG)</span>
             </label>
           </div>
         )
@@ -310,6 +310,7 @@ export function PersonPhotos({ treeId, personId, canEdit = false }: PersonPhotos
                           type="button"
                           disabled={busy}
                           onClick={() => void handleDelete(photo.id)}
+                          aria-label="Xóa ảnh này"
                         >
                           Xóa
                         </button>
