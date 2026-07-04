@@ -14,13 +14,13 @@
 -- existing cố suffix with a nội/ngoại qualifier.
 
 UPDATE region_kinship_terms SET term = 'ông nội'
-WHERE canonical_key = 'u2:d0:PATERNAL:MALE:SELF:s0';
+WHERE canonical_relation = 'u2:d0:PATERNAL:MALE:SELF:s0';
 
 UPDATE region_kinship_terms SET term = 'bà nội'
-WHERE canonical_key = 'u2:d0:PATERNAL:FEMALE:SELF:s0';
+WHERE canonical_relation = 'u2:d0:PATERNAL:FEMALE:SELF:s0';
 
 UPDATE region_kinship_terms SET term = 'ông ngoại'
-WHERE canonical_key = 'u2:d0:MATERNAL:MALE:SELF:s0';
+WHERE canonical_relation = 'u2:d0:MATERNAL:MALE:SELF:s0';
 
 UPDATE region_kinship_terms SET term = 'bà ngoại'
-WHERE canonical_key = 'u2:d0:MATERNAL:FEMALE:SELF:s0';
+WHERE canonical_relation = 'u2:d0:MATERNAL:FEMALE:SELF:s0';
