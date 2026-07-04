@@ -13,28 +13,29 @@ export interface AuthContext {
   userId: string | null;
   ownedTreeId: string | null;
   isAuthenticated: boolean;
+  role: "user" | "admin" | null;
 }
 
 export async function getAuthContext(): Promise<AuthContext> {
   const cookieStore = cookies();
   const sessionToken = cookieStore.get("SESSION")?.value;
   if (!sessionToken) {
-    return { userId: null, ownedTreeId: null, isAuthenticated: false };
+    return { userId: null, ownedTreeId: null, isAuthenticated: false, role: null };
   }
 
   const session = await sessionService.resolve(sessionToken);
   if (!session) {
-    return { userId: null, ownedTreeId: null, isAuthenticated: false };
+    return { userId: null, ownedTreeId: null, isAuthenticated: false, role: null };
   }
 
-  const userExists = await db
-    .select({ id: users.id })
+  const user = await db
+    .select({ id: users.id, role: users.role })
     .from(users)
     .where(eq(users.id, session.userId))
-    .then((rows) => rows.length > 0);
+    .then((rows) => rows[0]);
 
-  if (!userExists) {
-    return { userId: null, ownedTreeId: null, isAuthenticated: false };
+  if (!user) {
+    return { userId: null, ownedTreeId: null, isAuthenticated: false, role: null };
   }
 
   const ownedTree = await db
@@ -47,6 +48,7 @@ export async function getAuthContext(): Promise<AuthContext> {
     userId: session.userId,
     ownedTreeId: ownedTree ? ownedTree.id : null,
     isAuthenticated: true,
+    role: user.role === "admin" ? "admin" : "user",
   };
 }
 
@@ -140,6 +142,21 @@ export class AuthorizationService {
       throw ApiException.notAuthorized("Only the tree owner may perform this operation.");
     }
     await this.requireCurrentConsent(currentUserId);
+  }
+
+  async requireAdmin(currentUserId: string | null): Promise<void> {
+    if (!currentUserId) {
+      throw ApiException.notAuthorized("Only administrators may perform this operation.");
+    }
+    const user = await db
+      .select({ role: users.role })
+      .from(users)
+      .where(eq(users.id, currentUserId))
+      .then((rows) => rows[0]);
+
+    if (user?.role !== "admin") {
+      throw ApiException.notAuthorized("Only administrators may perform this operation.");
+    }
   }
 
   private async requireCurrentConsent(userId: string | null): Promise<void> {

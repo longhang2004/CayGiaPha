@@ -22,12 +22,36 @@ export const users = pgTable(
     phone: text("phone"),
     email: text("email"),
     passwordHash: text("password_hash"),
+    role: text("role").notNull().default("user"),
     verified: boolean("verified").notNull().default(false),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => ({
     phoneUniqueIdx: uniqueIndex("ux_users_phone").on(table.phone),
     emailUniqueIdx: uniqueIndex("ux_users_email").on(table.email),
+  })
+);
+
+// ==========================================
+// FEEDBACK MESSAGES
+// ==========================================
+export const feedbackMessages = pgTable(
+  "feedback_messages",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id").references(() => users.id, { onDelete: "set null" }),
+    email: text("email").notNull(),
+    category: text("category").notNull(),
+    message: text("message").notNull(),
+    status: text("status").notNull().default("new"),
+    adminNote: text("admin_note"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => ({
+    statusIdx: index("ix_feedback_messages_status").on(table.status),
+    createdAtIdx: index("ix_feedback_messages_created_at").on(table.createdAt),
+    userIdIdx: index("ix_feedback_messages_user").on(table.userId),
   })
 );
 
@@ -375,4 +399,3 @@ export const collaborationInvitations = pgTable(
     expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
   }
 );
-

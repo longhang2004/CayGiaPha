@@ -14,6 +14,7 @@ export interface SessionUser {
   treeId: string | null;
   identifier: string;
   verified: boolean;
+  role: "user" | "admin";
 }
 
 /**

@@ -15,6 +15,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { SupportFeedbackSection } from "@/components/support/SupportFeedbackSection";
 
 export default function PrototypeHomePage() {
   const [loggedIn, setLoggedIn] = useState(false);
@@ -52,6 +53,7 @@ export default function PrototypeHomePage() {
       </div>
 
       {/* ===== BEGIN: mirror of src/app/page.tsx ===== */}
+      <>
       <section className="home-hero" aria-labelledby="home-title">
         <div className="home-hero__content">
           <p className="eyebrow">Gia phả Việt, dễ dùng cho cả dòng họ</p>
@@ -172,6 +174,8 @@ export default function PrototypeHomePage() {
           </article>
         </div>
       </section>
+      <SupportFeedbackSection prototype mockEmail="prototype@caygipha.dev" />
+      </>
       {/* ===== END: mirror of src/app/page.tsx ===== */}
     </>
   );

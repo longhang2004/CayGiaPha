@@ -14,6 +14,8 @@ export const AuditActions = {
   DATA_EXPORTED: "rights.data_exported",
   NODE_ERASED: "rights.node_erased",
   ACCOUNT_DELETED: "rights.account_deleted",
+  FEEDBACK_SUBMITTED: "feedback.submitted",
+  FEEDBACK_STATUS_CHANGED: "feedback.status_changed",
 };
 
 export class AuditService {

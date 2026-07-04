@@ -27,6 +27,11 @@ export function Header() {
                   <Link href="/tree" className="nav-link" style={{ fontWeight: 600 }}>
                     Xem sơ đồ
                   </Link>
+                  {user.role === "admin" && (
+                    <Link href="/admin" className="nav-link" style={{ fontWeight: 600 }}>
+                      Admin
+                    </Link>
+                  )}
                   <NotificationBell />
                   <SignOutButton redirectTo="/" />
                 </>

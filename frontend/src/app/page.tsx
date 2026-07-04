@@ -2,11 +2,13 @@
 
 import Link from "next/link";
 import { useSession } from "@/app/providers";
+import { SupportFeedbackSection } from "@/components/support/SupportFeedbackSection";
 
 export default function HomePage() {
   const { user, loading } = useSession();
 
   return (
+    <>
     <section className="home-hero animate-fade-up-heavy" aria-labelledby="home-title" style={{ paddingBlock: "var(--space-section)" }}>
       <div className="home-hero__content">
         <p className="eyebrow" style={{ display: "inline-block", background: "var(--color-surface-card)", padding: "0.25rem 0.75rem", borderRadius: "9999px", border: "1px solid var(--color-hairline)", color: "var(--color-fg)", boxShadow: "var(--shadow-ambient)" }}>Gia phả Việt, dễ dùng cho cả dòng họ</p>
@@ -84,5 +86,7 @@ export default function HomePage() {
         </article>
       </div>
     </section>
+    <SupportFeedbackSection />
+    </>
   );
 }

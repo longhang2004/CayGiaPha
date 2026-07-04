@@ -27,6 +27,7 @@ export async function GET() {
       treeId: auth.ownedTreeId,
       identifier: user.phone || user.email || "",
       verified: user.verified,
+      role: user.role === "admin" ? "admin" : "user",
     });
   });
 }

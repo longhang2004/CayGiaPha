@@ -27,8 +27,8 @@ function PrototypeEmptyTreeContent() {
       <div className="empty-tree__intro" style={{ marginBottom: "2rem" }}>
         <h1 style={{ fontSize: "2rem", marginBottom: "1rem" }}>Bắt đầu cây gia phả của bạn</h1>
         <p style={{ color: "var(--color-muted)", lineHeight: 1.6 }}>
-          Sơ đồ gia phả của bạn hiện chưa có thành viên nào. Hãy thêm thành
-          viên đầu tiên để bắt đầu.
+          Sơ đồ gia phả của bạn hiện chưa có thành viên nào. Hãy thêm thành viên đầu tiên
+          để bắt đầu.
         </p>
       </div>
       <div className="onboarding-strip" aria-label="Các bước gợi ý" style={{ display: "flex", justifyContent: "center", gap: "1rem", marginBottom: "2rem", fontSize: "0.9rem", fontWeight: 600, color: "var(--color-brand)" }}>

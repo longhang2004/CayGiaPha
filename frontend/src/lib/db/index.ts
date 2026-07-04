@@ -2,13 +2,17 @@ import { drizzle as nodeDrizzle } from "drizzle-orm/node-postgres";
 import { drizzle as neonDrizzle } from "drizzle-orm/neon-serverless";
 import { Pool as NeonPool } from "@neondatabase/serverless";
 import { Pool as PgPool } from "pg";
-import { sql } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import * as schema from "./schema";
 
 const databaseUrl = process.env.DATABASE_URL || "";
 const isNeon = databaseUrl.includes("neon.tech") || databaseUrl.includes("neon.development");
+const isProductionBuild = process.env.NEXT_PHASE === "phase-production-build";
 
-let dbInstance;
+type NodeDb = ReturnType<typeof nodeDrizzle<typeof schema>>;
+type NeonDb = ReturnType<typeof neonDrizzle<typeof schema>>;
+
+let dbInstance: NodeDb | NeonDb;
 
 if (isNeon) {
   const pool = new NeonPool({
@@ -24,8 +28,45 @@ if (isNeon) {
   dbInstance = nodeDrizzle(pool, { schema });
 }
 
+async function ensureAdminAccount() {
+  const adminEmail =
+    process.env.ADMIN_EMAIL ||
+    (process.env.NODE_ENV === "production" ? "" : "admin@caygiapha.local");
+  const adminPassword =
+    process.env.ADMIN_PASSWORD ||
+    (process.env.NODE_ENV === "production" ? "" : "Admin@123456");
+
+  if (!adminEmail || !adminPassword) {
+    return;
+  }
+
+  const bcrypt = require("bcryptjs");
+  const passwordHash = bcrypt.hashSync(adminPassword, bcrypt.genSaltSync(10));
+  const existing = await dbInstance
+    .select({ id: schema.users.id })
+    .from(schema.users)
+    .where(eq(schema.users.email, adminEmail))
+    .then((rows) => rows[0]);
+
+  if (existing) {
+    await dbInstance
+      .update(schema.users)
+      .set({ role: "admin", verified: true, passwordHash })
+      .where(eq(schema.users.id, existing.id));
+    return;
+  }
+
+  await dbInstance.insert(schema.users).values({
+    phone: null,
+    email: adminEmail,
+    passwordHash,
+    role: "admin",
+    verified: true,
+  });
+}
+
 // Run migration check in the background to self-heal schema discrepancies (like missing V14/V15 columns on production)
-if (databaseUrl) {
+if (databaseUrl && !isProductionBuild) {
   Promise.resolve().then(async () => {
     try {
       console.log("[drizzle] Auto-applying schema migrations...");
@@ -47,6 +88,24 @@ if (databaseUrl) {
       try {
         await dbInstance.execute(sql`ALTER TABLE trees ADD COLUMN IF NOT EXISTS name TEXT NOT NULL DEFAULT 'Cây Gia Phả';`);
       } catch (e) {}
+      await dbInstance.execute(sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS role TEXT NOT NULL DEFAULT 'user';`);
+      await dbInstance.execute(sql`
+        CREATE TABLE IF NOT EXISTS feedback_messages (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          user_id UUID REFERENCES users(id) ON DELETE SET NULL,
+          email TEXT NOT NULL,
+          category TEXT NOT NULL,
+          message TEXT NOT NULL,
+          status TEXT NOT NULL DEFAULT 'new',
+          admin_note TEXT,
+          created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
+        );
+      `);
+      await dbInstance.execute(sql`CREATE INDEX IF NOT EXISTS ix_feedback_messages_status ON feedback_messages(status);`);
+      await dbInstance.execute(sql`CREATE INDEX IF NOT EXISTS ix_feedback_messages_created_at ON feedback_messages(created_at);`);
+      await dbInstance.execute(sql`CREATE INDEX IF NOT EXISTS ix_feedback_messages_user ON feedback_messages(user_id);`);
+      await ensureAdminAccount();
       await dbInstance.execute(sql`ALTER TABLE person_photos ADD COLUMN IF NOT EXISTS photo_year INTEGER;`);
       await dbInstance.execute(sql`ALTER TABLE person_photos ADD COLUMN IF NOT EXISTS description TEXT;`);
       await dbInstance.execute(sql`

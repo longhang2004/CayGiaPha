@@ -17,6 +17,7 @@ export const MOCK_USER: SessionUser = {
   treeId: PROTOTYPE_TREE_ID,
   identifier: "prototype@caygipha.dev",
   verified: true,
+  role: "user",
 };
 
 export const MOCK_PERSONS: Person[] = [

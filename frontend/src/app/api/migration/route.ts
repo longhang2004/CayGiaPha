@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { sql } from "drizzle-orm";
 
+export const dynamic = "force-dynamic";
+
 export async function GET() {
   try {
     console.log("Starting inline DB migrations...");
@@ -65,6 +67,26 @@ export async function GET() {
       await db.execute(sql`ALTER TABLE trees ADD COLUMN IF NOT EXISTS name TEXT NOT NULL DEFAULT 'Cây Gia Phả';`);
     } catch (e) {}
     console.log("V16 applied.");
+
+    // V17: Admin role + feedback inbox
+    await db.execute(sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS role TEXT NOT NULL DEFAULT 'user';`);
+    await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS feedback_messages (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        user_id UUID REFERENCES users(id) ON DELETE SET NULL,
+        email TEXT NOT NULL,
+        category TEXT NOT NULL,
+        message TEXT NOT NULL,
+        status TEXT NOT NULL DEFAULT 'new',
+        admin_note TEXT,
+        created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+    await db.execute(sql`CREATE INDEX IF NOT EXISTS ix_feedback_messages_status ON feedback_messages(status);`);
+    await db.execute(sql`CREATE INDEX IF NOT EXISTS ix_feedback_messages_created_at ON feedback_messages(created_at);`);
+    await db.execute(sql`CREATE INDEX IF NOT EXISTS ix_feedback_messages_user ON feedback_messages(user_id);`);
+    console.log("V17 applied.");
 
     return NextResponse.json({ success: true, message: "Migrations executed successfully." });
   } catch (error: any) {

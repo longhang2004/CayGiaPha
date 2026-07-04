@@ -29,6 +29,7 @@ export function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse }: Side
 
   const isTreeActive = pathname.startsWith("/tree");
   const isHelpActive = pathname.startsWith("/help");
+  const isAdminActive = pathname.startsWith("/admin");
 
   const pathParts = pathname.split("/");
   const activeTreeId = (pathParts.length > 2 && pathParts[1] === "tree") ? pathParts[2] : null;
@@ -129,6 +130,17 @@ export function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse }: Side
               >
                 <span className="global-sidebar__link-icon" aria-hidden="true"><SettingsIcon size={18} /></span>
                 <span className="global-sidebar__link-text">Cài đặt</span>
+              </Link>
+            )}
+            {user?.role === "admin" && (
+              <Link
+                href="/admin"
+                className={`global-sidebar__link ${isAdminActive ? "global-sidebar__link--active" : ""}`}
+                onClick={onClose}
+                title={isCollapsed ? "Admin" : undefined}
+              >
+                <span className="global-sidebar__link-icon" aria-hidden="true"><SettingsIcon size={18} /></span>
+                <span className="global-sidebar__link-text">Admin</span>
               </Link>
             )}
           </nav>

@@ -22,7 +22,6 @@
 
 import { useState, useCallback, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
-import Link from "next/link";
 import { TreeGraph } from "@/components/graph/TreeGraph";
 import { useToast } from "@/components/ui/ToastProvider";
 import { Modal, ModalHeader, ModalBody, ModalFooter } from "@/components/ui/Modal";
@@ -246,16 +245,11 @@ function PrototypeTreeContent() {
         {/* Floating Island Header/Toolbar */}
         <div className="tree-page-header">
           <div className="tree-page-header__row-one">
-            <div className="tree-page-header__brand" style={{ flexDirection: "column", alignItems: "flex-start", gap: "0.25rem" }}>
-              <Link href="/tree" style={{ fontSize: "0.85rem", color: "var(--color-muted)", textDecoration: "none", display: "flex", alignItems: "center", gap: "0.25rem" }}>
-                <span>&larr;</span> Quay lại danh sách
-              </Link>
-              <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
-                <img src="/logo.svg" alt="Logo Cây Gia Phả" className="tree-page-header__logo" />
-                <div className="tree-page-header__title-container">
-                  <h1 className="tree-page-header__title">Gia Phả Dòng Họ</h1>
-                  <span className="tree-page-header__count">{persons.length} thành viên</span>
-                </div>
+            <div className="tree-page-header__brand">
+              <img src="/logo.svg" alt="Logo Cây Gia Phả" className="tree-page-header__logo" />
+              <div className="tree-page-header__title-container">
+                <h1 className="tree-page-header__title">Gia Phả Dòng Họ</h1>
+                <span className="tree-page-header__count">{persons.length} thành viên</span>
               </div>
             </div>
 
@@ -280,17 +274,8 @@ function PrototypeTreeContent() {
                   className="btn btn-secondary"
                   onClick={() => setIsCollaborationOpen(true)}
                 >
-                  👥 <span>Cộng tác</span>
+                  👥 <span className="hide-on-mobile">Cộng tác</span>
                 </button>
-                {isOwner && (
-                  <button
-                    type="button"
-                    className="btn btn-secondary"
-                    onClick={() => setIsSettingsOpen(true)}
-                  >
-                    ⚙️ <span>Cài đặt</span>
-                  </button>
-                )}
                 {isOwner && (
                   <button
                     type="button"
@@ -302,7 +287,7 @@ function PrototypeTreeContent() {
                       setEditMode(false);
                     }}
                   >
-                    ➕ <span>Thêm thành viên</span>
+                    ➕ <span className="hide-on-mobile">Thêm thành viên</span>
                   </button>
                 )}
               </div>
