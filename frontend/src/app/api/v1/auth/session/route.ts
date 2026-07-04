@@ -5,6 +5,8 @@ import { users } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { ApiException } from "@/lib/services/errors";
 
+export const dynamic = "force-dynamic";
+
 export async function GET() {
   return handleApiRoute(async () => {
     const auth = await getAuthContext();

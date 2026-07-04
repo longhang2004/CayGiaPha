@@ -5,6 +5,8 @@ import { db } from "@/lib/db";
 import { trees, treeCollaborators } from "@/lib/db/schema";
 import { eq, or, and } from "drizzle-orm";
 
+export const dynamic = "force-dynamic";
+
 export async function GET() {
   return handleApiRoute(async () => {
     const auth = await getAuthContext();

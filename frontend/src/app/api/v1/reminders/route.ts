@@ -5,6 +5,8 @@ import { db } from "@/lib/db";
 import { inAppReminders } from "@/lib/db/schema";
 import { eq, desc } from "drizzle-orm";
 
+export const dynamic = "force-dynamic";
+
 export async function GET() {
   return handleApiRoute(async () => {
     const auth = await getAuthContext();

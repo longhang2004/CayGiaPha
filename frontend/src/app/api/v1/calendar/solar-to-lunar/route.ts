@@ -2,6 +2,8 @@ import { handleApiRoute } from "@/lib/services/routeHelper";
 import { ApiException } from "@/lib/services/errors";
 import { convertSolar2Lunar } from "@/lib/vietCalendar";
 
+export const dynamic = "force-dynamic";
+
 export async function GET(request: Request) {
   return handleApiRoute(async () => {
     const { searchParams } = new URL(request.url);

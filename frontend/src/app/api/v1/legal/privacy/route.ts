@@ -1,6 +1,8 @@
 import { handleApiRoute } from "@/lib/services/routeHelper";
 import { consentService } from "@/lib/services/consent";
 
+export const dynamic = "force-dynamic";
+
 export async function GET() {
   return handleApiRoute(async () => {
     const doc = await consentService.currentDocument("privacy");
