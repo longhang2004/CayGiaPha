@@ -13,7 +13,7 @@ export function Header() {
     <header className="app-header app-header--sticky">
       <nav className="app-nav" aria-label="Điều hướng chính">
         <Link href="/" className="app-nav__brand" style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-          <img src="/logo.png" alt="Logo Cây Gia Phả" style={{ height: "32px", width: "auto" }} />
+          <img src="/logo.svg" alt="Logo Cây Gia Phả" style={{ height: "24px", width: "auto" }} />
           <span>Cây Gia Phả</span>
         </Link>
 

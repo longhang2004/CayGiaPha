@@ -3,6 +3,12 @@
 import { useState, useEffect, useCallback, Suspense } from "react";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { useSession } from "@/app/providers";
+import { useToast } from "@/components/ui/ToastProvider";
+import { useConfirm } from "@/components/ui/ConfirmProvider";
+import { Modal, ModalHeader, ModalBody, ModalFooter } from "@/components/ui/Modal";
+import { Card } from "@/components/ui/Card";
+import { Badge } from "@/components/ui/Badge";
+import { Input } from "@/components/ui/FormControls";
 import { TreeGraph } from "@/components/graph/TreeGraph";
 import { PersonForm } from "@/components/person/PersonForm";
 import { AddRelativeForm } from "@/components/person/AddRelativeForm";
@@ -31,8 +37,7 @@ import {
   type TreeCollaborator
 } from "@/lib/collaboration";
 import "@/components/graph/graph.css";
-import { LightbulbIcon } from "@/components/ui/Icons";
-import { OnboardingModal } from "@/components/onboarding/OnboardingModal";
+import { LightbulbIcon, CloseIcon } from "@/components/ui/Icons";
 
 interface TreePageProps {
   params: {
@@ -97,7 +102,6 @@ function TreePageContent({ params, searchParams }: TreePageProps) {
   const [shareToken, setShareToken] = useState<string | null>(queryShareToken || null);
   const [generatingToken, setGeneratingToken] = useState(false);
 
-  const [showTutorial, setShowTutorial] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isCollaborationOpen, setIsCollaborationOpen] = useState(false);
   const [showBirthYears, setShowBirthYears] = useState(true);
@@ -201,18 +205,6 @@ function TreePageContent({ params, searchParams }: TreePageProps) {
       console.warn(err instanceof ApiError ? err.message : "Mã mời không hợp lệ.");
     }
   }
-
-  useEffect(() => {
-    const dismissed = getCookie("tutorial_dismissed");
-    if (!dismissed) {
-      setShowTutorial(true);
-    }
-  }, []);
-
-  const handleDismissTutorial = () => {
-    setCookie("tutorial_dismissed", "true", 365);
-    setShowTutorial(false);
-  };
 
   const loadTree = useCallback(async (id: string, token?: string) => {
     setLoadingData(true);
@@ -363,21 +355,22 @@ function TreePageContent({ params, searchParams }: TreePageProps) {
 
   if (persons.length === 0) {
     return (
-      <section className="empty-tree">
-        <div className="empty-tree__intro">
-          <p className="eyebrow">Dành cho người mới</p>
-          <h1>Bắt đầu cây gia phả của bạn</h1>
-          <p>
+      <section className="empty-tree" style={{ maxWidth: "600px", margin: "4rem auto", textAlign: "center" }}>
+        <div className="empty-tree__intro" style={{ marginBottom: "2rem" }}>
+          <h1 style={{ fontSize: "2rem", marginBottom: "1rem" }}>Bắt đầu cây gia phả của bạn</h1>
+          <p style={{ color: "var(--color-muted)", lineHeight: 1.6 }}>
             Sơ đồ gia phả của bạn hiện chưa có thành viên nào. Hãy thêm thành viên đầu tiên
-            (ví dụ: bản thân bạn hoặc người lớn tuổi nhất trong dòng họ) để bắt đầu.
+            để bắt đầu.
           </p>
         </div>
-        <div className="onboarding-strip" aria-label="Các bước gợi ý">
+        <div className="onboarding-strip" aria-label="Các bước gợi ý" style={{ display: "flex", justifyContent: "center", gap: "1rem", marginBottom: "2rem", fontSize: "0.9rem", fontWeight: 600, color: "var(--color-brand)" }}>
           <span>1. Nhập tên</span>
+          <span style={{ color: "var(--color-hairline)" }}>—</span>
           <span>2. Chọn giới tính</span>
+          <span style={{ color: "var(--color-hairline)" }}>—</span>
           <span>3. Bấm lưu</span>
         </div>
-        <div className="surface-card empty-tree__form">
+        <Card className="empty-tree__form" style={{ padding: "2rem", textAlign: "left" }}>
           <PersonForm
             mode="create"
             treeId={activeTreeId}
@@ -385,7 +378,7 @@ function TreePageContent({ params, searchParams }: TreePageProps) {
               refreshTree();
             }}
           />
-        </div>
+        </Card>
       </section>
     );
   }
@@ -434,14 +427,13 @@ function TreePageContent({ params, searchParams }: TreePageProps) {
         </div>
       )}
     <section className="tree-workspace" style={showLoadingOverlay ? { visibility: "hidden" } : undefined}>
-      <OnboardingModal isOpen={showTutorial} onClose={handleDismissTutorial} />
 
       <div className="tree-workspace__layout">
         {/* Floating Island Header/Toolbar */}
         <div className="tree-page-header">
           <div className="tree-page-header__row-one">
             <div className="tree-page-header__brand">
-              <img src="/logo.png" alt="Logo Cây Gia Phả" className="tree-page-header__logo" />
+              <img src="/logo.svg" alt="Logo Cây Gia Phả" className="tree-page-header__logo" />
               <div className="tree-page-header__title-container">
                 <h1 className="tree-page-header__title">Gia Phả Dòng Họ</h1>
                 <span className="tree-page-header__count">{persons.length} thành viên</span>
@@ -542,9 +534,8 @@ function TreePageContent({ params, searchParams }: TreePageProps) {
                 className="side-panel__close"
                 onClick={() => setCreateMode(false)}
                 aria-label="Hủy"
-                title="Hủy"
               >
-                &times;
+                <CloseIcon size={20} />
               </button>
               <h3 className="side-panel__title">Thêm thành viên mới</h3>
               <PersonForm
@@ -570,10 +561,8 @@ function TreePageContent({ params, searchParams }: TreePageProps) {
                   else setSelectedId(null);
                 }}
                 aria-label="Bỏ chọn"
-                title="Bỏ chọn"
               >
-                &times;
-                <span className="sr-only">Bỏ chọn</span>
+                <CloseIcon size={20} />
               </button>
 
               {(editMode || addRelativeMode) && (
@@ -697,9 +686,8 @@ function TreePageContent({ params, searchParams }: TreePageProps) {
                 className="side-panel__close"
                 onClick={() => setAddRelativeMode(false)}
                 aria-label="Hủy"
-                title="Hủy"
               >
-                &times;
+                <CloseIcon size={20} />
               </button>
               <h3 className="side-panel__title">Thêm kết nối mới</h3>
               <AddRelativeForm
@@ -726,21 +714,9 @@ function TreePageContent({ params, searchParams }: TreePageProps) {
       </div>
 
       {/* Settings Modal (Cài đặt) */}
-      {isSettingsOpen && (
-        <div className="settings-modal-overlay" onClick={handleCloseSettings}>
-          <div className="settings-modal" onClick={(e) => e.stopPropagation()}>
-            <div className="settings-modal__header">
-              <h2>Cài đặt</h2>
-              <button
-                type="button"
-                className="settings-modal__close"
-                onClick={handleCloseSettings}
-                aria-label="Đóng cài đặt"
-              >
-                &times;
-              </button>
-            </div>
-            <div className="settings-modal__body">
+      <Modal isOpen={isSettingsOpen} onClose={handleCloseSettings} aria-label="Cài đặt">
+        <ModalHeader title="Cài đặt" onClose={handleCloseSettings} />
+        <ModalBody>
               {isOwner && (
                 <section className="settings-section">
                   <h3>Cài đặt gia phả</h3>
@@ -851,19 +827,6 @@ function TreePageContent({ params, searchParams }: TreePageProps) {
                   </label>
                 </div>
 
-                <div style={{ marginTop: "1rem" }}>
-                  <button
-                    type="button"
-                    className="btn btn-secondary"
-                    style={{ width: "100%", justifyContent: "center" }}
-                    onClick={() => {
-                      setShowTutorial(true);
-                      setIsSettingsOpen(false);
-                    }}
-                  >
-                    📖 Xem lại hướng dẫn sử dụng
-                  </button>
-                </div>
               </section>
 
               <section className="settings-section" style={{ borderTop: "1px solid var(--color-hairline-soft)", paddingTop: "1.5rem", marginTop: "1.5rem" }}>
@@ -877,59 +840,57 @@ function TreePageContent({ params, searchParams }: TreePageProps) {
                   </div>
                 )}
               </section>
-            </div>
-            <div className="settings-modal__footer" style={{ borderTop: "1px solid var(--color-hairline-soft)", paddingTop: "1rem", marginTop: "1rem", display: "flex", justifyContent: "flex-end" }}>
-              <button type="button" className="btn btn-secondary" onClick={handleCloseSettings}>
-                Đóng
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+        </ModalBody>
+        <ModalFooter>
+          <button type="button" className="btn btn-secondary" onClick={handleCloseSettings}>
+            Đóng
+          </button>
+        </ModalFooter>
+      </Modal>
 
       {/* Collaboration Modal (Cộng tác) */}
-      {isCollaborationOpen && (
-        <div className="settings-modal-overlay" onClick={handleCloseCollaboration}>
-          <div className="settings-modal" onClick={(e) => e.stopPropagation()}>
-            <div className="settings-modal__header">
-              <h2>Quản lý cộng tác viên</h2>
-              <button
-                type="button"
-                className="settings-modal__close"
-                onClick={handleCloseCollaboration}
-                aria-label="Đóng cửa sổ cộng tác"
-              >
-                &times;
-              </button>
-            </div>
-            <div className="settings-modal__body">
-              <section className="settings-section">
+      <Modal isOpen={isCollaborationOpen} onClose={handleCloseCollaboration} aria-label="Quản lý cộng tác viên">
+        <ModalHeader title="Quản lý cộng tác viên" onClose={handleCloseCollaboration} />
+        <ModalBody>
+          <section className="settings-section">
                 <h3>Thành viên hiện tại</h3>
-                <div style={{ marginBottom: "1.5rem" }}>
-                  <ul style={{ paddingLeft: "1.2rem", margin: "0.5rem 0", lineHeight: "1.6" }}>
-                    <li>
-                      Chủ cây (Owner)
-                    </li>
-                    {collaborators.map((c) => (
-                      <li key={c.id}>
-                        {c.userId} ({c.role === "owner" ? "Chủ cây" : "Cộng tác viên"})
-                      </li>
-                    ))}
-                  </ul>
+                <div style={{ marginBottom: "1.5rem", display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+                  <Card style={{ display: "flex", alignItems: "center", gap: "0.75rem", padding: "0.75rem" }}>
+                    <div style={{ width: "32px", height: "32px", borderRadius: "50%", backgroundColor: "var(--color-brand)", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: "bold", fontSize: "0.9rem" }}>
+                      C
+                    </div>
+                    <div>
+                      <div style={{ fontWeight: 600, fontSize: "0.95rem" }}>Chủ cây (Owner)</div>
+                      <div style={{ fontSize: "0.8rem", color: "var(--color-muted)" }}>Quyền cao nhất</div>
+                    </div>
+                  </Card>
+                  {collaborators.map((c) => (
+                    <Card key={c.id} style={{ display: "flex", alignItems: "center", gap: "0.75rem", padding: "0.75rem" }}>
+                      <div style={{ width: "32px", height: "32px", borderRadius: "50%", backgroundColor: "var(--color-surface-hover)", color: "var(--color-fg)", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: "bold", fontSize: "0.9rem" }}>
+                        {c.userId.substring(0, 1).toUpperCase()}
+                      </div>
+                      <div>
+                        <div style={{ fontWeight: 600, fontSize: "0.95rem" }}>{c.userId}</div>
+                        <div style={{ fontSize: "0.8rem", color: "var(--color-muted)", display: "flex", gap: "0.5rem", marginTop: "0.2rem" }}>
+                          {c.role === "owner" ? <Badge variant="brand">Chủ cây</Badge> : <Badge variant="neutral">Cộng tác viên</Badge>}
+                        </div>
+                      </div>
+                    </Card>
+                  ))}
                 </div>
 
                 {user && (
                   <form onSubmit={handleSendInvite} style={{ display: "flex", flexDirection: "column", gap: "0.5rem", marginBottom: "1.5rem", borderTop: "1px solid var(--color-hairline-soft)", paddingTop: "1.5rem" }}>
                     <label htmlFor="invite-email" style={{ fontWeight: "bold" }}>Thêm cộng tác viên mới</label>
                     <div style={{ display: "flex", gap: "0.5rem" }}>
-                      <input
+                      <Input
                         id="invite-email"
                         type="email"
                         value={inviteEmail}
                         onChange={(e) => setInviteEmail(e.target.value)}
                         placeholder="email@example.com"
                         required
-                        style={{ flex: 1, padding: "0.4rem 0.6rem" }}
+                        style={{ flex: 1 }}
                       />
                       <button type="submit" className="btn btn-secondary">Mời</button>
                     </div>
@@ -937,19 +898,19 @@ function TreePageContent({ params, searchParams }: TreePageProps) {
                 )}
 
                 {isOwner && pendingInvites.length > 0 && (
-                  <div style={{ marginBottom: "1.5rem", border: "1px solid var(--color-hairline-soft)", padding: "0.75rem", borderRadius: "4px" }}>
-                    <label style={{ fontWeight: "bold", color: "var(--color-danger)" }}>Đang chờ duyệt ({pendingInvites.length} lời mời):</label>
-                    <ul style={{ listStyle: "none", padding: 0, margin: "0.5rem 0" }}>
+                  <div style={{ marginBottom: "1.5rem", paddingTop: "1.5rem", borderTop: "1px solid var(--color-hairline-soft)" }}>
+                    <h3 style={{ fontSize: "1.1rem", marginBottom: "1rem", color: "var(--color-danger)" }}>Đang chờ duyệt ({pendingInvites.length} lời mời):</h3>
+                    <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
                       {pendingInvites.map((invite) => (
-                        <li key={invite.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.5rem" }}>
-                          <span style={{ fontSize: "0.85rem" }}>{invite.email}</span>
+                        <Card key={invite.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "0.75rem", borderLeftWidth: "4px", borderLeftColor: "var(--color-danger)" }}>
+                          <span style={{ fontSize: "0.85rem", fontWeight: 600 }}>{invite.email}</span>
                           <div style={{ display: "flex", gap: "0.25rem" }}>
                             <button type="button" className="btn" style={{ padding: "0.2rem 0.5rem", fontSize: "0.75rem" }} onClick={() => handleApproveInvite(invite.id)}>Duyệt</button>
                             <button type="button" className="btn btn-secondary" style={{ padding: "0.2rem 0.5rem", fontSize: "0.75rem" }} onClick={() => handleRejectInvite(invite.id)}>Từ chối</button>
                           </div>
-                        </li>
+                        </Card>
                       ))}
-                    </ul>
+                    </div>
                   </div>
                 )}
 
@@ -957,7 +918,7 @@ function TreePageContent({ params, searchParams }: TreePageProps) {
                   <form onSubmit={handleJoinTree} style={{ display: "flex", flexDirection: "column", gap: "0.5rem", borderTop: "1px dashed var(--color-hairline-soft)", paddingTop: "1.5rem" }}>
                     <label htmlFor="invite-code" style={{ fontWeight: "bold" }}>Tham gia gia phả bằng mã mời</label>
                     <div style={{ display: "flex", gap: "0.5rem" }}>
-                      <input
+                      <Input
                         id="invite-code"
                         type="text"
                         value={inviteCode}
@@ -965,22 +926,20 @@ function TreePageContent({ params, searchParams }: TreePageProps) {
                         placeholder="Nhập mã 6 chữ số"
                         maxLength={6}
                         required
-                        style={{ flex: 1, padding: "0.4rem 0.6rem" }}
+                        style={{ flex: 1 }}
                       />
                       <button type="submit" className="btn btn-secondary">Tham gia</button>
                     </div>
                   </form>
                 )}
               </section>
-            </div>
-            <div className="settings-modal__footer" style={{ borderTop: "1px solid var(--color-hairline-soft)", paddingTop: "1rem", marginTop: "1rem", display: "flex", justifyContent: "flex-end" }}>
-              <button type="button" className="btn btn-secondary" onClick={handleCloseCollaboration}>
-                Đóng
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+        </ModalBody>
+        <ModalFooter>
+          <button type="button" className="btn btn-secondary" onClick={handleCloseCollaboration}>
+            Đóng
+          </button>
+        </ModalFooter>
+      </Modal>
     </section>
     </>
   );

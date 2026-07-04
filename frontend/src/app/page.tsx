@@ -7,11 +7,11 @@ export default function HomePage() {
   const { user, loading } = useSession();
 
   return (
-    <section className="home-hero" aria-labelledby="home-title">
+    <section className="home-hero animate-fade-up-heavy" aria-labelledby="home-title" style={{ paddingBlock: "var(--space-section)" }}>
       <div className="home-hero__content">
-        <p className="eyebrow">Gia phả Việt, dễ dùng cho cả dòng họ</p>
-        <h1 id="home-title">Cây Gia Phả</h1>
-        <p className="home-hero__lead">
+        <p className="eyebrow" style={{ display: "inline-block", background: "var(--color-surface-card)", padding: "0.25rem 0.75rem", borderRadius: "9999px", border: "1px solid var(--color-hairline)", color: "var(--color-fg)", boxShadow: "var(--shadow-ambient)" }}>Gia phả Việt, dễ dùng cho cả dòng họ</p>
+        <h1 id="home-title" style={{ fontSize: "clamp(3.5rem, 10vw, 7.5rem)", letterSpacing: "-0.05em", lineHeight: "1" }}>Cây Gia Phả</h1>
+        <p className="home-hero__lead" style={{ fontSize: "clamp(1.25rem, 2.5vw, 1.5rem)", color: "var(--color-muted)" }}>
           Xây dựng và trực quan hóa gia phả của dòng họ, với cách xưng hô tiếng
           Việt được tính tự động theo bên nội/ngoại, giới tính, vai vế và vùng
           miền.
@@ -37,7 +37,8 @@ export default function HomePage() {
         </div>
       </div>
 
-      <aside className="home-hero__card" aria-label="Tính năng chính" style={{ padding: 0, overflow: "hidden" }}>
+      <aside className="home-hero__card double-bezel-card animate-fade-up-heavy stagger-1" aria-label="Tính năng chính" style={{ padding: 0 }}>
+        <div className="double-bezel-card__inner" style={{ padding: 0, overflow: "hidden", display: "flex", flexDirection: "column" }}>
         <img
           src="/hero.png"
           alt="Minh họa Cây Gia Phả"
@@ -50,29 +51,36 @@ export default function HomePage() {
               Thêm thành viên, nối quan hệ, tự động tính xưng hô theo vùng miền.
             </p>
           </div>
-          <div className="home-feature-grid" style={{ marginTop: "1rem" }}>
-            <span style={{ padding: "0.5rem 0.75rem", fontSize: "0.8125rem", display: "inline-block" }}>🛡️ Bảo vệ thông tin người còn sống</span>
-            <span style={{ padding: "0.5rem 0.75rem", fontSize: "0.8125rem", display: "inline-block" }}>🔗 Chia sẻ bằng liên kết riêng</span>
-            <span style={{ padding: "0.5rem 0.75rem", fontSize: "0.8125rem", display: "inline-block" }}>🔍 Tìm kiếm nhanh trong cây</span>
+          <div className="home-feature-grid" style={{ marginTop: "auto" }}>
+            <span style={{ padding: "0.75rem 1rem", fontSize: "0.875rem", display: "inline-block", borderRadius: "12px", border: "1px solid var(--color-hairline)", background: "rgba(0,0,0,0.02)" }}>🛡️ Bảo vệ thông tin người còn sống</span>
+            <span style={{ padding: "0.75rem 1rem", fontSize: "0.875rem", display: "inline-block", borderRadius: "12px", border: "1px solid var(--color-hairline)", background: "rgba(0,0,0,0.02)" }}>🔗 Chia sẻ bằng liên kết riêng</span>
+            <span style={{ padding: "0.75rem 1rem", fontSize: "0.875rem", display: "inline-block", borderRadius: "12px", border: "1px solid var(--color-hairline)", background: "rgba(0,0,0,0.02)" }}>🔍 Tìm kiếm nhanh trong cây</span>
           </div>
+        </div>
         </div>
       </aside>
 
-      <div className="home-steps" aria-label="Hướng dẫn bắt đầu nhanh">
-        <article>
-          <span>1</span>
-          <h2>Tạo thành viên đầu tiên</h2>
-          <p>Bắt đầu từ chính bạn hoặc người lớn tuổi nhất mà gia đình cùng biết.</p>
+      <div className="home-steps animate-fade-up-heavy stagger-2" aria-label="Hướng dẫn bắt đầu nhanh" style={{ paddingBottom: "var(--space-section)" }}>
+        <article className="double-bezel-card" style={{ padding: 0 }}>
+          <div className="double-bezel-card__inner">
+            <span>1</span>
+            <h2 style={{ letterSpacing: "-0.03em" }}>Tạo thành viên đầu tiên</h2>
+            <p>Bắt đầu từ chính bạn hoặc người lớn tuổi nhất mà gia đình cùng biết.</p>
+          </div>
         </article>
-        <article>
-          <span>2</span>
-          <h2>Nối quan hệ cốt lõi</h2>
-          <p>Thêm cha mẹ, vợ chồng và con cái trước; các vai vế phức tạp sẽ được suy ra.</p>
+        <article className="double-bezel-card" style={{ padding: 0 }}>
+          <div className="double-bezel-card__inner">
+            <span>2</span>
+            <h2 style={{ letterSpacing: "-0.03em" }}>Nối quan hệ cốt lõi</h2>
+            <p>Thêm cha mẹ, vợ chồng và con cái trước; các vai vế phức tạp sẽ được suy ra.</p>
+          </div>
         </article>
-        <article>
-          <span>3</span>
-          <h2>Chọn góc nhìn</h2>
-          <p>Đổi người làm mốc để xem cách xưng hô phù hợp theo vùng miền.</p>
+        <article className="double-bezel-card" style={{ padding: 0 }}>
+          <div className="double-bezel-card__inner">
+            <span>3</span>
+            <h2 style={{ letterSpacing: "-0.03em" }}>Chọn góc nhìn</h2>
+            <p>Đổi người làm mốc để xem cách xưng hô phù hợp theo vùng miền.</p>
+          </div>
         </article>
       </div>
     </section>

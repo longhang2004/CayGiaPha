@@ -14,6 +14,7 @@ import {
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { NotificationBell } from "@/components/ui/NotificationBell";
+import { SignOutButton } from "@/components/auth/SignOutButton";
 
 interface SidebarProps {
   isOpen: boolean;
@@ -31,7 +32,7 @@ export function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse }: Side
 
   const pathParts = pathname.split("/");
   const activeTreeId = (pathParts.length > 2 && pathParts[1] === "tree") ? pathParts[2] : null;
-  const settingsHref = activeTreeId ? `/tree/${activeTreeId}?settings=true` : `/tree?settings=true`;
+  const settingsHref = `/settings`;
 
   // On mobile the sidebar is an open drawer (isOpen=true). In that mode the
   // toggle button closes the drawer rather than collapsing it to icon-only
@@ -64,7 +65,7 @@ export function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse }: Side
                 gap: "0.5rem"
               }}
             >
-              <img src="/logo.png" alt="Logo Cây Gia Phả" style={{ height: "24px", width: "auto" }} />
+              <img src="/logo.svg" alt="Logo Cây Gia Phả" style={{ height: "24px", width: "auto" }} />
               {!isCollapsed && <span>Cây Gia Phả</span>}
             </Link>
             <div style={{
@@ -118,6 +119,7 @@ export function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse }: Side
               <span className="global-sidebar__link-icon" aria-hidden="true"><InfoIcon size={18} /></span>
               <span className="global-sidebar__link-text">Trợ giúp</span>
             </Link>
+
             {user && (
               <Link
                 href={settingsHref}
@@ -133,11 +135,7 @@ export function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse }: Side
         </div>
 
         <div className="global-sidebar__bottom">
-          {/* Help entry point (Trợ giúp) */}
-          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-            <span style={{ fontSize: "0.875rem", color: "var(--color-muted)" }}>Trợ giúp:</span>
-            <HelpEntryPoint />
-          </div>
+          {/* Help entry point (Trợ giúp) hidden since it's now in main nav, or maybe remove entirely */}
 
           {/* Login/Signup for anonymous users */}
           {!loading && !user && (
@@ -150,6 +148,13 @@ export function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse }: Side
                   Đăng ký
                 </Link>
               </div>
+            </div>
+          )}
+
+          {/* SignOut for authenticated users */}
+          {!loading && user && (
+            <div style={{ marginTop: "1rem", display: "flex", flexDirection: "column" }}>
+              <SignOutButton />
             </div>
           )}
         </div>

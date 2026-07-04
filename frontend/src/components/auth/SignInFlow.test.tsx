@@ -32,11 +32,11 @@ describe("SignInFlow", () => {
     render(<SignInFlow />);
 
     await userEvent.type(
-      screen.getByLabelText("Số điện thoại hoặc email"),
+      screen.getByLabelText(/Số điện thoại hoặc email/i),
       "user@example.com",
     );
     await userEvent.type(
-      screen.getByLabelText("Mật khẩu"),
+      screen.getByLabelText(/^Mật khẩu/i),
       "mypassword123",
     );
     await userEvent.click(screen.getByRole("button", { name: "Đăng nhập" }));
@@ -57,7 +57,7 @@ describe("SignInFlow", () => {
 
     render(<SignInFlow />);
 
-    const input = screen.getByLabelText("Số điện thoại hoặc email");
+    const input = screen.getByLabelText(/Số điện thoại hoặc email/i);
     await userEvent.type(input, "user@example.com");
     await userEvent.click(screen.getByRole("button", { name: "Đăng nhập" }));
 

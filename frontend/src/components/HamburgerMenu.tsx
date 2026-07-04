@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import { TextSizeControl } from "@/components/a11y/TextSizeControl";
 import { HelpEntryPoint } from "@/components/help/HelpEntryPoint";
 import { MenuIcon } from "@/components/ui/Icons";
+import { Card } from "@/components/ui/Card";
 
 export function HamburgerMenu() {
   const [isOpen, setIsOpen] = useState(false);
@@ -45,16 +46,16 @@ export function HamburgerMenu() {
       </button>
 
       {isOpen && (
-        <div className="hamburger-menu__dropdown" role="dialog" aria-label="Menu cài đặt">
-          <div style={{ borderBottom: "1px solid var(--color-hairline-soft)", paddingBottom: "0.75rem" }}>
-            <h3 style={{ fontSize: "0.875rem", fontWeight: 600, margin: "0 0 0.5rem" }}>Cài đặt hiển thị</h3>
+        <Card className="hamburger-menu__dropdown" role="dialog" aria-label="Menu cài đặt">
+          <div style={{ borderBottom: "1px solid var(--color-hairline-soft)", paddingBottom: "1rem", marginBottom: "1rem" }}>
+            <h3 style={{ fontSize: "0.9rem", fontWeight: 600, margin: "0 0 0.5rem" }}>Cài đặt hiển thị</h3>
             <TextSizeControl />
           </div>
           <div>
-            <h3 style={{ fontSize: "0.875rem", fontWeight: 600, margin: "0 0 0.5rem" }}>Hỗ trợ</h3>
+            <h3 style={{ fontSize: "0.9rem", fontWeight: 600, margin: "0 0 0.5rem" }}>Hỗ trợ</h3>
             <HelpEntryPoint />
           </div>
-        </div>
+        </Card>
       )}
     </div>
   );

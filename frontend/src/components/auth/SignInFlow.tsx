@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useSession } from "@/app/providers";
 import { signIn } from "@/lib/auth";
 import { Button } from "@/components/Button";
+import { FormControl, Input } from "@/components/ui/FormControls";
 import { toAuthErrorState, fieldErrorFor, type AuthErrorState } from "./authErrors";
 
 interface SignInFlowProps {
@@ -48,14 +49,15 @@ export function SignInFlow({ redirectTo = "/" }: SignInFlowProps) {
   }
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%", maxWidth: "28rem" }}>
-      <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "1.5rem" }}>
-        <a href="/" style={{ display: "flex", alignItems: "center", gap: "0.5rem", textDecoration: "none", color: "var(--color-fg)" }}>
-          <img src="/logo.png" alt="Logo Cây Gia Phả" style={{ height: "32px", width: "auto" }} />
-          <span style={{ fontSize: "1.5rem", fontWeight: 700, letterSpacing: "-0.03em" }}>Cây Gia Phả</span>
+    <div className="auth-wrapper animate-fade-up-heavy stagger-1" style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%", maxWidth: "30rem" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "2rem" }}>
+        <a href="/" style={{ display: "flex", alignItems: "center", gap: "0.75rem", textDecoration: "none", color: "var(--color-fg)" }}>
+          <img src="/logo.svg" alt="Logo Cây Gia Phả" style={{ height: "40px", width: "auto" }} />
+          <span style={{ fontSize: "1.75rem", fontWeight: 700, letterSpacing: "-0.03em" }}>Cây Gia Phả</span>
         </a>
       </div>
-      <div className="auth-card">
+      <div className="double-bezel-card" style={{ width: "100%" }}>
+        <div className="double-bezel-card__inner">
         <form onSubmit={handleSubmit} noValidate aria-labelledby={`${inputId}-heading`}>
         <h1 id={`${inputId}-heading`}>Đăng nhập</h1>
         <p>Đăng nhập bằng số điện thoại/email và mật khẩu của bạn.</p>
@@ -66,9 +68,8 @@ export function SignInFlow({ redirectTo = "/" }: SignInFlowProps) {
         </p>
       ) : null}
 
-      <div className="field">
-        <label htmlFor={inputId}>Số điện thoại hoặc email</label>
-        <input
+      <FormControl id={inputId} label="Số điện thoại hoặc email" error={identifierError} required>
+        <Input
           id={inputId}
           name="identifier"
           type="text"
@@ -76,38 +77,25 @@ export function SignInFlow({ redirectTo = "/" }: SignInFlowProps) {
           autoComplete="username"
           value={identifier}
           onChange={(event) => setIdentifier(event.target.value)}
-          aria-invalid={identifierError ? true : undefined}
-          aria-describedby={identifierError ? errorId : undefined}
+          error={identifierError}
           disabled={submitting}
           required
         />
-        {identifierError ? (
-          <p id={errorId} role="alert" className="field-error">
-            {identifierError}
-          </p>
-        ) : null}
-      </div>
+      </FormControl>
 
-      <div className="field" style={{ marginTop: "1rem" }}>
-        <label htmlFor={passwordId}>Mật khẩu</label>
-        <input
+      <FormControl id={passwordId} label="Mật khẩu" error={passwordError} required>
+        <Input
           id={passwordId}
           name="password"
           type="password"
           autoComplete="current-password"
           value={password}
           onChange={(event) => setPassword(event.target.value)}
-          aria-invalid={passwordError ? true : undefined}
-          aria-describedby={passwordError ? passwordErrorId : undefined}
+          error={passwordError}
           disabled={submitting}
           required
         />
-        {passwordError ? (
-          <p id={passwordErrorId} role="alert" className="field-error">
-            {passwordError}
-          </p>
-        ) : null}
-      </div>
+      </FormControl>
 
       <div style={{ marginTop: "1.5rem", display: "flex", flexDirection: "column", gap: "0.75rem" }}>
         <Button type="submit" disabled={submitting} style={{ width: "100%" }}>
@@ -158,7 +146,8 @@ export function SignInFlow({ redirectTo = "/" }: SignInFlowProps) {
         </a>
       </div>
       </form>
+        </div>
+      </div>
     </div>
-  </div>
   );
 }

@@ -1,9 +1,18 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
-import "./globals.css";
+import "../styles/globals.scss";
 import { SessionProvider } from "./providers";
+import { ToastProvider } from "@/components/ui/ToastProvider";
+import { ConfirmProvider } from "@/components/ui/ConfirmProvider";
 import { TextSizeProvider } from "@/components/a11y/TextSizeProvider";
+import { Plus_Jakarta_Sans } from "next/font/google";
 import { AppLayoutWrapper } from "@/components/AppLayoutWrapper";
+
+const plusJakarta = Plus_Jakarta_Sans({
+  subsets: ["latin", "vietnamese"],
+  variable: "--font-grotesk",
+  display: "swap",
+});
 
 export const metadata: Metadata = {
   title: "Cây Gia Phả",
@@ -13,7 +22,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="vi">
+    <html lang="vi" className={plusJakarta.variable}>
       <head>
         <script
           dangerouslySetInnerHTML={{
@@ -31,14 +40,18 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         />
       </head>
       <body>
-        <TextSizeProvider>
-          <SessionProvider>
-            <a href="#main-content" className="skip-link">
-              Bỏ qua tới nội dung chính
-            </a>
-            <AppLayoutWrapper>{children}</AppLayoutWrapper>
-          </SessionProvider>
-        </TextSizeProvider>
+        <ToastProvider>
+          <ConfirmProvider>
+            <TextSizeProvider>
+              <SessionProvider>
+                <a href="#main-content" className="skip-link">
+                  Bỏ qua tới nội dung chính
+                </a>
+                <AppLayoutWrapper>{children}</AppLayoutWrapper>
+              </SessionProvider>
+            </TextSizeProvider>
+          </ConfirmProvider>
+        </ToastProvider>
       </body>
     </html>
   );

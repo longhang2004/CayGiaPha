@@ -6,7 +6,7 @@
  * rendered box of a control (vitest also runs with `css: false`). We therefore
  * assert the requirement at the source-of-truth + representative-component level:
  *
- *  1. Token/rule level — `globals.css` defines `--min-touch-target: 44px` (>= 44)
+ *  1. Token/rule level — `globals.scss` defines `--min-touch-target: 44px` (>= 44)
  *     and applies it as a `min-height`/`min-width` to the interactive element
  *     selectors (button, role=button, links styled as buttons, inputs, select,
  *     textarea). This is the rule that gives every control its 44px floor.
@@ -29,7 +29,10 @@ import { TextSizeControl } from "./TextSizeControl";
 
 // Tests run from the frontend package root; read the source-of-truth stylesheet.
 const GLOBALS_CSS = readFileSync(
-  resolve(process.cwd(), "src/app/globals.css"),
+  resolve(process.cwd(), "src/styles/_01_variables.scss"),
+  "utf8",
+) + readFileSync(
+  resolve(process.cwd(), "src/styles/_04_forms_buttons.scss"),
   "utf8",
 );
 
@@ -39,7 +42,7 @@ const ACTIVE_CSS = GLOBALS_CSS.replace(/\/\*[\s\S]*?\*\//g, "");
 describe("touch-target sizing tokens/rules (18.4)", () => {
   it("defines a minimum touch-target token of at least 44px", () => {
     const match = ACTIVE_CSS.match(/--min-touch-target:\s*(\d+)px/);
-    expect(match).not.toBeNull();
+    if (!match) throw new Error("--min-touch-target token not found in _01_variables.scss");
     const px = Number(match![1]);
     expect(px).toBeGreaterThanOrEqual(44);
   });

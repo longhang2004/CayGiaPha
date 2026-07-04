@@ -36,7 +36,7 @@ describe("PersonForm (create)", () => {
 
     render(<PersonForm mode="create" treeId="t1" onSuccess={onSuccess} />);
 
-    await userEvent.type(screen.getByLabelText("Họ và tên"), "Anh");
+    await userEvent.type(screen.getByLabelText(/Họ và tên/i), "Anh");
     await userEvent.click(screen.getByRole("button", { name: "Lưu thành viên" }));
 
     // Default visibility stays private, so exactly one request is made.
@@ -57,8 +57,8 @@ describe("PersonForm (create)", () => {
 
     render(<PersonForm mode="create" treeId="t1" />);
 
-    await userEvent.type(screen.getByLabelText("Họ và tên"), "Bình");
-    await userEvent.click(screen.getByLabelText("Nữ"));
+    await userEvent.type(screen.getByLabelText(/Họ và tên/i), "Bình");
+    await userEvent.selectOptions(screen.getByLabelText(/Giới tính/i), "Nữ");
     await userEvent.type(screen.getByLabelText(/Thứ tự sinh/), "2");
     await userEvent.type(screen.getByLabelText(/Năm sinh/), "1990");
     await userEvent.click(screen.getByLabelText(/Đã qua đời/));
@@ -82,7 +82,7 @@ describe("PersonForm (create)", () => {
 
     render(<PersonForm mode="create" treeId="t1" />);
 
-    await userEvent.type(screen.getByLabelText("Họ và tên"), "Châu");
+    await userEvent.type(screen.getByLabelText(/Họ và tên/i), "Châu");
     await userEvent.click(screen.getByLabelText(/Thông tin qua đời/));
     await userEvent.click(screen.getByRole("button", { name: "Lưu thành viên" }));
 
@@ -106,11 +106,11 @@ describe("PersonForm (create)", () => {
 
     render(<PersonForm mode="create" treeId="t1" />);
 
-    await userEvent.type(screen.getByLabelText("Họ và tên"), "X");
+    await userEvent.type(screen.getByLabelText(/Họ và tên/i), "X");
     await userEvent.click(screen.getByRole("button", { name: "Lưu thành viên" }));
 
     expect(await screen.findByText("Tên quá dài")).toBeInTheDocument();
-    expect(screen.getByLabelText("Họ và tên")).toHaveAttribute("aria-invalid", "true");
+    expect(screen.getByLabelText(/Họ và tên/i)).toHaveAttribute("aria-invalid", "true");
   });
 });
 
@@ -127,7 +127,7 @@ describe("PersonForm (edit)", () => {
       />,
     );
 
-    const nameInput = screen.getByLabelText("Họ và tên");
+    const nameInput = screen.getByLabelText(/Họ và tên/i);
     await userEvent.clear(nameInput);
     await userEvent.type(nameInput, "Mới");
     await userEvent.click(screen.getByRole("button", { name: "Cập nhật thông tin" }));

@@ -2,6 +2,7 @@ import type { ButtonHTMLAttributes, ReactNode } from "react";
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   children: ReactNode;
+  icon?: ReactNode;
 }
 
 /**
@@ -18,12 +19,31 @@ export function Button({
   children,
   type = "button",
   className,
+  icon,
   ...rest
 }: ButtonProps) {
   const classes = className ? `btn ${className}` : "btn";
   return (
     <button type={type} className={classes} {...rest}>
       {children}
+      {icon && (
+        <span
+          className="btn-trailing-icon"
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            justifyContent: "center",
+            width: "2rem",
+            height: "2rem",
+            borderRadius: "9999px",
+            backgroundColor: "rgba(255,255,255,0.15)",
+            marginLeft: "0.5rem",
+            transition: "all 0.5s var(--ease-spring)",
+          }}
+        >
+          {icon}
+        </span>
+      )}
     </button>
   );
 }

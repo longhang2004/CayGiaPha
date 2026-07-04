@@ -14,6 +14,7 @@ import {
 } from "@/lib/persons";
 import { uploadPhoto } from "@/lib/photos";
 import { Button } from "@/components/Button";
+import { FormControl, Input, Select } from "@/components/ui/FormControls";
 import { ConflictWarning } from "./ConflictWarning";
 
 /**
@@ -380,9 +381,8 @@ export function AddRelativeForm({ treeId, persons, preselectedPersonId, onCreate
       )}
 
       {(!isNewPerson || newPersonPosition !== "source") && (
-        <div className="field">
-          <label htmlFor="sourceId">Người thứ nhất</label>
-          <select
+        <FormControl id="sourceId" label="Người thứ nhất">
+          <Select
             id="sourceId"
             name="sourceId"
             value={sourceId}
@@ -393,14 +393,13 @@ export function AddRelativeForm({ treeId, persons, preselectedPersonId, onCreate
                 {p.displayName}
               </option>
             ))}
-          </select>
-        </div>
+          </Select>
+        </FormControl>
       )}
 
       {(!isNewPerson || newPersonPosition !== "target") && (
-        <div className="field">
-          <label htmlFor="targetId">Người thứ hai</label>
-          <select
+        <FormControl id="targetId" label="Người thứ hai">
+          <Select
             id="targetId"
             name="targetId"
             value={targetId}
@@ -411,15 +410,14 @@ export function AddRelativeForm({ treeId, persons, preselectedPersonId, onCreate
                 {p.displayName}
               </option>
             ))}
-          </select>
-        </div>
+          </Select>
+        </FormControl>
       )}
 
       {mode === "derived" ? (
         <>
-          <div className="field">
-            <label htmlFor="derivedKind">Loại quan hệ suy ra</label>
-            <select
+          <FormControl id="derivedKind" label="Loại quan hệ suy ra">
+            <Select
               id="derivedKind"
               name="derivedKind"
               value={derivedKind}
@@ -430,12 +428,11 @@ export function AddRelativeForm({ treeId, persons, preselectedPersonId, onCreate
               <option value="bloodline_mother">{sourceName} là MẸ của {targetName}</option>
               <option value="bloodline_mother_reverse">{sourceName} là CON của {targetName} ({targetName} là MẸ)</option>
               <option value="marriage">{sourceName} và {targetName} là VỢ CHỒNG</option>
-            </select>
-          </div>
+            </Select>
+          </FormControl>
           {derivedKind === "marriage" ? (
-            <div className="field">
-              <label htmlFor="maritalStatus">Tình trạng hôn nhân</label>
-              <select
+            <FormControl id="maritalStatus" label="Tình trạng hôn nhân">
+              <Select
                 id="maritalStatus"
                 name="maritalStatus"
                 value={maritalStatus}
@@ -444,46 +441,38 @@ export function AddRelativeForm({ treeId, persons, preselectedPersonId, onCreate
                 <option value="married">Đang kết hôn</option>
                 <option value="divorced">Đã ly hôn</option>
                 <option value="deceased">Đã mất</option>
-              </select>
-            </div>
+              </Select>
+            </FormControl>
           ) : null}
         </>
       ) : (
-        <div className="field">
-          <label htmlFor="assertedLabel">Nhãn xưng hô (1-50 ký tự)</label>
-          <input
+        <FormControl id="assertedLabel" label="Nhãn xưng hô (1-50 ký tự)" error={fieldErrors.assertedLabel} required>
+          <Input
             id="assertedLabel"
             name="assertedLabel"
             type="text"
             value={assertedLabel}
             required
             maxLength={50}
-            aria-invalid={fieldErrors.assertedLabel ? true : undefined}
-            aria-describedby={fieldErrors.assertedLabel ? "assertedLabel-error" : undefined}
+            error={fieldErrors.assertedLabel}
             onChange={(e) => setAssertedLabel(e.target.value)}
           />
-          {fieldErrors.assertedLabel ? (
-            <span id="assertedLabel-error" role="alert" className="field-error">
-              {fieldErrors.assertedLabel}
-            </span>
-          ) : null}
-        </div>
+        </FormControl>
       )}
 
       {isNewPerson && (
         <fieldset style={{ marginTop: "1rem" }}>
           <legend>Thông tin người mới</legend>
 
-          <div className="field">
-            <label htmlFor="newDisplayName">Họ và tên</label>
-            <input
+          <FormControl id="newDisplayName" label="Họ và tên" required>
+            <Input
               id="newDisplayName"
               type="text"
               value={newDisplayName}
               onChange={(e) => setNewDisplayName(e.target.value)}
               required
             />
-          </div>
+          </FormControl>
 
           <div className="field">
             <label>Giới tính</label>
@@ -518,9 +507,8 @@ export function AddRelativeForm({ treeId, persons, preselectedPersonId, onCreate
             )}
           </div>
 
-          <div className="field">
-            <label htmlFor="newBirthOrder">Thứ tự sinh (tùy chọn)</label>
-            <input
+          <FormControl id="newBirthOrder" label="Thứ tự sinh (tùy chọn)">
+            <Input
               id="newBirthOrder"
               type="number"
               min={1}
@@ -531,38 +519,35 @@ export function AddRelativeForm({ treeId, persons, preselectedPersonId, onCreate
             <p className="field-hint" style={{ fontSize: "0.75rem", marginTop: "4px" }}>
               Số 1 = con đầu lòng (miền Nam gọi là Anh/Chị Hai).
             </p>
-          </div>
+          </FormControl>
 
-          <div className="field">
-            <label htmlFor="newBirthYear">Năm sinh (tùy chọn)</label>
-            <input
+          <FormControl id="newBirthYear" label="Năm sinh (tùy chọn)">
+            <Input
               id="newBirthYear"
               type="number"
               min={1000}
               value={newBirthYear}
               onChange={(e) => setNewBirthYear(e.target.value)}
             />
-          </div>
+          </FormControl>
 
-          <div className="field">
-            <label htmlFor="newPhone">Số điện thoại (tùy chọn)</label>
-            <input
+          <FormControl id="newPhone" label="Số điện thoại (tùy chọn)">
+            <Input
               id="newPhone"
               type="tel"
               value={newPhone}
               onChange={(e) => setNewPhone(e.target.value)}
             />
-          </div>
+          </FormControl>
 
-          <div className="field">
-            <label htmlFor="newEmail">Email (tùy chọn)</label>
-            <input
+          <FormControl id="newEmail" label="Email (tùy chọn)">
+            <Input
               id="newEmail"
               type="email"
               value={newEmail}
               onChange={(e) => setNewEmail(e.target.value)}
             />
-          </div>
+          </FormControl>
 
           <div className="field photo-upload-container">
             <input
@@ -650,64 +635,43 @@ export function AddRelativeForm({ treeId, persons, preselectedPersonId, onCreate
               </div>
 
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "0.75rem" }}>
-                <div className="field">
-                  <label htmlFor="newDeathDay" style={{ fontSize: "0.875rem" }}>Ngày mất</label>
-                  <input
+                <FormControl id="newDeathDay" label="Ngày mất" error={fieldErrors.newDeathDay}>
+                  <Input
                     id="newDeathDay"
                     name="newDeathDay"
                     type="number"
                     min={1}
                     max={31}
                     value={newDeathDay}
-                    aria-invalid={fieldErrors.newDeathDay ? true : undefined}
-                    aria-describedby={fieldErrors.newDeathDay ? "newDeathDay-error" : undefined}
+                    error={fieldErrors.newDeathDay}
                     onChange={(e) => setNewDeathDay(e.target.value)}
                   />
-                  {fieldErrors.newDeathDay && (
-                    <span id="newDeathDay-error" role="alert" className="field-error">
-                      {fieldErrors.newDeathDay}
-                    </span>
-                  )}
-                </div>
+                </FormControl>
 
-                <div className="field">
-                  <label htmlFor="newDeathMonth" style={{ fontSize: "0.875rem" }}>Tháng mất</label>
-                  <input
+                <FormControl id="newDeathMonth" label="Tháng mất" error={fieldErrors.newDeathMonth}>
+                  <Input
                     id="newDeathMonth"
                     name="newDeathMonth"
                     type="number"
                     min={1}
                     max={12}
                     value={newDeathMonth}
-                    aria-invalid={fieldErrors.newDeathMonth ? true : undefined}
-                    aria-describedby={fieldErrors.newDeathMonth ? "newDeathMonth-error" : undefined}
+                    error={fieldErrors.newDeathMonth}
                     onChange={(e) => setNewDeathMonth(e.target.value)}
                   />
-                  {fieldErrors.newDeathMonth && (
-                    <span id="newDeathMonth-error" role="alert" className="field-error">
-                      {fieldErrors.newDeathMonth}
-                    </span>
-                  )}
-                </div>
+                </FormControl>
 
-                <div className="field">
-                  <label htmlFor="newDeathYear" style={{ fontSize: "0.875rem" }}>Năm mất (tùy chọn)</label>
-                  <input
+                <FormControl id="newDeathYear" label="Năm mất (tùy chọn)" error={fieldErrors.newDeathYear}>
+                  <Input
                     id="newDeathYear"
                     name="newDeathYear"
                     type="number"
                     min={1000}
                     value={newDeathYear}
-                    aria-invalid={fieldErrors.newDeathYear ? true : undefined}
-                    aria-describedby={fieldErrors.newDeathYear ? "newDeathYear-error" : undefined}
+                    error={fieldErrors.newDeathYear}
                     onChange={(e) => setNewDeathYear(e.target.value)}
                   />
-                  {fieldErrors.newDeathYear && (
-                    <span id="newDeathYear-error" role="alert" className="field-error">
-                      {fieldErrors.newDeathYear}
-                    </span>
-                  )}
-                </div>
+                </FormControl>
               </div>
 
               {newDeathCalendar === "lunar" && (

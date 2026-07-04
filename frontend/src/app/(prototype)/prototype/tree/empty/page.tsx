@@ -18,26 +18,27 @@
 import { PersonForm } from "@/components/person/PersonForm";
 import { MockSessionProvider } from "@/lib/prototype/mockSession";
 import { PROTOTYPE_TREE_ID } from "@/lib/prototype/mockData";
+import { Card } from "@/components/ui/Card";
 
 function PrototypeEmptyTreeContent() {
   return (
     /* ===== BEGIN: mirror of src/app/tree/page.tsx (empty tree branch) ===== */
-    <section className="empty-tree">
-      <div className="empty-tree__intro">
-        <p className="eyebrow">Dành cho người mới</p>
-        <h1>Bắt đầu cây gia phả của bạn</h1>
-        <p>
+    <section className="empty-tree" style={{ maxWidth: "600px", margin: "4rem auto", textAlign: "center" }}>
+      <div className="empty-tree__intro" style={{ marginBottom: "2rem" }}>
+        <h1 style={{ fontSize: "2rem", marginBottom: "1rem" }}>Bắt đầu cây gia phả của bạn</h1>
+        <p style={{ color: "var(--color-muted)", lineHeight: 1.6 }}>
           Sơ đồ gia phả của bạn hiện chưa có thành viên nào. Hãy thêm thành
-          viên đầu tiên (ví dụ: bản thân bạn hoặc người lớn tuổi nhất trong
-          dòng họ) để bắt đầu.
+          viên đầu tiên để bắt đầu.
         </p>
       </div>
-      <div className="onboarding-strip" aria-label="Các bước gợi ý">
+      <div className="onboarding-strip" aria-label="Các bước gợi ý" style={{ display: "flex", justifyContent: "center", gap: "1rem", marginBottom: "2rem", fontSize: "0.9rem", fontWeight: 600, color: "var(--color-brand)" }}>
         <span>1. Nhập tên</span>
+        <span style={{ color: "var(--color-hairline)" }}>—</span>
         <span>2. Chọn giới tính</span>
+        <span style={{ color: "var(--color-hairline)" }}>—</span>
         <span>3. Bấm lưu</span>
       </div>
-      <div className="surface-card empty-tree__form">
+      <Card className="empty-tree__form" style={{ padding: "2rem", textAlign: "left" }}>
         <PersonForm
           mode="create"
           treeId={PROTOTYPE_TREE_ID}
@@ -45,7 +46,7 @@ function PrototypeEmptyTreeContent() {
             /* no-op in prototype */
           }}
         />
-      </div>
+      </Card>
     </section>
     /* ===== END ===== */
   );

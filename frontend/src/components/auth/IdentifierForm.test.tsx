@@ -21,7 +21,7 @@ describe("IdentifierForm", () => {
     renderForm(onSubmit);
 
     await userEvent.type(
-      screen.getByLabelText("Số điện thoại hoặc email"),
+      screen.getByLabelText(/Số điện thoại hoặc email/i),
       "  0901234567  ",
     );
     await userEvent.click(screen.getByRole("button", { name: "Gửi mã xác thực" }));
@@ -40,7 +40,7 @@ describe("IdentifierForm", () => {
     );
     renderForm(onSubmit);
 
-    const input = screen.getByLabelText("Số điện thoại hoặc email");
+    const input = screen.getByLabelText(/Số điện thoại hoặc email/i);
     await userEvent.type(input, "abc");
     await userEvent.click(screen.getByRole("button", { name: "Gửi mã xác thực" }));
 
@@ -60,12 +60,12 @@ describe("IdentifierForm", () => {
     );
     renderForm(onSubmit);
 
-    await userEvent.type(screen.getByLabelText("Số điện thoại hoặc email"), "0901234567");
+    await userEvent.type(screen.getByLabelText(/Số điện thoại hoặc email/i), "0901234567");
     await userEvent.click(screen.getByRole("button", { name: "Gửi mã xác thực" }));
 
     const alert = await screen.findByRole("alert");
     expect(alert).toHaveTextContent("Bạn đã thử quá nhiều lần.");
-    expect(screen.getByLabelText("Số điện thoại hoặc email")).not.toHaveAttribute(
+    expect(screen.getByLabelText(/Số điện thoại hoặc email/i)).not.toHaveAttribute(
       "aria-invalid",
     );
   });

@@ -126,20 +126,6 @@ export function GraphEdge({ relationship, source, target }: GraphEdgeProps) {
         <line x1={x1} y1={y1} x2={x2} y2={y2} {...props}>
           {titleElement}
         </line>
-        <text
-          x={midX}
-          y={midY}
-          textAnchor="middle"
-          dominantBaseline="central"
-          fill="currentColor"
-          fontSize="14"
-          fontWeight="bold"
-          role="presentation"
-          aria-hidden="true"
-          style={{ pointerEvents: "none", userSelect: "none" }}
-        >
-          ╪
-        </text>
       </g>
     );
   }

@@ -23,6 +23,7 @@ import {
   type VisibilityState,
 } from "./VisibilityToggles";
 import { uploadPhoto } from "@/lib/photos";
+import { FormControl, Input, Select } from "@/components/ui/FormControls";
 
 /**
  * Create/edit form for a Person node (Requirements 3.1, 3.3) with per-field
@@ -305,104 +306,64 @@ export function PersonForm({
   return (
     <form onSubmit={handleSubmit} aria-label={mode === "create" ? "Thêm thành viên mới" : "Chỉnh sửa thông tin thành viên"}>
       {formError ? (
-        <p role="alert" data-testid="form-error" className="form-error">
+        <p id="person-form-error" role="alert" className="form-error" style={{ marginBottom: "1rem" }}>
           {formError}
         </p>
       ) : null}
 
-      <div className="field">
-        <label htmlFor="displayName">Họ và tên</label>
-        <input
+      <FormControl id="displayName" label="Họ và tên" error={fieldErrors.displayName} required>
+        <Input
           id="displayName"
           name="displayName"
           type="text"
           value={displayName}
-          required
-          aria-invalid={fieldErrors.displayName ? true : undefined}
-          aria-describedby={describedBy("displayName")}
+          error={fieldErrors.displayName}
           onChange={(e) => setDisplayName(e.target.value)}
+          required
         />
-        {fieldErrors.displayName ? (
-          <span id="displayName-error" role="alert" className="field-error">
-            {fieldErrors.displayName}
-          </span>
-        ) : null}
-      </div>
+      </FormControl>
 
-      <fieldset>
-        <legend>Giới tính</legend>
-        <div style={{ display: "flex", gap: "1rem" }}>
-          <label htmlFor="gender-male" style={{ display: "flex", alignItems: "center", gap: "0.25rem", cursor: "pointer", fontWeight: "normal", color: "var(--color-muted)", minHeight: "auto" }}>
-            <input
-              id="gender-male"
-              type="radio"
-              name="gender"
-              value="male"
-              checked={gender === "male"}
-              onChange={() => setGender("male")}
-            />
-            {" Nam"}
-          </label>
-          <label htmlFor="gender-female" style={{ display: "flex", alignItems: "center", gap: "0.25rem", cursor: "pointer", fontWeight: "normal", color: "var(--color-muted)", minHeight: "auto" }}>
-            <input
-              id="gender-female"
-              type="radio"
-              name="gender"
-              value="female"
-              checked={gender === "female"}
-              onChange={() => setGender("female")}
-            />
-            {" Nữ"}
-          </label>
-        </div>
-        {fieldErrors.gender ? (
-          <span id="gender-error" role="alert" className="field-error">
-            {fieldErrors.gender}
-          </span>
-        ) : null}
-      </fieldset>
+      <FormControl id="gender" label="Giới tính" error={fieldErrors.gender}>
+        <Select
+          id="gender"
+          name="gender"
+          value={gender}
+          error={fieldErrors.gender}
+          onChange={(e) => setGender(e.target.value as Gender)}
+        >
+          <option value="male">Nam</option>
+          <option value="female">Nữ</option>
+          <option value="unknown">Không rõ</option>
+        </Select>
+      </FormControl>
 
-      <div className="field">
-        <label htmlFor="birthYear">Năm sinh (tùy chọn)</label>
-        <input
+      <FormControl id="birthYear" label="Năm sinh (tùy chọn)" error={fieldErrors.birthYear}>
+        <Input
           id="birthYear"
           name="birthYear"
           type="number"
           min={1000}
           value={birthYear}
-          aria-invalid={fieldErrors.birthYear ? true : undefined}
-          aria-describedby={describedBy("birthYear")}
+          error={fieldErrors.birthYear}
           onChange={(e) => setBirthYear(e.target.value)}
         />
-        {fieldErrors.birthYear ? (
-          <span id="birthYear-error" role="alert" className="field-error">
-            {fieldErrors.birthYear}
-          </span>
-        ) : null}
-      </div>
+      </FormControl>
 
-      <div className="field">
-        <label htmlFor="birthOrder">Thứ tự sinh (tùy chọn)</label>
-        <input
+      <FormControl id="birthOrder" label="Thứ tự sinh (tùy chọn)" error={fieldErrors.birthOrder}>
+        <Input
           id="birthOrder"
           name="birthOrder"
           type="number"
           min={1}
           max={99}
           value={birthOrder}
-          aria-invalid={fieldErrors.birthOrder ? true : undefined}
-          aria-describedby={describedBy("birthOrder")}
+          error={fieldErrors.birthOrder}
           onChange={(e) => setBirthOrder(e.target.value)}
         />
         <p className="field-hint" style={{ fontSize: "0.75rem", marginTop: "4px" }}>
           Số 1 = con đầu lòng (miền Nam gọi là Anh/Chị Hai).
         </p>
-        {fieldErrors.birthOrder ? (
-          <span id="birthOrder-error" role="alert" className="field-error">
-            {fieldErrors.birthOrder}
-          </span>
-        ) : null}
-      </div>
+      </FormControl>
 
       <div className="field">
         <label htmlFor="deathStatus" style={{ display: "flex", alignItems: "center", gap: "0.5rem", cursor: "pointer", fontWeight: "normal", color: "var(--color-muted)", minHeight: "auto" }}>
@@ -457,64 +418,43 @@ export function PersonForm({
           </div>
 
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "0.75rem" }}>
-            <div className="field">
-              <label htmlFor="deathDay" style={{ fontSize: "0.875rem" }}>Ngày mất</label>
-              <input
+            <FormControl id="deathDay" label="Ngày mất" error={fieldErrors.deathDay}>
+              <Input
                 id="deathDay"
                 name="deathDay"
                 type="number"
                 min={1}
                 max={31}
                 value={deathDay}
-                aria-invalid={fieldErrors.deathDay ? true : undefined}
-                aria-describedby={describedBy("deathDay")}
+                error={fieldErrors.deathDay}
                 onChange={(e) => setDeathDay(e.target.value)}
               />
-              {fieldErrors.deathDay && (
-                <span id="deathDay-error" role="alert" className="field-error">
-                  {fieldErrors.deathDay}
-                </span>
-              )}
-            </div>
+            </FormControl>
 
-            <div className="field">
-              <label htmlFor="deathMonth" style={{ fontSize: "0.875rem" }}>Tháng mất</label>
-              <input
+            <FormControl id="deathMonth" label="Tháng mất" error={fieldErrors.deathMonth}>
+              <Input
                 id="deathMonth"
                 name="deathMonth"
                 type="number"
                 min={1}
                 max={12}
                 value={deathMonth}
-                aria-invalid={fieldErrors.deathMonth ? true : undefined}
-                aria-describedby={describedBy("deathMonth")}
+                error={fieldErrors.deathMonth}
                 onChange={(e) => setDeathMonth(e.target.value)}
               />
-              {fieldErrors.deathMonth && (
-                <span id="deathMonth-error" role="alert" className="field-error">
-                  {fieldErrors.deathMonth}
-                </span>
-              )}
-            </div>
+            </FormControl>
 
-            <div className="field">
-              <label htmlFor="deathYear" style={{ fontSize: "0.875rem" }}>Năm mất (tùy chọn)</label>
-              <input
+            <FormControl id="deathYear" label="Năm mất (tùy chọn)" error={fieldErrors.deathYear}>
+              <Input
                 id="deathYear"
                 name="deathYear"
                 type="number"
                 min={1000}
                 value={deathYear}
-                aria-invalid={fieldErrors.deathYear ? true : undefined}
-                aria-describedby={describedBy("deathYear")}
+                error={fieldErrors.deathYear}
                 onChange={(e) => setDeathYear(e.target.value)}
               />
-              {fieldErrors.deathYear && (
-                <span id="deathYear-error" role="alert" className="field-error">
-                  {fieldErrors.deathYear}
-                </span>
-              )}
-            </div>
+            </FormControl>
           </div>
 
           {deathCalendar === "lunar" && (
@@ -540,27 +480,25 @@ export function PersonForm({
         </div>
       )}
 
-      <div className="field">
-        <label htmlFor="phone">Số điện thoại (tùy chọn)</label>
-        <input
+      <FormControl id="phone" label="Số điện thoại (tùy chọn)">
+        <Input
           id="phone"
           name="phone"
           type="tel"
           value={phone}
           onChange={(e) => setPhone(e.target.value)}
         />
-      </div>
+      </FormControl>
 
-      <div className="field">
-        <label htmlFor="email">Email (tùy chọn)</label>
-        <input
+      <FormControl id="email" label="Email (tùy chọn)">
+        <Input
           id="email"
           name="email"
           type="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
         />
-      </div>
+      </FormControl>
 
       <div className="field photo-upload-container">
         <input
@@ -616,9 +554,8 @@ export function PersonForm({
 
           {linkRelationship && (
             <>
-              <div className="field" style={{ marginTop: "1rem" }}>
-                <label htmlFor="relTargetId">Liên kết với thành viên</label>
-                <select
+              <FormControl id="relTargetId" label="Liên kết với thành viên">
+                <Select
                   id="relTargetId"
                   value={relTargetId}
                   onChange={(e) => setRelTargetId(e.target.value)}
@@ -628,12 +565,11 @@ export function PersonForm({
                       {p.displayName}
                     </option>
                   ))}
-                </select>
-              </div>
+                </Select>
+              </FormControl>
 
-              <div className="field">
-                <label htmlFor="relDerivedKind">Quan hệ của thành viên mới</label>
-                <select
+              <FormControl id="relDerivedKind" label="Quan hệ của thành viên mới">
+                <Select
                   id="relDerivedKind"
                   value={derivedKind}
                   onChange={(e) => setDerivedKind(e.target.value as "bloodline_father" | "bloodline_father_reverse" | "bloodline_mother" | "bloodline_mother_reverse" | "marriage")}
@@ -643,13 +579,12 @@ export function PersonForm({
                   <option value="bloodline_mother">{sourceName} là MẸ của {targetName}</option>
                   <option value="bloodline_mother_reverse">{sourceName} là CON của {targetName} ({targetName} là MẸ)</option>
                   <option value="marriage">{sourceName} và {targetName} là VỢ CHỒNG</option>
-                </select>
-              </div>
+                </Select>
+              </FormControl>
 
               {derivedKind === "marriage" && (
-                <div className="field">
-                  <label htmlFor="relMaritalStatus">Tình trạng hôn nhân</label>
-                  <select
+                <FormControl id="relMaritalStatus" label="Tình trạng hôn nhân">
+                  <Select
                     id="relMaritalStatus"
                     value={maritalStatus}
                     onChange={(e) => setMaritalStatus(e.target.value as "married" | "divorced" | "deceased")}
@@ -657,8 +592,8 @@ export function PersonForm({
                     <option value="married">Đang kết hôn</option>
                     <option value="divorced">Đã ly hôn</option>
                     <option value="deceased">Đã mất</option>
-                  </select>
-                </div>
+                  </Select>
+                </FormControl>
               )}
             </>
           )}

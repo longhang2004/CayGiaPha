@@ -40,11 +40,11 @@ describe("SignUpFlow", () => {
     await userEvent.click(privacy);
 
     await userEvent.type(
-      screen.getByLabelText("Số điện thoại hoặc email"),
+      screen.getByLabelText(/Số điện thoại hoặc email/i),
       "0901234567",
     );
     await userEvent.type(
-      screen.getByLabelText("Mật khẩu"),
+      screen.getByLabelText(/^Mật khẩu/i),
       "password123",
     );
     await userEvent.click(screen.getByRole("button", { name: "Đăng ký" }));
@@ -68,15 +68,15 @@ describe("SignUpFlow", () => {
     await userEvent.click(privacy);
 
     await userEvent.selectOptions(
-      screen.getByLabelText("Vùng miền (cách xưng hô)"),
+      screen.getByLabelText(/Vùng miền/i),
       "Nam",
     );
     await userEvent.type(
-      screen.getByLabelText("Số điện thoại hoặc email"),
+      screen.getByLabelText(/Số điện thoại hoặc email/i),
       "0901234567",
     );
     await userEvent.type(
-      screen.getByLabelText("Mật khẩu"),
+      screen.getByLabelText(/^Mật khẩu/i),
       "password123",
     );
     await userEvent.click(screen.getByRole("button", { name: "Đăng ký" }));
@@ -99,10 +99,10 @@ describe("SignUpFlow", () => {
     await userEvent.click(tos);
     await userEvent.click(privacy);
 
-    const input = screen.getByLabelText("Số điện thoại hoặc email");
+    const input = screen.getByLabelText(/Số điện thoại hoặc email/i);
     await userEvent.type(input, "0901234567");
     await userEvent.type(
-      screen.getByLabelText("Mật khẩu"),
+      screen.getByLabelText(/^Mật khẩu/i),
       "password123",
     );
     await userEvent.click(screen.getByRole("button", { name: "Đăng ký" }));

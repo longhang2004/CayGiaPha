@@ -19,7 +19,7 @@ import { describe, expect, it } from "vitest";
 
 // Tests run from the frontend package root; read the source-of-truth stylesheet.
 const GLOBALS_CSS = readFileSync(
-  resolve(process.cwd(), "src/app/globals.css"),
+  resolve(process.cwd(), "src/styles/_01_variables.scss"),
   "utf8",
 );
 
@@ -29,7 +29,7 @@ function readColorToken(name: string): string {
     new RegExp(`--${name}:\\s*(#[0-9a-fA-F]{3,8})`),
   );
   if (!match) {
-    throw new Error(`Color token --${name} not found in globals.css`);
+    throw new Error(`Color token --${name} not found in _01_variables.scss`);
   }
   return match[1];
 }

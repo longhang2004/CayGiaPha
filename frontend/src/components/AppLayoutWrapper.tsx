@@ -28,9 +28,9 @@ export function AppLayoutWrapper({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const isAuthPage = pathname === "/signin" || pathname === "/signup";
+  const isAuthPage = pathname === "/signin" || pathname === "/signup" || pathname === "/prototype/signin" || pathname === "/prototype/signup";
   const isLegalPage = pathname.startsWith("/legal/");
-  const isLandingPage = pathname === "/";
+  const isLandingPage = pathname === "/" || pathname === "/prototype/home";
 
   if (isAuthPage || isLegalPage) {
     return <div id="main-content">{children}</div>;

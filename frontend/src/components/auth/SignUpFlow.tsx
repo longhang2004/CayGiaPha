@@ -6,6 +6,7 @@ import { useSession } from "@/app/providers";
 import { signUp } from "@/lib/auth";
 import { REGION_OPTIONS, type Region } from "@/lib/region";
 import { Button } from "@/components/Button";
+import { FormControl, Input, Select } from "@/components/ui/FormControls";
 import { toAuthErrorState, fieldErrorFor, type AuthErrorState } from "./authErrors";
 
 interface SignUpFlowProps {
@@ -65,14 +66,15 @@ export function SignUpFlow({ redirectTo = "/" }: SignUpFlowProps) {
   };
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%", maxWidth: "28rem" }}>
-      <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "1.5rem" }}>
-        <a href="/" style={{ display: "flex", alignItems: "center", gap: "0.5rem", textDecoration: "none", color: "var(--color-fg)" }}>
-          <img src="/logo.png" alt="Logo Cây Gia Phả" style={{ height: "32px", width: "auto" }} />
-          <span style={{ fontSize: "1.5rem", fontWeight: 700, letterSpacing: "-0.03em" }}>Cây Gia Phả</span>
+    <div className="auth-wrapper animate-fade-up-heavy stagger-1" style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%", maxWidth: "30rem" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "2rem" }}>
+        <a href="/" style={{ display: "flex", alignItems: "center", gap: "0.75rem", textDecoration: "none", color: "var(--color-fg)" }}>
+          <img src="/logo.svg" alt="Logo Cây Gia Phả" style={{ height: "40px", width: "auto" }} />
+          <span style={{ fontSize: "1.75rem", fontWeight: 700, letterSpacing: "-0.03em" }}>Cây Gia Phả</span>
         </a>
       </div>
-      <div className="auth-card">
+      <div className="double-bezel-card" style={{ width: "100%" }}>
+        <div className="double-bezel-card__inner">
         <form onSubmit={handleSubmit} noValidate aria-labelledby={`${inputId}-heading`}>
         <h1 id={`${inputId}-heading`}>Đăng ký</h1>
         <p>Tạo tài khoản cây gia phả mới của bạn.</p>
@@ -83,9 +85,8 @@ export function SignUpFlow({ redirectTo = "/" }: SignUpFlowProps) {
         </p>
       ) : null}
 
-      <div className="field" style={{ marginBottom: "1rem" }}>
-        <label htmlFor={inputId}>Số điện thoại hoặc email</label>
-        <input
+      <FormControl id={inputId} label="Số điện thoại hoặc email" error={identifierError} required>
+        <Input
           id={inputId}
           name="identifier"
           type="text"
@@ -93,42 +94,28 @@ export function SignUpFlow({ redirectTo = "/" }: SignUpFlowProps) {
           autoComplete="username"
           value={identifier}
           onChange={(event) => setIdentifier(event.target.value)}
-          aria-invalid={identifierError ? true : undefined}
-          aria-describedby={identifierError ? errorId : undefined}
+          error={identifierError}
           disabled={submitting}
           required
         />
-        {identifierError ? (
-          <p id={errorId} role="alert" className="field-error">
-            {identifierError}
-          </p>
-        ) : null}
-      </div>
+      </FormControl>
 
-      <div className="field" style={{ marginBottom: "1rem" }}>
-        <label htmlFor={passwordId}>Mật khẩu</label>
-        <input
+      <FormControl id={passwordId} label="Mật khẩu" error={passwordError} required>
+        <Input
           id={passwordId}
           name="password"
           type="password"
           autoComplete="new-password"
           value={password}
           onChange={(event) => setPassword(event.target.value)}
-          aria-invalid={passwordError ? true : undefined}
-          aria-describedby={passwordError ? passwordErrorId : undefined}
+          error={passwordError}
           disabled={submitting}
           required
         />
-        {passwordError ? (
-          <p id={passwordErrorId} role="alert" className="field-error">
-            {passwordError}
-          </p>
-        ) : null}
-      </div>
+      </FormControl>
 
-      <div className="field" style={{ marginBottom: "1rem" }}>
-        <label htmlFor="signup-region">Vùng miền (cách xưng hô)</label>
-        <select
+      <FormControl id="signup-region" label="Vùng miền (cách xưng hô)">
+        <Select
           id="signup-region"
           value={region}
           onChange={(e) => setRegion(e.target.value as Region)}
@@ -139,11 +126,11 @@ export function SignUpFlow({ redirectTo = "/" }: SignUpFlowProps) {
               {o.label}
             </option>
           ))}
-        </select>
-        <p className="field-hint">
+        </Select>
+        <p className="field-hint" style={{ marginTop: "0.5rem" }}>
           Chọn vùng miền của bạn — điều này quyết định cách xưng hô (ví dụ bố/ba, mẹ/má).
         </p>
-      </div>
+      </FormControl>
 
       <div className="field" style={{ marginBottom: "1rem", display: "flex", flexDirection: "column", gap: "0.5rem" }}>
         <label style={{ display: "flex", alignItems: "center", gap: "0.5rem", margin: 0, cursor: "pointer", fontWeight: "normal", color: "var(--color-muted)" }}>
@@ -218,7 +205,8 @@ export function SignUpFlow({ redirectTo = "/" }: SignUpFlowProps) {
         </a>
       </div>
       </form>
+        </div>
+      </div>
     </div>
-  </div>
   );
 }

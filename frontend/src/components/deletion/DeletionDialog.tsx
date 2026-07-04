@@ -9,6 +9,7 @@ import {
   type DeletionStrategy,
 } from "@/lib/deletion";
 import { Button } from "@/components/Button";
+import { Modal, ModalHeader, ModalBody, ModalFooter } from "@/components/ui/Modal";
 
 /**
  * Two-phase deletion-choice dialog (task 10.4, Requirements 15.1, 15.2).
@@ -122,19 +123,19 @@ export function DeletionDialog({
         {triggerLabel}
       </Button>
 
-      {open && choice ? (
-        <div role="dialog" aria-modal="true" aria-label="Xác nhận xóa thành viên">
-          <h2>Xác nhận xóa thành viên</h2>
+      <Modal isOpen={open && choice !== null} onClose={handleDismiss} aria-label="Xác nhận xóa thành viên">
+        <ModalHeader title="Xác nhận xóa thành viên" onClose={handleDismiss} />
+        <ModalBody>
           {error ? (
-            <p role="alert" data-testid="deletion-error">
+            <p role="alert" data-testid="deletion-error" style={{ color: "var(--color-danger)", marginBottom: "1rem" }}>
               {error}
             </p>
           ) : null}
 
           <fieldset>
-            <legend>Chọn cách xử lý các mối liên hệ</legend>
+            <legend style={{ fontWeight: 600, marginBottom: "0.5rem" }}>Chọn cách xử lý các mối liên hệ</legend>
             {(["cascade", "preserve"] as DeletionStrategy[]).map((s) => (
-              <label key={s} htmlFor={`deletion-${s}`} style={{ display: "block" }}>
+              <label key={s} htmlFor={`deletion-${s}`} style={{ display: "block", marginBottom: "1rem", cursor: "pointer" }}>
                 <input
                   id={`deletion-${s}`}
                   type="radio"
@@ -142,22 +143,24 @@ export function DeletionDialog({
                   value={s}
                   checked={strategy === s}
                   onChange={() => setStrategy(s)}
+                  style={{ marginRight: "0.5rem" }}
                 />
                 <strong>{STRATEGY_LABELS[s].title}</strong>
                 <br />
-                <span>{STRATEGY_LABELS[s].description}</span>
+                <span style={{ fontSize: "0.9rem", color: "var(--color-muted)" }}>{STRATEGY_LABELS[s].description}</span>
               </label>
             ))}
           </fieldset>
-
-          <Button type="button" onClick={handleConfirm} disabled={executing || !strategy}>
-            Xóa thành viên
-          </Button>
+        </ModalBody>
+        <ModalFooter style={{ display: "flex", gap: "0.5rem", justifyContent: "flex-end" }}>
           <Button type="button" onClick={handleDismiss} disabled={executing} className="btn-secondary">
             Hủy
           </Button>
-        </div>
-      ) : null}
+          <Button type="button" onClick={handleConfirm} disabled={executing || !strategy} className="btn-danger">
+            Xóa thành viên
+          </Button>
+        </ModalFooter>
+      </Modal>
     </div>
   );
 }

@@ -20,7 +20,7 @@ describe("OtpForm", () => {
     const onSubmit = vi.fn().mockResolvedValue(undefined);
     renderForm(onSubmit);
 
-    await userEvent.type(screen.getByLabelText("Mã xác thực"), "123456");
+    await userEvent.type(screen.getByLabelText(/Mã xác thực/i), "123456");
     await userEvent.click(screen.getByRole("button", { name: "Xác thực" }));
 
     expect(onSubmit).toHaveBeenCalledTimes(1);
@@ -37,7 +37,7 @@ describe("OtpForm", () => {
     );
     renderForm(onSubmit);
 
-    const input = screen.getByLabelText("Mã xác thực");
+    const input = screen.getByLabelText(/Mã xác thực/i);
     await userEvent.type(input, "000000");
     await userEvent.click(screen.getByRole("button", { name: "Xác thực" }));
 

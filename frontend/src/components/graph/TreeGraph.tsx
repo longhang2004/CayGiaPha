@@ -830,18 +830,7 @@ export function TreeGraph({
         </svg>
 
         {/* Floating Zoom & Pan Controls */}
-        <div
-          className="tree-graph__nav-controls"
-          style={{
-            position: "absolute",
-            bottom: "1rem",
-            right: "1rem",
-            display: "flex",
-            flexDirection: "column",
-            gap: "0.5rem",
-            zIndex: 10,
-          }}
-        >
+        <div className="tree-graph__nav-controls">
           <button
             type="button"
             onClick={handleZoomIn}
