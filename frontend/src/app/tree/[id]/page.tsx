@@ -462,7 +462,7 @@ function TreePageContent({ params, searchParams }: TreePageProps) {
                     className="btn btn-secondary"
                     onClick={() => setIsCollaborationOpen(true)}
                   >
-                    👥 <span>Cộng tác</span>
+                    👥 <span className="hide-on-mobile">Cộng tác</span>
                   </button>
                 )}
                 {canEdit && (
@@ -476,7 +476,7 @@ function TreePageContent({ params, searchParams }: TreePageProps) {
                       setEditMode(false);
                     }}
                   >
-                    ➕ <span>Thêm thành viên</span>
+                    ➕ <span className="hide-on-mobile">Thêm thành viên</span>
                   </button>
                 )}
               </div>

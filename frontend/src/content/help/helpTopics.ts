@@ -83,13 +83,40 @@ export const HELP_TOPICS: HelpTopic[] = [
     ],
   },
   {
-    id: "chon-vung-mien",
-    title: "Chọn vùng miền (Region)",
-    summary: "Đặt phương ngữ Bắc, Trung hoặc Nam để chọn từ xưng hô phù hợp.",
+    id: "chon-vung-mien-va-bao-mat",
+    title: "Cài đặt cây (Vùng miền & Quyền riêng tư)",
+    summary: "Đặt phương ngữ và tùy chọn ẩn thông tin người còn sống.",
     paragraphs: [
-      "Cách xưng hô tiếng Việt khác nhau theo vùng miền. Mỗi cây có một vùng miền mặc định, được đặt là Bắc khi tạo cây nếu bạn không chọn khác.",
-      "Chủ cây có thể đổi vùng miền sang một trong ba giá trị: Bắc, Trung hoặc Nam. Mọi cách xưng hô được yêu cầu sau khi đổi sẽ dùng từ của vùng miền mới.",
-      "Nếu bạn chọn một giá trị không hợp lệ, hệ thống từ chối thay đổi và giữ nguyên vùng miền trước đó.",
+      "Cách xưng hô tiếng Việt khác nhau theo vùng miền. Chủ cây có thể đổi vùng miền sang Bắc, Trung hoặc Nam để hệ thống sử dụng từ ngữ phù hợp (ví dụ: Bác/Chú vs Cậu).",
+      "Ngoài ra, chủ cây có thể bật tính năng 'Ẩn thông tin người còn sống' trong phần Cài đặt. Khi bật, hệ thống sẽ tự động che dấu ngày sinh và các thông tin nhạy cảm của những thành viên đang còn sống đối với khách vãng lai, đảm bảo quyền riêng tư tối đa."
     ],
   },
+  {
+    id: "cong-tac-vien",
+    title: "Quản lý cộng tác viên",
+    summary: "Mời người thân cùng tham gia chỉnh sửa và xây dựng gia phả.",
+    paragraphs: [
+      "Xây dựng gia phả là công việc của cả dòng họ. Chủ cây có thể mở cửa sổ 'Cộng tác' để mời các thành viên khác cùng quản lý cây.",
+      "Bạn có thể nhập email của người thân để gửi lời mời. Người được mời sẽ nhận được một mã tham gia. Khi họ nhập mã này, họ sẽ trở thành cộng tác viên và có quyền thêm, sửa thông tin thành viên trong cây.",
+      "Chủ cây có toàn quyền quản lý danh sách cộng tác viên, phê duyệt lời mời hoặc xóa quyền truy cập bất cứ lúc nào."
+    ],
+  },
+  {
+    id: "tim-duong-di",
+    title: "Tìm kiếm và phân tích đường đi",
+    summary: "Tìm nhanh thành viên và xem sơ đồ kết nối giữa hai người.",
+    paragraphs: [
+      "Sử dụng thanh tìm kiếm (có biểu tượng kính lúp) để tìm nhanh một thành viên theo tên. Khi chọn một kết quả, bản đồ sẽ tự động di chuyển và phóng to tới vị trí của người đó.",
+      "Để hiểu rõ quan hệ giữa hai người bất kỳ, bạn có thể thiết lập một người làm 'Điểm nhìn' (Viewpoint), sau đó chọn người kia và nhấn biểu tượng 'Tìm đường đi'. Hệ thống sẽ làm nổi bật con đường huyết thống hoặc hôn nhân ngắn nhất nối liền hai người."
+    ],
+  },
+  {
+    id: "ca-nhan-hoa-giao-dien",
+    title: "Cá nhân hóa giao diện",
+    summary: "Thay đổi chế độ tối/sáng và kích thước văn bản.",
+    paragraphs: [
+      "Hệ thống hỗ trợ cá nhân hóa giao diện hiển thị để bảo vệ mắt và dễ đọc hơn. Bạn có thể thay đổi kích thước chữ (từ 100% đến 200%) ngay trên thanh công cụ của sơ đồ.",
+      "Để bật Giao diện tối (Dark Mode), hãy truy cập mục 'Cài đặt' từ menu bên trái. Chế độ tối sử dụng các gam màu trầm ấm giúp dịu mắt khi sử dụng vào ban đêm."
+    ],
+  }
 ];

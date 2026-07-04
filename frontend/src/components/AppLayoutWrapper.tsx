@@ -54,14 +54,11 @@ export function AppLayoutWrapper({ children }: { children: React.ReactNode }) {
         <button
           type="button"
           className="hamburger-btn"
-          onClick={() => setIsSidebarOpen(true)}
+          onClick={() => setIsSidebarOpen((prev) => !prev)}
           aria-label="Mở menu ứng dụng"
         >
           <MenuIcon size={20} />
         </button>
-        <Link href="/" className="mobile-top-bar__brand">
-          Cây Gia Phả
-        </Link>
         <div style={{ display: "flex", alignItems: "center", marginRight: "1rem" }}>
           {user && <NotificationBell />}
         </div>

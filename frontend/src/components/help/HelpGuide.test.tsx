@@ -18,11 +18,14 @@ const REQUIRED_TOPIC_IDS = [
   "cach-tinh-xung-ho", // how address is computed
   "doi-diem-nhin", // changing the viewpoint
   "xac-nhan-nut", // claiming a node
-  "chon-vung-mien", // selecting a region
+  "chon-vung-mien-va-bao-mat", // selecting a region and privacy
+  "tim-duong-di", // pathfinding
+  "cong-tac-vien", // collaboration
+  "ca-nhan-hoa-giao-dien", // ui customization
 ];
 
 describe("HelpGuide", () => {
-  it("covers all six required topics from criterion 17.2", () => {
+  it("covers all required topics from criterion 17.2 and additional system topics", () => {
     // Guard against the content drifting away from the required topic set.
     expect(HELP_TOPICS.map((t) => t.id).sort()).toEqual(
       [...REQUIRED_TOPIC_IDS].sort(),
