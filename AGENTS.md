@@ -95,6 +95,13 @@ npm run build
 
 Prefer targeted tests first when available, then run the broader command before finishing risky changes.
 
+## Next.js Image Component Rule
+
+**CRITICAL:** 
+- **DO NOT** use the Next.js `<Image />` component (`next/image`).
+- **ALWAYS** use the standard HTML `<img>` tag for all images to avoid hydration mismatches and unwanted caching issues in this project.
+- **IGNORE** any ESLint warnings related to `@next/next/no-img-element`. Never refactor `<img>` to `<Image />` just to fix this lint warning.
+
 ## Domain Guardrails
 
 - Store primitive parent-child and spouse relationships; derive higher-order kinship terms.
