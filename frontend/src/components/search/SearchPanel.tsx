@@ -8,8 +8,8 @@ import {
   type SearchRequest,
   type SearchResult,
 } from "@/lib/search";
-import { Button } from "@/components/Button";
 import { type Person, type Address, addressLabel } from "@/lib/graph";
+import { PlusIcon, SearchIcon } from "@/components/ui/Icons";
 
 /**
  * Redesigned Search & Filter Toolbar (Requirement 16.x).
@@ -384,7 +384,18 @@ export function SearchPanel({
                 aria-label="Tìm kiếm bằng giọng nói"
               >
                 {isListening ? (
-                  <span>🔴</span>
+                  <span
+                    className="voice-listening-dot"
+                    aria-hidden="true"
+                    style={{
+                      display: "inline-block",
+                      width: "10px",
+                      height: "10px",
+                      borderRadius: "50%",
+                      backgroundColor: "var(--color-brand)",
+                      animation: "pulse-animation 1.5s infinite",
+                    }}
+                  />
                 ) : (
                   <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ display: "block" }}>
                     <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/>
@@ -403,11 +414,13 @@ export function SearchPanel({
                 title="Bộ lọc"
                 style={{ display: "flex", alignItems: "center", gap: "0.25rem" }}
               >
-                Bộ lọc {hasActiveFilters() ? "●" : ""}
+                <span className="search-panel-toolbar__button-label">Bộ lọc</span>
+                {hasActiveFilters() ? <span aria-hidden="true">●</span> : null}
               </button>
 
-              <button type="submit" className="btn search-submit-btn" disabled={submitting}>
-                Tìm kiếm
+              <button type="submit" className="btn search-submit-btn" disabled={submitting} aria-label="Tìm kiếm" title="Tìm kiếm">
+                <SearchIcon size={18} className="search-submit-btn__icon" />
+                <span className="search-panel-toolbar__button-label">Tìm kiếm</span>
               </button>
             </div>
 
@@ -422,8 +435,11 @@ export function SearchPanel({
                 type="button"
                 className="btn add-member-btn"
                 onClick={onAddMember}
+                aria-label="Thêm thành viên"
+                title="Thêm thành viên"
               >
-                + Thêm thành viên
+                <PlusIcon size={18} />
+                <span className="search-panel-toolbar__button-label">Thêm thành viên</span>
               </button>
             )}
 
@@ -615,4 +631,3 @@ export function SearchPanel({
     </div>
   );
 }
-

@@ -48,7 +48,7 @@ import {
   MOCK_USER,
 } from "@/lib/prototype/mockData";
 import "@/components/graph/graph.css";
-import { CollaborationIcon, LightbulbIcon, CloseIcon } from "@/components/ui/Icons";
+import { CollaborationIcon, PlusIcon, CloseIcon } from "@/components/ui/Icons";
 import { OnboardingModal } from "@/components/onboarding/OnboardingModal";
 
 /** Stub fetchAddresses that resolves immediately with no addresses. */
@@ -245,6 +245,7 @@ function PrototypeTreeContent() {
         {/* Floating Island Header/Toolbar */}
         <div className="tree-page-header">
           <div className="tree-page-header__row-one">
+            {/* Brand — hidden on tablet/mobile via CSS */}
             <div className="tree-page-header__brand">
               <img src="/logo.svg" alt="Logo Cây Gia Phả" className="tree-page-header__logo" />
               <div className="tree-page-header__title-container">
@@ -253,48 +254,65 @@ function PrototypeTreeContent() {
               </div>
             </div>
 
-            <div className="tree-page-header__row-one-right">
-              <div className="tree-page-header__search-container">
-                <SearchPanel
-                  treeId={PROTOTYPE_TREE_ID}
-                  persons={persons}
-                  addresses={addresses}
-                  egoId={egoId}
-                  viewpointId={selectedId || undefined}
-                  onSelectResult={(id) => {
-                    setSelectedId(id);
-                    setEditMode(false);
-                    setAddRelativeMode(false);
-                  }}
-                />
-              </div>
-              <div className="tree-page-header__actions">
+            {/* Search — grows to fill space */}
+            <div className="tree-page-header__search-container">
+              <SearchPanel
+                treeId={PROTOTYPE_TREE_ID}
+                persons={persons}
+                addresses={addresses}
+                egoId={egoId}
+                viewpointId={selectedId || undefined}
+                onSelectResult={(id) => {
+                  setSelectedId(id);
+                  setEditMode(false);
+                  setAddRelativeMode(false);
+                }}
+              />
+            </div>
+
+            {/* Viewpoint — inline on desktop, hidden on tablet (moved to row-two) */}
+            <div className="tree-page-header__viewpoint-inline">
+              <ViewpointSelector
+                persons={persons}
+                egoId={egoId}
+                onChange={setEgoId}
+                disabled={addressLoading}
+              />
+            </div>
+
+            {/* Actions */}
+            <div className="tree-page-header__actions">
+              <button
+                type="button"
+                className="btn btn-secondary"
+                onClick={() => setIsCollaborationOpen(true)}
+                title="Cộng tác"
+                aria-label="Cộng tác"
+              >
+                <CollaborationIcon size={18} />
+                <span className="hide-on-tablet hide-on-mobile">Cộng tác</span>
+              </button>
+              {isOwner && (
                 <button
                   type="button"
-                  className="btn btn-secondary"
-                  onClick={() => setIsCollaborationOpen(true)}
+                  className="btn btn-primary btn-terracotta"
+                  onClick={() => {
+                    setSelectedId(null);
+                    setCreateMode(true);
+                    setAddRelativeMode(false);
+                    setEditMode(false);
+                  }}
+                  title="Thêm thành viên"
+                  aria-label="Thêm thành viên"
                 >
-                  <CollaborationIcon size={18} />
-                  <span className="hide-on-mobile">Cộng tác</span>
+                  <PlusIcon size={18} />
+                  <span className="hide-on-tablet hide-on-mobile">Thêm thành viên</span>
                 </button>
-                {isOwner && (
-                  <button
-                    type="button"
-                    className="btn btn-primary btn-terracotta"
-                    onClick={() => {
-                      setSelectedId(null);
-                      setCreateMode(true);
-                      setAddRelativeMode(false);
-                      setEditMode(false);
-                    }}
-                  >
-                    ➕ <span className="hide-on-mobile">Thêm thành viên</span>
-                  </button>
-                )}
-              </div>
+              )}
             </div>
           </div>
 
+          {/* Row 2 — viewpoint on tablet/mobile only (hidden on desktop via CSS) */}
           <div className="tree-page-header__row-two">
             <div className="tree-page-header__viewpoint">
               <ViewpointSelector

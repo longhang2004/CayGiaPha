@@ -44,6 +44,9 @@
 }
 
 .search-panel-toolbar__fields .add-member-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
   margin-left: auto;
   white-space: nowrap;
 }

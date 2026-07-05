@@ -105,6 +105,14 @@ export const CollaborationIcon = icon(
   </>
 );
 
+/** Plus / add */
+export const PlusIcon = icon(
+  <>
+    <path d="M12 5v14" />
+    <path d="M5 12h14" />
+  </>
+);
+
 /** ⚙️ Settings / gear */
 export const SettingsIcon = icon(
   <>
