@@ -44,6 +44,10 @@ public class User {
     @Column(name = "verified", nullable = false)
     private boolean verified = false;
 
+    /** Application role; V17 defaults existing accounts to {@code user}. */
+    @Column(name = "role", nullable = false)
+    private String role = "user";
+
     /** Creation timestamp; populated by the database default ({@code now()}). */
     @Column(name = "created_at", nullable = false, insertable = false, updatable = false)
     private Instant createdAt;
@@ -85,6 +89,14 @@ public class User {
 
     public void setVerified(boolean verified) {
         this.verified = verified;
+    }
+
+    public String getRole() {
+        return role;
+    }
+
+    public void setRole(String role) {
+        this.role = role;
     }
 
     public Instant getCreatedAt() {

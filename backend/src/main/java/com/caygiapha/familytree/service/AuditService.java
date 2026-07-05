@@ -29,6 +29,8 @@ public class AuditService {
     public static final String DATA_EXPORTED = "rights.data_exported";
     public static final String NODE_ERASED = "rights.node_erased";
     public static final String ACCOUNT_DELETED = "rights.account_deleted";
+    public static final String FEEDBACK_SUBMITTED = "feedback.submitted";
+    public static final String FEEDBACK_STATUS_CHANGED = "feedback.status_changed";
 
     private final AuditLogRepository auditLogRepository;
     private final AuthContextHolder authContextHolder;
