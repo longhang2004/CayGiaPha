@@ -384,7 +384,9 @@ class OtpDeliveryAndCoreFlowsIntegrationTest {
                     identifierValidator,
                     duplicateIdentifierChecker,
                     verificationCodeService,
-                    sessionService);
+                    sessionService,
+                    null,
+                    null);
         }
 
         @Bean

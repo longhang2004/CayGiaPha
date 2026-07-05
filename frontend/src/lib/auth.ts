@@ -63,6 +63,21 @@ export function signIn(identifier: Identifier, password?: string): Promise<void>
   return api.post<void>("/auth/signin", { identifier, password });
 }
 
+/** Sign-in or Sign-up using Google ID Token. */
+export function signInWithGoogle(
+  idToken: string,
+  region?: string,
+  acceptedTos?: boolean,
+  acceptedPrivacy?: boolean
+): Promise<void> {
+  return api.post<void>("/auth/google", {
+    idToken,
+    region,
+    acceptedTos,
+    acceptedPrivacy,
+  });
+}
+
 /** Deprecated. Use signIn directly. */
 export function verifySignIn(identifier: Identifier, code: string): Promise<void> {
   return Promise.resolve();

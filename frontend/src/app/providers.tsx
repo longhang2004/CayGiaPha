@@ -9,6 +9,7 @@ import {
   type ReactNode,
 } from "react";
 import { getCurrentSession, signOut, type SessionUser } from "@/lib/session";
+import { GoogleOAuthProvider } from "@react-oauth/google";
 
 export interface SessionContextValue {
   user: SessionUser | null;
@@ -51,7 +52,11 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     [user, loading],
   );
 
-  return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>;
+  return (
+    <GoogleOAuthProvider clientId={process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || ""}>
+      <SessionContext.Provider value={value}>{children}</SessionContext.Provider>
+    </GoogleOAuthProvider>
+  );
 }
 
 export function useSession(): SessionContextValue {

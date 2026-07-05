@@ -1,9 +1,9 @@
 export const dynamic = "force-dynamic";
 
 import { handleApiRoute } from "@/lib/services/routeHelper";
-import { authService, sessionService } from "@/lib/services/auth";
+import { sessionService } from "@/lib/services/auth";
 import { db } from "@/lib/db";
-import { users, trees } from "@/lib/db/schema";
+import { users } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
@@ -88,14 +88,6 @@ export async function GET(request: Request) {
         })
         .returning();
       user = inserted;
-
-      // Automatically create a family tree with default region "Bac" (Requirement 9.2)
-      await db.insert(trees).values({
-        ownerUserId: user.id,
-        region: "Bac",
-        sharing: "private",
-        livingRedaction: true,
-      });
 
       await auditService.record(
         user.id,

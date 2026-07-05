@@ -6,6 +6,7 @@ import { eq, and, desc } from "drizzle-orm";
 import { ApiException } from "./errors";
 import { consentService } from "./consent";
 import { auditService, AuditActions } from "./audit";
+import { OAuth2Client } from "google-auth-library";
 
 export type IdentifierType = "PHONE" | "EMAIL";
 
@@ -524,6 +525,7 @@ export const sessionService = new SessionService();
 // AUTH SERVICE (ORCHESTRATOR)
 // ------------------------------------------
 export class AuthService {
+  private googleClient = new OAuth2Client(process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID);
   async signUp(identifierOrCommand: string | {
     identifier: string;
     password?: string;
@@ -656,6 +658,53 @@ export class AuthService {
 
     // Create session
     return sessionService.create(user.id);
+  }
+
+  async verifyGoogleAuth(idToken: string, _region?: string | null, acceptedTos?: boolean, acceptedPrivacy?: boolean) {
+    let email: string;
+    try {
+      // First try verifying as an ID Token
+      const ticket = await this.googleClient.verifyIdToken({
+        idToken,
+        audience: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID,
+      });
+      const payload = ticket.getPayload();
+      if (!payload || !payload.email) throw new Error("No email in idToken");
+      email = payload.email;
+    } catch (e) {
+      // Fallback: If verification fails, it might be an access token
+      try {
+        const response = await fetch("https://www.googleapis.com/oauth2/v3/userinfo", {
+          headers: { Authorization: `Bearer ${idToken}` }
+        });
+        if (!response.ok) throw new Error("Invalid access token");
+        const data = await response.json();
+        if (!data || !data.email) throw new Error("No email in userinfo response");
+        email = data.email;
+      } catch (fallbackError) {
+        throw ApiException.validation("idToken", "Lỗi xác thực Google Token.");
+      }
+    }
+
+    const user = await this.findUserByIdentifier("EMAIL", email);
+
+    if (user) {
+      if (!user.verified) {
+        await db.update(users).set({ verified: true }).where(eq(users.id, user.id));
+      }
+      return sessionService.create(user.id);
+    } else {
+      consentService.requireConsent(!!acceptedTos, !!acceptedPrivacy);
+
+      const [saved] = await db
+        .insert(users)
+        .values({ phone: null, email, verified: true, passwordHash: null })
+        .returning();
+
+      await consentService.recordConsent(saved.id);
+
+      return sessionService.create(saved.id);
+    }
   }
 
   async signOut(sessionToken: string) {

@@ -45,6 +45,9 @@ class AuthServiceTest {
     private DuplicateIdentifierChecker duplicateChecker;
     private VerificationCodeService verificationCodeService;
     private SessionService sessionService;
+    private com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier googleIdTokenVerifier;
+    private ConsentService consentService;
+
     private AuthService service;
 
     @BeforeEach
@@ -54,13 +57,19 @@ class AuthServiceTest {
         duplicateChecker = mock(DuplicateIdentifierChecker.class);
         verificationCodeService = mock(VerificationCodeService.class);
         sessionService = mock(SessionService.class);
+        googleIdTokenVerifier = mock(com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier.class);
+        consentService = mock(ConsentService.class);
+
         service = new AuthService(
                 userRepository,
                 treeRepository,
                 new IdentifierValidator(),
                 duplicateChecker,
                 verificationCodeService,
-                sessionService);
+                sessionService,
+                googleIdTokenVerifier,
+                consentService
+        );
 
         // Repositories echo their argument, assigning an id to simulate persistence.
         when(userRepository.save(any(User.class))).thenAnswer((InvocationOnMock i) -> {

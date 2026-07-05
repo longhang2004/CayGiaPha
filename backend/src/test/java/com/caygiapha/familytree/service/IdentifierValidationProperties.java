@@ -122,7 +122,10 @@ class IdentifierValidationProperties {
                 new IdentifierValidator(),
                 duplicateChecker,
                 verificationCodeService,
-                mock(SessionService.class));
+                mock(SessionService.class),
+                null,
+                null
+        );
 
         boolean expectedValid = oracleIsValid(candidate);
 

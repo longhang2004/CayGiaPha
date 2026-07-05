@@ -9,6 +9,7 @@ import com.caygiapha.familytree.dto.SignUpRequest;
 import com.caygiapha.familytree.dto.SignUpResponse;
 import com.caygiapha.familytree.dto.SignUpVerifyRequest;
 import com.caygiapha.familytree.dto.SignUpVerifyResponse;
+import com.caygiapha.familytree.dto.GoogleAuthRequest;
 import com.caygiapha.familytree.entity.Session;
 import com.caygiapha.familytree.service.AuditService;
 import com.caygiapha.familytree.service.AuthService;
@@ -108,6 +109,18 @@ public class AuthController {
         auditService.recordAs(session.getUserId(), AuditService.SIGN_IN, "user",
                 session.getUserId(), null); // 25.2
         // 2.3 — deliver the opaque token only in the HttpOnly/Secure/SameSite session cookie.
+        return ResponseEntity.ok()
+                .header(
+                        HttpHeaders.SET_COOKIE,
+                        sessionCookieFactory.create(session.getId()).toString())
+                .body(new SignInVerifyResponse(session.getUserId(), session.getExpiresAt()));
+    }
+
+    @PostMapping("/google")
+    public ResponseEntity<SignInVerifyResponse> verifyGoogleAuth(@RequestBody GoogleAuthRequest request) {
+        Session session = authService.verifyGoogleAuth(request.idToken(), request.region(), request.acceptedTos(), request.acceptedPrivacy());
+        auditService.recordAs(session.getUserId(), AuditService.SIGN_IN, "user",
+                session.getUserId(), "google"); // Or another audit action
         return ResponseEntity.ok()
                 .header(
                         HttpHeaders.SET_COOKIE,

@@ -20,6 +20,7 @@ vi.mock("@/lib/auth", () => ({
 
 import { signIn } from "@/lib/auth";
 import { SignInFlow } from "./SignInFlow";
+import { GoogleOAuthProvider } from "@react-oauth/google";
 
 afterEach(() => {
   vi.clearAllMocks();
@@ -29,7 +30,11 @@ describe("SignInFlow", () => {
   it("submits the identifier and password, refreshes the session, and routes into the app", async () => {
     vi.mocked(signIn).mockResolvedValue(undefined);
 
-    render(<SignInFlow />);
+    render(
+      <GoogleOAuthProvider clientId="test">
+        <SignInFlow />
+      </GoogleOAuthProvider>
+    );
 
     await userEvent.type(
       screen.getByLabelText(/Số điện thoại hoặc email/i),
@@ -55,7 +60,11 @@ describe("SignInFlow", () => {
       }),
     );
 
-    render(<SignInFlow />);
+    render(
+      <GoogleOAuthProvider clientId="test">
+        <SignInFlow />
+      </GoogleOAuthProvider>
+    );
 
     const input = screen.getByLabelText(/Số điện thoại hoặc email/i);
     await userEvent.type(input, "user@example.com");

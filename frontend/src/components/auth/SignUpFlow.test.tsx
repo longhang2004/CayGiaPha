@@ -20,6 +20,7 @@ vi.mock("@/lib/auth", () => ({
 
 import { signUp } from "@/lib/auth";
 import { SignUpFlow } from "./SignUpFlow";
+import { GoogleOAuthProvider } from "@react-oauth/google";
 
 afterEach(() => {
   vi.clearAllMocks();
@@ -33,7 +34,11 @@ describe("SignUpFlow", () => {
       verified: true,
     });
 
-    render(<SignUpFlow />);
+    render(
+      <GoogleOAuthProvider clientId="test">
+        <SignUpFlow />
+      </GoogleOAuthProvider>
+    );
 
     const [tos, privacy] = screen.getAllByRole("checkbox");
     await userEvent.click(tos);
@@ -61,7 +66,11 @@ describe("SignUpFlow", () => {
       verified: true,
     });
 
-    render(<SignUpFlow />);
+    render(
+      <GoogleOAuthProvider clientId="test">
+        <SignUpFlow />
+      </GoogleOAuthProvider>
+    );
 
     const [tos, privacy] = screen.getAllByRole("checkbox");
     await userEvent.click(tos);
@@ -93,7 +102,11 @@ describe("SignUpFlow", () => {
       }),
     );
 
-    render(<SignUpFlow />);
+    render(
+      <GoogleOAuthProvider clientId="test">
+        <SignUpFlow />
+      </GoogleOAuthProvider>
+    );
 
     const [tos, privacy] = screen.getAllByRole("checkbox");
     await userEvent.click(tos);

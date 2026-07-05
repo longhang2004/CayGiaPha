@@ -107,11 +107,6 @@ export default function PrototypeSignUpPage() {
           <Button type="submit" disabled={!acceptedTos || !acceptedPrivacy} style={{ width: "100%" }}>
             Đăng ký
           </Button>
-          <div style={{ display: "flex", alignItems: "center", textTransform: "uppercase", fontSize: "0.75rem", color: "var(--color-muted)" }}>
-            <div style={{ flex: 1, height: "1px", backgroundColor: "var(--color-hairline)" }} />
-            <span style={{ padding: "0 0.75rem" }}>Hoặc</span>
-            <div style={{ flex: 1, height: "1px", backgroundColor: "var(--color-hairline)" }} />
-          </div>
           <button
             type="button"
             className="btn btn-secondary"

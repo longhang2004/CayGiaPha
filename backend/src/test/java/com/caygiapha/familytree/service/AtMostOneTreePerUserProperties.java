@@ -115,7 +115,10 @@ class AtMostOneTreePerUserProperties {
                 new IdentifierValidator(),
                 mock(DuplicateIdentifierChecker.class),
                 verificationCodeService,
-                mock(SessionService.class));
+                mock(SessionService.class),
+                null, // googleIdTokenVerifier
+                null  // consentService
+        );
 
         UUID firstTreeId = null;
         for (int event = 1; event <= verificationEvents; event++) {

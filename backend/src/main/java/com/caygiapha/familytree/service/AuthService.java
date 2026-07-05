@@ -9,6 +9,8 @@ import com.caygiapha.familytree.entity.User;
 import com.caygiapha.familytree.error.ApiException;
 import com.caygiapha.familytree.repository.TreeRepository;
 import com.caygiapha.familytree.repository.UserRepository;
+import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
+import com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier;
 import java.util.UUID;
 import org.springframework.stereotype.Service;
 
@@ -56,6 +58,8 @@ public class AuthService {
     private final DuplicateIdentifierChecker duplicateIdentifierChecker;
     private final VerificationCodeService verificationCodeService;
     private final SessionService sessionService;
+    private final GoogleIdTokenVerifier googleIdTokenVerifier;
+    private final ConsentService consentService;
 
     public AuthService(
             UserRepository userRepository,
@@ -63,13 +67,17 @@ public class AuthService {
             IdentifierValidator identifierValidator,
             DuplicateIdentifierChecker duplicateIdentifierChecker,
             VerificationCodeService verificationCodeService,
-            SessionService sessionService) {
+            SessionService sessionService,
+            GoogleIdTokenVerifier googleIdTokenVerifier,
+            ConsentService consentService) {
         this.userRepository = userRepository;
         this.treeRepository = treeRepository;
         this.identifierValidator = identifierValidator;
         this.duplicateIdentifierChecker = duplicateIdentifierChecker;
         this.verificationCodeService = verificationCodeService;
         this.sessionService = sessionService;
+        this.googleIdTokenVerifier = googleIdTokenVerifier;
+        this.consentService = consentService;
     }
 
     /**
@@ -227,6 +235,48 @@ public class AuthService {
 
         // 2.3 — establish a 30-day server-side session.
         return sessionService.create(user.getId());
+    }
+
+    /**
+     * Verify a Google ID token and establish a session.
+     * If the account doesn't exist, create it (requiring consents).
+     */
+    @Mutation
+    public Session verifyGoogleAuth(String idTokenString, String region, boolean acceptedTos, boolean acceptedPrivacy) {
+        try {
+            GoogleIdToken idToken = googleIdTokenVerifier.verify(idTokenString);
+            if (idToken == null) {
+                throw ApiException.validation("idToken", "Invalid ID token.");
+            }
+            GoogleIdToken.Payload payload = idToken.getPayload();
+            String email = payload.getEmail();
+            if (email == null) {
+                throw ApiException.validation("idToken", "ID token does not contain an email.");
+            }
+
+            java.util.Optional<User> optionalUser = findByIdentifier(IdentifierType.EMAIL, email);
+            if (optionalUser.isPresent()) {
+                User user = optionalUser.get();
+                if (!user.isVerified()) {
+                    user.setVerified(true);
+                    userRepository.save(user);
+                }
+                return sessionService.create(user.getId());
+            } else {
+                // New user via Google Auth
+                consentService.requireConsent(acceptedTos, acceptedPrivacy);
+
+                User user = User.withEmail(email);
+                user.setVerified(true);
+                User saved = userRepository.save(user);
+
+                consentService.recordConsent(saved.getId());
+
+                return sessionService.create(saved.getId());
+            }
+        } catch (Exception e) {
+            throw ApiException.validation("idToken", "Failed to verify ID token: " + e.getMessage());
+        }
     }
 
     /**
