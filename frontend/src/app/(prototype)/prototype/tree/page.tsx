@@ -48,7 +48,7 @@ import {
   MOCK_USER,
 } from "@/lib/prototype/mockData";
 import "@/components/graph/graph.css";
-import { LightbulbIcon, CloseIcon } from "@/components/ui/Icons";
+import { CollaborationIcon, LightbulbIcon, CloseIcon } from "@/components/ui/Icons";
 import { OnboardingModal } from "@/components/onboarding/OnboardingModal";
 
 /** Stub fetchAddresses that resolves immediately with no addresses. */
@@ -274,7 +274,8 @@ function PrototypeTreeContent() {
                   className="btn btn-secondary"
                   onClick={() => setIsCollaborationOpen(true)}
                 >
-                  👥 <span className="hide-on-mobile">Cộng tác</span>
+                  <CollaborationIcon size={18} />
+                  <span className="hide-on-mobile">Cộng tác</span>
                 </button>
                 {isOwner && (
                   <button

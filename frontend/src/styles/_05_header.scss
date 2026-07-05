@@ -29,11 +29,15 @@
 }
 
 .app-nav__brand {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   font-weight: 600;
   font-size: 0.875rem;
   color: var(--color-fg);
   text-decoration: none;
   letter-spacing: -0.01em;
+  min-width: 2.75rem;
 }
 
 .app-nav__brand:hover {
@@ -103,4 +107,3 @@
 .user-email {
   font-size: 0.875rem;
 }
-

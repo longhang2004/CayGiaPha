@@ -43,7 +43,7 @@
   overflow: hidden;
   border: none;
   border-radius: 0;
-  background-color: transparent;
+  background-color: var(--color-surface-card);
   box-shadow: none;
   overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
@@ -122,6 +122,7 @@
 .tree-graph__node--male .tree-graph__node-button {
   background-color: #e9f5ff; /* soft blue */
   border-color: #bae6fd;
+  color: #1d1c1a;
 }
 
 .tree-graph__node--male .tree-graph__node-button:hover {
@@ -131,6 +132,7 @@
 .tree-graph__node--female .tree-graph__node-button {
   background-color: #fff0f6; /* soft pink */
   border-color: #fbcfe8;
+  color: #1d1c1a;
 }
 
 .tree-graph__node--female .tree-graph__node-button:hover {
@@ -167,7 +169,7 @@
 .tree-graph__node-name {
   font-weight: 700;
   font-size: 1rem; /* 16px - highly readable for elder users */
-  color: var(--color-fg);
+  color: currentColor;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -301,7 +303,8 @@
 
 @media (max-width: 640px) {
   .tree-graph__canvas {
-    max-height: 60vh;
+    min-height: 100dvh;
+    max-height: none;
   }
 
 
@@ -518,32 +521,113 @@
   transform: translateX(-50%) translateY(-5px);
 }
 
+html.dark .edge-solid {
+  color: #d8d4cc;
+}
+
+html.dark .tree-graph__node-button {
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.24);
+}
+
+html.dark .tree-graph__node--male .tree-graph__node-button {
+  background-color: #10283d;
+  border-color: #2e6a98;
+  color: #e6f6ff;
+}
+
+html.dark .tree-graph__node--male .tree-graph__node-button:hover {
+  background-color: #15334d;
+}
+
+html.dark .tree-graph__node--female .tree-graph__node-button {
+  background-color: #3b1427;
+  border-color: #8d2b57;
+  color: #fff0f7;
+}
+
+html.dark .tree-graph__node--female .tree-graph__node-button:hover {
+  background-color: #4b1931;
+}
+
+html.dark .tree-graph__node--unknown .tree-graph__node-button,
+html.dark .tree-graph__node--deceased .tree-graph__node-button {
+  background-color: #242722;
+  border-color: #4b4a42;
+  color: #d7d2c7;
+}
+
+html.dark .tree-graph__node-address {
+  background: rgba(255, 255, 255, 0.1);
+  color: #f5f4f0;
+}
+
+html.dark .tree-graph__node-lifespan {
+  color: #c2beb4;
+}
+
+html.dark .tree-graph__node--deceased .tree-graph__node-name {
+  color: #c2beb4;
+}
+
+html.dark .tree-graph__node-tooltip {
+  background-color: var(--color-surface-card) !important;
+  color: var(--color-fg) !important;
+  border: 1px solid var(--color-hairline) !important;
+}
+
+html.dark .tree-graph__node-tooltip::after {
+  border-color: var(--color-hairline) transparent transparent transparent !important;
+}
+
 @media (prefers-color-scheme: dark) {
-  .node-male {
-    background-color: #0d2238 !important;
-    border-color: #2b567d !important;
-    color: #bae6fd !important;
+  html:not(.light) .edge-solid {
+    color: #d8d4cc;
   }
-  .node-male-deceased {
-    background-color: #1a222e !important;
-    border-color: #3f4e66 !important;
-    color: #8fa0ba !important;
+
+  html:not(.light) .tree-graph__node-button {
+    box-shadow: 0 8px 22px rgba(0, 0, 0, 0.24);
   }
-  .node-female {
-    background-color: #331320 !important;
-    border-color: #7d2a4a !important;
-    color: #fbcfe8 !important;
+
+  html:not(.light) .tree-graph__node--male .tree-graph__node-button {
+    background-color: #10283d;
+    border-color: #2e6a98;
+    color: #e6f6ff;
   }
-  .node-female-deceased {
-    background-color: #1a222e !important;
-    border-color: #3f4e66 !important;
-    color: #8fa0ba !important;
+
+  html:not(.light) .tree-graph__node--male .tree-graph__node-button:hover {
+    background-color: #15334d;
   }
-  .node-unknown {
-    background-color: #1a222e !important;
-    border-color: #334155 !important;
-    color: #cbd5e1 !important;
+
+  html:not(.light) .tree-graph__node--female .tree-graph__node-button {
+    background-color: #3b1427;
+    border-color: #8d2b57;
+    color: #fff0f7;
   }
+
+  html:not(.light) .tree-graph__node--female .tree-graph__node-button:hover {
+    background-color: #4b1931;
+  }
+
+  html:not(.light) .tree-graph__node--unknown .tree-graph__node-button,
+  html:not(.light) .tree-graph__node--deceased .tree-graph__node-button {
+    background-color: #242722;
+    border-color: #4b4a42;
+    color: #d7d2c7;
+  }
+
+  html:not(.light) .tree-graph__node-address {
+    background: rgba(255, 255, 255, 0.1);
+    color: #f5f4f0;
+  }
+
+  html:not(.light) .tree-graph__node-lifespan {
+    color: #c2beb4;
+  }
+
+  html:not(.light) .tree-graph__node--deceased .tree-graph__node-name {
+    color: #c2beb4;
+  }
+
   .tree-graph__node-tooltip {
     background-color: var(--color-surface-card) !important;
     color: var(--color-fg) !important;

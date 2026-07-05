@@ -37,6 +37,7 @@
   --color-header-bg: rgba(247, 247, 244, 0.85);
   --color-hero-card-bg: linear-gradient(145deg, #fffaf4, var(--color-surface-card));
   --color-surface-card-translucent: rgba(255, 255, 255, 0.72);
+  --color-overlay-bg: rgba(247, 247, 244, 0.86);
   --color-step-num-bg: #fff3eb;
   --color-step-num-text: var(--color-accent);
 
@@ -90,6 +91,7 @@ html.dark {
   --color-header-bg: rgba(20, 20, 18, 0.85);
   --color-hero-card-bg: linear-gradient(145deg, #1e1d1b, #141412);
   --color-surface-card-translucent: rgba(30, 29, 27, 0.85);
+  --color-overlay-bg: rgba(20, 20, 18, 0.9);
   --color-step-num-bg: #3a2218;
   --color-step-num-text: #ff9b85;
 }
@@ -115,6 +117,7 @@ html.dark {
     --color-header-bg: rgba(20, 20, 18, 0.85);
     --color-hero-card-bg: linear-gradient(145deg, #1e1d1b, #141412);
     --color-surface-card-translucent: rgba(30, 29, 27, 0.85);
+    --color-overlay-bg: rgba(20, 20, 18, 0.9);
     --color-step-num-bg: #3a2218;
     --color-step-num-text: #ff9b85;
   }
@@ -136,4 +139,3 @@ body {
   font-size: 100%;
   line-height: 1.5;
 }
-

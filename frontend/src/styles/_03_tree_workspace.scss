@@ -428,11 +428,12 @@ html.dark .double-bezel-card {
   .tree-workspace__layout {
     position: relative;
     width: 100% !important;
-    min-height: 500px;
+    min-height: 100dvh;
   }
 
   .tree-workspace__main {
     width: 100% !important;
+    min-height: 100dvh;
   }
 
   .tree-workspace__info-panel {
@@ -498,6 +499,17 @@ html.dark .double-bezel-card {
 
   .center-state {
     margin-block: var(--space-xl);
+  }
+
+  .tree-workspace {
+    height: 100dvh;
+  }
+
+  .tree-workspace__graph,
+  .tree-graph,
+  .tree-graph__canvas {
+    min-height: 100dvh;
+    max-height: none !important;
   }
 }
 

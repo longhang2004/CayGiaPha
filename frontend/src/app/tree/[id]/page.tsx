@@ -37,7 +37,7 @@ import {
   type TreeCollaborator
 } from "@/lib/collaboration";
 import "@/components/graph/graph.css";
-import { LightbulbIcon, CloseIcon } from "@/components/ui/Icons";
+import { CollaborationIcon, LightbulbIcon, CloseIcon } from "@/components/ui/Icons";
 
 interface TreePageProps {
   params: {
@@ -462,7 +462,8 @@ function TreePageContent({ params, searchParams }: TreePageProps) {
                     className="btn btn-secondary"
                     onClick={() => setIsCollaborationOpen(true)}
                   >
-                    👥 <span className="hide-on-mobile">Cộng tác</span>
+                    <CollaborationIcon size={18} />
+                    <span className="hide-on-mobile">Cộng tác</span>
                   </button>
                 )}
                 {canEdit && (

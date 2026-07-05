@@ -85,6 +85,16 @@ select {
   padding-right: 2.75rem !important;
 }
 
+html.dark select {
+  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23f5f4f0' stroke-width='2.5'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M19.5 8.25l-7.5 7.5-7.5-7.5'/%3E%3C/svg%3E");
+}
+
+@media (prefers-color-scheme: dark) {
+  html:not(.light) select {
+    background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23f5f4f0' stroke-width='2.5'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M19.5 8.25l-7.5 7.5-7.5-7.5'/%3E%3C/svg%3E");
+  }
+}
+
 input:not([type="checkbox"]):not([type="radio"]):focus,
 select:focus,
 textarea:focus {
@@ -172,4 +182,3 @@ fieldset {
 [role="alert"] {
   color: #dc2626 !important;
 }
-

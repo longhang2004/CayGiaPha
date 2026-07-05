@@ -12,9 +12,8 @@ export function Header() {
   return (
     <header className="app-header app-header--sticky">
       <nav className="app-nav" aria-label="Điều hướng chính">
-        <Link href="/" className="app-nav__brand" style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+        <Link href="/" className="app-nav__brand" aria-label="Cây Gia Phả">
           <img src="/logo.svg" alt="Logo Cây Gia Phả" style={{ height: "24px", width: "auto" }} />
-          <span>Cây Gia Phả</span>
         </Link>
 
         <div className="app-nav__actions" style={{ display: "flex", alignItems: "center", gap: "1rem" }}>

@@ -93,6 +93,18 @@ export const FeedbackIcon = icon(
   </>
 );
 
+/** Collaboration / shared users */
+export const CollaborationIcon = icon(
+  <>
+    <circle cx="9" cy="8" r="3" />
+    <path d="M3.5 20a5.5 5.5 0 0 1 11 0" />
+    <circle cx="17" cy="10" r="2.5" />
+    <path d="M14.5 15.5a4.7 4.7 0 0 1 6 4.5" />
+    <path d="M14.5 5.5l1.2-1.2" />
+    <path d="M15.7 15.7l-1.2-1.2" />
+  </>
+);
+
 /** ⚙️ Settings / gear */
 export const SettingsIcon = icon(
   <>

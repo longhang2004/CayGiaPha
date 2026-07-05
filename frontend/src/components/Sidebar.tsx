@@ -63,6 +63,7 @@ export function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse }: Side
               href="/"
               className="global-sidebar__brand"
               onClick={onClose}
+              aria-label="Cây Gia Phả"
               style={{
                 display: isCollapsed ? "none" : "flex",
                 alignItems: "center",
@@ -70,7 +71,6 @@ export function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse }: Side
               }}
             >
               <img src="/logo.svg" alt="Logo Cây Gia Phả" style={{ height: "24px", width: "auto" }} />
-              {!isCollapsed && <span>Cây Gia Phả</span>}
             </Link>
             <div style={{
               display: "flex",
