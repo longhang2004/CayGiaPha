@@ -51,6 +51,8 @@ export interface Relationship {
   sourceId: string;
   targetId: string;
   derivationState: DerivationState;
+  /** Present for marriage edges. */
+  maritalStatus?: "married" | "divorced" | "deceased" | string | null;
   /** Present for asserted edges; the user-provided kinship label. */
   assertedLabel?: string | null;
   /** Present for non-bloodline edges. */

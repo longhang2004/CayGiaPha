@@ -106,6 +106,7 @@ export async function GET(
         type: rel.type,
         sourceId: rel.sourceId,
         targetId: rel.targetId,
+        maritalStatus: rel.maritalStatus,
         derivationState: rel.derivationState,
         assertedLabel: rel.assertedLabel,
         socialType: rel.socialType,

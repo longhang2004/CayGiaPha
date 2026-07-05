@@ -127,7 +127,6 @@ function PrototypeTreeContent() {
   const [editMode, setEditMode] = useState(false);
   const [addRelativeMode, setAddRelativeMode] = useState(false);
   const [createMode, setCreateMode] = useState(false);
-  const [overflowOpen, setOverflowOpen] = useState(false);
   const [egoId, setEgoId] = useState<string>("ego");
   const [addressLoading] = useState(false);
   const [addressRefreshKey, setAddressRefreshKey] = useState(0);
@@ -223,15 +222,16 @@ function PrototypeTreeContent() {
         deathYear: selectedPerson.deathYear ?? undefined,
         deathCalendar: selectedPerson.deathCalendar ?? undefined,
         deathLunarLeap: selectedPerson.deathLunarLeap ?? undefined,
-        visibility: {
-          visMarital: "private" as const,
-          visAdoption: "private" as const,
-          visDeath: "private" as const,
-          visName: "public" as const,
-          visBirthYear: "public" as const,
-          visPhoto: "private" as const,
-        },
       }
+    : undefined;
+
+  const selectedSpouseRelationship = selectedPerson
+    ? relationships.find((r) => r.type === "marriage" && (r.sourceId === selectedPerson.id || r.targetId === selectedPerson.id))
+    : undefined;
+  const selectedSpouseId = selectedSpouseRelationship && selectedPerson
+    ? (selectedSpouseRelationship.sourceId === selectedPerson.id
+      ? selectedSpouseRelationship.targetId
+      : selectedSpouseRelationship.sourceId)
     : undefined;
 
   const isPanelOpen = !!(createMode || selectedPerson || addRelativeMode);
@@ -410,6 +410,10 @@ function PrototypeTreeContent() {
                     treeId={PROTOTYPE_TREE_ID}
                     personId={selectedPerson.id}
                     initialValues={selectedInitialValues}
+                    spouseRelationship={selectedSpouseId ? {
+                      spouseId: selectedSpouseId,
+                      maritalStatus: selectedSpouseRelationship?.maritalStatus,
+                    } : undefined}
                     onSuccess={() => {
                       setEditMode(false);
                     }}
@@ -475,40 +479,15 @@ function PrototypeTreeContent() {
                         >
                           {focusId === selectedPerson.id ? "✕ Toàn bộ cây" : "👁 Xem riêng"}
                         </button>
-
-                        {/* Overflow menu */}
-                        <div
-                          className="person-actions__overflow"
-                          style={{ position: "relative" }}
-                        >
-                          <button
-                            type="button"
-                            className="btn btn-secondary"
-                            aria-label="Thêm tùy chọn"
-                            aria-expanded={overflowOpen}
-                            onClick={() => setOverflowOpen((v) => !v)}
-                          >
-                            ···
-                          </button>
-                          {overflowOpen && (
-                            <div
-                              className="person-actions__overflow-menu"
-                              role="menu"
-                            >
-
-                              <DeletionDialog
-                                treeId={PROTOTYPE_TREE_ID}
-                                personId={selectedPerson.id}
-                                triggerLabel="Xóa thành viên này"
-                                className="person-actions__overflow-item person-actions__overflow-item--danger"
-                                onDeleted={() => {
-                                  setOverflowOpen(false);
-                                  setSelectedId(null);
-                                }}
-                              />
-                            </div>
-                          )}
-                        </div>
+                        <DeletionDialog
+                          treeId={PROTOTYPE_TREE_ID}
+                          personId={selectedPerson.id}
+                          triggerLabel="Xóa thành viên này"
+                          className="btn-danger"
+                          onDeleted={() => {
+                            setSelectedId(null);
+                          }}
+                        />
                       </div>
                     )}
                   </div>

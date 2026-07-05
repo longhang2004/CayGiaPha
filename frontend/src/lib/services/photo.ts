@@ -198,6 +198,8 @@ export const storageService: StorageService =
 // ------------------------------------------
 // PHOTO SERVICE
 // ------------------------------------------
+const MAX_PHOTOS_PER_PERSON = 5;
+
 export class PhotoService {
   async upload(
     currentUserId: string,
@@ -209,6 +211,15 @@ export class PhotoService {
     await authorizationService.requireMutationPermitted(currentUserId, ownedTreeId, treeId, personId);
     const person = await this.requirePerson(treeId, personId);
 
+    const existingPhotos = await db
+      .select()
+      .from(personPhotos)
+      .where(eq(personPhotos.personId, personId));
+
+    if (existingPhotos.length >= MAX_PHOTOS_PER_PERSON) {
+      throw ApiException.validation("file", "Mỗi thành viên chỉ được tải tối đa 5 ảnh.");
+    }
+
     const image = await processImage(bytes);
     const objectKey = `persons/${personId}/${crypto.randomUUID()}`;
 
@@ -216,11 +227,6 @@ export class PhotoService {
     await storageService.put(objectKey, image.bytes, image.contentType);
 
     // Check if this is the first photo (becomes primary automatically)
-    const existingPhotos = await db
-      .select()
-      .from(personPhotos)
-      .where(eq(personPhotos.personId, personId));
-
     const isPrimary = existingPhotos.length === 0;
 
     const [photo] = await db

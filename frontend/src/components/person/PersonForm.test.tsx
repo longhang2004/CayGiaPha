@@ -74,23 +74,48 @@ describe("PersonForm (create)", () => {
     });
   });
 
-  it("applies a non-default visibility change after creating the person", async () => {
+  it("updates spouse marital status when editing a person with a spouse edge", async () => {
     const fetchMock = mockFetchQueue([
-      { ok: true, status: 201, body: { id: "p3" } },
       { ok: true, status: 200, body: {} },
+      {
+        ok: true,
+        status: 201,
+        body: {
+          id: "r1",
+          treeId: "t1",
+          type: "marriage",
+          sourceId: "p3",
+          targetId: "p4",
+          maritalStatus: "divorced",
+          derivationState: "derived",
+        },
+      },
     ]);
 
-    render(<PersonForm mode="create" treeId="t1" />);
+    render(
+      <PersonForm
+        mode="edit"
+        treeId="t1"
+        personId="p3"
+        initialValues={{ displayName: "Châu", gender: "female" }}
+        spouseRelationship={{ spouseId: "p4", maritalStatus: "married" }}
+      />,
+    );
 
-    await userEvent.type(screen.getByLabelText(/Họ và tên/i), "Châu");
-    await userEvent.click(screen.getByLabelText(/Thông tin qua đời/));
-    await userEvent.click(screen.getByRole("button", { name: "Lưu thành viên" }));
+    await userEvent.selectOptions(screen.getByLabelText(/Tình trạng hôn nhân/i), "divorced");
+    await userEvent.click(screen.getByRole("button", { name: "Cập nhật thông tin" }));
 
     expect(fetchMock).toHaveBeenCalledTimes(2);
     const [url, init] = fetchMock.mock.calls[1] as unknown as [string, RequestInit];
-    expect(url).toBe("/api/v1/persons/p3/visibility?treeId=t1");
-    expect(init.method).toBe("PATCH");
-    expect(JSON.parse(init.body as string)).toEqual({ visDeath: "public" });
+    expect(url).toBe("/api/v1/relationships");
+    expect(init.method).toBe("POST");
+    expect(JSON.parse(init.body as string)).toEqual({
+      treeId: "t1",
+      type: "marriage",
+      sourceId: "p3",
+      targetId: "p4",
+      maritalStatus: "divorced",
+    });
   });
 
   it("surfaces a field-level error from the error envelope", async () => {

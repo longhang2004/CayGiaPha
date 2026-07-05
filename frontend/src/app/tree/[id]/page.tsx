@@ -76,7 +76,6 @@ function TreePageContent({ params, searchParams }: TreePageProps) {
   const [createMode, setCreateMode] = useState(false);
 
   const [addressLoading, setAddressLoading] = useState(false);
-  const [overflowOpen, setOverflowOpen] = useState(false);
   const [egoId, setEgoId] = useState<string>("");
   const [addressRefreshKey, setAddressRefreshKey] = useState(0);
   const [focusId, setFocusId] = useState<string | null>(null);
@@ -92,10 +91,6 @@ function TreePageContent({ params, searchParams }: TreePageProps) {
       setAddressesReady(false);
     }
   }, [egoId]);
-
-  useEffect(() => {
-    setOverflowOpen(false);
-  }, [selectedId]);
 
   const [updatingSharing, setUpdatingSharing] = useState(false);
   const [updatingRedaction, setUpdatingRedaction] = useState(false);
@@ -384,6 +379,14 @@ function TreePageContent({ params, searchParams }: TreePageProps) {
   }
 
   const selectedPerson = selectedId ? persons.find((p) => p.id === selectedId) : null;
+  const selectedSpouseRelationship = selectedPerson
+    ? relationships.find((r) => r.type === "marriage" && (r.sourceId === selectedPerson.id || r.targetId === selectedPerson.id))
+    : undefined;
+  const selectedSpouseId = selectedSpouseRelationship && selectedPerson
+    ? (selectedSpouseRelationship.sourceId === selectedPerson.id
+      ? selectedSpouseRelationship.targetId
+      : selectedSpouseRelationship.sourceId)
+    : undefined;
   const isOwner = user?.treeId === activeTreeId;
   const isCollaborator = collaborators.some(c => c.userId === user?.userId);
   const canEdit = isOwner || isCollaborator;
@@ -404,14 +407,6 @@ function TreePageContent({ params, searchParams }: TreePageProps) {
         deathYear: selectedPerson.deathYear ?? undefined,
         deathCalendar: selectedPerson.deathCalendar ?? undefined,
         deathLunarLeap: selectedPerson.deathLunarLeap ?? undefined,
-        visibility: {
-          visMarital: (selectedPerson as any).visMarital ?? "private",
-          visAdoption: (selectedPerson as any).visAdoption ?? "private",
-          visDeath: (selectedPerson as any).visDeath ?? "private",
-          visName: (selectedPerson as any).visName ?? "public",
-          visBirthYear: (selectedPerson as any).visBirthYear ?? "public",
-          visPhoto: (selectedPerson as any).visPhoto ?? "private",
-        },
       }
     : undefined;
 
@@ -598,6 +593,10 @@ function TreePageContent({ params, searchParams }: TreePageProps) {
                     treeId={activeTreeId}
                     personId={selectedPerson.id}
                     initialValues={selectedInitialValues}
+                    spouseRelationship={selectedSpouseId ? {
+                      spouseId: selectedSpouseId,
+                      maritalStatus: selectedSpouseRelationship?.maritalStatus,
+                    } : undefined}
                     onSuccess={() => {
                       setEditMode(false);
                       refreshTree();
@@ -656,34 +655,16 @@ function TreePageContent({ params, searchParams }: TreePageProps) {
                         >
                           {focusId === selectedPerson.id ? "✕ Toàn bộ cây" : "👁 Xem riêng"}
                         </button>
-                        
-                        {/* Overflow menu */}
-                        <div className="person-actions__overflow" style={{ position: "relative" }}>
-                          <button
-                            type="button"
-                            className="btn btn-secondary"
-                            aria-label="Thêm tùy chọn"
-                            aria-expanded={overflowOpen}
-                            onClick={() => setOverflowOpen((v) => !v)}
-                          >
-                            ···
-                          </button>
-                          {overflowOpen && (
-                            <div className="person-actions__overflow-menu" role="menu">
-                              <DeletionDialog
-                                treeId={activeTreeId}
-                                personId={selectedPerson.id}
-                                triggerLabel="Xóa thành viên này"
-                                className="person-actions__overflow-item person-actions__overflow-item--danger"
-                                onDeleted={() => {
-                                  setOverflowOpen(false);
-                                  setSelectedId(null);
-                                  refreshTree();
-                                }}
-                              />
-                            </div>
-                          )}
-                        </div>
+                        <DeletionDialog
+                          treeId={activeTreeId}
+                          personId={selectedPerson.id}
+                          triggerLabel="Xóa thành viên này"
+                          className="btn-danger"
+                          onDeleted={() => {
+                            setSelectedId(null);
+                            refreshTree();
+                          }}
+                        />
                       </div>
                     )}
                   </div>

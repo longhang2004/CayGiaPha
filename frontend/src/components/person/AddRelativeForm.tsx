@@ -46,6 +46,8 @@ type DerivedKind =
   | "bloodline_mother_reverse"
   | "marriage";
 
+type EditableMaritalStatus = Extract<MaritalStatus, "married" | "divorced">;
+
 interface AddRelativeFormProps {
   treeId: string;
   /** Persons selectable as the relationship endpoints. */
@@ -65,7 +67,7 @@ function parseOptionalInt(value: string): number | undefined {
 export function AddRelativeForm({ treeId, persons, preselectedPersonId, onCreated, onCancel, hideCancelButton = false }: AddRelativeFormProps) {
   const [mode, setMode] = useState<Mode>("derived");
   const [derivedKind, setDerivedKind] = useState<DerivedKind>("bloodline_father");
-  const [maritalStatus, setMaritalStatus] = useState<MaritalStatus>("married");
+  const [maritalStatus, setMaritalStatus] = useState<EditableMaritalStatus>("married");
   
   const [sourceId, setSourceId] = useState("");
   const [targetId, setTargetId] = useState("");
@@ -436,11 +438,10 @@ export function AddRelativeForm({ treeId, persons, preselectedPersonId, onCreate
                 id="maritalStatus"
                 name="maritalStatus"
                 value={maritalStatus}
-                onChange={(e) => setMaritalStatus(e.target.value as MaritalStatus)}
+                onChange={(e) => setMaritalStatus(e.target.value as EditableMaritalStatus)}
               >
-                <option value="married">Đang kết hôn</option>
-                <option value="divorced">Đã ly hôn</option>
-                <option value="deceased">Đã mất</option>
+                <option value="married">Đã kết hôn</option>
+                <option value="divorced">Đã ly dị</option>
               </Select>
             </FormControl>
           ) : null}

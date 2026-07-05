@@ -5,23 +5,16 @@ import { ApiError } from "@/lib/apiClient";
 import {
   createPerson,
   editPerson,
-  setVisibility,
   convertSolarToLunar,
   convertLunarToSolar,
   addDerivedRelative,
   type CreatePersonInput,
   type EditPersonInput,
   type Gender,
+  type MaritalStatus,
 } from "@/lib/persons";
 import { type PersonOption } from "./AddRelativeForm";
 import { Button } from "@/components/Button";
-import {
-  DEFAULT_VISIBILITY,
-  VisibilityToggles,
-  hasVisibilityChange,
-  visibilityDiff,
-  type VisibilityState,
-} from "./VisibilityToggles";
 import { uploadPhoto } from "@/lib/photos";
 import { FormControl, Input, Select } from "@/components/ui/FormControls";
 
@@ -52,7 +45,6 @@ export interface PersonFormInitialValues {
   deathYear?: number;
   deathCalendar?: string;
   deathLunarLeap?: boolean;
-  visibility?: VisibilityState;
 }
 
 interface PersonFormProps {
@@ -66,7 +58,13 @@ interface PersonFormProps {
   onCancel?: () => void;
   persons?: PersonOption[];
   hideCancelButton?: boolean;
+  spouseRelationship?: {
+    spouseId: string;
+    maritalStatus?: MaritalStatus | string | null;
+  };
 }
+
+type EditableMaritalStatus = Extract<MaritalStatus, "married" | "divorced">;
 
 function parseOptionalInt(value: string): number | undefined {
   if (value.trim() === "") return undefined;
@@ -83,6 +81,7 @@ export function PersonForm({
   onCancel,
   persons = [],
   hideCancelButton = false,
+  spouseRelationship,
 }: PersonFormProps) {
   const [displayName, setDisplayName] = useState(initialValues?.displayName ?? "");
   const [gender, setGender] = useState<Gender>(initialValues?.gender ?? "male");
@@ -111,22 +110,25 @@ export function PersonForm({
     initialValues?.deathLunarLeap ?? false,
   );
   const [conversionPreview, setConversionPreview] = useState<string>("");
-  const [visibility, setVisibilityState] = useState<VisibilityState>(
-    initialValues?.visibility ?? DEFAULT_VISIBILITY,
-  );
-
   const [linkRelationship, setLinkRelationship] = useState(false);
   const [relTargetId, setRelTargetId] = useState(persons[0]?.id ?? "");
   const [derivedKind, setDerivedKind] = useState<
     "bloodline_father" | "bloodline_father_reverse" | "bloodline_mother" | "bloodline_mother_reverse" | "marriage"
   >("bloodline_father");
-  const [maritalStatus, setMaritalStatus] = useState<"married" | "divorced" | "deceased">("married");
+  const [maritalStatus, setMaritalStatus] = useState<EditableMaritalStatus>("married");
+  const [spouseMaritalStatus, setSpouseMaritalStatus] = useState<EditableMaritalStatus>(
+    spouseRelationship?.maritalStatus === "divorced" ? "divorced" : "married",
+  );
 
   useEffect(() => {
     if (persons.length > 0 && !relTargetId) {
       setRelTargetId(persons[0].id);
     }
   }, [persons, relTargetId]);
+
+  useEffect(() => {
+    setSpouseMaritalStatus(spouseRelationship?.maritalStatus === "divorced" ? "divorced" : "married");
+  }, [spouseRelationship?.spouseId, spouseRelationship?.maritalStatus]);
 
   const sourceName = displayName.trim() || "Thành viên mới";
   const targetPerson = persons.find((p) => p.id === relTargetId);
@@ -236,6 +238,16 @@ export function PersonForm({
           email: email.trim() || undefined,
         };
         await editPerson(personId, treeId, body);
+
+        if (spouseRelationship && spouseMaritalStatus !== (spouseRelationship.maritalStatus === "divorced" ? "divorced" : "married")) {
+          await addDerivedRelative({
+            treeId,
+            type: "marriage",
+            sourceId: personId,
+            targetId: spouseRelationship.spouseId,
+            maritalStatus: spouseMaritalStatus,
+          });
+        }
       }
 
       // Upload photo if selected
@@ -247,13 +259,6 @@ export function PersonForm({
           // Don't fail the whole form submit if photo fails, just warn
           alert("Lưu thông tin thành công nhưng không thể tải ảnh lên: " + (uploadErr instanceof Error ? uploadErr.message : ""));
         }
-      }
-
-      // Apply visibility changes once the node id is known (14.1).
-      const baseline = mode === "edit" ? initialValues?.visibility : undefined;
-      const diff = visibilityDiff(visibility, baseline ?? DEFAULT_VISIBILITY);
-      if (resolvedId && hasVisibilityChange(diff)) {
-        await setVisibility(resolvedId, treeId, diff);
       }
 
       // Create relationship if requested
@@ -587,11 +592,10 @@ export function PersonForm({
                   <Select
                     id="relMaritalStatus"
                     value={maritalStatus}
-                    onChange={(e) => setMaritalStatus(e.target.value as "married" | "divorced" | "deceased")}
+                    onChange={(e) => setMaritalStatus(e.target.value as EditableMaritalStatus)}
                   >
-                    <option value="married">Đang kết hôn</option>
-                    <option value="divorced">Đã ly hôn</option>
-                    <option value="deceased">Đã mất</option>
+                    <option value="married">Đã kết hôn</option>
+                    <option value="divorced">Đã ly dị</option>
                   </Select>
                 </FormControl>
               )}
@@ -600,11 +604,18 @@ export function PersonForm({
         </fieldset>
       )}
 
-      <VisibilityToggles
-        value={visibility}
-        onChange={setVisibilityState}
-        disabled={submitting}
-      />
+      {mode === "edit" && spouseRelationship ? (
+        <FormControl id="spouseMaritalStatus" label="Tình trạng hôn nhân">
+          <Select
+            id="spouseMaritalStatus"
+            value={spouseMaritalStatus}
+            onChange={(e) => setSpouseMaritalStatus(e.target.value as EditableMaritalStatus)}
+          >
+            <option value="married">Đã kết hôn</option>
+            <option value="divorced">Đã ly dị</option>
+          </Select>
+        </FormControl>
+      ) : null}
 
       <div className="form-actions">
         <Button type="submit" disabled={submitting} style={(onCancel && !hideCancelButton) ? { flex: 1 } : undefined}>

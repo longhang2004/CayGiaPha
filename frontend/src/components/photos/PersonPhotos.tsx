@@ -27,6 +27,8 @@ interface PersonPhotosProps {
   canEdit?: boolean;
 }
 
+const MAX_PHOTOS_PER_PERSON = 5;
+
 export function PersonPhotos({ treeId, personId, canEdit = false }: PersonPhotosProps) {
   const [photos, setPhotos] = useState<Photo[]>([]);
   const [loading, setLoading] = useState(true);
@@ -135,6 +137,8 @@ export function PersonPhotos({ treeId, personId, canEdit = false }: PersonPhotos
     return { groups, sortedYears };
   }, [photos]);
 
+  const hasReachedPhotoLimit = photos.length >= MAX_PHOTOS_PER_PERSON;
+
   return (
     <section aria-label="Thư viện ảnh">
       <h2>Thư viện ảnh</h2>
@@ -146,7 +150,11 @@ export function PersonPhotos({ treeId, personId, canEdit = false }: PersonPhotos
       ) : null}
 
       {canEdit ? (
-        selectedFile ? (
+        hasReachedPhotoLimit ? (
+          <p className="field-hint" role="status">
+            Mỗi thành viên chỉ được tải tối đa {MAX_PHOTOS_PER_PERSON} ảnh.
+          </p>
+        ) : selectedFile ? (
           <div
             className="surface-card photo-upload-metadata-form"
             style={{
@@ -224,7 +232,7 @@ export function PersonPhotos({ treeId, personId, canEdit = false }: PersonPhotos
               ref={fileInput}
               type="file"
               accept="image/jpeg,image/png"
-              disabled={busy}
+              disabled={busy || hasReachedPhotoLimit}
               className="photo-upload-input"
               onChange={(e) => {
                 const file = e.target.files?.[0];
@@ -236,10 +244,10 @@ export function PersonPhotos({ treeId, personId, canEdit = false }: PersonPhotos
                 }
               }}
             />
-            <label htmlFor="photo-upload" className={`photo-upload-zone ${busy ? "photo-upload-zone--disabled" : ""}`}>
+            <label htmlFor="photo-upload" className={`photo-upload-zone ${(busy || hasReachedPhotoLimit) ? "photo-upload-zone--disabled" : ""}`}>
               <span className="photo-upload-zone__icon">📤</span>
               <span className="photo-upload-zone__title">Tải ảnh lên</span>
-              <span className="photo-upload-zone__subtitle">Kéo thả hoặc click để chọn ảnh (JPEG, PNG)</span>
+              <span className="photo-upload-zone__subtitle">Kéo thả hoặc click để chọn ảnh (JPEG, PNG). Tối đa {MAX_PHOTOS_PER_PERSON} ảnh/người.</span>
             </label>
           </div>
         )
