@@ -31,13 +31,20 @@ export function SupportSection({ plain = false }: SupportSectionProps) {
         <p className="support-feedback__eyebrow">Ủng hộ dự án</p>
         <h1 id="support-title">Miễn phí trải nghiệm trong giai đoạn đầu</h1>
         <p>
-          Cây Gia Phả sẽ tạm thời miễn phí để mọi người dùng thử, góp ý và
-          cùng hoàn thiện. Nếu thấy hữu ích, bạn có thể ủng hộ Nhà phát triển
-          để dự án tiếp tục được cải thiện trong tương lai.
+          Cây Gia Phả sẽ miễn phí trong thời gian đầu để mọi người dùng thử,
+          góp ý và cùng hoàn thiện. Nếu thấy hữu ích, mọi người có thể ủng hộ
+          Nhà phát triển để dự án tiếp tục được cải thiện trong tương lai.
         </p>
         <p>
-          Và đừng ngần ngại chia sẻ cho bạn bè, người thân hoặc các cô chú
-          trong dòng họ để nhiều người cùng dùng và góp ý hơn.
+          Hiện tại NPT đang sử dụng các nền tảng miễn phí để phát triển website
+          này, do vậy trong quá trình sử dụng có thể sẽ dẫn đến lỗi, lag,...
+          không mong muốn. Vì vậy, sự đóng góp của mọi người cũng giúp NPT có
+          thêm kinh phí để nâng cấp hệ thống và trải nghiệm của mọi người :3.
+        </p>
+        <p>
+          Và đừng ngần ngại chia sẻ cho bạn bè, người thân hoặc các cô chú trong
+          dòng họ để nhiều người cùng dùng và góp ý hơn giúp NPT nhé. Xin cảm
+          ơn mọi người!
         </p>
       </div>
 

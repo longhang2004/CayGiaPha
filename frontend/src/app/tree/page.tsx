@@ -126,41 +126,41 @@ function TreeListContent() {
   }
 
   return (
-    <main style={{ maxWidth: "800px", margin: "3rem auto", padding: "0 1.5rem" }}>
+    <main className="tree-list-page">
       <OnboardingModal isOpen={showTutorial} onClose={handleDismissTutorial} />
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "2rem" }}>
+      <div className="tree-list-page__header">
         <div>
-          <h1 style={{ fontSize: "2rem", fontWeight: 700, color: "var(--color-brand)" }}>
+          <p className="eyebrow tree-list-page__eyebrow">Không gian gia đình</p>
+          <h1>
             Cây Gia Phả Của Bạn
           </h1>
-          <p style={{ color: "var(--color-muted)", fontSize: "0.95rem", marginTop: "0.25rem" }}>
-            Lưu giữ và chia sẻ cội nguồn gia đình của bạn.
+          <p>
+            Quản lý những cây gia phả bạn sở hữu hoặc đang cộng tác.
           </p>
         </div>
         <button
           type="button"
           className="btn btn-primary btn-terracotta"
           onClick={() => setIsCreateModalOpen(true)}
-          style={{ padding: "0.6rem 1.2rem", fontSize: "0.95rem", fontWeight: 600 }}
         >
           + Tạo cây mới
         </button>
       </div>
 
       {error && (
-        <div style={{ padding: "1rem", backgroundColor: "#fee2e2", color: "#ef4444", borderRadius: "8px", marginBottom: "1.5rem" }}>
+        <div className="tree-list-page__error">
           {error}
         </div>
       )}
 
       {/* Grid of Trees */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: "1.25rem", marginBottom: "3rem" }}>
+      <div className="tree-list-page__grid">
         {treesList.length === 0 ? (
-          <div className="surface-card" style={{ padding: "3rem", textAlign: "center", border: "2px dashed var(--color-hairline)" }}>
-            <p style={{ fontSize: "1.1rem", color: "var(--color-muted)", marginBottom: "1.5rem" }}>
+          <div className="surface-card tree-list-page__empty">
+            <p>
               Bạn chưa sở hữu hoặc tham gia cộng tác bất kỳ cây gia phả nào.
             </p>
-            <p style={{ fontSize: "0.9rem", color: "var(--color-muted)" }}>
+            <p>
               Hãy tạo cây gia phả đầu tiên của dòng họ bằng nút phía trên.
             </p>
           </div>
@@ -168,32 +168,22 @@ function TreeListContent() {
           treesList.map((tree) => (
             <div
               key={tree.id}
-              className="surface-card"
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                padding: "1.5rem",
-                borderRadius: "12px",
-                boxShadow: "0 4px 12px rgba(0, 0, 0, 0.02)",
-                border: "1px solid var(--color-hairline)",
-              }}
+              className="surface-card tree-list-card"
             >
-              <div>
-                <h3 style={{ fontSize: "1.2rem", fontWeight: 600, color: "var(--color-fg)", margin: 0 }}>
+              <div className="tree-list-card__main">
+                <h3>
                   {tree.name}
                 </h3>
-                <div style={{ display: "flex", gap: "0.75rem", marginTop: "0.5rem", fontSize: "0.85rem", color: "var(--color-muted)" }}>
+                <div className="tree-list-card__meta">
                   <span>
                     Vai trò: <strong>{tree.isOwner ? "Chủ cây" : "Cộng tác viên"}</strong>
                   </span>
-                  <span>•</span>
                   <span>
                     Phương ngữ: <strong>{tree.region === "Bac" ? "Bắc" : tree.region === "Trung" ? "Trung" : "Nam"}</strong>
                   </span>
                 </div>
               </div>
-              <div style={{ display: "flex", gap: "0.75rem" }}>
+              <div className="tree-list-card__actions">
                 <button
                   type="button"
                   className="btn btn-primary btn-terracotta"
@@ -204,8 +194,7 @@ function TreeListContent() {
                 {tree.isOwner && (
                   <button
                     type="button"
-                    className="btn btn-secondary"
-                    style={{ borderColor: "red", color: "red" }}
+                    className="btn btn-secondary tree-list-card__delete"
                     onClick={() => handleDeleteTree(tree.id, tree.name)}
                   >
                     Xóa

@@ -16,23 +16,25 @@ export function Header() {
           <img src="/logo.svg" alt="Logo Cây Gia Phả" style={{ height: "24px", width: "auto" }} />
         </Link>
 
-        <div className="app-nav__actions" style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
+        <div className="app-nav__actions">
           {loading ? (
             <div className="center-state__spinner" style={{ width: "1.25rem", height: "1.25rem", borderWidth: "2px" }} aria-label="Đang tải…" />
           ) : (
             <>
               {user ? (
                 <>
-                  <Link href="/tree" className="nav-link" style={{ fontWeight: 600 }}>
+                  <Link href="/tree" className="nav-link nav-link--primary">
                     Xem sơ đồ
                   </Link>
                   {user.role === "admin" && (
-                    <Link href="/admin" className="nav-link" style={{ fontWeight: 600 }}>
+                    <Link href="/admin" className="nav-link nav-link--admin">
                       Admin
                     </Link>
                   )}
                   <NotificationBell />
-                  <SignOutButton redirectTo="/" />
+                  <div className="app-nav__desktop-action">
+                    <SignOutButton redirectTo="/" />
+                  </div>
                 </>
               ) : (
                 <>
