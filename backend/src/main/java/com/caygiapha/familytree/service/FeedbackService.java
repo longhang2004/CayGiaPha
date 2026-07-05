@@ -40,14 +40,16 @@ public class FeedbackService {
     }
 
     @Transactional
-    public FeedbackMessage submit(String email, String category, String message) {
+    public FeedbackMessage submit(String email, String category, String message, String attachmentKeys) {
         String normalizedEmail = normalizeEmail(email);
         String normalizedCategory = normalizeCategory(category);
         String normalizedMessage = normalizeMessage(message);
+        String normalizedAttachmentKeys = normalizeAttachmentKeys(attachmentKeys);
         UUID userId = authContextHolder.current().userId();
 
-        FeedbackMessage feedback = feedbackRepository.save(
-                new FeedbackMessage(userId, normalizedEmail, normalizedCategory, normalizedMessage));
+        FeedbackMessage feedback = new FeedbackMessage(userId, normalizedEmail, normalizedCategory, normalizedMessage);
+        feedback.setAttachmentKeys(normalizedAttachmentKeys);
+        feedback = feedbackRepository.save(feedback);
         auditService.record(AuditService.FEEDBACK_SUBMITTED, "feedback", feedback.getId());
         return feedback;
     }
@@ -122,6 +124,17 @@ public class FeedbackService {
             return null;
         }
         String normalized = value.trim();
+        return normalized.isEmpty() ? null : normalized;
+    }
+
+    private static String normalizeAttachmentKeys(String value) {
+        if (value == null) {
+            return null;
+        }
+        String normalized = value.trim();
+        if (normalized.length() > 8000) {
+            throw ApiException.validation("attachmentKeys", "Feedback attachment metadata is too large.");
+        }
         return normalized.isEmpty() ? null : normalized;
     }
 }

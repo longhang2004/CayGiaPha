@@ -96,12 +96,14 @@ if (databaseUrl && !isProductionBuild) {
           email TEXT NOT NULL,
           category TEXT NOT NULL,
           message TEXT NOT NULL,
+          attachment_keys TEXT,
           status TEXT NOT NULL DEFAULT 'new',
           admin_note TEXT,
           created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
           updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
         );
       `);
+      await dbInstance.execute(sql`ALTER TABLE feedback_messages ADD COLUMN IF NOT EXISTS attachment_keys TEXT;`);
       await dbInstance.execute(sql`CREATE INDEX IF NOT EXISTS ix_feedback_messages_status ON feedback_messages(status);`);
       await dbInstance.execute(sql`CREATE INDEX IF NOT EXISTS ix_feedback_messages_created_at ON feedback_messages(created_at);`);
       await dbInstance.execute(sql`CREATE INDEX IF NOT EXISTS ix_feedback_messages_user ON feedback_messages(user_id);`);

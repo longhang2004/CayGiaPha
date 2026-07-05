@@ -46,6 +46,16 @@ function statusLabel(status: string) {
   return "Mới";
 }
 
+function parseFeedbackAttachments(value: string | null): Array<{ originalName?: string }> {
+  if (!value) return [];
+  try {
+    const parsed = JSON.parse(value);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
 export default async function AdminPage() {
   const auth = await getAuthContext();
   if (!auth.isAuthenticated) {
@@ -89,6 +99,7 @@ export default async function AdminPage() {
         email: feedbackMessages.email,
         category: feedbackMessages.category,
         message: feedbackMessages.message,
+        attachmentKeys: feedbackMessages.attachmentKeys,
         status: feedbackMessages.status,
         createdAt: feedbackMessages.createdAt,
       })
@@ -169,6 +180,24 @@ export default async function AdminPage() {
                       <span>{formatDate(feedback.createdAt)}</span>
                     </div>
                     <p className="admin-feedback-item__message">{feedback.message}</p>
+                    {parseFeedbackAttachments(feedback.attachmentKeys).length > 0 ? (
+                      <div className="admin-feedback-item__attachments" aria-label="Ảnh feedback đính kèm">
+                        {parseFeedbackAttachments(feedback.attachmentKeys).map((attachment, index) => (
+                          <a
+                            key={`${feedback.id}-${index}`}
+                            href={`/api/v1/admin/feedback/${feedback.id}/attachments/${index}`}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="admin-feedback-attachment"
+                          >
+                            <img
+                              src={`/api/v1/admin/feedback/${feedback.id}/attachments/${index}`}
+                              alt={attachment.originalName || `Ảnh feedback ${index + 1}`}
+                            />
+                          </a>
+                        ))}
+                      </div>
+                    ) : null}
                     <AdminFeedbackActions
                       feedbackId={feedback.id}
                       currentStatus={feedback.status}

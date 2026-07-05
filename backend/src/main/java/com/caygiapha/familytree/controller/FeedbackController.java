@@ -36,7 +36,8 @@ public class FeedbackController {
         FeedbackMessage feedback = feedbackService.submit(
                 request == null ? null : request.email(),
                 request == null ? null : request.category(),
-                request == null ? null : request.message());
+                request == null ? null : request.message(),
+                request == null ? null : request.attachmentKeys());
         return FeedbackResponse.from(feedback);
     }
 }

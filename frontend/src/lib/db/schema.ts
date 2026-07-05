@@ -43,6 +43,7 @@ export const feedbackMessages = pgTable(
     email: text("email").notNull(),
     category: text("category").notNull(),
     message: text("message").notNull(),
+    attachmentKeys: text("attachment_keys"),
     status: text("status").notNull().default("new"),
     adminNote: text("admin_note"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),

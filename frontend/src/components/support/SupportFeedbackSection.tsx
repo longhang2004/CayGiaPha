@@ -20,6 +20,18 @@ const CATEGORY_OPTIONS = [
   { value: "other", label: "Khác" },
 ];
 
+const MAX_FEEDBACK_IMAGES = 3;
+const MAX_FEEDBACK_IMAGE_BYTES = 2 * 1024 * 1024;
+
+function readFileAsDataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result));
+    reader.onerror = () => reject(new Error("Không thể đọc ảnh đính kèm."));
+    reader.readAsDataURL(file);
+  });
+}
+
 export function SupportSection({ plain = false }: SupportSectionProps) {
   return (
     <div className={`support-feedback__support${plain ? " support-feedback__support--plain" : ""}`}>
@@ -63,8 +75,37 @@ export function FeedbackSection({
   const [email, setEmail] = useState(mockEmail || (user?.identifier.includes("@") ? user.identifier : ""));
   const [category, setCategory] = useState("feature");
   const [message, setMessage] = useState("");
+  const [attachments, setAttachments] = useState<File[]>([]);
   const [status, setStatus] = useState<"idle" | "submitting" | "success" | "error">("idle");
   const [error, setError] = useState("");
+
+  function handleAttachmentChange(files: FileList | null) {
+    setError("");
+    if (!files) {
+      setAttachments([]);
+      return;
+    }
+
+    const next = Array.from(files).slice(0, MAX_FEEDBACK_IMAGES);
+    const invalid = next.find((file) => !["image/jpeg", "image/png"].includes(file.type));
+    if (invalid) {
+      setAttachments([]);
+      setStatus("error");
+      setError("Chỉ hỗ trợ ảnh PNG hoặc JPEG.");
+      return;
+    }
+
+    const oversized = next.find((file) => file.size > MAX_FEEDBACK_IMAGE_BYTES);
+    if (oversized) {
+      setAttachments([]);
+      setStatus("error");
+      setError("Mỗi ảnh feedback tối đa 2MB.");
+      return;
+    }
+
+    setStatus("idle");
+    setAttachments(next);
+  }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -79,8 +120,15 @@ export function FeedbackSection({
     }
 
     try {
-      await api.post("/feedback", { email, category, message });
+      const encodedAttachments = await Promise.all(
+        attachments.map(async (file) => ({
+          name: file.name,
+          dataUrl: await readFileAsDataUrl(file),
+        })),
+      );
+      await api.post("/feedback", { email, category, message, attachments: encodedAttachments });
       setMessage("");
+      setAttachments([]);
       setStatus("success");
     } catch (err) {
       setStatus("error");
@@ -139,6 +187,25 @@ export function FeedbackSection({
             placeholder="Mình gặp lỗi khi..., hoặc mình muốn có thêm..."
             required
           />
+        </div>
+
+        <div className="field">
+          <label htmlFor="feedback-attachments">Ảnh minh họa</label>
+          <input
+            id="feedback-attachments"
+            type="file"
+            accept="image/png,image/jpeg"
+            multiple
+            onChange={(event) => handleAttachmentChange(event.target.files)}
+          />
+          <p className="field-hint">Tối đa 3 ảnh, mỗi ảnh 2MB. Không bắt buộc.</p>
+          {attachments.length > 0 ? (
+            <ul className="support-feedback__attachment-list" aria-label="Ảnh feedback đã chọn">
+              {attachments.map((file) => (
+                <li key={`${file.name}-${file.size}`}>{file.name}</li>
+              ))}
+            </ul>
+          ) : null}
         </div>
 
         {status === "success" && (

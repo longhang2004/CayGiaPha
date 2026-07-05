@@ -32,6 +32,9 @@ public class FeedbackMessage {
     @Column(name = "message", nullable = false)
     private String message;
 
+    @Column(name = "attachment_keys")
+    private String attachmentKeys;
+
     @Column(name = "status", nullable = false)
     private String status = "new";
 
@@ -73,6 +76,14 @@ public class FeedbackMessage {
 
     public String getMessage() {
         return message;
+    }
+
+    public String getAttachmentKeys() {
+        return attachmentKeys;
+    }
+
+    public void setAttachmentKeys(String attachmentKeys) {
+        this.attachmentKeys = attachmentKeys;
     }
 
     public String getStatus() {
