@@ -4,6 +4,7 @@ import { ApiException } from "@/lib/services/errors";
 import { db } from "@/lib/db";
 import { trees, treeCollaborators } from "@/lib/db/schema";
 import { eq, or, and } from "drizzle-orm";
+import { rateLimiter } from "@/lib/services/rateLimiter";
 
 export const dynamic = "force-dynamic";
 
@@ -54,6 +55,9 @@ export async function POST(request: Request) {
     if (!auth.userId) {
       throw ApiException.notAuthorized("Vui lòng đăng nhập để tạo cây mới.");
     }
+    const clientIp = request.headers.get("x-forwarded-for") || "127.0.0.1";
+    await rateLimiter.check(`create-tree:${auth.userId}`);
+    await rateLimiter.check(`mutate-ip:${clientIp}`);
 
     const body = await request.json().catch(() => ({}));
     const name = (body.name || "").trim() || "Cây Gia Phả mới";

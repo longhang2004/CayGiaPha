@@ -6,6 +6,7 @@ import { personDeletionService } from "@/lib/services/personDeletion";
 import { db } from "@/lib/db";
 import { trees } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
+import { rateLimiter } from "@/lib/services/rateLimiter";
 
 const REDACTED_NAME_PLACEHOLDER = "Người thân còn sống";
 
@@ -105,6 +106,9 @@ export async function PATCH(
 
     const personId = params.id;
     await authorizationService.requireMutationPermitted(auth.userId, auth.ownedTreeId, treeId, personId);
+    const clientIp = request.headers.get("x-forwarded-for") || "127.0.0.1";
+    await rateLimiter.check(`mutate-person:${auth.userId || clientIp}`);
+    await rateLimiter.check(`mutate-ip:${clientIp}`);
 
     const body = await request.json();
     const updated = await personService.edit(treeId, personId, body);

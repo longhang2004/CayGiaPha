@@ -5,6 +5,7 @@ import { db } from "@/lib/db";
 import { persons, relationships, trees, claims, treeCollaborators, collaborationInvitations, personPhotos, inAppReminders, users } from "@/lib/db/schema";
 import { eq, and, inArray } from "drizzle-orm";
 import { sendEmail } from "@/lib/services/email";
+import { rateLimiter } from "@/lib/services/rateLimiter";
 
 const REDACTED_NAME_PLACEHOLDER = "Người thân còn sống";
 
@@ -124,6 +125,9 @@ export async function DELETE(
     const treeId = params.treeId;
 
     await authorizationService.requireOwner(auth.userId, auth.ownedTreeId, treeId);
+    const clientIp = request.headers.get("x-forwarded-for") || "127.0.0.1";
+    await rateLimiter.check(`delete-tree:${auth.userId || clientIp}`);
+    await rateLimiter.check(`mutate-ip:${clientIp}`);
 
     const tree = await db
       .select()

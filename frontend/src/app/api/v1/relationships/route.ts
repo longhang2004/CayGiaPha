@@ -2,6 +2,7 @@ import { handleApiRoute } from "@/lib/services/routeHelper";
 import { getAuthContext } from "@/lib/services/authorization";
 import { ApiException } from "@/lib/services/errors";
 import { relationshipService } from "@/lib/services/relationship";
+import { rateLimiter } from "@/lib/services/rateLimiter";
 
 function formatResponse(edge: any, conflicts: any[]) {
   const mappedConflicts =
@@ -43,6 +44,9 @@ export async function POST(request: Request) {
     if (!auth.isAuthenticated || !auth.ownedTreeId) {
       throw ApiException.notAuthorized("User does not own a tree.");
     }
+    const clientIp = request.headers.get("x-forwarded-for") || "127.0.0.1";
+    await rateLimiter.check(`mutate-relationship:${auth.userId || clientIp}`);
+    await rateLimiter.check(`mutate-ip:${clientIp}`);
 
     const body = await request.json();
 

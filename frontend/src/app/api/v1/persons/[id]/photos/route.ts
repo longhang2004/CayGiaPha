@@ -2,6 +2,7 @@ import { handleApiRoute } from "@/lib/services/routeHelper";
 import { getAuthContext } from "@/lib/services/authorization";
 import { ApiException } from "@/lib/services/errors";
 import { photoService } from "@/lib/services/photo";
+import { rateLimiter } from "@/lib/services/rateLimiter";
 
 function formatPhoto(photo: any) {
   return {
@@ -26,6 +27,9 @@ export async function POST(
     if (!treeId) {
       throw ApiException.validation("treeId", "treeId query parameter is required.");
     }
+    const clientIp = request.headers.get("x-forwarded-for") || "127.0.0.1";
+    await rateLimiter.check(`upload-photo:${auth.userId || clientIp}`);
+    await rateLimiter.check(`upload-photo-ip:${clientIp}`);
 
     const formData = await request.formData();
     const file = formData.get("file") as File;
