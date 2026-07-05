@@ -61,3 +61,4 @@ Durable project knowledge for future AI agents. Keep entries short, verified, an
 ## 2026-07-05
 
 - **Playwright Dev Server Rule**: Before starting a dev server for browser/Playwright checks, inspect port 3000 first. If port 3000 is already this project's dev server, reuse it. If port 3000 is free, start this project on 3000. If port 3000 belongs to another process/project, start the dev server on a different free port.
+- **Extended Family Branch UX**: The tree graph is ego-centric. Render the active viewpoint's bloodline, show spouse/in-law nodes as one-hop boundary nodes, and collapse each boundary node's separate family branch behind an expansion badge until the user switches the viewpoint to that person.

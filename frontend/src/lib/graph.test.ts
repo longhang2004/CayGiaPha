@@ -5,6 +5,7 @@ import {
   UNRESOLVED_LABEL,
   addressLabel,
   capitalize,
+  collapseExtendedFamilyBranches,
   edgeStyleFor,
   fetchViewpointAddresses,
   indexAddresses,
@@ -52,6 +53,45 @@ describe("edgeStyleFor", () => {
     const dashes = new Set(Object.values(STROKE_DASHARRAY));
     expect(classes.size).toBe(3);
     expect(dashes.size).toBe(3);
+  });
+});
+
+describe("collapseExtendedFamilyBranches", () => {
+  const people: Person[] = [
+    { id: "ego", displayName: "Ego", gender: "male" },
+    { id: "father", displayName: "Cha", gender: "male" },
+    { id: "aunt", displayName: "Cô", gender: "female" },
+    { id: "uncleInLaw", displayName: "Dượng", gender: "male" },
+    { id: "cousin", displayName: "Em họ", gender: "male" },
+    { id: "inLawFather", displayName: "Ông của dượng", gender: "male" },
+    { id: "inLawMother", displayName: "Bà của dượng", gender: "female" },
+  ];
+
+  const rels: Relationship[] = [
+    rel({ id: "r-f-ego", type: "bloodline_father", sourceId: "father", targetId: "ego" }),
+    rel({ id: "r-f-aunt", type: "bloodline_father", sourceId: "father", targetId: "aunt" }),
+    rel({ id: "r-marriage", type: "marriage", sourceId: "aunt", targetId: "uncleInLaw", maritalStatus: "married" }),
+    rel({ id: "r-f-cousin", type: "bloodline_father", sourceId: "uncleInLaw", targetId: "cousin" }),
+    rel({ id: "r-m-cousin", type: "bloodline_mother", sourceId: "aunt", targetId: "cousin" }),
+    rel({ id: "r-f-inlaw", type: "bloodline_father", sourceId: "inLawFather", targetId: "uncleInLaw" }),
+    rel({ id: "r-m-inlaw", type: "bloodline_mother", sourceId: "inLawMother", targetId: "uncleInLaw" }),
+  ];
+
+  it("collapses a spouse's separate family branch until that spouse becomes the viewpoint", () => {
+    const egoView = collapseExtendedFamilyBranches(people, rels, "ego");
+    const egoPersonIds = new Set(egoView.persons.map((p) => p.id));
+
+    expect(egoPersonIds).toEqual(new Set(["ego", "father", "aunt", "uncleInLaw", "cousin"]));
+    expect(egoView.collapsedBranchRoots.has("uncleInLaw")).toBe(true);
+    expect(egoView.relationships.some((r) => r.sourceId === "inLawFather" || r.sourceId === "inLawMother")).toBe(false);
+
+    const inLawView = collapseExtendedFamilyBranches(people, rels, "uncleInLaw");
+    const inLawPersonIds = new Set(inLawView.persons.map((p) => p.id));
+
+    expect(inLawPersonIds.has("inLawFather")).toBe(true);
+    expect(inLawPersonIds.has("inLawMother")).toBe(true);
+    expect(inLawPersonIds.has("aunt")).toBe(true);
+    expect(inLawView.collapsedBranchRoots.has("aunt")).toBe(true);
   });
 });
 

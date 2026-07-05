@@ -184,6 +184,143 @@ export interface NodePosition {
   y: number;
 }
 
+export interface CollapsedExtendedBranches {
+  persons: Person[];
+  relationships: Relationship[];
+  /** Boundary spouse / in-law nodes that have hidden relatives outside the current ego's bloodline. */
+  collapsedBranchRoots: Set<string>;
+}
+
+function isBloodlineRelationship(rel: Pick<Relationship, "type">): boolean {
+  return rel.type === "bloodline_father" || rel.type === "bloodline_mother";
+}
+
+/**
+ * Keep the graph centered on the current ego's bloodline.
+ *
+ * The ego's own bloodline component is rendered in full. Spouses/in-laws are
+ * shown one hop away so the family structure remains understandable, but each
+ * spouse's separate family tree is collapsed until that spouse becomes the
+ * active viewpoint.
+ */
+export function collapseExtendedFamilyBranches(
+  persons: Person[],
+  relationships: Relationship[],
+  egoId?: string,
+): CollapsedExtendedBranches {
+  if (!egoId || !persons.some((p) => p.id === egoId)) {
+    return { persons, relationships, collapsedBranchRoots: new Set() };
+  }
+
+  const personIds = new Set(persons.map((p) => p.id));
+  const fullAdjacency = new Map<string, Set<string>>();
+  const parentsOf = new Map<string, Set<string>>();
+  const childrenOf = new Map<string, Set<string>>();
+
+  const addEdge = (map: Map<string, Set<string>>, sourceId: string, targetId: string) => {
+    if (!personIds.has(sourceId) || !personIds.has(targetId)) return;
+    if (!map.has(sourceId)) map.set(sourceId, new Set());
+    if (!map.has(targetId)) map.set(targetId, new Set());
+    map.get(sourceId)!.add(targetId);
+    map.get(targetId)!.add(sourceId);
+  };
+
+  relationships.forEach((rel) => {
+    addEdge(fullAdjacency, rel.sourceId, rel.targetId);
+    if (isBloodlineRelationship(rel)) {
+      if (!parentsOf.has(rel.targetId)) parentsOf.set(rel.targetId, new Set());
+      if (!childrenOf.has(rel.sourceId)) childrenOf.set(rel.sourceId, new Set());
+      parentsOf.get(rel.targetId)!.add(rel.sourceId);
+      childrenOf.get(rel.sourceId)!.add(rel.targetId);
+    }
+  });
+
+  const ancestorIds = new Set<string>([egoId]);
+  const ancestorQueue = [egoId];
+  while (ancestorQueue.length > 0) {
+    const currentId = ancestorQueue.shift()!;
+    const parents = parentsOf.get(currentId) || new Set<string>();
+    parents.forEach((parentId) => {
+      if (!ancestorIds.has(parentId)) {
+        ancestorIds.add(parentId);
+        ancestorQueue.push(parentId);
+      }
+    });
+  }
+
+  const bloodlineIds = new Set<string>(ancestorIds);
+  const descendantQueue = [...ancestorIds];
+  while (descendantQueue.length > 0) {
+    const currentId = descendantQueue.shift()!;
+    const children = childrenOf.get(currentId) || new Set<string>();
+    children.forEach((childId) => {
+      if (!bloodlineIds.has(childId)) {
+        bloodlineIds.add(childId);
+        descendantQueue.push(childId);
+      }
+    });
+  }
+
+  const visibleIds = new Set<string>(bloodlineIds);
+  const boundaryIds = new Set<string>();
+
+  relationships.forEach((rel) => {
+    if (rel.type !== "marriage") return;
+
+    const sourceInBloodline = bloodlineIds.has(rel.sourceId);
+    const targetInBloodline = bloodlineIds.has(rel.targetId);
+    if (sourceInBloodline && !targetInBloodline && personIds.has(rel.targetId)) {
+      visibleIds.add(rel.targetId);
+      boundaryIds.add(rel.targetId);
+    } else if (targetInBloodline && !sourceInBloodline && personIds.has(rel.sourceId)) {
+      visibleIds.add(rel.sourceId);
+      boundaryIds.add(rel.sourceId);
+    }
+  });
+
+  relationships.forEach((rel) => {
+    if (rel.type !== "asserted" && rel.type !== "non_bloodline") return;
+
+    const sourceInBloodline = bloodlineIds.has(rel.sourceId);
+    const targetInBloodline = bloodlineIds.has(rel.targetId);
+    if (sourceInBloodline && personIds.has(rel.targetId)) {
+      visibleIds.add(rel.targetId);
+    } else if (targetInBloodline && personIds.has(rel.sourceId)) {
+      visibleIds.add(rel.sourceId);
+    }
+  });
+
+  const collapsedBranchRoots = new Set<string>();
+  boundaryIds.forEach((boundaryId) => {
+    const hiddenReachable = new Set<string>();
+    const boundaryQueue = [boundaryId];
+
+    while (boundaryQueue.length > 0) {
+      const currentId = boundaryQueue.shift()!;
+      const neighbors = fullAdjacency.get(currentId) || new Set<string>();
+
+      neighbors.forEach((neighborId) => {
+        if (visibleIds.has(neighborId) || neighborId === boundaryId || hiddenReachable.has(neighborId)) {
+          return;
+        }
+        hiddenReachable.add(neighborId);
+        boundaryQueue.push(neighborId);
+      });
+    }
+
+    if (hiddenReachable.size > 0) {
+      collapsedBranchRoots.add(boundaryId);
+    }
+  });
+
+  const filteredPersons = persons.filter((p) => visibleIds.has(p.id));
+  const filteredRelationships = relationships.filter(
+    (rel) => visibleIds.has(rel.sourceId) && visibleIds.has(rel.targetId),
+  );
+
+  return { persons: filteredPersons, relationships: filteredRelationships, collapsedBranchRoots };
+}
+
 /**
  * Deterministic grid layout. A full graph-layout library is optional for this
  * task — correctness of edge styling, selection info, and the viewpoint

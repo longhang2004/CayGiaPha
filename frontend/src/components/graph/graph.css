@@ -171,8 +171,8 @@
   font-size: 1rem; /* 16px - highly readable for elder users */
   color: currentColor;
   white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  overflow: visible;
+  text-overflow: clip;
   flex-grow: 1;
   min-width: 0;
 }
@@ -250,6 +250,44 @@
   text-transform: uppercase;
   letter-spacing: 0.05em;
   flex-shrink: 0;
+}
+
+.tree-graph__node-branch-badge {
+  position: absolute;
+  top: 0.4rem;
+  right: 0.45rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.2rem;
+  min-height: 1.35rem;
+  padding: 0 0.45rem;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--color-brand) 72%, white);
+  background: var(--color-brand);
+  color: white;
+  font-size: 0.68rem;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: 0;
+  flex-shrink: 0;
+  box-shadow: 0 5px 12px color-mix(in srgb, var(--color-brand) 26%, transparent);
+  pointer-events: none;
+}
+
+.tree-graph__node-branch-badge svg {
+  width: 0.8rem;
+  height: 0.8rem;
+  stroke-width: 2.2;
+}
+
+.tree-graph__node--has-branch .tree-graph__node-button {
+  border-color: color-mix(in srgb, var(--color-brand) 78%, var(--color-hairline-strong));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-brand) 18%, transparent), 0 8px 22px rgba(38, 37, 30, 0.08);
+}
+
+.tree-graph__node--has-branch .tree-graph__node-name {
+  padding-right: 4.2rem;
 }
 
 /* Selected state styling */

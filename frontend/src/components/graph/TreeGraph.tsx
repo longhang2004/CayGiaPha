@@ -23,6 +23,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   addressLabel,
   capitalize,
+  collapseExtendedFamilyBranches,
   fetchViewpointAddresses,
   indexAddresses,
   isUnresolved,
@@ -37,7 +38,7 @@ import {
 } from "@/lib/graph";
 import { GraphEdge } from "./EdgeStyles";
 import { ViewpointSelector } from "./ViewpointSelector";
-import { SearchIcon, DownloadIcon, MaximizeIcon, MinimizeIcon } from "@/components/ui/Icons";
+import { SearchIcon, DownloadIcon, MaximizeIcon, MinimizeIcon, TreeIcon } from "@/components/ui/Icons";
 
 export interface TreeGraphProps {
   treeId: string;
@@ -74,7 +75,8 @@ export interface TreeGraphProps {
   showBirthYears?: boolean;
 }
 
-const NODE_WIDTH = 220;
+const NODE_MIN_WIDTH = 220;
+const NODE_MAX_WIDTH = 460;
 const NODE_HEIGHT = 90;
 
 export function TreeGraph({
@@ -134,17 +136,22 @@ export function TreeGraph({
     return map;
   }, [persons]);
 
+  const egoScopedData = useMemo(
+    () => collapseExtendedFamilyBranches(persons, relationships, activeEgoId),
+    [persons, relationships, activeEgoId],
+  );
+
   // Branch focus filtering logic: keeps the focused person, their descendants, and descendants' spouses
   const filteredData = useMemo(() => {
     if (!activeFocusId) {
-      return { persons, relationships };
+      return egoScopedData;
     }
 
     const descendantIds = new Set<string>();
     descendantIds.add(activeFocusId);
 
     const childrenOf = new Map<string, string[]>();
-    relationships.forEach((r) => {
+    egoScopedData.relationships.forEach((r) => {
       if (r.type === "bloodline_father" || r.type === "bloodline_mother") {
         if (!childrenOf.has(r.sourceId)) childrenOf.set(r.sourceId, []);
         childrenOf.get(r.sourceId)!.push(r.targetId);
@@ -164,7 +171,7 @@ export function TreeGraph({
     }
 
     const spouseIds = new Set<string>();
-    relationships.forEach((r) => {
+    egoScopedData.relationships.forEach((r) => {
       if (r.type === "marriage") {
         if (descendantIds.has(r.sourceId)) {
           spouseIds.add(r.targetId);
@@ -176,17 +183,46 @@ export function TreeGraph({
 
     const keepIds = new Set([...descendantIds, ...spouseIds]);
 
-    const filteredPersons = persons.filter((p) => keepIds.has(p.id));
-    const filteredRels = relationships.filter(
+    const filteredPersons = egoScopedData.persons.filter((p) => keepIds.has(p.id));
+    const filteredRels = egoScopedData.relationships.filter(
       (r) => keepIds.has(r.sourceId) && keepIds.has(r.targetId)
     );
 
-    return { persons: filteredPersons, relationships: filteredRels };
-  }, [persons, relationships, activeFocusId]);
+    return {
+      persons: filteredPersons,
+      relationships: filteredRels,
+      collapsedBranchRoots: new Set(
+        [...egoScopedData.collapsedBranchRoots].filter((id) => keepIds.has(id)),
+      ),
+    };
+  }, [egoScopedData, activeFocusId]);
+
+  const nodeWidthById = useMemo(() => {
+    const widths = new Map<string, number>();
+    filteredData.persons.forEach((person) => {
+      const nameLength = Array.from(person.displayName || "").length;
+      const hasCollapsedBranch = filteredData.collapsedBranchRoots.has(person.id);
+      const badgeWidth = hasCollapsedBranch ? 78 : 0;
+      const statusWidth = (person.claimed ? 18 : 0) + (person.deceased ? 18 : 0) + (person.id === activeEgoId ? 38 : 0);
+      const estimatedNameWidth = nameLength * 9.2;
+      const chromeWidth = 112 + badgeWidth + statusWidth;
+      const width = Math.ceil(Math.min(NODE_MAX_WIDTH, Math.max(NODE_MIN_WIDTH, chromeWidth + estimatedNameWidth)));
+      widths.set(person.id, width);
+    });
+    return widths;
+  }, [filteredData.persons, filteredData.collapsedBranchRoots, activeEgoId]);
+
+  const maxNodeWidth = useMemo(() => {
+    let max = NODE_MIN_WIDTH;
+    nodeWidthById.forEach((width) => {
+      max = Math.max(max, width);
+    });
+    return max;
+  }, [nodeWidthById]);
 
   const positions = useMemo(
-    () => layoutMultiTreeNodes(filteredData.persons, filteredData.relationships, { cellWidth: 260, cellHeight: 150, padding: 100 }),
-    [filteredData.persons, filteredData.relationships]
+    () => layoutMultiTreeNodes(filteredData.persons, filteredData.relationships, { cellWidth: maxNodeWidth + 40, cellHeight: 150, padding: 100 }),
+    [filteredData.persons, filteredData.relationships, maxNodeWidth]
   );
 
   // Group parent-child relationships for joint rendering
@@ -406,8 +442,8 @@ export function TreeGraph({
     positions.forEach((p) => {
       max = Math.max(max, p.x);
     });
-    return max + NODE_WIDTH + 100;
-  }, [positions]);
+    return max + maxNodeWidth + 100;
+  }, [positions, maxNodeWidth]);
 
   const svgHeight = useMemo(() => {
     let max = 0;
@@ -744,17 +780,19 @@ export function TreeGraph({
                   : capitalize(addressLabel(address));
                 const unresolved = !isEgo && !loading && addresses.size > 0 && isUnresolved(address);
                 const isRedacted = person.displayName === "Người thân còn sống";
+                const hasCollapsedBranch = filteredData.collapsedBranchRoots.has(person.id);
+                const nodeWidth = nodeWidthById.get(person.id) ?? NODE_MIN_WIDTH;
 
                 return (
                   <g
                     key={person.id}
-                    className={`tree-graph__node ${loading ? "tree-graph__node--loading" : ""} tree-graph__node--${person.gender ?? "unknown"} ${person.deceased ? "tree-graph__node--deceased" : ""} ${person.claimed ? "tree-graph__node--claimed" : ""} ${isRedacted ? "tree-graph__node--redacted" : ""}`}
+                    className={`tree-graph__node ${loading ? "tree-graph__node--loading" : ""} tree-graph__node--${person.gender ?? "unknown"} ${person.deceased ? "tree-graph__node--deceased" : ""} ${person.claimed ? "tree-graph__node--claimed" : ""} ${isRedacted ? "tree-graph__node--redacted" : ""} ${hasCollapsedBranch ? "tree-graph__node--has-branch" : ""}`}
                     data-person-id={person.id}
                     data-ego={isEgo ? "true" : "false"}
                     data-selected={isSelected ? "true" : "false"}
-                    transform={`translate(${pos.x - NODE_WIDTH / 2}, ${pos.y - NODE_HEIGHT / 2})`}
+                    transform={`translate(${pos.x - nodeWidth / 2}, ${pos.y - NODE_HEIGHT / 2})`}
                   >
-                    <foreignObject width={NODE_WIDTH} height={NODE_HEIGHT}>
+                    <foreignObject width={nodeWidth} height={NODE_HEIGHT}>
                       <button
                         type="button"
                         className="tree-graph__node-button"
@@ -806,6 +844,16 @@ export function TreeGraph({
                             )}
                           </div>
                         </div>
+                        {hasCollapsedBranch && (
+                          <span
+                            className="tree-graph__node-branch-badge"
+                            title="Có nhánh gia đình mở rộng. Chọn người này rồi chuyển góc nhìn để xem."
+                            aria-label="Có nhánh mở rộng"
+                          >
+                            <TreeIcon size={13} />
+                            <span>Nhánh</span>
+                          </span>
+                        )}
                       </button>
 
                       {/* Tooltip Hover/Focus */}
@@ -820,6 +868,11 @@ export function TreeGraph({
                           </div>
                         )}
                         {person.claimed && <div style={{ fontSize: "0.7rem", color: "#60a5fa", marginTop: "2px" }}>✓ Đã xác minh</div>}
+                        {hasCollapsedBranch && (
+                          <div style={{ fontSize: "0.7rem", color: "var(--color-brand)", marginTop: "2px" }}>
+                            Có nhánh mở rộng
+                          </div>
+                        )}
                       </div>
                     </foreignObject>
                   </g>

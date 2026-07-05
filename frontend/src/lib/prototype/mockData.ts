@@ -37,6 +37,10 @@ export const MOCK_PERSONS: Person[] = [
   { id: "ma", displayName: "Phạm Thị Cẩm Tú", gender: "female", birthYear: 1978, deceased: false },
   { id: "co", displayName: "Hàng Hữu Phượng", gender: "female", birthYear: 1980, deceased: false },
   { id: "duong", displayName: "Nguyễn Văn Hùng", gender: "male", birthYear: 1978, deceased: false },
+  { id: "duong-cha", displayName: "Nguyễn Văn Lợi", gender: "male", birthYear: 1952, deceased: false },
+  { id: "duong-me", displayName: "Đặng Thị Ngọc", gender: "female", birthYear: 1955, deceased: false },
+  { id: "duong-em-gai", displayName: "Nguyễn Thị Hạnh", gender: "female", birthYear: 1985, deceased: false },
+  { id: "duong-em-re", displayName: "Trần Văn Khoa", gender: "male", birthYear: 1983, deceased: false },
   { id: "chu", displayName: "Hàng Hữu Phú", gender: "male", birthYear: 1982, deceased: false },
   { id: "thim", displayName: "Trần Thị Hồng", gender: "female", birthYear: 1985, deceased: false },
   { id: "di", displayName: "Phạm Thị Cẩm Linh", gender: "female", birthYear: 1982, deceased: false },
@@ -67,7 +71,8 @@ export const MOCK_PERSONS: Person[] = [
   { id: "chau-ho-dat", displayName: "Hàng Hữu Đạt", gender: "male", birthYear: 2030, deceased: false },
   { id: "chau-ho-ngoai-an", displayName: "Nguyễn Văn An", gender: "male", birthYear: 2032, deceased: false },
   { id: "con-co-tuan", displayName: "Nguyễn Văn Tuấn", gender: "male", birthYear: 2005, deceased: false },
-  { id: "con-co-lan", displayName: "Nguyễn Thị Lan", gender: "female", birthYear: 2008, deceased: false }
+  { id: "con-co-lan", displayName: "Nguyễn Thị Lan", gender: "female", birthYear: 2008, deceased: false },
+  { id: "duong-chau", displayName: "Trần Gia Bảo", gender: "male", birthYear: 2015, deceased: false }
 ];
 
 export const MOCK_RELATIONSHIPS: Relationship[] = [
@@ -77,6 +82,8 @@ export const MOCK_RELATIONSHIPS: Relationship[] = [
   { id: "r-m-bac", type: "marriage", sourceId: "bac", targetId: "bac-dau", derivationState: "derived" },
   { id: "r-m-bama", type: "marriage", sourceId: "ba", targetId: "ma", derivationState: "derived" },
   { id: "r-m-co", type: "marriage", sourceId: "duong", targetId: "co", derivationState: "derived" },
+  { id: "r-m-duong-cha-me", type: "marriage", sourceId: "duong-cha", targetId: "duong-me", derivationState: "derived" },
+  { id: "r-m-duong-em", type: "marriage", sourceId: "duong-em-re", targetId: "duong-em-gai", derivationState: "derived" },
   { id: "r-m-chu", type: "marriage", sourceId: "chu", targetId: "thim", derivationState: "derived" },
   { id: "r-m-cau", type: "marriage", sourceId: "cau", targetId: "mo", derivationState: "derived" },
   { id: "r-m-anh-ho", type: "marriage", sourceId: "anh-ho", targetId: "chi-dau-ho", derivationState: "derived" },
@@ -109,6 +116,14 @@ export const MOCK_RELATIONSHIPS: Relationship[] = [
   { id: "r-m-conco-tuan", type: "bloodline_mother", sourceId: "co", targetId: "con-co-tuan", derivationState: "derived" },
   { id: "r-f-conco-lan", type: "bloodline_father", sourceId: "duong", targetId: "con-co-lan", derivationState: "derived" },
   { id: "r-m-conco-lan", type: "bloodline_mother", sourceId: "co", targetId: "con-co-lan", derivationState: "derived" },
+
+  // Nhánh riêng của Dượng Hùng, được rút gọn khi góc nhìn vẫn thuộc dòng họ chính
+  { id: "r-f-duong", type: "bloodline_father", sourceId: "duong-cha", targetId: "duong", derivationState: "derived" },
+  { id: "r-m-duong", type: "bloodline_mother", sourceId: "duong-me", targetId: "duong", derivationState: "derived" },
+  { id: "r-f-duong-em", type: "bloodline_father", sourceId: "duong-cha", targetId: "duong-em-gai", derivationState: "derived" },
+  { id: "r-m-duong-em", type: "bloodline_mother", sourceId: "duong-me", targetId: "duong-em-gai", derivationState: "derived" },
+  { id: "r-f-duong-chau", type: "bloodline_father", sourceId: "duong-em-re", targetId: "duong-chau", derivationState: "derived" },
+  { id: "r-m-duong-chau", type: "bloodline_mother", sourceId: "duong-em-gai", targetId: "duong-chau", derivationState: "derived" },
 
   // Con cái thế hệ 2
   { id: "r-f-anh-ho", type: "bloodline_father", sourceId: "bac", targetId: "anh-ho", derivationState: "derived" },

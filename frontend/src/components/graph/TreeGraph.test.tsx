@@ -247,11 +247,20 @@ describe("TreeGraph renderer", () => {
       { id: "p1", displayName: "Người 1", gender: "male", birthYear: 1980, claimed: true },
       { id: "p2", displayName: "Người 2", gender: "female", birthYear: 1985, deceased: true },
     ];
+    const mockRelationships: Relationship[] = [
+      {
+        id: "r-card-regression",
+        type: "bloodline_mother",
+        sourceId: "p2",
+        targetId: "p1",
+        derivationState: "derived",
+      },
+    ];
     render(
       <TreeGraph
         treeId="t1"
         persons={mockPersons}
-        relationships={[]}
+        relationships={mockRelationships}
         initialEgoId="p1"
         fetchAddresses={fetchAddresses}
       />,
@@ -277,6 +286,91 @@ describe("TreeGraph renderer", () => {
     // Lifespan rendering
     expect(node1.querySelector(".tree-graph__node-lifespan")).toHaveTextContent("(s. 1980)");
     expect(node2.querySelector(".tree-graph__node-lifespan")).toHaveTextContent("(1985 - †)");
+  });
+
+  it("marks a boundary spouse node that has a collapsed extended family branch", async () => {
+    const fetchAddresses = stubFetcher({ ego: { egoId: "ego", addresses: [] } });
+    const branchPersons: Person[] = [
+      { id: "ego", displayName: "Ego", gender: "male" },
+      { id: "father", displayName: "Cha", gender: "male" },
+      { id: "aunt", displayName: "Cô", gender: "female" },
+      { id: "uncleInLaw", displayName: "Dượng", gender: "male" },
+      { id: "inLawFather", displayName: "Cha dượng", gender: "male" },
+    ];
+    const branchRelationships: Relationship[] = [
+      {
+        id: "r-f-ego",
+        type: "bloodline_father",
+        sourceId: "father",
+        targetId: "ego",
+        derivationState: "derived",
+      },
+      {
+        id: "r-f-aunt",
+        type: "bloodline_father",
+        sourceId: "father",
+        targetId: "aunt",
+        derivationState: "derived",
+      },
+      {
+        id: "r-marriage",
+        type: "marriage",
+        sourceId: "aunt",
+        targetId: "uncleInLaw",
+        derivationState: "derived",
+        maritalStatus: "married",
+      },
+      {
+        id: "r-f-inlaw",
+        type: "bloodline_father",
+        sourceId: "inLawFather",
+        targetId: "uncleInLaw",
+        derivationState: "derived",
+      },
+    ];
+
+    render(
+      <TreeGraph
+        treeId="t1"
+        persons={branchPersons}
+        relationships={branchRelationships}
+        initialEgoId="ego"
+        fetchAddresses={fetchAddresses}
+      />,
+    );
+
+    await waitFor(() => expect(fetchAddresses).toHaveBeenCalled());
+
+    const uncleNode = document.querySelector('.tree-graph__node[data-person-id="uncleInLaw"]')!;
+    expect(within(uncleNode as HTMLElement).getByLabelText("Có nhánh mở rộng")).toBeInTheDocument();
+    expect(document.querySelector('.tree-graph__node[data-person-id="inLawFather"]')).not.toBeInTheDocument();
+  });
+
+  it("expands node width for long display names instead of truncating the card", async () => {
+    const fetchAddresses = stubFetcher({ p1: { egoId: "p1", addresses: [] } });
+    const longName = "Phạm Văn Dượng Gia Đình Nhánh Mở Rộng";
+    const longNamePersons: Person[] = [
+      { id: "p1", displayName: longName, gender: "male", birthYear: 1985 },
+    ];
+
+    render(
+      <TreeGraph
+        treeId="t1"
+        persons={longNamePersons}
+        relationships={[]}
+        initialEgoId="p1"
+        fetchAddresses={fetchAddresses}
+      />,
+    );
+
+    await waitFor(() => expect(fetchAddresses).toHaveBeenCalled());
+
+    const node = document.querySelector('.tree-graph__node[data-person-id="p1"]')!;
+    const card = within(node as HTMLElement).getByRole("button", { name: new RegExp(longName) });
+    const foreignObject = card.closest("foreignObject")!;
+
+    expect(foreignObject).toHaveAttribute("width", expect.not.stringMatching(/^220$/));
+    expect(card.querySelector(".tree-graph__node-name")).toHaveTextContent(longName);
   });
 
   it("supports switching tabs (Chi tiết vs Tiểu sử) in PersonInfoPanel", async () => {

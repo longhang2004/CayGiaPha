@@ -474,10 +474,10 @@ function PrototypeTreeContent() {
                         <button
                           type="button"
                           className="btn btn-secondary"
-                          onClick={() => setFocusId(focusId === selectedPerson.id ? null : selectedPerson.id)}
-                          style={focusId === selectedPerson.id ? { border: "1px solid var(--color-brand)" } : undefined}
+                          onClick={() => setEgoId(selectedPerson.id)}
+                          disabled={egoId === selectedPerson.id || addressLoading}
                         >
-                          {focusId === selectedPerson.id ? "✕ Toàn bộ cây" : "👁 Xem riêng"}
+                          {egoId === selectedPerson.id ? "Đang là góc nhìn" : "Chuyển góc nhìn này"}
                         </button>
                         <DeletionDialog
                           treeId={PROTOTYPE_TREE_ID}
