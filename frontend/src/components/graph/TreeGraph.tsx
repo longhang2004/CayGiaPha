@@ -21,8 +21,8 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
-  addressLabel,
   capitalize,
+  contextualAddressLabel,
   collapseExtendedFamilyBranches,
   fetchViewpointAddresses,
   indexAddresses,
@@ -777,7 +777,13 @@ export function TreeGraph({
                   ? "Bản thân"
                   : loading || addresses.size === 0
                   ? ""
-                  : capitalize(addressLabel(address));
+                  : capitalize(contextualAddressLabel({
+                      targetId: person.id,
+                      egoId: activeEgoId,
+                      persons: filteredData.persons,
+                      relationships: filteredData.relationships,
+                      addresses,
+                    }));
                 const unresolved = !isEgo && !loading && addresses.size > 0 && isUnresolved(address);
                 const isRedacted = person.displayName === "Người thân còn sống";
                 const hasCollapsedBranch = filteredData.collapsedBranchRoots.has(person.id);

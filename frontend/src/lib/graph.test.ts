@@ -5,6 +5,7 @@ import {
   UNRESOLVED_LABEL,
   addressLabel,
   capitalize,
+  contextualAddressLabel,
   collapseExtendedFamilyBranches,
   edgeStyleFor,
   fetchViewpointAddresses,
@@ -119,6 +120,27 @@ describe("address helpers", () => {
   it("returns the resolved term for a resolved address (8.1)", () => {
     expect(isUnresolved(resolved)).toBe(false);
     expect(addressLabel(resolved)).toBe("bác");
+  });
+
+  it("describes unresolved direct relatives through a known relation", () => {
+    const people: Person[] = [
+      { id: "ego", displayName: "Ego", gender: "male" },
+      { id: "aunt", displayName: "Cô", gender: "female" },
+      { id: "uncle", displayName: "Dượng", gender: "male" },
+      { id: "child", displayName: "Con cô", gender: "male" },
+    ];
+    const relationships: Relationship[] = [
+      rel({ id: "r-marriage", type: "marriage", sourceId: "aunt", targetId: "uncle" }),
+      rel({ id: "r-child", type: "bloodline_mother", sourceId: "aunt", targetId: "child" }),
+    ];
+    const addresses = new Map<string, Address>([
+      ["aunt", { personId: "aunt", resolved: "cô", status: "resolved" }],
+      ["uncle", { personId: "uncle", resolved: null, status: "unresolved" }],
+      ["child", { personId: "child", resolved: null, status: "unresolved" }],
+    ]);
+
+    expect(contextualAddressLabel({ targetId: "uncle", egoId: "ego", persons: people, relationships, addresses })).toBe("chồng của cô");
+    expect(contextualAddressLabel({ targetId: "child", egoId: "ego", persons: people, relationships, addresses })).toBe("con của cô");
   });
 
   describe("capitalize", () => {

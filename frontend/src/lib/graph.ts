@@ -147,6 +147,96 @@ export function addressLabel(address: Address | undefined): string {
   return address!.resolved as string;
 }
 
+export interface ContextualAddressLabelInput {
+  targetId: string;
+  egoId?: string | null;
+  persons: Person[];
+  relationships: Relationship[];
+  addresses: Map<string, Address>;
+}
+
+function directRelationLabel(target: Person | undefined, rel: Relationship, targetIsSource: boolean): string {
+  if (rel.type === "marriage") {
+    if (target?.gender === "male") return "chồng";
+    if (target?.gender === "female") return "vợ";
+    return "vợ/chồng";
+  }
+
+  if (rel.type === "bloodline_father" || rel.type === "bloodline_mother") {
+    if (!targetIsSource) {
+      return "con";
+    }
+    if (target?.gender === "male") return "cha";
+    if (target?.gender === "female") return "mẹ";
+    return "cha/mẹ";
+  }
+
+  if (rel.type === "asserted" && rel.assertedLabel) {
+    return rel.assertedLabel;
+  }
+
+  if (rel.type === "non_bloodline") {
+    if (rel.socialType === "teacher") return "thầy/cô";
+    if (rel.socialType === "colleague") return "đồng nghiệp";
+    return "bạn";
+  }
+
+  return "quan hệ";
+}
+
+function knownContextLabel(
+  personId: string,
+  egoId: string | null | undefined,
+  addresses: Map<string, Address>,
+): string | null {
+  if (egoId && personId === egoId) {
+    return "bản thân";
+  }
+  const address = addresses.get(personId);
+  if (!isUnresolved(address)) {
+    return addressLabel(address);
+  }
+  return null;
+}
+
+/**
+ * Display a useful fallback for unresolved direct relatives.
+ *
+ * Example: if a spouse cannot be resolved but their partner is "cô", render
+ * "chồng của cô" instead of the opaque unresolved marker.
+ */
+export function contextualAddressLabel({
+  targetId,
+  egoId,
+  persons,
+  relationships,
+  addresses,
+}: ContextualAddressLabelInput): string {
+  const address = addresses.get(targetId);
+  if (!isUnresolved(address)) {
+    return addressLabel(address);
+  }
+
+  const personById = new Map(persons.map((person) => [person.id, person]));
+  const target = personById.get(targetId);
+  const directEdges = relationships.filter((rel) => rel.sourceId === targetId || rel.targetId === targetId);
+  const preferredTypes: RelationshipType[] = ["marriage", "bloodline_father", "bloodline_mother", "asserted", "non_bloodline"];
+
+  for (const type of preferredTypes) {
+    const edge = directEdges.find((rel) => rel.type === type);
+    if (!edge) continue;
+
+    const targetIsSource = edge.sourceId === targetId;
+    const otherId = targetIsSource ? edge.targetId : edge.sourceId;
+    const otherLabel = knownContextLabel(otherId, egoId, addresses);
+    if (!otherLabel) continue;
+
+    return `${directRelationLabel(target, edge, targetIsSource)} của ${otherLabel}`;
+  }
+
+  return UNRESOLVED_LABEL;
+}
+
 /** Capitalize the first letter of a string. */
 export function capitalize(str: string): string {
   if (!str) return "";
