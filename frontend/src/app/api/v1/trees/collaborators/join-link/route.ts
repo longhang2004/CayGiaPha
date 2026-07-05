@@ -29,7 +29,11 @@ export async function POST(request: Request) {
       throw ApiException.validation("inviteId", "Lời mời không tồn tại hoặc đã hết hạn.");
     }
 
-    if (invite.status !== "pending" && invite.status !== "approved") {
+    if (invite.status === "pending") {
+      throw ApiException.validation("inviteId", "Yêu cầu tham gia đang chờ chủ cây duyệt.");
+    }
+
+    if (invite.status !== "approved") {
       throw ApiException.validation("inviteId", "Lời mời này đã được sử dụng hoặc từ chối.");
     }
 

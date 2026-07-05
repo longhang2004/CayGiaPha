@@ -164,10 +164,9 @@ function PrototypeTreeContent() {
       id: `invite-${Date.now()}`,
       email: inviteEmail.trim(),
       code: "111222",
-      status: "pending"
+      status: "approved"
     };
-    setPendingInvites(prev => [...prev, newInvite]);
-    showToast("Đã tạo lời mời cộng tác thành công (đang chờ duyệt)!", "success");
+    showToast(`Đã tạo lời mời email đã duyệt sẵn. Mã mời: ${newInvite.code}`, "success");
     setInviteEmail("");
   };
 
@@ -734,7 +733,7 @@ function PrototypeTreeContent() {
 
                 {isOwner && pendingInvites.length > 0 && (
                   <div style={{ marginBottom: "1.5rem", paddingTop: "1.5rem", borderTop: "1px solid var(--color-hairline-soft)" }}>
-                    <h3 style={{ fontSize: "1.1rem", marginBottom: "1rem", color: "var(--color-danger)" }}>Đang chờ duyệt ({pendingInvites.length} lời mời):</h3>
+                    <h3 style={{ fontSize: "1.1rem", marginBottom: "1rem", color: "var(--color-danger)" }}>Đang chờ duyệt ({pendingInvites.length} yêu cầu):</h3>
                     <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
                       {pendingInvites.map((invite) => (
                         <Card key={invite.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "0.75rem", borderLeftWidth: "4px", borderLeftColor: "var(--color-danger)" }}>

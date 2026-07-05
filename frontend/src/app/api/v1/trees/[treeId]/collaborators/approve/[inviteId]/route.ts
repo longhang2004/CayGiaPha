@@ -35,7 +35,7 @@ export async function POST(
       throw ApiException.validation("inviteId", "Lời mời đã được xử lý hoặc hết hạn.");
     }
 
-    // Update status to approved
+    // Email invites are already approved. Generic link/code requests start as pending.
     await db
       .update(collaborationInvitations)
       .set({ status: "approved" })

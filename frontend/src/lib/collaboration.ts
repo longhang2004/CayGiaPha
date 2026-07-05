@@ -10,7 +10,7 @@ export interface CollaborationInvitation {
   inviterUserId: string;
   email: string;
   code: string;
-  status: "pending" | "sent" | "joined" | "rejected" | "expired";
+  status: "pending" | "approved" | "joined" | "rejected" | "expired";
   createdAt: string;
   expiresAt: string;
 }

@@ -154,9 +154,9 @@ function TreePageContent({ params, searchParams }: TreePageProps) {
     try {
       const result = await inviteCollaborator(activeTreeId, inviteEmail.trim());
       alert(
-        result.status === "sent"
+        result.status === "approved"
           ? `Đã tạo mã mời thành công! Mã mời: ${result.code}`
-          : "Đã gửi yêu cầu mời cộng tác. Đang chờ chủ cây duyệt."
+          : "Đã gửi yêu cầu tham gia. Đang chờ chủ cây duyệt."
       );
       setInviteEmail("");
       fetchCollaborationData();
@@ -899,7 +899,7 @@ function TreePageContent({ params, searchParams }: TreePageProps) {
 
                 {isOwner && pendingInvites.length > 0 && (
                   <div style={{ marginBottom: "1.5rem", paddingTop: "1.5rem", borderTop: "1px solid var(--color-hairline-soft)" }}>
-                    <h3 style={{ fontSize: "1.1rem", marginBottom: "1rem", color: "var(--color-danger)" }}>Đang chờ duyệt ({pendingInvites.length} lời mời):</h3>
+                    <h3 style={{ fontSize: "1.1rem", marginBottom: "1rem", color: "var(--color-danger)" }}>Đang chờ duyệt ({pendingInvites.length} yêu cầu):</h3>
                     <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
                       {pendingInvites.map((invite) => (
                         <Card key={invite.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "0.75rem", borderLeftWidth: "4px", borderLeftColor: "var(--color-danger)" }}>

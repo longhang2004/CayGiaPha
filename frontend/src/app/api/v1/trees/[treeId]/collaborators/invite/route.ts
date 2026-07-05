@@ -57,7 +57,7 @@ export async function POST(
         inviterUserId: auth.userId,
         email,
         code,
-        status: "pending",
+        status: "approved",
         expiresAt,
       })
       .returning();

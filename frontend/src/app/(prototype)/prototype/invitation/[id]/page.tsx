@@ -25,7 +25,7 @@ export default function PrototypeInvitationPage({ params }: InvitationPageProps)
       inviterUserId: "proto-owner",
       email: "contributor@example.com",
       code: "abc123",
-      status: "sent",
+      status: "approved",
       createdAt: new Date().toISOString(),
       expiresAt: new Date(Date.now() + 3600000).toISOString()
     });

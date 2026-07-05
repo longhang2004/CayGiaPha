@@ -62,7 +62,7 @@ public class TreeCollaborationService {
                 treeId, inviterId, email, code, expiresAt);
 
         if (isOwner) {
-            invitation.setStatus("sent");
+            invitation.setStatus("approved");
         } else {
             invitation.setStatus("pending"); // requires owner approval
         }
@@ -86,7 +86,7 @@ public class TreeCollaborationService {
         if (!invite.getTreeId().equals(treeId)) {
             throw ApiException.validation("invitationId", "Invitation does not match tree.");
         }
-        invite.setStatus("sent");
+        invite.setStatus("approved");
         invitationRepository.save(invite);
     }
 
@@ -109,7 +109,11 @@ public class TreeCollaborationService {
         CollaborationInvitation invite = invitationRepository.findByCode(code)
                 .orElseThrow(() -> ApiException.validation("code", "Mã mời không chính xác hoặc đã hết hạn."));
 
-        if (!invite.getStatus().equals("sent")) {
+        if ("pending".equals(invite.getStatus())) {
+            throw ApiException.validation("code", "Yêu cầu tham gia đang chờ chủ cây duyệt.");
+        }
+
+        if (!invite.getStatus().equals("approved")) {
             throw ApiException.validation("code", "Lời mời này đã được sử dụng hoặc chưa được duyệt.");
         }
 
@@ -172,7 +176,11 @@ public class TreeCollaborationService {
         CollaborationInvitation invite = invitationRepository.findById(invitationId)
                 .orElseThrow(() -> ApiException.validation("invitationId", "Lời mời không tồn tại."));
 
-        if (!invite.getStatus().equals("sent")) {
+        if ("pending".equals(invite.getStatus())) {
+            throw ApiException.validation("invitationId", "Yêu cầu tham gia đang chờ chủ cây duyệt.");
+        }
+
+        if (!invite.getStatus().equals("approved")) {
             throw ApiException.validation("invitationId", "Lời mời này đã được sử dụng hoặc chưa được duyệt.");
         }
 
