@@ -9,7 +9,7 @@ import {
   type SearchResult,
 } from "@/lib/search";
 import { type Person, type Address, addressLabel } from "@/lib/graph";
-import { PlusIcon, SearchIcon } from "@/components/ui/Icons";
+import { FilterIcon, PlusIcon, SearchIcon } from "@/components/ui/Icons";
 
 /**
  * Redesigned Search & Filter Toolbar (Requirement 16.x).
@@ -414,6 +414,7 @@ export function SearchPanel({
                 title="Bộ lọc"
                 style={{ display: "flex", alignItems: "center", gap: "0.25rem" }}
               >
+                <FilterIcon size={18} className="filter-toggle-btn__icon" />
                 <span className="search-panel-toolbar__button-label">Bộ lọc</span>
                 {hasActiveFilters() ? <span aria-hidden="true">●</span> : null}
               </button>
@@ -443,9 +444,9 @@ export function SearchPanel({
               </button>
             )}
 
-            {/* Floating popover filter dropdown right below the toolbar fields */}
+            {/* Floating popover filter dropdown */}
             {isFilterDropdownOpen && (
-              <div className="search-filter-popover" style={{ position: "absolute", top: "100%", right: 0, marginTop: "0.5rem" }}>
+              <div className="search-filter-popover">
                 <div className="field" style={{ marginBottom: "1rem" }}>
                   <label htmlFor="filter-gender" style={{ display: "block", marginBottom: "0.5rem", fontWeight: 600 }}>Giới tính</label>
                   <select

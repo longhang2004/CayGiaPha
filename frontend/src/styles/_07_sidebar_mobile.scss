@@ -108,6 +108,16 @@
   display: none;
 }
 
+html.dark .global-sidebar__brand img {
+  filter: invert(1);
+}
+
+@media (prefers-color-scheme: dark) {
+  html:not(.light) .global-sidebar__brand img {
+    filter: invert(1);
+  }
+}
+
 .global-sidebar__nav {
   display: flex;
   flex-direction: column;

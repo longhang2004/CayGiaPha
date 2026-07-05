@@ -57,3 +57,7 @@ Durable project knowledge for future AI agents. Keep entries short, verified, an
 - **Floating Island Header Toolbar**: Positioned `.tree-page-header` absolutely at the bottom center of the screen with a glassmorphic background (`backdrop-filter`). Added CSS rules to hide the brand logo/title and collapse buttons to icon-only on mobile screens (`max-width: 600px`).
 - **Right Details Panel Close Buttons**: Replaced bottom buttons ("Bỏ chọn", "Hủy bỏ") with absolute close buttons (`&times;` / `side-panel__close`) at the top right of the cards. To prevent breaking existing Playwright E2E tests, the button text (e.g. "Bỏ chọn") is preserved inside a screen-reader-only `span` (`className="sr-only"`).
 - **Dynamic Invitation Link**: Implemented `/invitation/[id]` dynamic page to consume invitation URLs (`${Base_URL}/invitation/:id`), verify details, and confirm collaboration join. Added redirect support to `/signin` with query param `?redirect=/invitation/[id]` so unauthenticated invitees are correctly redirected back upon logging in.
+
+## 2026-07-05
+
+- **Playwright Dev Server Rule**: Before starting a dev server for browser/Playwright checks, inspect port 3000 first. If port 3000 is already this project's dev server, reuse it. If port 3000 is free, start this project on 3000. If port 3000 belongs to another process/project, start the dev server on a different free port.

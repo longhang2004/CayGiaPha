@@ -107,6 +107,21 @@
   animation: fade-in 0.2s ease;
 }
 
+.tree-page-header .search-filter-popover {
+  top: auto;
+  bottom: calc(100% + 0.75rem);
+  margin-top: 0;
+  max-height: min(24rem, 48vh);
+  overflow-y: auto;
+}
+
+.tree-page-header .search-results-dropdown {
+  top: auto;
+  bottom: calc(100% + 0.75rem);
+  margin-top: 0;
+  max-height: min(18rem, 42vh);
+}
+
 .search-results-dropdown__list {
   list-style: none;
   padding: 0;
