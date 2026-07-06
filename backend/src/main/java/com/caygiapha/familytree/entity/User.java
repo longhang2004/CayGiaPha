@@ -48,6 +48,10 @@ public class User {
     @Column(name = "role", nullable = false)
     private String role = "user";
 
+    /** Optional bcrypt password hash for accounts created by the legacy Next.js API. */
+    @Column(name = "password_hash")
+    private String passwordHash;
+
     /** Creation timestamp; populated by the database default ({@code now()}). */
     @Column(name = "created_at", nullable = false, insertable = false, updatable = false)
     private Instant createdAt;
@@ -97,6 +101,14 @@ public class User {
 
     public void setRole(String role) {
         this.role = role;
+    }
+
+    public String getPasswordHash() {
+        return passwordHash;
+    }
+
+    public void setPasswordHash(String passwordHash) {
+        this.passwordHash = passwordHash;
     }
 
     public Instant getCreatedAt() {

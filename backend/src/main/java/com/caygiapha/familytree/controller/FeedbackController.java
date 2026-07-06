@@ -37,7 +37,8 @@ public class FeedbackController {
                 request == null ? null : request.email(),
                 request == null ? null : request.category(),
                 request == null ? null : request.message(),
-                request == null ? null : request.attachmentKeys());
+                request == null ? null : request.attachmentKeys(),
+                request == null ? null : request.attachments());
         return FeedbackResponse.from(feedback);
     }
 }

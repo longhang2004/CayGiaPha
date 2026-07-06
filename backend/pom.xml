@@ -116,6 +116,13 @@
             <artifactId>google-api-client</artifactId>
             <version>2.7.0</version>
         </dependency>
+
+        <!-- Verify bcrypt password hashes created by the legacy Next.js API. -->
+        <dependency>
+            <groupId>org.mindrot</groupId>
+            <artifactId>jbcrypt</artifactId>
+            <version>0.4</version>
+        </dependency>
     </dependencies>
 
     <build>

@@ -8,6 +8,15 @@ package com.caygiapha.familytree.dto;
  * rejection) rather than requiring the client to declare the kind.
  *
  * @param identifier a Vietnamese phone number or an email address
+ * @param password optional password for the current password-based frontend flow
+ * @param region optional tree region key for password-based signup
+ * @param acceptedTos whether the user accepted the current terms of service
+ * @param acceptedPrivacy whether the user accepted the current privacy policy
  */
-public record SignUpRequest(String identifier) {
+public record SignUpRequest(
+        String identifier,
+        String password,
+        String region,
+        boolean acceptedTos,
+        boolean acceptedPrivacy) {
 }

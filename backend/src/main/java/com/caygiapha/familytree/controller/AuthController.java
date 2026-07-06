@@ -7,7 +7,6 @@ import com.caygiapha.familytree.dto.SignInResponse;
 import com.caygiapha.familytree.dto.SignInVerifyRequest;
 import com.caygiapha.familytree.dto.SignInVerifyResponse;
 import com.caygiapha.familytree.dto.SignUpRequest;
-import com.caygiapha.familytree.dto.SignUpResponse;
 import com.caygiapha.familytree.dto.SignUpVerifyRequest;
 import com.caygiapha.familytree.dto.SignUpVerifyResponse;
 import com.caygiapha.familytree.dto.GoogleAuthRequest;
@@ -30,7 +29,6 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
@@ -85,12 +83,26 @@ public class AuthController {
     }
 
     @PostMapping("/signup")
-    @ResponseStatus(HttpStatus.CREATED)
-    public SignUpResponse signUp(@RequestBody SignUpRequest request, HttpServletRequest http) {
+    public ResponseEntity<?> signUp(@RequestBody SignUpRequest request, HttpServletRequest http) {
         // 25.1 — throttle code requests per identifier and per source address.
         rateLimiter.check("signup:" + request.identifier());
         rateLimiter.check("ip:" + http.getRemoteAddr());
-        return authService.signUp(request.identifier());
+        if (request.password() != null) {
+            AuthService.PasswordSignUpResult result = authService.signUpWithPassword(
+                    request.identifier(),
+                    request.password(),
+                    request.region(),
+                    request.acceptedTos(),
+                    request.acceptedPrivacy());
+            auditService.recordAs(result.session().getUserId(), AuditService.SIGN_UP_VERIFIED, "user",
+                    result.session().getUserId(), null); // 25.2
+            return ResponseEntity.status(HttpStatus.CREATED)
+                    .header(
+                            HttpHeaders.SET_COOKIE,
+                            sessionCookieFactory.create(result.session().getId()).toString())
+                    .body(result.response());
+        }
+        return ResponseEntity.status(HttpStatus.CREATED).body(authService.signUp(request.identifier()));
     }
 
     @PostMapping("/signup/verify")
@@ -108,11 +120,21 @@ public class AuthController {
     }
 
     @PostMapping("/signin")
-    public SignInResponse signIn(@RequestBody SignInRequest request, HttpServletRequest http) {
+    public ResponseEntity<?> signIn(@RequestBody SignInRequest request, HttpServletRequest http) {
         // 25.1 — throttle sign-in code requests per identifier and per source address.
         rateLimiter.check("signin:" + request.identifier());
         rateLimiter.check("ip:" + http.getRemoteAddr());
-        return authService.signIn(request.identifier());
+        if (request.password() != null) {
+            Session session = authService.signInWithPassword(request.identifier(), request.password());
+            auditService.recordAs(session.getUserId(), AuditService.SIGN_IN, "user",
+                    session.getUserId(), null); // 25.2
+            return ResponseEntity.ok()
+                    .header(
+                            HttpHeaders.SET_COOKIE,
+                            sessionCookieFactory.create(session.getId()).toString())
+                    .body(new SignInVerifyResponse(session.getUserId(), session.getExpiresAt()));
+        }
+        return ResponseEntity.ok(authService.signIn(request.identifier()));
     }
 
     @PostMapping("/signin/verify")

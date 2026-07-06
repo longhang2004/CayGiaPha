@@ -9,6 +9,7 @@ package com.caygiapha.familytree.dto;
  * (2.4).
  *
  * @param identifier a Vietnamese phone number or an email address
+ * @param password optional password for legacy password-based accounts; absent keeps the OTP flow
  */
-public record SignInRequest(String identifier) {
+public record SignInRequest(String identifier, String password) {
 }

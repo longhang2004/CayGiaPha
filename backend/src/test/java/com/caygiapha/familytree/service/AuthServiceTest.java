@@ -22,6 +22,7 @@ import java.lang.reflect.Field;
 import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
+import org.mindrot.jbcrypt.BCrypt;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.invocation.InvocationOnMock;
@@ -346,6 +347,86 @@ class AuthServiceTest {
                         ex -> assertThat(ex.code()).isEqualTo(ErrorCode.VALIDATION_ERROR));
 
         verify(verificationCodeService, never()).issueForAccount(any(), any(), any());
+    }
+
+    @Test
+    void signInWithPasswordEstablishesSessionForMatchingLegacyPasswordHash() {
+        User user = User.withEmail(EMAIL);
+        setId(user, "id", UUID.randomUUID());
+        user.setVerified(true);
+        user.setPasswordHash(BCrypt.hashpw("correct-password", BCrypt.gensalt()));
+        when(userRepository.findByEmail(EMAIL)).thenReturn(Optional.of(user));
+        Session session = new Session(user.getId(), Instant.now().plusSeconds(3600));
+        when(sessionService.create(user.getId())).thenReturn(session);
+
+        Session result = service.signInWithPassword(EMAIL, "correct-password");
+
+        assertThat(result).isSameAs(session);
+        verify(sessionService).create(user.getId());
+        verify(verificationCodeService, never()).issueForAccount(any(), any(), any());
+    }
+
+    @Test
+    void signInWithPasswordRejectsWrongPasswordWithoutCreatingSession() {
+        User user = User.withEmail(EMAIL);
+        setId(user, "id", UUID.randomUUID());
+        user.setVerified(true);
+        user.setPasswordHash(BCrypt.hashpw("correct-password", BCrypt.gensalt()));
+        when(userRepository.findByEmail(EMAIL)).thenReturn(Optional.of(user));
+
+        assertThatThrownBy(() -> service.signInWithPassword(EMAIL, "wrong-password"))
+                .isInstanceOfSatisfying(ApiException.class, ex -> {
+                    assertThat(ex.code()).isEqualTo(ErrorCode.VALIDATION_ERROR);
+                    assertThat(ex.field()).isEqualTo("password");
+                });
+
+        verify(sessionService, never()).create(any());
+    }
+
+    @Test
+    void signInWithPasswordRequiresPassword() {
+        User user = User.withEmail(EMAIL);
+        setId(user, "id", UUID.randomUUID());
+        user.setVerified(true);
+        when(userRepository.findByEmail(EMAIL)).thenReturn(Optional.of(user));
+
+        assertThatThrownBy(() -> service.signInWithPassword(EMAIL, ""))
+                .isInstanceOfSatisfying(ApiException.class, ex -> {
+                    assertThat(ex.code()).isEqualTo(ErrorCode.VALIDATION_ERROR);
+                    assertThat(ex.field()).isEqualTo("password");
+                });
+
+        verify(sessionService, never()).create(any());
+    }
+
+    @Test
+    void signUpWithPasswordCreatesVerifiedUserTreeAndSession() {
+        when(duplicateChecker.check(IdentifierType.EMAIL, EMAIL))
+                .thenReturn(DuplicateIdentifierChecker.Result.AVAILABLE);
+        Session session = new Session(UUID.randomUUID(), Instant.now().plusSeconds(3600));
+        when(sessionService.create(any())).thenReturn(session);
+
+        AuthService.PasswordSignUpResult result =
+                service.signUpWithPassword(EMAIL, "strong-password", "Nam", true, true);
+
+        assertThat(result.session()).isSameAs(session);
+        assertThat(result.response().treeId()).isNotNull();
+        assertThat(result.response().region()).isEqualTo("Nam");
+        verify(consentService).requireConsent(true, true);
+        verify(consentService).recordConsent(result.response().userId());
+        verify(verificationCodeService, never()).issueForAccount(any(), any(), any());
+    }
+
+    @Test
+    void signUpWithPasswordRequiresPassword() {
+        assertThatThrownBy(() -> service.signUpWithPassword(EMAIL, "", "Bac", true, true))
+                .isInstanceOfSatisfying(ApiException.class, ex -> {
+                    assertThat(ex.code()).isEqualTo(ErrorCode.VALIDATION_ERROR);
+                    assertThat(ex.field()).isEqualTo("password");
+                });
+
+        verify(userRepository, never()).save(any());
+        verify(sessionService, never()).create(any());
     }
 
     // ----- Sign-in verify + session establishment (2.2, 2.3, 2.5, 2.6) -----

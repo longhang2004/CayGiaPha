@@ -2,11 +2,17 @@ package com.caygiapha.familytree.service;
 
 import com.caygiapha.familytree.entity.FeedbackMessage;
 import com.caygiapha.familytree.entity.User;
+import com.caygiapha.familytree.dto.FeedbackRequest.FeedbackAttachmentRequest;
 import com.caygiapha.familytree.error.ApiException;
 import com.caygiapha.familytree.repository.FeedbackMessageRepository;
 import com.caygiapha.familytree.repository.UserRepository;
 import com.caygiapha.familytree.security.AuthContext;
 import com.caygiapha.familytree.security.AuthContextHolder;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import java.util.ArrayList;
+import java.util.Base64;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
@@ -22,34 +28,61 @@ public class FeedbackService {
     private static final Set<String> CATEGORIES = Set.of("bug", "feature", "other");
     private static final Set<String> STATUSES = Set.of("new", "reviewed", "resolved");
     private static final Pattern EMAIL_PATTERN = Pattern.compile("^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$");
+    private static final Pattern DATA_URL_PATTERN = Pattern.compile(
+            "^data:(image/(?:jpeg|png));base64,([A-Za-z0-9+/=]+)$");
+    private static final int MAX_ATTACHMENTS = 3;
+    private static final int MAX_ATTACHMENT_BYTES = 2 * 1024 * 1024;
 
     private final FeedbackMessageRepository feedbackRepository;
     private final UserRepository userRepository;
     private final AuthContextHolder authContextHolder;
     private final AuditService auditService;
+    private final StorageService storageService;
+    private final ImageProcessor imageProcessor;
+    private final ObjectMapper objectMapper;
 
     public FeedbackService(
             FeedbackMessageRepository feedbackRepository,
             UserRepository userRepository,
             AuthContextHolder authContextHolder,
-            AuditService auditService) {
+            AuditService auditService,
+            StorageService storageService,
+            ImageProcessor imageProcessor,
+            ObjectMapper objectMapper) {
         this.feedbackRepository = feedbackRepository;
         this.userRepository = userRepository;
         this.authContextHolder = authContextHolder;
         this.auditService = auditService;
+        this.storageService = storageService;
+        this.imageProcessor = imageProcessor;
+        this.objectMapper = objectMapper;
     }
 
     @Transactional
     public FeedbackMessage submit(String email, String category, String message, String attachmentKeys) {
+        return submit(email, category, message, attachmentKeys, null);
+    }
+
+    @Transactional
+    public FeedbackMessage submit(
+            String email,
+            String category,
+            String message,
+            String attachmentKeys,
+            List<FeedbackAttachmentRequest> attachments) {
         String normalizedEmail = normalizeEmail(email);
         String normalizedCategory = normalizeCategory(category);
         String normalizedMessage = normalizeMessage(message);
-        String normalizedAttachmentKeys = normalizeAttachmentKeys(attachmentKeys);
         UUID userId = authContextHolder.current().userId();
 
         FeedbackMessage feedback = new FeedbackMessage(userId, normalizedEmail, normalizedCategory, normalizedMessage);
-        feedback.setAttachmentKeys(normalizedAttachmentKeys);
+        feedback.setAttachmentKeys(normalizeAttachmentKeys(attachmentKeys));
         feedback = feedbackRepository.save(feedback);
+        String storedAttachments = storeAttachments(feedback.getId(), attachments);
+        if (storedAttachments != null) {
+            feedback.setAttachmentKeys(storedAttachments);
+            feedback = feedbackRepository.save(feedback);
+        }
         auditService.record(AuditService.FEEDBACK_SUBMITTED, "feedback", feedback.getId());
         return feedback;
     }
@@ -73,6 +106,31 @@ public class FeedbackService {
         feedback.updateStatus(normalizedStatus, normalizedAdminNote);
         auditService.record(AuditService.FEEDBACK_STATUS_CHANGED, "feedback", feedback.getId(), normalizedStatus);
         return feedback;
+    }
+
+    @Transactional(readOnly = true)
+    public ServedFeedbackAttachment serveAttachment(UUID feedbackId, int index) {
+        requireAdmin();
+        if (feedbackId == null) {
+            throw ApiException.validation("id", "Feedback id is required.");
+        }
+        if (index < 0) {
+            throw ApiException.validation("index", "Attachment index is invalid.");
+        }
+        FeedbackMessage feedback = feedbackRepository.findById(feedbackId)
+                .orElseThrow(() -> ApiException.nodeNotAccessible("Feedback not found."));
+        List<StoredFeedbackAttachment> attachments = parseStoredAttachments(feedback.getAttachmentKeys());
+        if (index >= attachments.size()) {
+            throw ApiException.nodeNotAccessible("Feedback attachment not found.");
+        }
+        StoredFeedbackAttachment attachment = attachments.get(index);
+        if (attachment.objectKey() == null || attachment.objectKey().isBlank()
+                || attachment.contentType() == null || attachment.contentType().isBlank()) {
+            throw ApiException.nodeNotAccessible("Feedback attachment not found.");
+        }
+        return new ServedFeedbackAttachment(
+                attachment.contentType(),
+                storageService.get(attachment.objectKey()));
     }
 
     private void requireAdmin() {
@@ -137,4 +195,85 @@ public class FeedbackService {
         }
         return normalized.isEmpty() ? null : normalized;
     }
+
+    private String storeAttachments(UUID feedbackId, List<FeedbackAttachmentRequest> attachments) {
+        if (attachments == null || attachments.isEmpty()) {
+            return null;
+        }
+        if (attachments.size() > MAX_ATTACHMENTS) {
+            throw ApiException.validation("attachments", "Mỗi feedback chỉ được gửi tối đa 3 ảnh.");
+        }
+
+        List<StoredFeedbackAttachment> stored = new ArrayList<>();
+        for (int i = 0; i < attachments.size(); i++) {
+            FeedbackAttachmentRequest attachment = attachments.get(i);
+            ParsedDataUrl parsed = parseDataUrl(attachment == null ? null : attachment.dataUrl());
+            ImageProcessor.ProcessedImage image = imageProcessor.process(parsed.bytes());
+            String objectKey = "feedback/" + feedbackId + "/" + UUID.randomUUID();
+            storageService.put(objectKey, image.bytes(), image.contentType());
+            stored.add(new StoredFeedbackAttachment(
+                    objectKey,
+                    image.contentType(),
+                    normalizeAttachmentName(attachment == null ? null : attachment.name(), i),
+                    image.bytes().length));
+        }
+
+        try {
+            return objectMapper.writeValueAsString(stored);
+        } catch (JsonProcessingException e) {
+            throw ApiException.validation("attachments", "Ảnh feedback không hợp lệ.");
+        }
+    }
+
+    private ParsedDataUrl parseDataUrl(String dataUrl) {
+        if (dataUrl == null) {
+            throw ApiException.validation("attachments", "Ảnh feedback không hợp lệ.");
+        }
+        java.util.regex.Matcher matcher = DATA_URL_PATTERN.matcher(dataUrl);
+        if (!matcher.matches()) {
+            throw ApiException.validation("attachments", "Chỉ hỗ trợ ảnh PNG hoặc JPEG.");
+        }
+        byte[] bytes;
+        try {
+            bytes = Base64.getDecoder().decode(matcher.group(2));
+        } catch (IllegalArgumentException e) {
+            throw ApiException.validation("attachments", "Ảnh feedback không hợp lệ.");
+        }
+        if (bytes.length > MAX_ATTACHMENT_BYTES) {
+            throw ApiException.validation("attachments", "Mỗi ảnh feedback tối đa 2MB.");
+        }
+        return new ParsedDataUrl(matcher.group(1), bytes);
+    }
+
+    private List<StoredFeedbackAttachment> parseStoredAttachments(String attachmentKeys) {
+        if (attachmentKeys == null || attachmentKeys.isBlank()) {
+            return List.of();
+        }
+        try {
+            List<StoredFeedbackAttachment> parsed = objectMapper.readValue(
+                    attachmentKeys,
+                    new TypeReference<List<StoredFeedbackAttachment>>() {});
+            return parsed == null ? List.of() : parsed;
+        } catch (JsonProcessingException e) {
+            return List.of();
+        }
+    }
+
+    private static String normalizeAttachmentName(String name, int index) {
+        String normalized = name == null ? "" : name.trim();
+        if (normalized.isEmpty()) {
+            return "feedback-" + (index + 1);
+        }
+        return normalized.length() > 120 ? normalized.substring(0, 120) : normalized;
+    }
+
+    private record ParsedDataUrl(String contentType, byte[] bytes) {}
+
+    private record StoredFeedbackAttachment(
+            String objectKey,
+            String contentType,
+            String originalName,
+            long byteSize) {}
+
+    public record ServedFeedbackAttachment(String contentType, byte[] bytes) {}
 }

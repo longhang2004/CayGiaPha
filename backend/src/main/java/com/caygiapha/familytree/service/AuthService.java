@@ -12,6 +12,7 @@ import com.caygiapha.familytree.repository.UserRepository;
 import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
 import com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier;
 import java.util.UUID;
+import org.mindrot.jbcrypt.BCrypt;
 import org.springframework.stereotype.Service;
 
 /**
@@ -114,6 +115,52 @@ public class AuthService {
     }
 
     /**
+     * Create a verified password account for the current frontend flow and establish a session.
+     *
+     * <p>The legacy OTP signup flow above remains available when clients omit {@code password};
+     * this path mirrors the old Next.js route used by production frontend forms.
+     */
+    @Mutation
+    public PasswordSignUpResult signUpWithPassword(
+            String identifier,
+            String password,
+            String region,
+            boolean acceptedTos,
+            boolean acceptedPrivacy) {
+        consentService.requireConsent(acceptedTos, acceptedPrivacy);
+        if (password == null || password.isBlank()) {
+            throw ApiException.validation("password", "Vui lòng nhập mật khẩu.");
+        }
+        if (password.length() < 8) {
+            throw ApiException.validation("password", "Mật khẩu cần có ít nhất 8 ký tự.");
+        }
+
+        String resolvedRegion = resolveRegion(region);
+        IdentifierType type = identifierValidator.requireValid("identifier", identifier);
+
+        DuplicateIdentifierChecker.Result result =
+                duplicateIdentifierChecker.check(type, identifier);
+        if (result == DuplicateIdentifierChecker.Result.TAKEN) {
+            throw ApiException.identifierTaken(
+                    "identifier", "This phone number or email is already registered.");
+        }
+
+        User user = type == IdentifierType.PHONE
+                ? User.withPhone(identifier)
+                : User.withEmail(identifier);
+        user.setVerified(true);
+        user.setPasswordHash(BCrypt.hashpw(password, BCrypt.gensalt()));
+        User saved = userRepository.save(user);
+
+        consentService.recordConsent(saved.getId());
+        Tree tree = createSingleTree(saved.getId(), resolvedRegion);
+        Session session = sessionService.create(saved.getId());
+        return new PasswordSignUpResult(
+                session,
+                new SignUpVerifyResponse(saved.getId(), tree.getId(), tree.getRegion()));
+    }
+
+    /**
      * Verify a sign-up code and, on success, mark the account verified and create its single tree
      * (Requirements 1.4, 1.8, 9.2, 13.1, 13.2, 13.3).
      *
@@ -204,6 +251,41 @@ public class AuthService {
         verificationCodeService.issueForAccount(VerificationPurpose.SIGNIN, user.getId(), identifier);
 
         return new SignInResponse(user.getId());
+    }
+
+    /**
+     * Verify a legacy password-based account and establish a 30-day session.
+     *
+     * <p>Older frontend routes created verified users with a bcrypt {@code password_hash}. The live
+     * backend still supports the OTP flow above, but when a password is supplied by the current UI we
+     * validate it here and set the same HttpOnly session cookie used by OTP and Google sign-in.
+     */
+    @Mutation
+    public Session signInWithPassword(String identifier, String password) {
+        IdentifierType type = identifierValidator.requireValid("identifier", identifier);
+        User user = findByIdentifier(type, identifier)
+                .filter(User::isVerified)
+                .orElseThrow(() -> ApiException.accountNotFound(
+                        "Không tìm thấy tài khoản với thông tin đăng nhập đã cung cấp."));
+
+        if (password == null || password.isBlank()) {
+            throw ApiException.validation("password", "Vui lòng nhập mật khẩu.");
+        }
+
+        String passwordHash = user.getPasswordHash();
+        boolean matches = false;
+        if (passwordHash != null && !passwordHash.isBlank()) {
+            try {
+                matches = BCrypt.checkpw(password, passwordHash);
+            } catch (IllegalArgumentException ex) {
+                matches = false;
+            }
+        }
+        if (!matches) {
+            throw ApiException.validation("password", "Mật khẩu không chính xác.");
+        }
+
+        return sessionService.create(user.getId());
     }
 
     /**
@@ -310,4 +392,6 @@ public class AuthService {
                 ? userRepository.findByPhone(identifier)
                 : userRepository.findByEmail(identifier);
     }
+
+    public record PasswordSignUpResult(Session session, SignUpVerifyResponse response) {}
 }

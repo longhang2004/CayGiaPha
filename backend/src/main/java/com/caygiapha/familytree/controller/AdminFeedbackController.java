@@ -4,8 +4,12 @@ import com.caygiapha.familytree.dto.FeedbackResponse;
 import com.caygiapha.familytree.dto.FeedbackStatusUpdateRequest;
 import com.caygiapha.familytree.entity.FeedbackMessage;
 import com.caygiapha.familytree.service.FeedbackService;
+import com.caygiapha.familytree.service.FeedbackService.ServedFeedbackAttachment;
 import java.util.List;
 import java.util.UUID;
+import org.springframework.http.CacheControl;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -40,5 +44,16 @@ public class AdminFeedbackController {
                 request == null ? null : request.status(),
                 request == null ? null : request.adminNote());
         return FeedbackResponse.from(feedback);
+    }
+
+    @GetMapping("/{id}/attachments/{index}")
+    public ResponseEntity<byte[]> attachment(
+            @PathVariable("id") UUID id,
+            @PathVariable("index") int index) {
+        ServedFeedbackAttachment attachment = feedbackService.serveAttachment(id, index);
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType(attachment.contentType()))
+                .cacheControl(CacheControl.noCache().cachePrivate())
+                .body(attachment.bytes());
     }
 }
