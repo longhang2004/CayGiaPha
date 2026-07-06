@@ -149,9 +149,10 @@ describe("address helpers", () => {
       expect(capitalize("ông nội")).toBe("Ông nội");
     });
 
-    it("handles empty or falsy strings gracefully", () => {
+    it("handles empty or non-string values gracefully", () => {
       expect(capitalize("")).toBe("");
       expect(capitalize(undefined as any)).toBe("");
+      expect(capitalize(true)).toBe("True");
     });
   });
 });
@@ -168,6 +169,26 @@ describe("indexAddresses", () => {
     const map = indexAddresses(result);
     expect(map.get("a")?.resolved).toBe("anh");
     expect(isUnresolved(map.get("b"))).toBe(true);
+  });
+
+  it("normalizes Java backend boolean resolved addresses into display labels", () => {
+    const address: Address = {
+      personId: "father",
+      resolved: true,
+      status: "RESOLVED",
+      relation: {
+        upCount: 1,
+        downCount: 0,
+        side: "paternal" as any,
+        targetGender: "male" as any,
+        branchOrder: "unknown" as any,
+        spouseHop: false,
+      },
+    };
+
+    expect(isUnresolved(address)).toBe(false);
+    expect(addressLabel(address)).toBe("bố");
+    expect(capitalize(addressLabel(address))).toBe("Bố");
   });
 });
 

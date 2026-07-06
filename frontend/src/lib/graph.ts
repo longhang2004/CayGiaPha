@@ -111,8 +111,12 @@ export interface CanonicalRelation {
 
 export interface Address {
   personId: string;
-  /** The resolved Form_Of_Address term, or null when unresolved. */
-  resolved: string | null;
+  /**
+   * Legacy frontend API returned the resolved Form_Of_Address term here.
+   * The Java backend returns a boolean and carries the canonical descriptor
+   * in `relation`, so consumers must normalize before display.
+   */
+  resolved: string | boolean | null;
   status: "resolved" | "unresolved" | string;
   /** Set to "unresolved" by the backend for targets with no defined term. */
   unresolvedIndicator?: string | null;
@@ -132,10 +136,13 @@ export function isUnresolved(address: Address | undefined): boolean {
   if (!address) {
     return true;
   }
+  if (address.resolved === false) {
+    return true;
+  }
   return (
     address.unresolvedIndicator === "unresolved" ||
-    address.status === "unresolved" ||
-    address.resolved == null
+    address.status?.toLowerCase().startsWith("unresolved") ||
+    (address.resolved == null && !address.relation)
   );
 }
 
@@ -144,7 +151,10 @@ export function addressLabel(address: Address | undefined): string {
   if (isUnresolved(address)) {
     return UNRESOLVED_LABEL;
   }
-  return address!.resolved as string;
+  if (typeof address!.resolved === "string" && address!.resolved.trim()) {
+    return address!.resolved;
+  }
+  return canonicalRelationLabel(address!.relation) ?? UNRESOLVED_LABEL;
 }
 
 export interface ContextualAddressLabelInput {
@@ -237,8 +247,75 @@ export function contextualAddressLabel({
   return UNRESOLVED_LABEL;
 }
 
-/** Capitalize the first letter of a string. */
-export function capitalize(str: string): string {
+function canonicalRelationLabel(relation: CanonicalRelation | null | undefined): string | null {
+  if (!relation) {
+    return null;
+  }
+
+  const up = relation.upCount ?? 0;
+  const down = relation.downCount ?? 0;
+  const gender = relation.targetGender?.toLowerCase();
+  const side = relation.side?.toLowerCase();
+  const branchOrder = relation.branchOrder?.toLowerCase();
+
+  if (relation.spouseHop && up === 0 && down === 0) {
+    if (gender === "male") return "chồng";
+    if (gender === "female") return "vợ";
+    return "vợ/chồng";
+  }
+
+  if (up === 0) {
+    if (down === 1) return "con";
+    if (down === 2) return "cháu";
+    if (down >= 3) return "chắt";
+  }
+
+  if (down === 0) {
+    if (up === 1) {
+      if (gender === "male") return side === "paternal" ? "bố" : "cha";
+      if (gender === "female") return "mẹ";
+      return "cha/mẹ";
+    }
+    if (up === 2) {
+      const suffix = side === "paternal" ? " nội" : side === "maternal" ? " ngoại" : "";
+      if (gender === "male") return `ông${suffix}`;
+      if (gender === "female") return `bà${suffix}`;
+      return `ông/bà${suffix}`;
+    }
+    if (up >= 3) {
+      return "cụ";
+    }
+  }
+
+  if (up === 1 && down === 1) {
+    if (branchOrder === "elder" && gender === "male") return "anh";
+    if (branchOrder === "elder" && gender === "female") return "chị";
+    return "em";
+  }
+
+  if (up === 2 && down === 1) {
+    if (side === "paternal") {
+      if (gender === "male") return branchOrder === "elder" ? "bác" : "chú";
+      if (gender === "female") return branchOrder === "elder" ? "bác" : "cô";
+    }
+    if (side === "maternal") {
+      if (gender === "male") return "cậu";
+      if (gender === "female") return "dì";
+    }
+  }
+
+  if (up === 2 && down === 2) {
+    if (branchOrder === "elder" && gender === "male") return "anh họ";
+    if (branchOrder === "elder" && gender === "female") return "chị họ";
+    return "em họ";
+  }
+
+  return null;
+}
+
+/** Capitalize the first letter of a displayable value. */
+export function capitalize(value: unknown): string {
+  const str = typeof value === "string" ? value : value == null ? "" : String(value);
   if (!str) return "";
   return str.charAt(0).toUpperCase() + str.slice(1);
 }
