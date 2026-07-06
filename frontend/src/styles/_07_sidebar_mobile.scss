@@ -60,6 +60,11 @@
   justify-content: space-between;
 }
 
+.global-sidebar__utility {
+  display: flex;
+  align-items: center;
+}
+
 .global-sidebar--collapsed .global-sidebar__brand-container {
   justify-content: center;
 }
@@ -297,6 +302,10 @@ html.dark .global-sidebar__brand img {
 
   .global-sidebar__brand-container {
     justify-content: space-between !important;
+  }
+
+  .global-sidebar__utility {
+    display: none !important;
   }
 
   .global-sidebar__link-text {

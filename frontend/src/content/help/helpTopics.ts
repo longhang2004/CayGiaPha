@@ -107,6 +107,7 @@ export const HELP_TOPICS: HelpTopic[] = [
     summary: "Tìm nhanh thành viên và xem sơ đồ kết nối giữa hai người.",
     paragraphs: [
       "Sử dụng thanh tìm kiếm (có biểu tượng kính lúp) để tìm nhanh một thành viên theo tên. Khi chọn một kết quả, bản đồ sẽ tự động di chuyển và phóng to tới vị trí của người đó.",
+      "Khi lần đầu truy cập giao diện cây, hệ thống hiển thị các tooltip ngắn để chỉ vị trí thanh tìm kiếm, bộ chọn góc nhìn, nút thêm thành viên, cộng tác và cụm điều hướng bản đồ. Bạn có thể bấm Tiếp theo để xem hết hoặc Bỏ qua nếu đã quen thao tác.",
       "Để hiểu rõ quan hệ giữa hai người bất kỳ, bạn có thể thiết lập một người làm 'Điểm nhìn' (Viewpoint), sau đó chọn người kia và nhấn biểu tượng 'Tìm đường đi'. Hệ thống sẽ làm nổi bật con đường huyết thống hoặc hôn nhân ngắn nhất nối liền hai người."
     ],
   },

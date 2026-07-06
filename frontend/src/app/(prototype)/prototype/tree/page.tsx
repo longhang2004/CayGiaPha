@@ -50,6 +50,7 @@ import {
 import "@/components/graph/graph.css";
 import { CollaborationIcon, PlusIcon, CloseIcon } from "@/components/ui/Icons";
 import { OnboardingModal } from "@/components/onboarding/OnboardingModal";
+import { TreeWorkspaceTour } from "@/components/onboarding/TreeWorkspaceTour";
 
 /** Stub fetchAddresses that resolves immediately with no addresses. */
 async function mockFetchAddresses(
@@ -241,6 +242,8 @@ function PrototypeTreeContent() {
       <OnboardingModal isOpen={showTutorial} onClose={handleDismissTutorial} />
 
       <div className="tree-workspace__layout">
+        <TreeWorkspaceTour storageKey="prototype_tree_workspace_tour_seen_v1" />
+
         {/* Floating Island Header/Toolbar */}
         <div className="tree-page-header">
           <div className="tree-page-header__row-one">

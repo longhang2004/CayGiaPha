@@ -214,6 +214,10 @@ html.dark .tree-page-header__logo {
   transition: width 0.25s cubic-bezier(0.16,1,0.3,1);
 }
 
+.tree-page-header .search-input-wrapper {
+  overflow: hidden;
+}
+
 .tree-page-header .search-input-wrapper input {
   height: 44px !important;
   min-height: 44px !important;
@@ -256,6 +260,98 @@ html.dark .tree-page-header__logo {
 
 .btn-terracotta:hover {
   background-color: var(--color-brand-active);
+}
+
+/* ---- In-tree coach tooltips ---- */
+.tree-tour {
+  position: fixed;
+  inset: 0;
+  z-index: 190;
+  pointer-events: none;
+}
+
+.tree-tour__scrim {
+  position: absolute;
+  inset: 0;
+  background: rgba(12, 12, 10, 0.14);
+  backdrop-filter: blur(1px);
+  -webkit-backdrop-filter: blur(1px);
+}
+
+.tree-tour__spotlight {
+  position: fixed;
+  border: 2px solid var(--color-brand);
+  border-radius: 1rem;
+  box-shadow: 0 0 0 9999px rgba(12, 12, 10, 0.2), 0 14px 36px rgba(0, 0, 0, 0.18);
+  background: rgba(255, 255, 255, 0.06);
+  pointer-events: none;
+}
+
+.tree-tour__card {
+  position: fixed;
+  display: grid;
+  gap: 0.65rem;
+  padding: 1rem;
+  border: 1px solid var(--color-hairline);
+  border-radius: 1rem;
+  background: var(--color-surface-card);
+  color: var(--color-fg);
+  box-shadow: 0 18px 48px rgba(30, 28, 22, 0.22);
+  pointer-events: auto;
+}
+
+.tree-tour__close {
+  position: absolute;
+  top: 0.55rem;
+  right: 0.55rem;
+  width: 2rem;
+  height: 2rem;
+  min-width: 2rem;
+  min-height: 2rem;
+  padding: 0;
+  border: 1px solid var(--color-hairline);
+  background: var(--color-surface-card);
+  color: var(--color-muted);
+}
+
+.tree-tour__eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  width: fit-content;
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  color: var(--color-brand);
+  background: var(--color-surface-strong);
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.tree-tour__title {
+  margin: 0;
+  padding-right: 2rem;
+  font-size: 1rem;
+  line-height: 1.25;
+}
+
+.tree-tour__body {
+  margin: 0;
+  color: var(--color-muted);
+  line-height: 1.45;
+  font-size: 0.88rem;
+}
+
+.tree-tour__footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  padding-top: 0.25rem;
+}
+
+.tree-tour__button {
+  min-height: 40px;
+  height: 40px;
+  padding-inline: 0.9rem;
 }
 
 /* ---- Tablet (540–1024px) ---- */
@@ -363,6 +459,16 @@ html.dark .tree-page-header__logo {
     grid-column: 1 / -1;
   }
 
+  .tree-page-header .search-panel-toolbar__fields,
+  .tree-page-header .search-panel-toolbar__fields .field.search-field {
+    gap: 0.35rem;
+  }
+
+  .tree-page-header .search-input-wrapper input {
+    padding-inline: 0.95rem !important;
+    text-overflow: ellipsis;
+  }
+
   .tree-page-header__actions {
     order: 2;
     grid-column: 1;
@@ -429,6 +535,20 @@ html.dark .tree-page-header__logo {
 
   .tree-page-header .search-panel-toolbar__fields .btn {
     padding-inline: 0.55rem;
+  }
+
+  .tree-tour__card {
+    padding: 0.9rem;
+    border-radius: 0.875rem;
+  }
+
+  .tree-tour__footer {
+    justify-content: stretch;
+  }
+
+  .tree-tour__button {
+    flex: 1;
+    padding-inline: 0.6rem;
   }
 }
 

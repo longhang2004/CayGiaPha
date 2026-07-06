@@ -72,7 +72,7 @@ export function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse }: Side
             >
               <img src="/logo.svg" alt="Logo Cây Gia Phả" style={{ height: "24px", width: "auto" }} />
             </Link>
-            <div style={{
+            <div className="global-sidebar__utility" style={{
               display: "flex",
               flexDirection: isCollapsed ? "column" : "row",
               alignItems: "center",

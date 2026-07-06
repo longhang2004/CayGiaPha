@@ -22,6 +22,7 @@ import { PersonInfoPanel } from "@/components/graph/PersonInfoPanel";
 import { ViewpointSelector } from "@/components/graph/ViewpointSelector";
 import { TreeGraphSkeleton } from "@/components/graph/TreeGraphSkeleton";
 import { UpcomingEventsWidget } from "@/components/graph/UpcomingEventsWidget";
+import { TreeWorkspaceTour } from "@/components/onboarding/TreeWorkspaceTour";
 import { api, ApiError } from "@/lib/apiClient";
 import type { Person, Relationship, Address } from "@/lib/graph";
 import type { Region } from "@/lib/region";
@@ -424,6 +425,8 @@ function TreePageContent({ params, searchParams }: TreePageProps) {
     <section className="tree-workspace" style={showLoadingOverlay ? { visibility: "hidden" } : undefined}>
 
       <div className="tree-workspace__layout">
+        <TreeWorkspaceTour />
+
         {/* Floating Island Header/Toolbar */}
         <div className="tree-page-header">
           <div className="tree-page-header__row-one">
