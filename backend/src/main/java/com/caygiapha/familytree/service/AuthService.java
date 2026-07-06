@@ -276,7 +276,7 @@ public class AuthService {
         boolean matches = false;
         if (passwordHash != null && !passwordHash.isBlank()) {
             try {
-                matches = BCrypt.checkpw(password, passwordHash);
+                matches = BCrypt.checkpw(password, normalizeBcryptSalt(passwordHash));
             } catch (IllegalArgumentException ex) {
                 matches = false;
             }
@@ -391,6 +391,13 @@ public class AuthService {
         return type == IdentifierType.PHONE
                 ? userRepository.findByPhone(identifier)
                 : userRepository.findByEmail(identifier);
+    }
+
+    private static String normalizeBcryptSalt(String passwordHash) {
+        if (passwordHash.startsWith("$2b$") || passwordHash.startsWith("$2y$")) {
+            return "$2a$" + passwordHash.substring(4);
+        }
+        return passwordHash;
     }
 
     public record PasswordSignUpResult(Session session, SignUpVerifyResponse response) {}

@@ -367,6 +367,22 @@ class AuthServiceTest {
     }
 
     @Test
+    void signInWithPasswordAcceptsBcryptJsHashPrefix() {
+        User user = User.withEmail(EMAIL);
+        setId(user, "id", UUID.randomUUID());
+        user.setVerified(true);
+        user.setPasswordHash("$2b$10$nb7vLIlepGDWspwVwfsKguhvgv7sPkD4sJTCkHOCTg/UgIiCi1OQ.");
+        when(userRepository.findByEmail(EMAIL)).thenReturn(Optional.of(user));
+        Session session = new Session(user.getId(), Instant.now().plusSeconds(3600));
+        when(sessionService.create(user.getId())).thenReturn(session);
+
+        Session result = service.signInWithPassword(EMAIL, "motconvit@123");
+
+        assertThat(result).isSameAs(session);
+        verify(sessionService).create(user.getId());
+    }
+
+    @Test
     void signInWithPasswordRejectsWrongPasswordWithoutCreatingSession() {
         User user = User.withEmail(EMAIL);
         setId(user, "id", UUID.randomUUID());

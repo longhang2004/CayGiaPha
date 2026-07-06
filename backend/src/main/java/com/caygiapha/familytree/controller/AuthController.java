@@ -21,6 +21,7 @@ import com.caygiapha.familytree.service.AuthService;
 import com.caygiapha.familytree.service.ConsentService;
 import com.caygiapha.familytree.service.RateLimiter;
 import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -64,6 +65,9 @@ public class AuthController {
     private final AuditService auditService;
     private final AuthContextHolder authContextHolder;
     private final UserRepository userRepository;
+
+    @Value("${app.ratelimit.signin.max-requests:30}")
+    private int signInRateLimit = 30;
 
     public AuthController(
             AuthService authService,
@@ -122,8 +126,8 @@ public class AuthController {
     @PostMapping("/signin")
     public ResponseEntity<?> signIn(@RequestBody SignInRequest request, HttpServletRequest http) {
         // 25.1 — throttle sign-in code requests per identifier and per source address.
-        rateLimiter.check("signin:" + request.identifier());
-        rateLimiter.check("ip:" + http.getRemoteAddr());
+        rateLimiter.check("signin:" + request.identifier(), signInRateLimit);
+        rateLimiter.check("ip:" + http.getRemoteAddr(), signInRateLimit);
         if (request.password() != null) {
             Session session = authService.signInWithPassword(request.identifier(), request.password());
             auditService.recordAs(session.getUserId(), AuditService.SIGN_IN, "user",

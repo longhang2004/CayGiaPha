@@ -62,23 +62,32 @@ public class RateLimiter {
      * exceeded {@code maxRequests} within the current window. A {@code null}/blank key is ignored.
      */
     public void check(String key) {
+        check(key, maxRequests);
+    }
+
+    /**
+     * Count one request against {@code key} with an endpoint-specific limit. The shared default
+     * window still applies, so production can raise limits for low-risk UX flows without changing
+     * more sensitive request classes.
+     */
+    public void check(String key, int maxRequestsForKey) {
         if (key == null || key.isBlank()) {
             return;
         }
-        if (redisEnabled && checkRedis(key)) {
+        if (redisEnabled && checkRedis(key, maxRequestsForKey)) {
             return;
         }
-        checkMemory(key);
+        checkMemory(key, maxRequestsForKey);
     }
 
-    private boolean checkRedis(String key) {
+    private boolean checkRedis(String key, int maxRequestsForKey) {
         try {
             String redisKey = "caygiapha:rate-limit:" + key;
             Long count = redisTemplate.opsForValue().increment(redisKey);
             if (count != null && count == 1L) {
                 redisTemplate.expire(redisKey, window.toSeconds(), TimeUnit.SECONDS);
             }
-            if (count != null && count > maxRequests) {
+            if (count != null && count > maxRequestsForKey) {
                 throw ApiException.tooManyAttempts(
                         "Too many requests. Please wait a while and try again.");
             }
@@ -90,7 +99,7 @@ public class RateLimiter {
         }
     }
 
-    private void checkMemory(String key) {
+    private void checkMemory(String key, int maxRequestsForKey) {
         Instant now = clock.instant();
         Window updated = windows.compute(key, (k, existing) -> {
             if (existing == null || Duration.between(existing.start(), now).compareTo(window) >= 0) {
@@ -98,7 +107,7 @@ public class RateLimiter {
             }
             return new Window(existing.start(), existing.count() + 1);
         });
-        if (updated.count() > maxRequests) {
+        if (updated.count() > maxRequestsForKey) {
             throw ApiException.tooManyAttempts(
                     "Too many requests. Please wait a while and try again.");
         }
