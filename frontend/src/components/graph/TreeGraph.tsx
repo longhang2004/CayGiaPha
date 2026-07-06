@@ -458,6 +458,12 @@ export function TreeGraph({
   const [zoom, setZoom] = useState(1);
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  const pinchStartRef = useRef<{
+    distance: number;
+    zoom: number;
+    pan: { x: number; y: number };
+    midpoint: { x: number; y: number };
+  } | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const fullscreenRef = useRef<HTMLDivElement>(null);
 
@@ -520,19 +526,68 @@ export function TreeGraph({
     setIsDragging(false);
   };
 
+  const distanceBetweenTouches = (touches: TouchList) => {
+    const dx = touches[0].clientX - touches[1].clientX;
+    const dy = touches[0].clientY - touches[1].clientY;
+    return Math.hypot(dx, dy);
+  };
+
+  const midpointBetweenTouches = (touches: TouchList) => ({
+    x: (touches[0].clientX + touches[1].clientX) / 2,
+    y: (touches[0].clientY + touches[1].clientY) / 2,
+  });
+
+  const clampZoom = (value: number) => Math.max(0.3, Math.min(3, value));
+
   const handleTouchStart = (e: React.TouchEvent<SVGSVGElement>) => {
-    if (e.touches.length !== 1) return;
-    const touch = e.touches[0];
     const target = e.target as SVGElement;
     if (target.closest(".tree-graph__node-button") || target.closest("select") || target.closest("button")) {
       return;
     }
+
+    if (e.touches.length === 2) {
+      e.preventDefault();
+      setIsDragging(false);
+      pinchStartRef.current = {
+        distance: distanceBetweenTouches(e.touches),
+        zoom,
+        pan,
+        midpoint: midpointBetweenTouches(e.touches),
+      };
+      return;
+    }
+
+    if (e.touches.length !== 1) return;
+    const touch = e.touches[0];
+    pinchStartRef.current = null;
     setIsDragging(true);
     setDragStart({ x: touch.clientX - pan.x, y: touch.clientY - pan.y });
   };
 
   const handleTouchMove = (e: React.TouchEvent<SVGSVGElement>) => {
+    if (e.touches.length === 2 && pinchStartRef.current) {
+      e.preventDefault();
+      const start = pinchStartRef.current;
+      const nextDistance = distanceBetweenTouches(e.touches);
+      if (start.distance <= 0 || nextDistance <= 0) return;
+
+      const nextZoom = clampZoom(start.zoom * (nextDistance / start.distance));
+      const currentMidpoint = midpointBetweenTouches(e.touches);
+      const anchor = {
+        x: (start.midpoint.x - start.pan.x) / start.zoom,
+        y: (start.midpoint.y - start.pan.y) / start.zoom,
+      };
+
+      setZoom(nextZoom);
+      setPan({
+        x: currentMidpoint.x - anchor.x * nextZoom,
+        y: currentMidpoint.y - anchor.y * nextZoom,
+      });
+      return;
+    }
+
     if (!isDragging || e.touches.length !== 1) return;
+    e.preventDefault();
     const touch = e.touches[0];
     setPan({
       x: touch.clientX - dragStart.x,
@@ -540,11 +595,16 @@ export function TreeGraph({
     });
   };
 
+  const handleTouchEnd = () => {
+    pinchStartRef.current = null;
+    setIsDragging(false);
+  };
+
   const handleWheel = (e: React.WheelEvent<SVGSVGElement>) => {
     e.preventDefault();
     const zoomFactor = 1.05;
     const nextZoom = e.deltaY < 0 ? zoom * zoomFactor : zoom / zoomFactor;
-    setZoom(Math.max(0.3, Math.min(3, nextZoom)));
+    setZoom(clampZoom(nextZoom));
   };
 
   const handleZoomIn = () => setZoom((z) => Math.min(3, z * 1.2));
@@ -720,7 +780,8 @@ export function TreeGraph({
           onMouseLeave={handleMouseUp}
           onTouchStart={handleTouchStart}
           onTouchMove={handleTouchMove}
-          onTouchEnd={handleMouseUp}
+          onTouchEnd={handleTouchEnd}
+          onTouchCancel={handleTouchEnd}
           onWheel={handleWheel}
           role="group"
           aria-label="Sơ đồ gia phả"
