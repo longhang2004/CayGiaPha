@@ -1,6 +1,7 @@
 package com.caygiapha.familytree.controller;
 
 import com.caygiapha.familytree.config.SessionCookieFactory;
+import com.caygiapha.familytree.dto.AuthSessionResponse;
 import com.caygiapha.familytree.dto.SignInRequest;
 import com.caygiapha.familytree.dto.SignInResponse;
 import com.caygiapha.familytree.dto.SignInVerifyRequest;
@@ -11,6 +12,11 @@ import com.caygiapha.familytree.dto.SignUpVerifyRequest;
 import com.caygiapha.familytree.dto.SignUpVerifyResponse;
 import com.caygiapha.familytree.dto.GoogleAuthRequest;
 import com.caygiapha.familytree.entity.Session;
+import com.caygiapha.familytree.entity.User;
+import com.caygiapha.familytree.error.ApiException;
+import com.caygiapha.familytree.repository.UserRepository;
+import com.caygiapha.familytree.security.AuthContext;
+import com.caygiapha.familytree.security.AuthContextHolder;
 import com.caygiapha.familytree.service.AuditService;
 import com.caygiapha.familytree.service.AuthService;
 import com.caygiapha.familytree.service.ConsentService;
@@ -20,6 +26,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CookieValue;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -57,18 +64,24 @@ public class AuthController {
     private final ConsentService consentService;
     private final RateLimiter rateLimiter;
     private final AuditService auditService;
+    private final AuthContextHolder authContextHolder;
+    private final UserRepository userRepository;
 
     public AuthController(
             AuthService authService,
             SessionCookieFactory sessionCookieFactory,
             ConsentService consentService,
             RateLimiter rateLimiter,
-            AuditService auditService) {
+            AuditService auditService,
+            AuthContextHolder authContextHolder,
+            UserRepository userRepository) {
         this.authService = authService;
         this.sessionCookieFactory = sessionCookieFactory;
         this.consentService = consentService;
         this.rateLimiter = rateLimiter;
         this.auditService = auditService;
+        this.authContextHolder = authContextHolder;
+        this.userRepository = userRepository;
     }
 
     @PostMapping("/signup")
@@ -126,6 +139,25 @@ public class AuthController {
                         HttpHeaders.SET_COOKIE,
                         sessionCookieFactory.create(session.getId()).toString())
                 .body(new SignInVerifyResponse(session.getUserId(), session.getExpiresAt()));
+    }
+
+    @GetMapping("/session")
+    public AuthSessionResponse session() {
+        AuthContext auth = authContextHolder.current();
+        if (!auth.isAuthenticated()) {
+            throw ApiException.accountNotFound("No active session found.");
+        }
+
+        User user = userRepository.findById(auth.userId())
+                .orElseThrow(() -> ApiException.accountNotFound(
+                        "No user found for current session."));
+        String identifier = user.getPhone() != null ? user.getPhone() : user.getEmail();
+        return new AuthSessionResponse(
+                user.getId(),
+                auth.ownedTreeId().orElse(null),
+                identifier == null ? "" : identifier,
+                user.isVerified(),
+                "admin".equals(user.getRole()) ? "admin" : "user");
     }
 
     @PostMapping("/signout")
