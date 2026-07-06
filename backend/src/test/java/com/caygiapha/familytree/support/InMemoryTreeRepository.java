@@ -2,6 +2,7 @@ package com.caygiapha.familytree.support;
 
 import com.caygiapha.familytree.entity.Tree;
 import com.caygiapha.familytree.repository.TreeRepository;
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
@@ -11,13 +12,25 @@ public class InMemoryTreeRepository extends InMemoryRepository<Tree> implements 
 
     @Override
     public Optional<Tree> findByOwnerUserId(UUID ownerUserId) {
+        return findFirstByOwnerUserIdOrderByCreatedAtAsc(ownerUserId);
+    }
+
+    @Override
+    public Optional<Tree> findFirstByOwnerUserIdOrderByCreatedAtAsc(UUID ownerUserId) {
         return all().stream()
                 .filter(t -> Objects.equals(t.getOwnerUserId(), ownerUserId))
                 .findFirst();
     }
 
     @Override
+    public List<Tree> findAllByOwnerUserIdOrderByCreatedAtAsc(UUID ownerUserId) {
+        return all().stream()
+                .filter(t -> Objects.equals(t.getOwnerUserId(), ownerUserId))
+                .toList();
+    }
+
+    @Override
     public boolean existsByOwnerUserId(UUID ownerUserId) {
-        return findByOwnerUserId(ownerUserId).isPresent();
+        return findFirstByOwnerUserIdOrderByCreatedAtAsc(ownerUserId).isPresent();
     }
 }

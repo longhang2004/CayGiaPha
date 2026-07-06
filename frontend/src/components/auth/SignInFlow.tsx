@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useSession } from "@/app/providers";
 import { signIn, signInWithGoogle } from "@/lib/auth";
 import { Button } from "@/components/Button";
-import { useGoogleLogin } from "@react-oauth/google";
+import { GoogleLogin, type CredentialResponse } from "@react-oauth/google";
 import { FormControl, Input } from "@/components/ui/FormControls";
 import { toAuthErrorState, fieldErrorFor, type AuthErrorState } from "./authErrors";
 
@@ -49,22 +49,23 @@ export function SignInFlow({ redirectTo = "/" }: SignInFlowProps) {
     }
   }
 
-  const loginWithGoogle = useGoogleLogin({
-    onSuccess: async (tokenResponse) => {
-      setSubmitting(true);
-      setError({});
-      try {
-        await signInWithGoogle(tokenResponse.access_token, "Bac", true, true);
-        await refresh();
-        router.push(redirectTo);
-      } catch (caught) {
-        setError(toAuthErrorState(caught));
-      } finally {
-        setSubmitting(false);
-      }
-    },
-    onError: () => setError({ form: "Lỗi đăng nhập Google. Vui lòng thử lại." }),
-  });
+  async function handleGoogleSuccess(response: CredentialResponse) {
+    if (!response.credential) {
+      setError({ form: "Google không trả về mã xác thực. Vui lòng thử lại." });
+      return;
+    }
+    setSubmitting(true);
+    setError({});
+    try {
+      await signInWithGoogle(response.credential, "Bac", true, true);
+      await refresh();
+      router.push(redirectTo);
+    } catch (caught) {
+      setError(toAuthErrorState(caught));
+    } finally {
+      setSubmitting(false);
+    }
+  }
 
   return (
     <div className="auth-wrapper animate-fade-up-heavy stagger-1" style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%", maxWidth: "30rem" }}>
@@ -124,34 +125,22 @@ export function SignInFlow({ redirectTo = "/" }: SignInFlowProps) {
           <span style={{ padding: "0 0.75rem" }}>Hoặc</span>
           <div style={{ flex: 1, height: "1px", backgroundColor: "var(--color-hairline)" }} />
         </div>
-        <button
-          type="button"
-          className="btn btn-secondary"
-          onClick={() => loginWithGoogle()}
-          disabled={submitting}
+        <div
           style={{
-            display: "inline-flex",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: "0.5rem",
-            textDecoration: "none",
-            backgroundColor: "#ffffff",
-            color: "#3c4043",
-            border: "1px solid #dadce0",
-            fontWeight: 500,
             width: "100%",
-            borderRadius: "8px",
-            minHeight: "44px"
+            display: "flex",
+            justifyContent: "center",
+            opacity: submitting ? 0.65 : 1,
+            pointerEvents: submitting ? "none" : "auto",
           }}
         >
-          <svg width="18" height="18" viewBox="0 0 18 18">
-            <path fill="#4285F4" d="M17.64 9.2c0-.63-.06-1.25-.16-1.84H9v3.47h4.84c-.21 1.12-.84 2.07-1.79 2.7v2.24h2.9c1.69-1.55 2.69-3.85 2.69-6.57z"/>
-            <path fill="#34A853" d="M9 18c2.43 0 4.47-.8 5.96-2.23l-2.91-2.24c-.8.54-1.84.87-3.05.87-2.34 0-4.33-1.58-5.03-3.7H.95v2.3C2.43 15.89 5.5 18 9 18z"/>
-            <path fill="#FBBC05" d="M3.97 10.7c-.18-.54-.28-1.12-.28-1.7s.1-1.16.28-1.7V5H.95C.35 6.2.01 7.57.01 9s.34 2.8 1.05 4l2.91-2.3z"/>
-            <path fill="#EA4335" d="M9 3.58c1.32 0 2.5.45 3.44 1.35L15 2.3C13.47.89 11.43 0 9 0 5.5 0 2.43 2.11.95 5.09L3.97 7.4c.7-2.12 2.69-3.82 5.03-3.82z"/>
-          </svg>
-          Đăng nhập bằng Google
-        </button>
+          <GoogleLogin
+            onSuccess={handleGoogleSuccess}
+            onError={() => setError({ form: "Lỗi đăng nhập Google. Vui lòng thử lại." })}
+            text="signin_with"
+            shape="rectangular"
+          />
+        </div>
       </div>
       </form>
         </div>

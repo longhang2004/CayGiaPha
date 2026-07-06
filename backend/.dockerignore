@@ -1,0 +1,3 @@
+target
+.jqwik-database
+docker-compose.yml

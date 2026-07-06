@@ -84,7 +84,7 @@ class AtMostOneTreePerUserProperties {
         // In-memory fake repository: one tree per owner, enforced like the UNIQUE constraint.
         Map<UUID, Tree> treesByOwner = new HashMap<>();
         TreeRepository treeRepository = mock(TreeRepository.class);
-        when(treeRepository.findByOwnerUserId(any(UUID.class)))
+        when(treeRepository.findFirstByOwnerUserIdOrderByCreatedAtAsc(any(UUID.class)))
                 .thenAnswer((InvocationOnMock i) -> Optional.ofNullable(treesByOwner.get(i.getArgument(0))));
         when(treeRepository.existsByOwnerUserId(any(UUID.class)))
                 .thenAnswer((InvocationOnMock i) -> treesByOwner.containsKey(i.getArgument(0)));

@@ -51,7 +51,7 @@ class AuthenticationFilterTest {
         when(userRepository.existsById(userId)).thenReturn(true);
         Tree tree = mock(Tree.class);
         when(tree.getId()).thenReturn(treeId);
-        when(treeRepository.findByOwnerUserId(userId)).thenReturn(Optional.of(tree));
+        when(treeRepository.findFirstByOwnerUserIdOrderByCreatedAtAsc(userId)).thenReturn(Optional.of(tree));
 
         AuthContext captured = runFilterWithCookie(token.toString());
 
@@ -68,7 +68,7 @@ class AuthenticationFilterTest {
         UUID userId = UUID.randomUUID();
         when(sessionService.resolveUserId(token)).thenReturn(Optional.of(userId));
         when(userRepository.existsById(userId)).thenReturn(true);
-        when(treeRepository.findByOwnerUserId(userId)).thenReturn(Optional.empty());
+        when(treeRepository.findFirstByOwnerUserIdOrderByCreatedAtAsc(userId)).thenReturn(Optional.empty());
 
         AuthContext captured = runFilterWithCookie(token.toString());
 

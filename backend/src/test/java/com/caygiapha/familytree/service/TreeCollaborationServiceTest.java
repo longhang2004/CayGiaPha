@@ -52,19 +52,19 @@ class TreeCollaborationServiceTest {
                 .thenAnswer(inv -> inv.getArgument(0));
 
         CollaborationInvitation invite = service.invite(treeId, "test@test.com", ownerId);
-        assertThat(invite.getStatus()).isEqualTo("sent");
+        assertThat(invite.getStatus()).isEqualTo("approved");
         assertThat(invite.getEmail()).isEqualTo("test@test.com");
         assertThat(invite.getCode()).hasSize(6);
     }
 
     @Test
-    void contributorInviteRequiresOwnerApproval() {
+    void contributorCanSendApprovedEmailInvite() {
         when(collaboratorRepository.existsByTreeIdAndUserId(treeId, contributorId)).thenReturn(true);
         when(invitationRepository.save(any(CollaborationInvitation.class)))
                 .thenAnswer(inv -> inv.getArgument(0));
 
         CollaborationInvitation invite = service.invite(treeId, "test@test.com", contributorId);
-        assertThat(invite.getStatus()).isEqualTo("pending");
+        assertThat(invite.getStatus()).isEqualTo("approved");
     }
 
     @Test
@@ -80,14 +80,14 @@ class TreeCollaborationServiceTest {
         when(invitationRepository.findById(invite.getId())).thenReturn(Optional.of(invite));
 
         service.approveInvitation(treeId, invite.getId(), ownerId);
-        assertThat(invite.getStatus()).isEqualTo("sent");
+        assertThat(invite.getStatus()).isEqualTo("approved");
     }
 
     @Test
     void joinTreeWithValidCodeSuccess() {
         CollaborationInvitation invite = new CollaborationInvitation(
                 treeId, ownerId, "test@test.com", "123456", Instant.now().plusSeconds(3600));
-        invite.setStatus("sent");
+        invite.setStatus("approved");
         when(invitationRepository.findByCode("123456")).thenReturn(Optional.of(invite));
         when(collaboratorRepository.save(any(TreeCollaborator.class)))
                 .thenAnswer(inv -> inv.getArgument(0));
@@ -103,10 +103,22 @@ class TreeCollaborationServiceTest {
     void joinTreeWithExpiredCodeThrowsException() {
         CollaborationInvitation invite = new CollaborationInvitation(
                 treeId, ownerId, "test@test.com", "123456", Instant.now().minusSeconds(3600));
-        invite.setStatus("sent");
+        invite.setStatus("approved");
         when(invitationRepository.findByCode("123456")).thenReturn(Optional.of(invite));
 
         assertThatThrownBy(() -> service.joinTree("123456", guestId))
                 .isInstanceOf(ApiException.class);
+    }
+
+    @Test
+    void joinTreeWithPendingCodeRequiresOwnerApproval() {
+        CollaborationInvitation invite = new CollaborationInvitation(
+                treeId, contributorId, "test@test.com", "123456", Instant.now().plusSeconds(3600));
+        invite.setStatus("pending");
+        when(invitationRepository.findByCode("123456")).thenReturn(Optional.of(invite));
+
+        assertThatThrownBy(() -> service.joinTree("123456", guestId))
+                .isInstanceOf(ApiException.class)
+                .hasMessageContaining("đang chờ chủ cây duyệt");
     }
 }

@@ -111,7 +111,7 @@ public class DataRightsService {
         AuthContext context = authorizationService.requireAuthenticatedViewer();
         UUID userId = context.userId();
 
-        treeRepository.findByOwnerUserId(userId).ifPresent(this::cascadeDeleteTree);
+        treeRepository.findAllByOwnerUserIdOrderByCreatedAtAsc(userId).forEach(this::cascadeDeleteTree);
 
         // Remove the user's own claim linkages (on any tree), sessions, consents, and codes.
         claimRepository.deleteByUserId(userId);

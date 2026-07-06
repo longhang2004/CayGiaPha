@@ -15,9 +15,7 @@ import java.util.UUID;
 /**
  * A family tree owned by exactly one {@link User} (Requirements 9.2, 13.1, 13.2).
  *
- * <p>Maps the {@code trees} table from {@code V1__initial_schema.sql}. The {@code owner_user_id}
- * foreign key carries a UNIQUE constraint, which is the database-level guarantee that a user owns
- * at most one tree (13.2); the service layer additionally guards against creating a second tree.
+ * <p>Maps the {@code trees} table from {@code V1__initial_schema.sql} plus later migrations.
  *
  * <p>{@code region} is stored ASCII-keyed (one of {@code Bac}/{@code Trung}/{@code Nam}, displayed
  * as Bắc/Trung/Nam) and defaults to {@link #DEFAULT_REGION} ({@code Bac}) when the owner does not
@@ -80,6 +78,10 @@ public class Tree {
     @Column(name = "region", nullable = false)
     private String region = DEFAULT_REGION;
 
+    /** User-facing tree name added when multiple trees per account became supported. */
+    @Column(name = "name", nullable = false)
+    private String name = "Cây Gia Phả";
+
     /** Read-sharing mode; one of {@code private}, {@code link}, {@code public}. (19.1) */
     @Column(name = "sharing", nullable = false)
     private String sharing = DEFAULT_SHARING;
@@ -103,8 +105,13 @@ public class Tree {
 
     /** Create a tree owned by the given user with an explicit region. */
     public Tree(UUID ownerUserId, String region) {
+        this(ownerUserId, region, "Cây Gia Phả");
+    }
+
+    public Tree(UUID ownerUserId, String region, String name) {
         this.ownerUserId = ownerUserId;
         this.region = region;
+        setName(name);
     }
 
     public UUID getId() {
@@ -121,6 +128,14 @@ public class Tree {
 
     public void setRegion(String region) {
         this.region = region;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name == null || name.isBlank() ? "Cây Gia Phả" : name.trim();
     }
 
     public String getSharing() {

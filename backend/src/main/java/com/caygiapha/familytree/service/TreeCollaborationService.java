@@ -61,11 +61,9 @@ public class TreeCollaborationService {
         CollaborationInvitation invitation = new CollaborationInvitation(
                 treeId, inviterId, email, code, expiresAt);
 
-        if (isOwner) {
-            invitation.setStatus("approved");
-        } else {
-            invitation.setStatus("pending"); // requires owner approval
-        }
+        // Direct email invitations are pre-approved. Generic link/code join requests remain pending
+        // until an owner approves them.
+        invitation.setStatus("approved");
 
         return invitationRepository.save(invitation);
     }

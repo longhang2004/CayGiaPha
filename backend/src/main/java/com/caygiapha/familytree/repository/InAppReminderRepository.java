@@ -12,4 +12,5 @@ import java.util.UUID;
 public interface InAppReminderRepository extends JpaRepository<InAppReminder, UUID> {
     List<InAppReminder> findByUserIdOrderByCreatedAtDesc(UUID userId);
     boolean existsByUserIdAndPersonIdAndAnniversaryDateAndDaysUntil(UUID userId, UUID personId, LocalDate anniversaryDate, int daysUntil);
+    void deleteByPersonIdIn(java.util.Collection<UUID> personIds);
 }

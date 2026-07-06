@@ -158,7 +158,8 @@ public class AuthService {
         user.setVerified(true);
         userRepository.save(user);
 
-        // 13.1 / 13.2 / 9.2 — create exactly one tree with the chosen region; reuse any existing.
+        // Legacy OTP signup still returns a default tree for older clients; Google signup does not
+        // auto-create a tree, matching the current frontend onboarding flow.
         Tree tree = createSingleTree(user.getId(), resolvedRegion);
 
         return new SignUpVerifyResponse(user.getId(), tree.getId(), tree.getRegion());
@@ -293,16 +294,14 @@ public class AuthService {
     }
 
     /**
-     * Create the user's single tree, or return the existing one if the user already owns a tree
-     * (Requirements 13.1, 13.2). The UNIQUE constraint on {@code owner_user_id} backs this; the
-     * read-then-create guard keeps the common path from relying on a constraint violation.
+     * Create the user's legacy default tree, or return the earliest existing one if present.
      *
      * <p>If creation fails (e.g. a constraint or persistence error), the exception propagates and
      * the enclosing {@link Mutation} transaction rolls back, leaving the user without a tree (13.3).
      */
     private Tree createSingleTree(UUID ownerUserId, String region) {
         return treeRepository
-                .findByOwnerUserId(ownerUserId)
+                .findFirstByOwnerUserIdOrderByCreatedAtAsc(ownerUserId)
                 .orElseGet(() -> treeRepository.save(new Tree(ownerUserId, region)));
     }
 

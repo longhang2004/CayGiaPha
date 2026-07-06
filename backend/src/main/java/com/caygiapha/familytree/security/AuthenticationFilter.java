@@ -25,8 +25,8 @@ import org.springframework.web.filter.OncePerRequestFilter;
  *       {@link SessionCookieFactory#parseToken};</li>
  *   <li>resolves the token to an authenticated user id with {@link SessionService#resolveUserId}
  *       (server-side expiry/revocation enforced there — Requirements 2.3, 2.8);</li>
- *   <li>confirms the resolved {@code User} still exists and loads the tree they own via
- *       {@link TreeRepository#findByOwnerUserId} (at most one per user, Requirement 13.2);</li>
+ *   <li>confirms the resolved {@code User} still exists and loads their earliest owned tree as a
+ *       legacy default context;</li>
  *   <li>binds the resulting {@link AuthContext} through {@link AuthContextHolder} and also exposes
  *       it as the {@link #REQUEST_ATTRIBUTE} request attribute.</li>
  * </ol>
@@ -95,7 +95,7 @@ public class AuthenticationFilter extends OncePerRequestFilter {
             return AuthContext.anonymous();
         }
         UUID ownedTreeId =
-                treeRepository.findByOwnerUserId(uid).map(Tree::getId).orElse(null);
+                treeRepository.findFirstByOwnerUserIdOrderByCreatedAtAsc(uid).map(Tree::getId).orElse(null);
         return AuthContext.authenticated(uid, ownedTreeId);
     }
 

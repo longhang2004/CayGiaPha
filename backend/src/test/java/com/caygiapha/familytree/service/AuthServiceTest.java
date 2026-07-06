@@ -171,7 +171,7 @@ class AuthServiceTest {
         User user = User.withPhone(PHONE);
         setId(user, "id", UUID.randomUUID());
         when(userRepository.findByPhone(PHONE)).thenReturn(Optional.of(user));
-        when(treeRepository.findByOwnerUserId(user.getId())).thenReturn(Optional.empty());
+        when(treeRepository.findFirstByOwnerUserIdOrderByCreatedAtAsc(user.getId())).thenReturn(Optional.empty());
 
         SignUpVerifyResponse response = service.verifySignUp(PHONE, CODE);
 
@@ -197,7 +197,7 @@ class AuthServiceTest {
         Tree existing = new Tree(user.getId(), "Trung");
         setId(existing, "id", UUID.randomUUID());
         when(userRepository.findByEmail(EMAIL)).thenReturn(Optional.of(user));
-        when(treeRepository.findByOwnerUserId(user.getId())).thenReturn(Optional.of(existing));
+        when(treeRepository.findFirstByOwnerUserIdOrderByCreatedAtAsc(user.getId())).thenReturn(Optional.of(existing));
 
         SignUpVerifyResponse response = service.verifySignUp(EMAIL, CODE);
 
@@ -212,7 +212,7 @@ class AuthServiceTest {
         User user = User.withPhone(PHONE);
         setId(user, "id", UUID.randomUUID());
         when(userRepository.findByPhone(PHONE)).thenReturn(Optional.of(user));
-        when(treeRepository.findByOwnerUserId(user.getId())).thenReturn(Optional.empty());
+        when(treeRepository.findFirstByOwnerUserIdOrderByCreatedAtAsc(user.getId())).thenReturn(Optional.empty());
 
         SignUpVerifyResponse response = service.verifySignUp(PHONE, CODE, "Nam");
 
@@ -227,7 +227,7 @@ class AuthServiceTest {
         User user = User.withPhone(PHONE);
         setId(user, "id", UUID.randomUUID());
         when(userRepository.findByPhone(PHONE)).thenReturn(Optional.of(user));
-        when(treeRepository.findByOwnerUserId(user.getId())).thenReturn(Optional.empty());
+        when(treeRepository.findFirstByOwnerUserIdOrderByCreatedAtAsc(user.getId())).thenReturn(Optional.empty());
 
         SignUpVerifyResponse response = service.verifySignUp(PHONE, CODE, "   ");
 
@@ -289,7 +289,7 @@ class AuthServiceTest {
         User user = User.withPhone(PHONE);
         setId(user, "id", UUID.randomUUID());
         when(userRepository.findByPhone(PHONE)).thenReturn(Optional.of(user));
-        when(treeRepository.findByOwnerUserId(user.getId())).thenReturn(Optional.empty());
+        when(treeRepository.findFirstByOwnerUserIdOrderByCreatedAtAsc(user.getId())).thenReturn(Optional.empty());
         when(treeRepository.save(any(Tree.class)))
                 .thenThrow(new RuntimeException("tree creation failed"));
 

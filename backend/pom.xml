@@ -48,6 +48,12 @@
             <artifactId>spring-boot-starter-data-jpa</artifactId>
         </dependency>
 
+        <!-- Shared rate-limit state for multi-instance deployments -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-redis</artifactId>
+        </dependency>
+
         <!-- Database schema migrations -->
         <dependency>
             <groupId>org.flywaydb</groupId>

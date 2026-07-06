@@ -22,6 +22,7 @@ import com.caygiapha.familytree.repository.VerificationCodeRepository;
 import com.caygiapha.familytree.security.AuthContext;
 import com.caygiapha.familytree.security.AuthorizationService;
 import com.caygiapha.familytree.service.DataRightsService.EraseStrategy;
+import java.lang.reflect.Field;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -104,9 +105,10 @@ class DataRightsServiceTest {
     void deleteAccountCascadesOwnedTreeAndUserData() {
         UUID treeId = UUID.randomUUID();
         Tree tree = new Tree(userId);
+        setId(tree, treeId);
         UUID p1 = UUID.randomUUID();
         Person person = new Person(treeId, "C", "male");
-        when(treeRepository.findByOwnerUserId(userId)).thenReturn(Optional.of(tree));
+        when(treeRepository.findAllByOwnerUserIdOrderByCreatedAtAsc(userId)).thenReturn(List.of(tree));
         when(relationshipRepository.findByTreeId(tree.getId())).thenReturn(List.of());
         when(personRepository.findByTreeId(tree.getId())).thenReturn(List.of(person));
         lenient().when(sessionRepository.findByUserId(userId)).thenReturn(List.of());
@@ -120,5 +122,15 @@ class DataRightsServiceTest {
         verify(userConsentRepository).deleteByUserId(userId);
         verify(verificationCodeRepository).deleteByUserId(userId);
         verify(userRepository).deleteById(userId);
+    }
+
+    private static void setId(Object entity, UUID id) {
+        try {
+            Field field = entity.getClass().getDeclaredField("id");
+            field.setAccessible(true);
+            field.set(entity, id);
+        } catch (ReflectiveOperationException e) {
+            throw new IllegalStateException(e);
+        }
     }
 }

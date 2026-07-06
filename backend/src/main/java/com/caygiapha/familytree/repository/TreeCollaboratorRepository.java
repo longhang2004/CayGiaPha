@@ -10,6 +10,8 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface TreeCollaboratorRepository extends JpaRepository<TreeCollaborator, UUID> {
     List<TreeCollaborator> findByTreeId(UUID treeId);
+    List<TreeCollaborator> findByUserId(UUID userId);
     Optional<TreeCollaborator> findByTreeIdAndUserId(UUID treeId, UUID userId);
     boolean existsByTreeIdAndUserId(UUID treeId, UUID userId);
+    void deleteByTreeId(UUID treeId);
 }

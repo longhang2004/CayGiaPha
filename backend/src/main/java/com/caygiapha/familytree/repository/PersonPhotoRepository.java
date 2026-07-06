@@ -25,4 +25,7 @@ public interface PersonPhotoRepository extends JpaRepository<PersonPhoto, UUID> 
 
     /** Delete all photo rows for a person (node deletion cascade; 24.6). */
     void deleteByPersonId(UUID personId);
+
+    /** Delete all photo rows for a set of people during whole-tree deletion. */
+    void deleteByPersonIdIn(java.util.Collection<UUID> personIds);
 }
