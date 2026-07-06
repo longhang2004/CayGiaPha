@@ -259,19 +259,14 @@ class NeighborPreservationProperties {
         }
     }
 
-    /** The derived (bloodline/marriage) neighbors of the target in the pre-deletion graph. */
+    /** The derived projection neighbors of the target in the pre-deletion graph. */
     private Set<UUID> derivedNeighborsOf(Scenario scenario, List<UUID> pool, UUID targetId) {
         Set<UUID> neighbors = new HashSet<>();
-        for (EdgeDesc e : scenario.edges()) {
-            if (!isDerived(e.type())) {
-                continue;
-            }
-            UUID a = pool.get(e.a());
-            UUID b = pool.get(e.b());
-            if (a.equals(targetId)) {
-                neighbors.add(b);
-            } else if (b.equals(targetId)) {
-                neighbors.add(a);
+        KinshipGraphProjection projection = KinshipGraphProjection.fromEdges(
+                TREE_ID, relationshipsFromScenario(scenario, pool));
+        for (KinshipGraphProjection.Step step : projection.stepsFrom(targetId)) {
+            if (!step.to().equals(targetId)) {
+                neighbors.add(step.to());
             }
         }
         return neighbors;
@@ -284,20 +279,13 @@ class NeighborPreservationProperties {
      */
     private Set<CreatedKey> expectedAssertedEdges(
             Scenario scenario, List<UUID> pool, UUID targetId, Set<UUID> derivedNeighbors) {
-        // Post-deletion derived adjacency: derived edges with neither endpoint being the target.
-        Map<UUID, List<UUID>> postAdj = new HashMap<>();
-        for (EdgeDesc e : scenario.edges()) {
-            if (!isDerived(e.type())) {
-                continue;
-            }
-            UUID a = pool.get(e.a());
-            UUID b = pool.get(e.b());
-            if (a.equals(targetId) || b.equals(targetId)) {
-                continue;
-            }
-            postAdj.computeIfAbsent(a, k -> new ArrayList<>()).add(b);
-            postAdj.computeIfAbsent(b, k -> new ArrayList<>()).add(a);
-        }
+        // Post-deletion derived projection: derived edges with neither endpoint being the target.
+        KinshipGraphProjection postProjection = KinshipGraphProjection.fromEdges(
+                TREE_ID,
+                relationshipsFromScenario(scenario, pool).stream()
+                        .filter(edge -> !targetId.equals(edge.getSourceId())
+                                && !targetId.equals(edge.getTargetId()))
+                        .toList());
 
         List<UUID> neighbors = new ArrayList<>(derivedNeighbors);
         Set<CreatedKey> expected = new HashSet<>();
@@ -309,7 +297,7 @@ class NeighborPreservationProperties {
                 if (label.isEmpty()) {
                     continue; // (15.7) undefined pre-deletion address -> no asserted edge
                 }
-                if (!reachable(postAdj, a, b)) {
+                if (!reachable(postProjection, a, b)) {
                     // (15.5) target was a cut node for this pair -> create the labeled asserted edge
                     expected.add(CreatedKey.of(a, b, label.get()));
                 }
@@ -318,8 +306,14 @@ class NeighborPreservationProperties {
         return expected;
     }
 
-    /** Breadth-first reachability over an undirected adjacency map. */
-    private boolean reachable(Map<UUID, List<UUID>> adj, UUID from, UUID to) {
+    private List<Relationship> relationshipsFromScenario(Scenario scenario, List<UUID> pool) {
+        return scenario.edges().stream()
+                .map(e -> new Relationship(TREE_ID, e.type(), pool.get(e.a()), pool.get(e.b())))
+                .toList();
+    }
+
+    /** Breadth-first reachability over the projection's derived adjacency. */
+    private boolean reachable(KinshipGraphProjection projection, UUID from, UUID to) {
         if (from.equals(to)) {
             return true;
         }
@@ -329,7 +323,8 @@ class NeighborPreservationProperties {
         visited.add(from);
         while (!frontier.isEmpty()) {
             UUID cur = frontier.poll();
-            for (UUID nb : adj.getOrDefault(cur, List.of())) {
+            for (KinshipGraphProjection.Step step : projection.stepsFrom(cur)) {
+                UUID nb = step.to();
                 if (nb.equals(to)) {
                     return true;
                 }
