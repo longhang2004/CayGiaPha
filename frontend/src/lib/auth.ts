@@ -87,3 +87,13 @@ export function verifySignIn(identifier: Identifier, code: string): Promise<void
 export function signOutRequest(): Promise<void> {
   return api.post<void>("/auth/signout");
 }
+
+/** Request a password reset code for the given identifier. */
+export function requestPasswordReset(identifier: Identifier): Promise<void> {
+  return api.post<void>("/auth/password-reset/request", { identifier });
+}
+
+/** Confirm password reset with code and new password. */
+export function confirmPasswordReset(identifier: Identifier, code: string, password: string): Promise<void> {
+  return api.post<void>("/auth/password-reset/confirm", { identifier, code, password });
+}

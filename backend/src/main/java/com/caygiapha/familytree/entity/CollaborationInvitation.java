@@ -28,7 +28,7 @@ public class CollaborationInvitation {
     @Column(name = "inviter_user_id", nullable = false)
     private UUID inviterUserId;
 
-    @Column(name = "email", nullable = false)
+    @Column(name = "email")
     private String email;
 
     @Column(name = "code", nullable = false)

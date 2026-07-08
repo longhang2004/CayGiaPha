@@ -92,7 +92,7 @@ class TreeCollaborationServiceTest {
         when(collaboratorRepository.save(any(TreeCollaborator.class)))
                 .thenAnswer(inv -> inv.getArgument(0));
 
-        TreeCollaborator collaborator = service.joinTree("123456", guestId);
+        TreeCollaborator collaborator = (TreeCollaborator) service.joinTree("123456", guestId);
         assertThat(collaborator.getTreeId()).isEqualTo(treeId);
         assertThat(collaborator.getUserId()).isEqualTo(guestId);
         assertThat(collaborator.getRole()).isEqualTo("contributor");

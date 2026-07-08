@@ -2,6 +2,8 @@ package com.caygiapha.familytree.controller;
 
 import com.caygiapha.familytree.config.SessionCookieFactory;
 import com.caygiapha.familytree.dto.AuthSessionResponse;
+import com.caygiapha.familytree.dto.PasswordResetConfirmRequest;
+import com.caygiapha.familytree.dto.PasswordResetRequest;
 import com.caygiapha.familytree.dto.SignInRequest;
 import com.caygiapha.familytree.dto.SignInResponse;
 import com.caygiapha.familytree.dto.SignInVerifyRequest;
@@ -139,6 +141,27 @@ public class AuthController {
                     .body(new SignInVerifyResponse(session.getUserId(), session.getExpiresAt()));
         }
         return ResponseEntity.ok(authService.signIn(request.identifier()));
+    }
+
+    @PostMapping("/password-reset/request")
+    public ResponseEntity<Void> requestPasswordReset(@RequestBody PasswordResetRequest request, HttpServletRequest http) {
+        rateLimiter.check("pwdreset:" + request.identifier(), signInRateLimit);
+        rateLimiter.check("ip:" + http.getRemoteAddr(), signInRateLimit);
+        authService.requestPasswordReset(request.identifier());
+        return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/password-reset/confirm")
+    public ResponseEntity<SignInVerifyResponse> confirmPasswordReset(
+            @RequestBody PasswordResetConfirmRequest request) {
+        Session session = authService.confirmPasswordReset(request.identifier(), request.code(), request.password());
+        auditService.recordAs(session.getUserId(), AuditService.SIGN_IN, "user",
+                session.getUserId(), "password_reset");
+        return ResponseEntity.ok()
+                .header(
+                        HttpHeaders.SET_COOKIE,
+                        sessionCookieFactory.create(session.getId()).toString())
+                .body(new SignInVerifyResponse(session.getUserId(), session.getExpiresAt()));
     }
 
     @PostMapping("/signin/verify")

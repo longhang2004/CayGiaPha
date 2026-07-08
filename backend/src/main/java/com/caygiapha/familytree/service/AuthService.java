@@ -254,6 +254,46 @@ public class AuthService {
     }
 
     /**
+     * Request a password reset code for a verified account.
+     * To prevent account enumeration, this method returns silently if the account
+     * is not found or not verified.
+     */
+    @Mutation
+    public void requestPasswordReset(String identifier) {
+        IdentifierType type = identifierValidator.requireValid("identifier", identifier);
+        findByIdentifier(type, identifier)
+                .filter(User::isVerified)
+                .ifPresent(user -> verificationCodeService.issueForAccount(
+                        VerificationPurpose.PASSWORD_RESET, user.getId(), identifier));
+    }
+
+    /**
+     * Confirm a password reset code and establish a session.
+     */
+    @Mutation
+    public Session confirmPasswordReset(String identifier, String code, String password) {
+        IdentifierType type = identifierValidator.requireValid("identifier", identifier);
+        User user = findByIdentifier(type, identifier)
+                .filter(User::isVerified)
+                .orElseThrow(() -> ApiException.accountNotFound(
+                        "No verified account was found for the provided identifier."));
+
+        if (password == null || password.isBlank()) {
+            throw ApiException.validation("password", "Vui lòng nhập mật khẩu mới.");
+        }
+        if (password.length() < 8) {
+            throw ApiException.validation("password", "Mật khẩu cần có ít nhất 8 ký tự.");
+        }
+
+        verificationCodeService.verifyForAccount(VerificationPurpose.PASSWORD_RESET, user.getId(), code);
+
+        user.setPasswordHash(BCrypt.hashpw(password, BCrypt.gensalt()));
+        userRepository.save(user);
+
+        return sessionService.create(user.getId());
+    }
+
+    /**
      * Verify a legacy password-based account and establish a 30-day session.
      *
      * <p>Older frontend routes created verified users with a bcrypt {@code password_hash}. The live

@@ -26,7 +26,10 @@ public enum VerificationPurpose {
     SIGNIN("signin", Duration.ofSeconds(300)),
 
     /** Node-claim verification; node-scoped; valid 900s; issued code invalidated on 5 failures. */
-    CLAIM("claim", Duration.ofSeconds(900));
+    CLAIM("claim", Duration.ofSeconds(900)),
+
+    /** Password reset verification; account-scoped; valid 300s; issued code invalidated on 5 failures. */
+    PASSWORD_RESET("password_reset", Duration.ofSeconds(300));
 
     private final String dbValue;
     private final Duration validity;
@@ -48,7 +51,7 @@ public enum VerificationPurpose {
 
     /** @return {@code true} for account-scoped purposes (bound to a {@code userId}). */
     public boolean isAccountScoped() {
-        return this == SIGNUP || this == SIGNIN;
+        return this == SIGNUP || this == SIGNIN || this == PASSWORD_RESET;
     }
 
     /**

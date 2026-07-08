@@ -29,6 +29,7 @@ import type { Region } from "@/lib/region";
 import { getCookie, setCookie } from "@/lib/cookies";
 import {
   inviteCollaborator,
+  createInviteLink,
   getPendingInvitations,
   approveInvitation,
   rejectInvitation,
@@ -124,6 +125,7 @@ function TreePageContent({ params, searchParams }: TreePageProps) {
   const [pendingInvites, setPendingInvites] = useState<CollaborationInvitation[]>([]);
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteCode, setInviteCode] = useState("");
+  const [generatedInviteCode, setGeneratedInviteCode] = useState("");
   const [loadingCollaborators, setLoadingCollaborators] = useState(false);
 
   const fetchCollaborationData = useCallback(async () => {
@@ -166,6 +168,17 @@ function TreePageContent({ params, searchParams }: TreePageProps) {
     }
   }
 
+  async function handleCreateGenericInvite() {
+    if (!activeTreeId) return;
+    try {
+      const result = await createInviteLink(activeTreeId);
+      setGeneratedInviteCode(result.code);
+      fetchCollaborationData();
+    } catch (err) {
+      alert(err instanceof ApiError ? err.message : "Không thể tạo mã mời.");
+    }
+  }
+
   async function handleApproveInvite(inviteId: string) {
     if (!activeTreeId) return;
     try {
@@ -192,13 +205,18 @@ function TreePageContent({ params, searchParams }: TreePageProps) {
     e.preventDefault();
     if (!inviteCode.trim()) return;
     try {
-      await joinTreeGroup(inviteCode.trim());
-      alert("Bạn đã tham gia nhóm cộng tác xây dựng cây thành công!");
+      const result = await joinTreeGroup(inviteCode.trim());
+      if ("status" in result && result.status === "pending") {
+        alert("Yêu cầu của bạn đã được gửi. Vui lòng chờ chủ cây duyệt.");
+      } else {
+        alert("Bạn đã tham gia nhóm cộng tác xây dựng cây thành công!");
+      }
       setInviteCode("");
       router.refresh();
       window.location.reload();
     } catch (err) {
       console.warn(err instanceof ApiError ? err.message : "Mã mời không hợp lệ.");
+      alert(err instanceof ApiError ? err.message : "Mã mời không hợp lệ.");
     }
   }
 
@@ -898,6 +916,30 @@ function TreePageContent({ params, searchParams }: TreePageProps) {
                       <button type="submit" className="btn btn-secondary">Mời</button>
                     </div>
                   </form>
+                )}
+
+                {isOwner && (
+                  <div style={{ marginBottom: "1.5rem", borderTop: "1px solid var(--color-hairline-soft)", paddingTop: "1.5rem", display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+                    <label style={{ fontWeight: "bold" }}>Tạo mã mời chia sẻ</label>
+                    <p style={{ fontSize: "0.85rem", color: "var(--color-muted)" }}>
+                      Tạo mã mời chung để những người khác có thể tự tham gia (cần được bạn duyệt).
+                    </p>
+                    {generatedInviteCode ? (
+                      <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
+                        <Input value={generatedInviteCode} readOnly style={{ flex: 1, fontWeight: "bold", letterSpacing: "1px" }} />
+                        <button type="button" className="btn" onClick={() => {
+                          navigator.clipboard.writeText(generatedInviteCode);
+                          alert("Đã sao chép mã mời!");
+                        }}>
+                          Copy
+                        </button>
+                      </div>
+                    ) : (
+                      <button type="button" className="btn btn-secondary" onClick={handleCreateGenericInvite} style={{ alignSelf: "flex-start" }}>
+                        Tạo mã mời
+                      </button>
+                    )}
+                  </div>
                 )}
 
                 {isOwner && pendingInvites.length > 0 && (

@@ -157,6 +157,7 @@ function PrototypeTreeContent() {
   ]);
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteCode, setInviteCode] = useState("");
+  const [generatedInviteCode, setGeneratedInviteCode] = useState("");
 
   const handleSendInvite = (e: React.FormEvent) => {
     e.preventDefault();
@@ -169,6 +170,10 @@ function PrototypeTreeContent() {
     };
     showToast(`Đã tạo lời mời email đã duyệt sẵn. Mã mời: ${newInvite.code}`, "success");
     setInviteEmail("");
+  };
+
+  const handleCreateGenericInvite = () => {
+    setGeneratedInviteCode("999888");
   };
 
   const handleApproveInvite = (id: string) => {
@@ -187,7 +192,7 @@ function PrototypeTreeContent() {
   const handleJoinTree = (e: React.FormEvent) => {
     e.preventDefault();
     if (!inviteCode.trim()) return;
-    showToast("Đã tham gia nhóm cộng tác cây thành công!", "success");
+    showToast("Yêu cầu của bạn đã được gửi. Vui lòng chờ chủ cây duyệt.", "success");
     setInviteCode("");
   };
 
@@ -718,21 +723,47 @@ function PrototypeTreeContent() {
                   ))}
                 </div>
 
-                <form onSubmit={handleSendInvite} style={{ display: "flex", flexDirection: "column", gap: "0.5rem", marginBottom: "1.5rem", borderTop: "1px solid var(--color-hairline-soft)", paddingTop: "1.5rem" }}>
-                  <label htmlFor="invite-email" style={{ fontWeight: "bold" }}>Thêm cộng tác viên mới</label>
-                  <div style={{ display: "flex", gap: "0.5rem" }}>
-                    <Input
-                      id="invite-email"
-                      type="email"
-                      value={inviteEmail}
-                      onChange={(e) => setInviteEmail(e.target.value)}
-                      placeholder="email@example.com"
-                      required
-                      style={{ flex: 1 }}
-                    />
-                    <button type="submit" className="btn btn-secondary">Mời</button>
+                {isOwner && (
+                  <form onSubmit={handleSendInvite} style={{ display: "flex", flexDirection: "column", gap: "0.5rem", marginBottom: "1.5rem", borderTop: "1px solid var(--color-hairline-soft)", paddingTop: "1.5rem" }}>
+                    <label htmlFor="invite-email" style={{ fontWeight: "bold" }}>Thêm cộng tác viên mới</label>
+                    <div style={{ display: "flex", gap: "0.5rem" }}>
+                      <Input
+                        id="invite-email"
+                        type="email"
+                        value={inviteEmail}
+                        onChange={(e) => setInviteEmail(e.target.value)}
+                        placeholder="email@example.com"
+                        required
+                        style={{ flex: 1 }}
+                      />
+                      <button type="submit" className="btn btn-secondary">Mời</button>
+                    </div>
+                  </form>
+                )}
+
+                {isOwner && (
+                  <div style={{ marginBottom: "1.5rem", borderTop: "1px solid var(--color-hairline-soft)", paddingTop: "1.5rem", display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+                    <label style={{ fontWeight: "bold" }}>Tạo mã mời chia sẻ</label>
+                    <p style={{ fontSize: "0.85rem", color: "var(--color-muted)" }}>
+                      Tạo mã mời chung để những người khác có thể tự tham gia (cần được bạn duyệt).
+                    </p>
+                    {generatedInviteCode ? (
+                      <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
+                        <Input value={generatedInviteCode} readOnly style={{ flex: 1, fontWeight: "bold", letterSpacing: "1px" }} />
+                        <button type="button" className="btn" onClick={() => {
+                          navigator.clipboard.writeText(generatedInviteCode);
+                          showToast("Đã sao chép mã mời!", "success");
+                        }}>
+                          Copy
+                        </button>
+                      </div>
+                    ) : (
+                      <button type="button" className="btn btn-secondary" onClick={handleCreateGenericInvite} style={{ alignSelf: "flex-start" }}>
+                        Tạo mã mời
+                      </button>
+                    )}
                   </div>
-                </form>
+                )}
 
                 {isOwner && pendingInvites.length > 0 && (
                   <div style={{ marginBottom: "1.5rem", paddingTop: "1.5rem", borderTop: "1px solid var(--color-hairline-soft)" }}>

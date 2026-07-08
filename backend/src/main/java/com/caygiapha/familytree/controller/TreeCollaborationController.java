@@ -7,6 +7,7 @@ import com.caygiapha.familytree.service.TreeCollaborationService;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -41,6 +42,14 @@ public class TreeCollaborationController {
         return collaborationService.invite(treeId, request.email(), currentUserId);
     }
 
+    @PostMapping("/{treeId}/collaborators/invite-link")
+    @ResponseStatus(HttpStatus.CREATED)
+    public CollaborationInvitation createGenericInvite(
+            @PathVariable("treeId") UUID treeId) {
+        UUID currentUserId = authorizationService.currentContext().userId();
+        return collaborationService.createGenericInvite(treeId, currentUserId);
+    }
+
     @GetMapping("/{treeId}/collaborators/pending")
     public List<CollaborationInvitation> getPending(
             @PathVariable("treeId") UUID treeId) {
@@ -65,9 +74,13 @@ public class TreeCollaborationController {
     }
 
     @PostMapping("/collaborators/join")
-    public TreeCollaborator join(@RequestParam("code") String code) {
+    public ResponseEntity<?> join(@RequestParam("code") String code) {
         UUID currentUserId = authorizationService.currentContext().userId();
-        return collaborationService.joinTree(code, currentUserId);
+        Object result = collaborationService.joinTree(code, currentUserId);
+        if (result instanceof CollaborationInvitation) {
+            return ResponseEntity.accepted().body(result);
+        }
+        return ResponseEntity.ok(result);
     }
 
     @GetMapping("/collaborators/invitations/{inviteId}")
@@ -76,9 +89,13 @@ public class TreeCollaborationController {
     }
 
     @PostMapping("/collaborators/join-link")
-    public TreeCollaborator joinWithLink(@RequestParam("inviteId") UUID inviteId) {
+    public ResponseEntity<?> joinWithLink(@RequestParam("inviteId") UUID inviteId) {
         UUID currentUserId = authorizationService.currentContext().userId();
-        return collaborationService.joinTreeWithLink(inviteId, currentUserId);
+        Object result = collaborationService.joinTreeWithLink(inviteId, currentUserId);
+        if (result instanceof CollaborationInvitation) {
+            return ResponseEntity.accepted().body(result);
+        }
+        return ResponseEntity.ok(result);
     }
 
     @GetMapping("/{treeId}/collaborators")

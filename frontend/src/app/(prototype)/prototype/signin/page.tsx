@@ -60,6 +60,12 @@ export default function PrototypeSignInPage() {
           />
         </FormControl>
 
+        <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "0.25rem" }}>
+          <a href="/prototype/forgot-password" style={{ fontSize: "0.875rem", color: "var(--color-primary)", textDecoration: "none", fontWeight: 500 }}>
+            Quên mật khẩu?
+          </a>
+        </div>
+
         <div style={{ marginTop: "1.5rem", display: "flex", flexDirection: "column", gap: "0.75rem" }}>
           <Button type="submit" style={{ width: "100%" }}>
             Đăng nhập

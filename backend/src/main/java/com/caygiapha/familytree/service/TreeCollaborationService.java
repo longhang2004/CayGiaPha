@@ -68,6 +68,19 @@ public class TreeCollaborationService {
         return invitationRepository.save(invitation);
     }
 
+    /** Create a generic invitation code (no email tied). */
+    @Transactional
+    public CollaborationInvitation createGenericInvite(UUID treeId, UUID inviterId) {
+        requireTreeOwner(treeId, inviterId);
+        String code = generateRandomCode();
+        Instant expiresAt = Instant.now().plusSeconds(EXPIRY_SECONDS);
+
+        CollaborationInvitation invitation = new CollaborationInvitation(
+                treeId, inviterId, null, code, expiresAt);
+        invitation.setStatus("generic");
+        return invitationRepository.save(invitation);
+    }
+
     /** List pending invites requiring owner approval. */
     @Transactional(readOnly = true)
     public List<CollaborationInvitation> getPendingInvitations(UUID treeId, UUID ownerId) {
@@ -103,7 +116,7 @@ public class TreeCollaborationService {
 
     /** Join a tree co-building group using an invitation code. */
     @Transactional
-    public TreeCollaborator joinTree(String code, UUID userId) {
+    public Object joinTree(String code, UUID userId) {
         CollaborationInvitation invite = invitationRepository.findByCode(code)
                 .orElseThrow(() -> ApiException.validation("code", "Mã mời không chính xác hoặc đã hết hạn."));
 
@@ -111,14 +124,24 @@ public class TreeCollaborationService {
             throw ApiException.validation("code", "Yêu cầu tham gia đang chờ chủ cây duyệt.");
         }
 
-        if (!invite.getStatus().equals("approved")) {
-            throw ApiException.validation("code", "Lời mời này đã được sử dụng hoặc chưa được duyệt.");
+        if (!"approved".equals(invite.getStatus()) && !"generic".equals(invite.getStatus())) {
+            throw ApiException.validation("code", "Lời mời này đã được sử dụng hoặc không hợp lệ.");
         }
 
         if (invite.isExpired()) {
             invite.setStatus("expired");
             invitationRepository.save(invite);
             throw ApiException.validation("code", "Mã mời đã hết hạn sử dụng.");
+        }
+
+        if ("generic".equals(invite.getStatus())) {
+            String userEmail = userRepository.findById(userId)
+                    .map(u -> u.getEmail() != null ? u.getEmail() : u.getPhone())
+                    .orElse("Unknown");
+            CollaborationInvitation pendingReq = new CollaborationInvitation(
+                    invite.getTreeId(), invite.getInviterUserId(), userEmail, generateRandomCode(), invite.getExpiresAt());
+            pendingReq.setStatus("pending");
+            return invitationRepository.save(pendingReq);
         }
 
         // Add user as a collaborator
@@ -170,7 +193,7 @@ public class TreeCollaborationService {
     }
 
     @Transactional
-    public TreeCollaborator joinTreeWithLink(UUID invitationId, UUID userId) {
+    public Object joinTreeWithLink(UUID invitationId, UUID userId) {
         CollaborationInvitation invite = invitationRepository.findById(invitationId)
                 .orElseThrow(() -> ApiException.validation("invitationId", "Lời mời không tồn tại."));
 
@@ -178,14 +201,24 @@ public class TreeCollaborationService {
             throw ApiException.validation("invitationId", "Yêu cầu tham gia đang chờ chủ cây duyệt.");
         }
 
-        if (!invite.getStatus().equals("approved")) {
-            throw ApiException.validation("invitationId", "Lời mời này đã được sử dụng hoặc chưa được duyệt.");
+        if (!"approved".equals(invite.getStatus()) && !"generic".equals(invite.getStatus())) {
+            throw ApiException.validation("invitationId", "Lời mời này đã được sử dụng hoặc không hợp lệ.");
         }
 
         if (invite.isExpired()) {
             invite.setStatus("expired");
             invitationRepository.save(invite);
             throw ApiException.validation("invitationId", "Liên kết mời đã hết hạn sử dụng.");
+        }
+
+        if ("generic".equals(invite.getStatus())) {
+            String userEmail = userRepository.findById(userId)
+                    .map(u -> u.getEmail() != null ? u.getEmail() : u.getPhone())
+                    .orElse("Unknown");
+            CollaborationInvitation pendingReq = new CollaborationInvitation(
+                    invite.getTreeId(), invite.getInviterUserId(), userEmail, generateRandomCode(), invite.getExpiresAt());
+            pendingReq.setStatus("pending");
+            return invitationRepository.save(pendingReq);
         }
 
         // Add user as a collaborator

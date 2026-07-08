@@ -8,7 +8,7 @@ export interface CollaborationInvitation {
   id: string;
   treeId: string;
   inviterUserId: string;
-  email: string;
+  email: string | null;
   code: string;
   status: "pending" | "approved" | "joined" | "rejected" | "expired";
   createdAt: string;
@@ -30,6 +30,15 @@ export function inviteCollaborator(
   return api.post<CollaborationInvitation>(
     `/trees/${encodeURIComponent(treeId)}/collaborators/invite`,
     { email }
+  );
+}
+
+export function createInviteLink(
+  treeId: string
+): Promise<CollaborationInvitation> {
+  return api.post<CollaborationInvitation>(
+    `/trees/${encodeURIComponent(treeId)}/collaborators/invite-link`,
+    {}
   );
 }
 
@@ -63,8 +72,8 @@ export function rejectInvitation(
 
 export function joinTreeGroup(
   code: string
-): Promise<TreeCollaborator> {
-  return api.post<TreeCollaborator>(
+): Promise<TreeCollaborator | CollaborationInvitation> {
+  return api.post<TreeCollaborator | CollaborationInvitation>(
     `/trees/collaborators/join?code=${encodeURIComponent(code)}`,
     {}
   );
@@ -88,8 +97,8 @@ export function getInvitationDetails(
 
 export function joinTreeWithLink(
   inviteId: string
-): Promise<TreeCollaborator> {
-  return api.post<TreeCollaborator>(
+): Promise<TreeCollaborator | CollaborationInvitation> {
+  return api.post<TreeCollaborator | CollaborationInvitation>(
     `/trees/collaborators/join-link?inviteId=${encodeURIComponent(inviteId)}`,
     {}
   );

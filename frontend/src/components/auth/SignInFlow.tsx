@@ -116,6 +116,12 @@ export function SignInFlow({ redirectTo = "/" }: SignInFlowProps) {
         />
       </FormControl>
 
+      <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "0.25rem" }}>
+        <a href="/forgot-password" style={{ fontSize: "0.875rem", color: "var(--color-primary)", textDecoration: "none", fontWeight: 500 }}>
+          Quên mật khẩu?
+        </a>
+      </div>
+
       <div style={{ marginTop: "1.5rem", display: "flex", flexDirection: "column", gap: "0.75rem" }}>
         <Button type="submit" disabled={submitting} style={{ width: "100%" }}>
           {submitting ? "Đang đăng nhập…" : "Đăng nhập"}
