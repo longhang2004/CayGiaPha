@@ -26,14 +26,54 @@ export interface TreeCollaborator {
   joinedAt: string;
 }
 
-export function inviteCollaborator(
+export async function inviteCollaborator(
   treeId: string,
   email: string
 ): Promise<CollaborationInvitation> {
-  return api.post<CollaborationInvitation>(
+  const invite = await api.post<CollaborationInvitation>(
     `/trees/${encodeURIComponent(treeId)}/collaborators/invite`,
     { email }
   );
+
+  // Cloud Spring hosts often block SMTP. Always try FE-only mail delivery when BE did not send.
+  // Path is outside /api/* so USE_BACKEND rewrites never proxy it away.
+  if (invite.emailSent === true) {
+    return invite;
+  }
+  try {
+    const res = await fetch("/_internal/send-invite-email", {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json", Accept: "application/json" },
+      body: JSON.stringify({
+        email,
+        code: invite.code,
+        inviteId: invite.id,
+        treeName: "Cây Gia Phả",
+        registered: true,
+      }),
+    });
+    const delivery = (await res.json().catch(() => ({}))) as {
+      emailSent?: boolean;
+      emailMessage?: string;
+    };
+    return {
+      ...invite,
+      emailSent: delivery.emailSent === true,
+      emailMessage:
+        delivery.emailMessage ||
+        invite.emailMessage ||
+        `Lời mời đã tạo (mã ${invite.code}).`,
+    };
+  } catch {
+    return {
+      ...invite,
+      emailSent: false,
+      emailMessage:
+        invite.emailMessage ||
+        `Lời mời đã tạo (mã ${invite.code}) nhưng không gửi được email từ frontend.`,
+    };
+  }
 }
 
 export function createInviteLink(

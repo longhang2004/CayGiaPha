@@ -54,7 +54,7 @@ const nextConfig = {
               "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
               "font-src 'self' https://fonts.gstatic.com data:",
               "img-src 'self' data: blob: https:",
-              "connect-src 'self' https://accounts.google.com https://oauth2.googleapis.com",
+              "connect-src 'self' https://accounts.google.com https://oauth2.googleapis.com https://api.resend.com",
               "frame-src 'self' https://accounts.google.com",
               "base-uri 'self'",
               "form-action 'self'",
