@@ -59,3 +59,5 @@ app:
     enabled: ${EMAIL_ENABLED:false}
     from: ${EMAIL_FROM:${EMAIL_USER:}}
   app-url: ${APP_PUBLIC_URL:http://localhost:3000}
+
+# Optional: RESEND_API_KEY (HTTPS email). Preferred when cloud hosts block SMTP.

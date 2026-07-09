@@ -52,23 +52,26 @@ public class MailConfig {
         props.put("mail.smtp.connectiontimeout", "10000");
         props.put("mail.smtp.timeout", "10000");
         props.put("mail.smtp.writetimeout", "10000");
-        // Port 465 uses implicit SSL.
+        // Port 465 uses implicit SSL (often works when 587 STARTTLS is blocked).
         if (port == 465) {
             props.put("mail.smtp.ssl.enable", "true");
+            props.put("mail.smtp.socketFactory.port", "465");
+            props.put("mail.smtp.socketFactory.class", "javax.net.ssl.SSLSocketFactory");
             props.put("mail.smtp.starttls.enable", "false");
+            props.put("mail.smtp.starttls.required", "false");
         }
 
         if (enabled && resolvedHost.isEmpty()) {
-            log.error(
-                    "EMAIL_ENABLED=true but EMAIL_HOST/spring.mail.host is empty. "
-                            + "Set EMAIL_HOST=smtp.gmail.com (and EMAIL_USER/EMAIL_PASS) on the backend host.");
+            log.warn(
+                    "EMAIL_ENABLED=true but EMAIL_HOST empty. Prefer RESEND_API_KEY on cloud hosts, "
+                            + "or set EMAIL_HOST=smtp.gmail.com / EMAIL_PORT=465.");
         } else if (enabled) {
             log.info(
-                    "SMTP configured: host={} port={} user={} starttls={}",
+                    "SMTP configured: host={} port={} user={} starttls={} (cloud tip: use RESEND_API_KEY if SMTP times out)",
                     resolvedHost,
                     sender.getPort(),
                     StringUtils.hasText(username) ? username : "<none>",
-                    startTls);
+                    port != 465 && startTls);
         } else {
             log.info(
                     "SMTP bean ready (host={}) but EMAIL_ENABLED=false — outbound mail is mocked.",
