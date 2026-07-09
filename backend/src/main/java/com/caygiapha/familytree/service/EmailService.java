@@ -57,6 +57,7 @@ public class EmailService {
             log.info("[EMAIL-MOCK] to={} subject={}", to, subject);
             return;
         }
+        assertSmtpConfigured();
         try {
             MimeMessage message = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
@@ -82,6 +83,7 @@ public class EmailService {
             log.info("[EMAIL-MOCK] to={} subject={}", to, subject);
             return;
         }
+        assertSmtpConfigured();
         SimpleMailMessage message = new SimpleMailMessage();
         if (!fromAddress.isBlank()) {
             message.setFrom(fromAddress);
@@ -90,6 +92,22 @@ public class EmailService {
         message.setSubject(subject);
         message.setText(text == null ? "" : text);
         mailSender.send(message);
+    }
+
+    private void assertSmtpConfigured() {
+        if (mailSender instanceof JavaMailSenderImpl impl) {
+            String host = impl.getHost();
+            if (host == null
+                    || host.isBlank()
+                    || "localhost".equalsIgnoreCase(host)
+                    || "127.0.0.1".equals(host)) {
+                throw new IllegalStateException(
+                        "SMTP host is '"
+                                + host
+                                + "'. Set EMAIL_HOST=smtp.gmail.com (and EMAIL_USER/EMAIL_PASS) "
+                                + "on the backend process environment, then restart.");
+            }
+        }
     }
 
     /**

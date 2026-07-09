@@ -34,10 +34,11 @@ public class DotenvEnvironmentPostProcessor implements EnvironmentPostProcessor,
             }
             Map<String, Object> loaded = loadDotenv(path);
             if (!loaded.isEmpty()) {
-                // Lowest precedence among dotenv files first; later files override earlier ones.
+                // High enough to resolve ${EMAIL_*} placeholders in application.yml, but still
+                // below real OS environment variables (checked in loadDotenv).
                 environment
                         .getPropertySources()
-                        .addLast(new MapPropertySource("dotenv:" + path, loaded));
+                        .addFirst(new MapPropertySource("dotenv:" + path, loaded));
             }
         }
     }
@@ -64,6 +65,16 @@ public class DotenvEnvironmentPostProcessor implements EnvironmentPostProcessor,
                 // Do not override real environment variables.
                 if (System.getenv(key) == null) {
                     map.put(key, value);
+                    // Also mirror common EMAIL_* keys into spring.mail.* for Boot auto-config.
+                    switch (key) {
+                        case "EMAIL_HOST" -> map.putIfAbsent("spring.mail.host", value);
+                        case "EMAIL_PORT" -> map.putIfAbsent("spring.mail.port", value);
+                        case "EMAIL_USER" -> map.putIfAbsent("spring.mail.username", value);
+                        case "EMAIL_PASS" -> map.putIfAbsent("spring.mail.password", value);
+                        default -> {
+                            // no-op
+                        }
+                    }
                 }
             }
         } catch (IOException ignored) {
@@ -74,6 +85,7 @@ public class DotenvEnvironmentPostProcessor implements EnvironmentPostProcessor,
 
     @Override
     public int getOrder() {
-        return Ordered.LOWEST_PRECEDENCE;
+        // Before ConfigData (application.yml) so ${EMAIL_HOST} placeholders resolve.
+        return Ordered.HIGHEST_PRECEDENCE + 10;
     }
 }
