@@ -57,6 +57,8 @@ app:
     allowed-origins: ${APP_ALLOWED_ORIGINS:http://localhost:3000,http://127.0.0.1:3000}
   mail:
     enabled: ${EMAIL_ENABLED:false}
+    # Set false on cloud BE hosts that block SMTP; frontend will send invite emails instead.
+    smtp-enabled: ${EMAIL_SMTP_ENABLED:true}
     from: ${EMAIL_FROM:${EMAIL_USER:}}
   app-url: ${APP_PUBLIC_URL:http://localhost:3000}
 

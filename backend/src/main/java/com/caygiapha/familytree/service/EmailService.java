@@ -33,6 +33,7 @@ public class EmailService {
 
     private final JavaMailSender mailSender;
     private final boolean enabled;
+    private final boolean smtpEnabled;
     private final String fromAddress;
     private final String resendApiKey;
     private final HttpClient httpClient;
@@ -41,11 +42,13 @@ public class EmailService {
     public EmailService(
             JavaMailSender mailSender,
             @Value("${app.mail.enabled:false}") boolean enabled,
+            @Value("${app.mail.smtp-enabled:true}") boolean smtpEnabled,
             @Value("${app.mail.from:}") String fromAddress,
             @Value("${spring.mail.username:}") String mailUsername,
             @Value("${RESEND_API_KEY:}") String resendApiKey) {
         this.mailSender = mailSender;
         this.enabled = enabled;
+        this.smtpEnabled = smtpEnabled;
         this.fromAddress = resolveFrom(fromAddress, mailUsername);
         this.resendApiKey = resendApiKey == null ? "" : resendApiKey.trim();
         this.httpClient = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(15)).build();
@@ -53,11 +56,15 @@ public class EmailService {
         if (enabled) {
             if (StringUtils.hasText(this.resendApiKey)) {
                 log.info("Email delivery ENABLED via Resend HTTPS API (from={})", this.fromAddress);
+            } else if (!smtpEnabled) {
+                log.info(
+                        "Email delivery delegated (EMAIL_SMTP_ENABLED=false, no RESEND_API_KEY). "
+                                + "Frontend should send invite emails.");
             } else {
                 String host = mailSender instanceof JavaMailSenderImpl impl ? impl.getHost() : "?";
                 log.info(
                         "Email delivery ENABLED via SMTP (host={}, from={}). "
-                                + "If connect times out on cloud hosts, set RESEND_API_KEY instead.",
+                                + "If connect times out on cloud hosts, set RESEND_API_KEY or EMAIL_SMTP_ENABLED=false.",
                         host == null || host.isBlank() ? "<unset>" : host,
                         this.fromAddress.isBlank() ? "<default>" : this.fromAddress);
             }
@@ -82,6 +89,16 @@ public class EmailService {
         if (StringUtils.hasText(resendApiKey)) {
             sendViaResend(to, subject, text, html);
             return;
+        }
+        if (!smtpEnabled) {
+            // Soft-skip so collaboration invite can still be created; FE may deliver the email.
+            log.info(
+                    "[EMAIL-DELEGATED] Skipping SMTP for to={} subject={} (EMAIL_SMTP_ENABLED=false)",
+                    to,
+                    subject);
+            throw new IllegalStateException(
+                    "SMTP disabled on this host (EMAIL_SMTP_ENABLED=false). "
+                            + "Set RESEND_API_KEY or send email from the frontend.");
         }
         sendViaSmtp(to, subject, text, html);
     }
