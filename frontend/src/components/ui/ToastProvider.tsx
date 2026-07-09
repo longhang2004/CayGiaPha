@@ -25,10 +25,11 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     const id = Math.random().toString(36).substring(2, 9);
     setToasts((prev) => [...prev, { id, message, type }]);
 
-    // Auto dismiss after 4 seconds
+    // Longer messages (invite + spam reminder) need more time to read.
+    const duration = message.length > 80 ? 7000 : 4000;
     setTimeout(() => {
       setToasts((prev) => prev.filter((t) => t.id !== id));
-    }, 4000);
+    }, duration);
   }, []);
 
   const removeToast = useCallback((id: string) => {

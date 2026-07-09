@@ -396,7 +396,7 @@ export const collaborationInvitations = pgTable(
     inviterUserId: uuid("inviter_user_id")
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
-    email: text("email").notNull(),
+    email: text("email"),
     code: text("code").notNull(),
     status: text("status").notNull().default("pending"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),

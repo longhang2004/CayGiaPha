@@ -1,6 +1,7 @@
 package com.caygiapha.familytree.service;
 
 import com.caygiapha.familytree.entity.CollaborationInvitation;
+import com.caygiapha.familytree.entity.Tree;
 import com.caygiapha.familytree.entity.TreeCollaborator;
 import com.caygiapha.familytree.error.ApiException;
 import com.caygiapha.familytree.repository.CollaborationInvitationRepository;
@@ -9,9 +10,12 @@ import com.caygiapha.familytree.repository.TreeRepository;
 import com.caygiapha.familytree.repository.UserRepository;
 import java.security.SecureRandom;
 import java.time.Instant;
-import java.util.Base64;
 import java.util.List;
+import java.util.Locale;
 import java.util.UUID;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -21,25 +25,34 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class TreeCollaborationService {
 
-    /** 22 URL-safe chars ≈ 128 bits of entropy (16 random bytes, base64url no padding). */
-    private static final int CODE_BYTES = 16;
+    private static final Logger log = LoggerFactory.getLogger(TreeCollaborationService.class);
+
+    /** 6-character invite codes (digits + lowercase letters, no ambiguous 0/o/1/l). */
+    private static final int CODE_LENGTH = 6;
+    private static final String CODE_CHARS = "abcdefghijkmnpqrstuvwxyz23456789";
     private static final long EXPIRY_SECONDS = 7 * 24 * 3600; // 7 days
 
     private final TreeCollaboratorRepository collaboratorRepository;
     private final CollaborationInvitationRepository invitationRepository;
     private final TreeRepository treeRepository;
     private final UserRepository userRepository;
+    private final EmailService emailService;
+    private final String appUrl;
     private final SecureRandom secureRandom = new SecureRandom();
 
     public TreeCollaborationService(
             TreeCollaboratorRepository collaboratorRepository,
             CollaborationInvitationRepository invitationRepository,
             TreeRepository treeRepository,
-            UserRepository userRepository) {
+            UserRepository userRepository,
+            EmailService emailService,
+            @Value("${app.app-url:http://localhost:3000}") String appUrl) {
         this.collaboratorRepository = collaboratorRepository;
         this.invitationRepository = invitationRepository;
         this.treeRepository = treeRepository;
         this.userRepository = userRepository;
+        this.emailService = emailService;
+        this.appUrl = appUrl == null || appUrl.isBlank() ? "http://localhost:3000" : appUrl.replaceAll("/$", "");
     }
 
     /** Invite a user by email to co-build the tree. */
@@ -55,18 +68,24 @@ public class TreeCollaborationService {
             throw ApiException.notAuthorized("You must be an owner or contributor of this tree to send invites.");
         }
 
-        // Generate 6-digit random code
+        String normalizedEmail = email == null ? "" : email.trim().toLowerCase(Locale.ROOT);
+        if (normalizedEmail.isBlank() || !normalizedEmail.contains("@")) {
+            throw ApiException.validation("email", "Email là bắt buộc.");
+        }
+
         String code = generateRandomCode();
         Instant expiresAt = Instant.now().plusSeconds(EXPIRY_SECONDS);
 
         CollaborationInvitation invitation = new CollaborationInvitation(
-                treeId, inviterId, email, code, expiresAt);
+                treeId, inviterId, normalizedEmail, code, expiresAt);
 
         // Direct email invitations are pre-approved. Generic link/code join requests remain pending
         // until an owner approves them.
         invitation.setStatus("approved");
 
-        return invitationRepository.save(invitation);
+        CollaborationInvitation saved = invitationRepository.save(invitation);
+        sendInviteEmail(treeId, saved);
+        return saved;
     }
 
     /** Create a generic invitation code (no email tied). */
@@ -177,9 +196,54 @@ public class TreeCollaborationService {
     }
 
     private String generateRandomCode() {
-        byte[] raw = new byte[CODE_BYTES];
-        secureRandom.nextBytes(raw);
-        return Base64.getUrlEncoder().withoutPadding().encodeToString(raw);
+        StringBuilder sb = new StringBuilder(CODE_LENGTH);
+        for (int i = 0; i < CODE_LENGTH; i++) {
+            sb.append(CODE_CHARS.charAt(secureRandom.nextInt(CODE_CHARS.length())));
+        }
+        return sb.toString();
+    }
+
+    private void sendInviteEmail(UUID treeId, CollaborationInvitation invite) {
+        Tree tree = treeRepository.findById(treeId).orElse(null);
+        String treeName = tree != null && tree.getName() != null ? tree.getName() : "Cây Gia Phả";
+        boolean registered = userRepository.findByEmail(invite.getEmail()).isPresent();
+        String inviteUrl = registered
+                ? appUrl + "/invitation/" + invite.getId()
+                : appUrl + "/signup?redirect=/invitation/" + invite.getId();
+        String buttonText = registered ? "Tham gia xây dựng cây" : "Đăng ký & Tham gia xây dựng cây";
+        String description = registered
+                ? "Tài khoản với email <strong>" + invite.getEmail()
+                        + "</strong> đã có trên hệ thống. Hãy đăng nhập và nhấp nút dưới đây để chấp nhận lời mời:"
+                : "Email <strong>" + invite.getEmail()
+                        + "</strong> chưa đăng ký. Hãy nhấp nút dưới đây để đăng ký và tham gia cộng tác:";
+
+        String subject = "Mời tham gia hợp tác xây dựng Cây Gia Phả \"" + treeName + "\"";
+        String text = "Bạn được mời cộng tác cây \"" + treeName + "\". Mã mời: " + invite.getCode()
+                + ". Link: " + inviteUrl + ". Nếu không thấy thư, hãy kiểm tra hộp thư rác/spam.";
+        String html = """
+                <div style="font-family: Arial, sans-serif; max-width: 500px; margin: 0 auto; padding: 20px; border: 1px solid #e9e9e9; border-radius: 8px;">
+                  <h2 style="color: #b94b34; text-align: center;">Mời Hợp Tác Gia Phả</h2>
+                  <p>Xin chào,</p>
+                  <p>Bạn đã nhận được lời mời cộng tác xây dựng cây gia phả <strong>"%s"</strong>.</p>
+                  <p>%s</p>
+                  <div style="text-align: center; margin: 30px 0;">
+                    <a href="%s" style="background-color: #b94b34; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">%s</a>
+                  </div>
+                  <p style="font-size: 0.9rem; color: #666; text-align: center;">
+                    Mã mời của bạn là: <strong>%s</strong> (dùng khi tham gia thủ công)
+                  </p>
+                  <p style="font-size: 0.85rem; color: #888; text-align: center;">
+                    Nếu không thấy email trong hộp thư chính, vui lòng kiểm tra mục <strong>Thư rác / Spam</strong>.
+                  </p>
+                </div>
+                """.formatted(treeName, description, inviteUrl, buttonText, invite.getCode());
+
+        try {
+            emailService.sendHtml(invite.getEmail(), subject, text, html);
+        } catch (RuntimeException ex) {
+            // Invitation is already saved; surface a soft failure so the owner still gets the code.
+            log.warn("Invite email failed for {}: {}", invite.getEmail(), ex.getMessage());
+        }
     }
 
     @Transactional(readOnly = true)

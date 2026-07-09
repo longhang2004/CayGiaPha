@@ -26,6 +26,7 @@ class TreeCollaborationServiceTest {
     private CollaborationInvitationRepository invitationRepository;
     private TreeRepository treeRepository;
     private UserRepository userRepository;
+    private EmailService emailService;
     private TreeCollaborationService service;
 
     private final UUID treeId = UUID.randomUUID();
@@ -39,11 +40,18 @@ class TreeCollaborationServiceTest {
         invitationRepository = mock(CollaborationInvitationRepository.class);
         treeRepository = mock(TreeRepository.class);
         userRepository = mock(UserRepository.class);
+        emailService = mock(EmailService.class);
         service = new TreeCollaborationService(
-                collaboratorRepository, invitationRepository, treeRepository, userRepository);
+                collaboratorRepository,
+                invitationRepository,
+                treeRepository,
+                userRepository,
+                emailService,
+                "http://localhost:3000");
 
         Tree tree = new Tree(ownerId);
         when(treeRepository.findById(treeId)).thenReturn(Optional.of(tree));
+        when(userRepository.findByEmail(any())).thenReturn(Optional.empty());
     }
 
     @Test

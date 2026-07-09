@@ -22,6 +22,17 @@ spring:
   flyway:
     enabled: true
     locations: classpath:db/migration
+  mail:
+    host: ${EMAIL_HOST:}
+    port: ${EMAIL_PORT:587}
+    username: ${EMAIL_USER:}
+    password: ${EMAIL_PASS:}
+    properties:
+      mail:
+        smtp:
+          auth: ${EMAIL_SMTP_AUTH:true}
+          starttls:
+            enable: ${EMAIL_SMTP_STARTTLS:true}
 
 server:
   port: ${PORT:8080}
@@ -44,3 +55,7 @@ app:
   security:
     # Comma-separated browser origins allowed for credentialed mutating requests (CSRF Origin check).
     allowed-origins: ${APP_ALLOWED_ORIGINS:http://localhost:3000,http://127.0.0.1:3000}
+  mail:
+    enabled: ${EMAIL_ENABLED:false}
+    from: ${EMAIL_FROM:${EMAIL_USER:}}
+  app-url: ${APP_PUBLIC_URL:http://localhost:3000}

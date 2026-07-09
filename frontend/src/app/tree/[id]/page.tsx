@@ -121,6 +121,7 @@ function TreePageContent({ params, searchParams }: TreePageProps) {
     router.replace(`${pathname}${query}`);
   };
 
+  const { showToast } = useToast();
   const [collaborators, setCollaborators] = useState<TreeCollaborator[]>([]);
   const [pendingInvites, setPendingInvites] = useState<CollaborationInvitation[]>([]);
   const [inviteEmail, setInviteEmail] = useState("");
@@ -156,15 +157,18 @@ function TreePageContent({ params, searchParams }: TreePageProps) {
     if (!activeTreeId || !inviteEmail.trim()) return;
     try {
       const result = await inviteCollaborator(activeTreeId, inviteEmail.trim());
-      alert(
-        result.status === "approved"
-          ? `Đã tạo mã mời thành công! Mã mời: ${result.code}`
-          : "Đã gửi yêu cầu tham gia. Đang chờ chủ cây duyệt."
-      );
+      if (result.status === "approved") {
+        showToast(
+          `Đã gửi lời mời tới ${inviteEmail.trim()}. Mã mời: ${result.code}. Nhắc người nhận kiểm tra cả hộp thư rác/spam.`,
+          "success",
+        );
+      } else {
+        showToast("Đã gửi yêu cầu tham gia. Đang chờ chủ cây duyệt.", "info");
+      }
       setInviteEmail("");
       fetchCollaborationData();
     } catch (err) {
-      console.warn(err instanceof ApiError ? err.message : "Không thể gửi lời mời.");
+      showToast(err instanceof ApiError ? err.message : "Không thể gửi lời mời.", "error");
     }
   }
 
@@ -173,9 +177,10 @@ function TreePageContent({ params, searchParams }: TreePageProps) {
     try {
       const result = await createInviteLink(activeTreeId);
       setGeneratedInviteCode(result.code);
+      showToast(`Đã tạo mã mời: ${result.code}`, "success");
       fetchCollaborationData();
     } catch (err) {
-      alert(err instanceof ApiError ? err.message : "Không thể tạo mã mời.");
+      showToast(err instanceof ApiError ? err.message : "Không thể tạo mã mời.", "error");
     }
   }
 
@@ -183,10 +188,10 @@ function TreePageContent({ params, searchParams }: TreePageProps) {
     if (!activeTreeId) return;
     try {
       await approveInvitation(activeTreeId, inviteId);
-      alert("Đã duyệt lời mời cộng tác thành công!");
+      showToast("Đã duyệt lời mời cộng tác thành công!", "success");
       fetchCollaborationData();
     } catch (err) {
-      alert(err instanceof ApiError ? err.message : "Thao tác thất bại.");
+      showToast(err instanceof ApiError ? err.message : "Thao tác thất bại.", "error");
     }
   }
 
@@ -194,10 +199,10 @@ function TreePageContent({ params, searchParams }: TreePageProps) {
     if (!activeTreeId) return;
     try {
       await rejectInvitation(activeTreeId, inviteId);
-      alert("Đã từ chối/hủy lời mời cộng tác!");
+      showToast("Đã từ chối/hủy lời mời cộng tác!", "success");
       fetchCollaborationData();
     } catch (err) {
-      alert(err instanceof ApiError ? err.message : "Thao tác thất bại.");
+      showToast(err instanceof ApiError ? err.message : "Thao tác thất bại.", "error");
     }
   }
 
@@ -207,16 +212,15 @@ function TreePageContent({ params, searchParams }: TreePageProps) {
     try {
       const result = await joinTreeGroup(inviteCode.trim());
       if ("status" in result && result.status === "pending") {
-        alert("Yêu cầu của bạn đã được gửi. Vui lòng chờ chủ cây duyệt.");
+        showToast("Yêu cầu của bạn đã được gửi. Vui lòng chờ chủ cây duyệt.", "info");
       } else {
-        alert("Bạn đã tham gia nhóm cộng tác xây dựng cây thành công!");
+        showToast("Bạn đã tham gia nhóm cộng tác xây dựng cây thành công!", "success");
       }
       setInviteCode("");
       router.refresh();
       window.location.reload();
     } catch (err) {
-      console.warn(err instanceof ApiError ? err.message : "Mã mời không hợp lệ.");
-      alert(err instanceof ApiError ? err.message : "Mã mời không hợp lệ.");
+      showToast(err instanceof ApiError ? err.message : "Mã mời không hợp lệ.", "error");
     }
   }
 
@@ -340,7 +344,7 @@ function TreePageContent({ params, searchParams }: TreePageProps) {
     try {
       await api.del(`/trees/${activeTreeId}/share-token`);
       setShareToken(null);
-      alert("Đã hủy bỏ tất cả liên kết chia sẻ trước đó.");
+      showToast("Đã hủy bỏ tất cả liên kết chia sẻ trước đó.", "success");
     } catch (err) {
       console.warn(err instanceof ApiError ? err.message : "Không thể hủy bỏ liên kết chia sẻ.");
     } finally {
@@ -818,7 +822,7 @@ function TreePageContent({ params, searchParams }: TreePageProps) {
                               onClick={() => {
                                 const url = `${window.location.origin}/tree/${activeTreeId}#shareToken=${encodeURIComponent(shareToken)}`;
                                 navigator.clipboard.writeText(url);
-                                alert("Đã sao chép liên kết vào bộ nhớ tạm!");
+                                showToast("Đã sao chép liên kết vào bộ nhớ tạm!", "success");
                               }}
                             >
                               Sao chép
@@ -948,7 +952,7 @@ function TreePageContent({ params, searchParams }: TreePageProps) {
                         <Input value={generatedInviteCode} readOnly style={{ flex: 1, fontWeight: "bold", letterSpacing: "1px" }} />
                         <button type="button" className="btn" onClick={() => {
                           navigator.clipboard.writeText(generatedInviteCode);
-                          alert("Đã sao chép mã mời!");
+                          showToast("Đã sao chép mã mời!", "success");
                         }}>
                           Copy
                         </button>

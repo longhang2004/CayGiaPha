@@ -8,8 +8,14 @@ import { sendEmail } from "@/lib/services/email";
 import crypto from "crypto";
 
 function generateRandomCode(): string {
-  // ~128 bits of entropy (16 bytes, base64url, no padding).
-  return crypto.randomBytes(16).toString("base64url");
+  // 6-char invite code (digits + lowercase, no ambiguous 0/o/1/l).
+  const chars = "abcdefghijkmnpqrstuvwxyz23456789";
+  const bytes = crypto.randomBytes(6);
+  let code = "";
+  for (let i = 0; i < 6; i++) {
+    code += chars[bytes[i] % chars.length];
+  }
+  return code;
 }
 
 export async function POST(
@@ -99,6 +105,9 @@ export async function POST(
           </div>
           <p style="font-size: 0.9rem; color: #666; text-align: center;">
             Mã mời của bạn là: <strong>${code}</strong> (dùng khi tham gia thủ công)
+          </p>
+          <p style="font-size: 0.85rem; color: #888; text-align: center;">
+            Nếu không thấy email trong hộp thư chính, vui lòng kiểm tra mục <strong>Thư rác / Spam</strong>.
           </p>
         </div>
       `,

@@ -41,23 +41,25 @@ export async function POST(
       .set({ status: "approved" })
       .where(eq(collaborationInvitations.id, inviteId));
 
-    // Find if user already exists
-    const user = await db
-      .select({ id: users.id })
-      .from(users)
-      .where(eq(users.email, invite.email))
-      .then((rows) => rows[0]);
+    // Find if user already exists (email invites only).
+    if (invite.email) {
+      const user = await db
+        .select({ id: users.id })
+        .from(users)
+        .where(eq(users.email, invite.email))
+        .then((rows) => rows[0]);
 
-    if (user) {
-      // Add collaborator record directly
-      await db
-        .insert(treeCollaborators)
-        .values({
-          treeId: invite.treeId,
-          userId: user.id,
-          role: "contributor"
-        })
-        .onConflictDoNothing();
+      if (user) {
+        // Add collaborator record directly
+        await db
+          .insert(treeCollaborators)
+          .values({
+            treeId: invite.treeId,
+            userId: user.id,
+            role: "contributor",
+          })
+          .onConflictDoNothing();
+      }
     }
 
     return Response.json({ success: true });
