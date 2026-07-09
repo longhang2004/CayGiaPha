@@ -32,7 +32,9 @@ async function deliverInviteEmailFromFrontend(input: {
   inviteId: string;
   treeName?: string;
 }): Promise<{ emailSent: boolean; emailMessage: string }> {
-  const res = await fetch("/_internal/send-invite-email", {
+  // Must NOT use a path under /api/* (proxied to Spring when USE_BACKEND=true).
+  // Must NOT use a folder starting with "_" (Next.js private folder — not routable).
+  const res = await fetch("/internal/send-invite-email", {
     method: "POST",
     credentials: "same-origin",
     headers: { "Content-Type": "application/json", Accept: "application/json" },
