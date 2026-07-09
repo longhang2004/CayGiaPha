@@ -3,6 +3,7 @@ package com.caygiapha.familytree.controller;
 import com.caygiapha.familytree.dto.ClaimResponse;
 import com.caygiapha.familytree.dto.ClaimVerifyRequest;
 import com.caygiapha.familytree.dto.InviteRequest;
+import com.caygiapha.familytree.error.ApiException;
 import com.caygiapha.familytree.security.AuthorizationService;
 import com.caygiapha.familytree.service.ClaimService;
 import java.util.UUID;
@@ -47,9 +48,12 @@ public class ClaimController {
     @ResponseStatus(HttpStatus.ACCEPTED)
     public void invite(
             @PathVariable("personId") UUID personId, @RequestBody InviteRequest request) {
-        // 13.4 / 11.1 — only the authenticated owner may invite; scope to their tree.
-        UUID treeId = authorizationService.requireOwnedTreeId();
-        claimService.invite(treeId, personId, request.destination());
+        // 13.4 / 11.1 — only the authenticated owner may invite; use request treeId after check.
+        if (request.treeId() == null) {
+            throw ApiException.validation("treeId", "Tree id is required.");
+        }
+        authorizationService.requireOwner(request.treeId());
+        claimService.invite(request.treeId(), personId, request.destination());
     }
 
     @PostMapping("/claim/verify")

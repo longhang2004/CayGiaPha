@@ -2,6 +2,7 @@ package com.caygiapha.familytree.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -19,11 +20,8 @@ import java.util.UUID;
 import org.junit.jupiter.api.Test;
 
 /**
- * Unit tests for {@link SessionService}: 30-day session creation (2.3), server-side
- * expiry/revocation enforcement during validation (2.3, 2.8), and idempotent revocation on
- * sign-out (2.8).
- *
- * <p>A fixed {@link Clock} drives the validity window deterministically.
+ * Unit tests for {@link SessionService}: 30-day session creation (2.3), hashed token at rest,
+ * server-side expiry/revocation (2.3, 2.8), and idempotent revocation (2.8).
  */
 class SessionServiceTest {
 
@@ -36,7 +34,7 @@ class SessionServiceTest {
     }
 
     @Test
-    void createEstablishesSessionExpiringIn30Days() {
+    void createEstablishesSessionExpiringIn30DaysWithHashedToken() {
         SessionRepository repository = mock(SessionRepository.class);
         when(repository.save(any(Session.class))).thenAnswer(echoWithId());
         SessionService service = serviceAt(NOW, repository);
@@ -44,84 +42,109 @@ class SessionServiceTest {
         Session session = service.create(USER_ID);
 
         assertThat(session.getUserId()).isEqualTo(USER_ID);
-        assertThat(session.getExpiresAt()).isEqualTo(NOW.plus(Duration.ofDays(30))); // 2.3
+        assertThat(session.getExpiresAt()).isEqualTo(NOW.plus(Duration.ofDays(30)));
         assertThat(session.isRevoked()).isFalse();
         assertThat(session.getId()).isNotNull();
+        assertThat(session.getRawToken()).isNotBlank();
+        assertThat(session.getTokenHash()).isEqualTo(SessionService.hash(session.getRawToken()));
+        assertThat(session.getTokenHash()).isNotEqualTo(session.getRawToken());
     }
 
     @Test
     void resolveReturnsUserForAnActiveSession() {
-        Session session = activeSession();
+        String rawToken = "opaque-session-token";
+        Session session = activeSession(rawToken);
         SessionRepository repository = mock(SessionRepository.class);
-        when(repository.findById(session.getId())).thenReturn(Optional.of(session));
+        when(repository.findByTokenHash(SessionService.hash(rawToken)))
+                .thenReturn(Optional.of(session));
         SessionService service = serviceAt(NOW, repository);
 
-        assertThat(service.resolve(session.getId())).contains(session);
-        assertThat(service.resolveUserId(session.getId())).contains(USER_ID);
+        assertThat(service.resolve(rawToken)).contains(session);
+        assertThat(service.resolveUserId(rawToken)).contains(USER_ID);
     }
 
     @Test
     void resolveRejectsAnExpiredSession() {
-        // 2.3 — expiry is enforced server-side; checking at/after the deadline yields nothing.
-        Session session = new Session(USER_ID, NOW.plus(Duration.ofDays(30)));
-        setId(session, session.getId());
+        String rawToken = "expired-token";
+        Session session = new Session(USER_ID, NOW.plus(Duration.ofDays(30)), SessionService.hash(rawToken));
+        setId(session, UUID.randomUUID());
         SessionRepository repository = mock(SessionRepository.class);
-        when(repository.findById(any())).thenReturn(Optional.of(session));
+        when(repository.findByTokenHash(SessionService.hash(rawToken)))
+                .thenReturn(Optional.of(session));
         SessionService service = serviceAt(NOW.plus(Duration.ofDays(30)), repository);
 
-        assertThat(service.resolveUserId(session.getId())).isEmpty();
+        assertThat(service.resolveUserId(rawToken)).isEmpty();
     }
 
     @Test
     void resolveRejectsARevokedSession() {
-        // 2.8 — a revoked session never authenticates again.
-        Session session = activeSession();
+        String rawToken = "revoked-token";
+        Session session = activeSession(rawToken);
         session.setRevoked(true);
         SessionRepository repository = mock(SessionRepository.class);
-        when(repository.findById(session.getId())).thenReturn(Optional.of(session));
+        when(repository.findByTokenHash(SessionService.hash(rawToken)))
+                .thenReturn(Optional.of(session));
         SessionService service = serviceAt(NOW, repository);
 
-        assertThat(service.resolveUserId(session.getId())).isEmpty();
+        assertThat(service.resolveUserId(rawToken)).isEmpty();
     }
 
     @Test
     void resolveReturnsEmptyForUnknownOrNullToken() {
         SessionRepository repository = mock(SessionRepository.class);
-        when(repository.findById(any())).thenReturn(Optional.empty());
+        when(repository.findByTokenHash(anyString())).thenReturn(Optional.empty());
         SessionService service = serviceAt(NOW, repository);
 
-        assertThat(service.resolveUserId(UUID.randomUUID())).isEmpty();
-        assertThat(service.resolve(null)).isEmpty();
+        assertThat(service.resolveUserId("unknown")).isEmpty();
+        assertThat(service.resolve((String) null)).isEmpty();
+    }
+
+    @Test
+    void resolveAcceptsLegacyUuidCookie() {
+        UUID legacyId = UUID.randomUUID();
+        Session session = new Session(USER_ID, NOW.plus(Duration.ofDays(30)), "legacy-hash");
+        setId(session, legacyId);
+        SessionRepository repository = mock(SessionRepository.class);
+        when(repository.findByTokenHash(SessionService.hash(legacyId.toString())))
+                .thenReturn(Optional.empty());
+        when(repository.findById(legacyId)).thenReturn(Optional.of(session));
+        SessionService service = serviceAt(NOW, repository);
+
+        assertThat(service.resolveUserId(legacyId.toString())).contains(USER_ID);
     }
 
     @Test
     void revokeMarksSessionRevoked() {
-        Session session = activeSession();
+        String rawToken = "to-revoke";
+        Session session = activeSession(rawToken);
         SessionRepository repository = mock(SessionRepository.class);
-        when(repository.findById(session.getId())).thenReturn(Optional.of(session));
+        when(repository.findByTokenHash(SessionService.hash(rawToken)))
+                .thenReturn(Optional.of(session));
         SessionService service = serviceAt(NOW, repository);
 
-        service.revoke(session.getId());
+        service.revoke(rawToken);
 
-        assertThat(session.isRevoked()).isTrue(); // 2.8
+        assertThat(session.isRevoked()).isTrue();
         verify(repository).save(session);
     }
 
     @Test
     void revokeIsANoOpForUnknownToken() {
         SessionRepository repository = mock(SessionRepository.class);
-        when(repository.findById(any())).thenReturn(Optional.empty());
+        when(repository.findByTokenHash(anyString())).thenReturn(Optional.empty());
         SessionService service = serviceAt(NOW, repository);
 
-        service.revoke(UUID.randomUUID());
-        service.revoke(null);
+        service.revoke("unknown");
+        service.revoke((String) null);
 
         verify(repository, never()).save(any());
     }
 
-    private static Session activeSession() {
-        Session session = new Session(USER_ID, NOW.plus(Duration.ofDays(30)));
+    private static Session activeSession(String rawToken) {
+        Session session =
+                new Session(USER_ID, NOW.plus(Duration.ofDays(30)), SessionService.hash(rawToken));
         setId(session, UUID.randomUUID());
+        session.setRawToken(rawToken);
         return session;
     }
 
@@ -135,7 +158,6 @@ class SessionServiceTest {
         };
     }
 
-    /** Set the JPA-managed id via reflection for test fixtures. */
     private static void setId(Session session, UUID id) {
         try {
             Field field = Session.class.getDeclaredField("id");

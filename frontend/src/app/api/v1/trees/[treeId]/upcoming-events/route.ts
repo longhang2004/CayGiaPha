@@ -109,7 +109,7 @@ export async function GET(
     }
 
     const { searchParams } = new URL(request.url);
-    const shareToken = searchParams.get("shareToken") || request.headers.get("x-share-token");
+    const shareToken = request.headers.get("x-share-token") || searchParams.get("shareToken");
 
     await authorizationService.requireReadAccess(auth.userId, auth.ownedTreeId, treeId, shareToken);
 

@@ -34,6 +34,7 @@ import com.caygiapha.familytree.service.LivingPersonPolicy;
 import com.caygiapha.familytree.service.RateLimiter;
 import com.caygiapha.familytree.service.TreeRegionService;
 import com.caygiapha.familytree.service.TreeSharingService;
+import jakarta.servlet.http.HttpServletRequest;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -144,10 +145,10 @@ public class TreeController {
     @ResponseStatus(HttpStatus.CREATED)
     public TreeSummaryResponse create(
             @RequestBody CreateTreeRequest request,
-            @RequestHeader(value = "X-Forwarded-For", required = false) String remoteAddr) {
+            HttpServletRequest http) {
         AuthContext context = authorizationService.requireAuthenticatedViewer();
         rateLimiter.check("create-tree:" + context.userId());
-        rateLimiter.check("mutate-ip:" + (remoteAddr == null || remoteAddr.isBlank() ? "unknown" : remoteAddr));
+        rateLimiter.check("mutate-ip:" + clientIp(http));
 
         String region = request == null || request.region() == null || request.region().isBlank()
                 ? Tree.DEFAULT_REGION
@@ -189,12 +190,20 @@ public class TreeController {
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void delete(
             @PathVariable("treeId") UUID treeId,
-            @RequestHeader(value = "X-Forwarded-For", required = false) String remoteAddr) {
+            HttpServletRequest http) {
         authorizationService.requireOwner(treeId);
         AuthContext context = authorizationService.currentContext();
         rateLimiter.check("delete-tree:" + context.userId());
-        rateLimiter.check("mutate-ip:" + (remoteAddr == null || remoteAddr.isBlank() ? "unknown" : remoteAddr));
+        rateLimiter.check("mutate-ip:" + clientIp(http));
         cascadeDeleteTree(treeId);
+    }
+
+    /** Prefer container remote address; do not trust client-supplied X-Forwarded-For alone. */
+    private static String clientIp(HttpServletRequest http) {
+        if (http == null || http.getRemoteAddr() == null || http.getRemoteAddr().isBlank()) {
+            return "unknown";
+        }
+        return http.getRemoteAddr();
     }
 
     @PatchMapping("/{treeId}/region")
@@ -265,12 +274,12 @@ public class TreeController {
                 deathVisible ? person.getDeathYear() : null,
                 deathVisible ? person.getDeathCalendar() : null,
                 deathVisible ? person.getDeathLunarLeap() : null,
-                person.getVisName(),
-                person.getVisBirthYear(),
-                person.getVisPhoto(),
-                person.getVisDeath(),
-                person.getVisMarital(),
-                person.getVisAdoption(),
+                privileged ? person.getVisName() : null,
+                privileged ? person.getVisBirthYear() : null,
+                privileged ? person.getVisPhoto() : null,
+                privileged ? person.getVisDeath() : null,
+                privileged ? person.getVisMarital() : null,
+                privileged ? person.getVisAdoption() : null,
                 claimed);
     }
 

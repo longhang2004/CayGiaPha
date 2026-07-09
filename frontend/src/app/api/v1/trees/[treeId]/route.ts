@@ -25,7 +25,8 @@ export async function GET(
     const auth = await getAuthContext();
     const treeId = params.treeId;
     const { searchParams } = new URL(request.url);
-    const shareToken = searchParams.get("shareToken") || request.headers.get("x-share-token");
+    // Prefer header; query param kept only for legacy clients.
+    const shareToken = request.headers.get("x-share-token") || searchParams.get("shareToken");
 
     // Enforce read access
     await authorizationService.requireReadAccess(auth.userId, auth.ownedTreeId, treeId, shareToken);
@@ -86,12 +87,12 @@ export async function GET(
         deathYear: visible(privileged, person.visDeath) ? person.deathYear : undefined,
         deathCalendar: visible(privileged, person.visDeath) ? person.deathCalendar : undefined,
         deathLunarLeap: visible(privileged, person.visDeath) ? person.deathLunarLeap : undefined,
-        visName: person.visName,
-        visBirthYear: person.visBirthYear,
-        visPhoto: person.visPhoto,
-        visDeath: person.visDeath,
-        visMarital: person.visMarital,
-        visAdoption: person.visAdoption,
+        visName: privileged ? person.visName : undefined,
+        visBirthYear: privileged ? person.visBirthYear : undefined,
+        visPhoto: privileged ? person.visPhoto : undefined,
+        visDeath: privileged ? person.visDeath : undefined,
+        visMarital: privileged ? person.visMarital : undefined,
+        visAdoption: privileged ? person.visAdoption : undefined,
         claimed: claimedPersonIds.has(person.id),
       });
     }

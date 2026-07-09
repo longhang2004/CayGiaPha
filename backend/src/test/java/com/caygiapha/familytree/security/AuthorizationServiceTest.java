@@ -7,36 +7,32 @@ import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import com.caygiapha.familytree.entity.Tree;
 import com.caygiapha.familytree.error.ApiException;
 import com.caygiapha.familytree.error.ErrorCode;
+import com.caygiapha.familytree.repository.TreeCollaboratorRepository;
 import com.caygiapha.familytree.repository.TreeRepository;
 import com.caygiapha.familytree.security.AuthorizationService.Role;
 import com.caygiapha.familytree.service.ClaimService;
 import com.caygiapha.familytree.service.ConsentService;
 import com.caygiapha.familytree.service.ShareTokenService;
+import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
 /**
- * Unit tests for {@link AuthorizationService} (Property 18; Requirements 11.6, 13.4, 13.5):
- *
- * <ul>
- *   <li>the tree owner is permitted to mutate their tree;</li>
- *   <li>the linked {@code Claimed_Node} user is permitted to edit their own node only;</li>
- *   <li>everyone else (including unauthenticated callers) is rejected with {@code NOT_AUTHORIZED}.
- * </ul>
- *
- * <p>A real {@link AuthContextHolder} is used (its {@link ThreadLocal} is bound per test and cleared
- * afterwards) while {@link ClaimService} is mocked to drive claim linkage.
+ * Unit tests for {@link AuthorizationService} (Property 18; Requirements 11.6, 13.4, 13.5).
  */
 class AuthorizationServiceTest {
 
     private final AuthContextHolder holder = new AuthContextHolder();
     private final ClaimService claimService = mock(ClaimService.class);
     private final ConsentService consentService = mock(ConsentService.class);
+    private final TreeRepository treeRepository = mock(TreeRepository.class);
+    private final TreeCollaboratorRepository collaboratorRepository = mock(TreeCollaboratorRepository.class);
     private final AuthorizationService service = new AuthorizationService(
-            holder, claimService, mock(TreeRepository.class), mock(com.caygiapha.familytree.repository.TreeCollaboratorRepository.class), mock(ShareTokenService.class),
+            holder, claimService, treeRepository, collaboratorRepository, mock(ShareTokenService.class),
             consentService);
 
     @AfterEach
@@ -44,17 +40,34 @@ class AuthorizationServiceTest {
         holder.clear();
     }
 
+    private void stubOwnedTree(UUID treeId, UUID ownerUserId) {
+        when(treeRepository.findById(treeId)).thenReturn(Optional.of(new Tree(ownerUserId)));
+    }
+
     @Test
     void ownerIsPermittedToMutateOwnedTree() {
         UUID userId = UUID.randomUUID();
         UUID treeId = UUID.randomUUID();
         holder.set(AuthContext.authenticated(userId, treeId));
+        stubOwnedTree(treeId, userId);
 
         assertThat(service.classify(treeId, null)).isEqualTo(Role.OWNER);
         assertThatCode(() -> service.requireMutationPermitted(treeId, UUID.randomUUID()))
-                .doesNotThrowAnyException(); // 13.4 — owner may edit any node in their tree
+                .doesNotThrowAnyException();
         assertThatCode(() -> service.requireOwner(treeId)).doesNotThrowAnyException();
         assertThat(service.requireOwnedTreeId()).isEqualTo(treeId);
+    }
+
+    @Test
+    void ownerOfSecondTreeIsPermittedEvenWhenOwnedTreeIdIsFirstTree() {
+        UUID userId = UUID.randomUUID();
+        UUID firstTreeId = UUID.randomUUID();
+        UUID secondTreeId = UUID.randomUUID();
+        holder.set(AuthContext.authenticated(userId, firstTreeId));
+        stubOwnedTree(secondTreeId, userId);
+
+        assertThat(service.classify(secondTreeId, null)).isEqualTo(Role.OWNER);
+        assertThatCode(() -> service.requireOwner(secondTreeId)).doesNotThrowAnyException();
     }
 
     @Test
@@ -62,7 +75,8 @@ class AuthorizationServiceTest {
         UUID userId = UUID.randomUUID();
         UUID treeId = UUID.randomUUID();
         holder.set(AuthContext.authenticated(userId, treeId));
-        when(consentService.needsReacceptance(userId)).thenReturn(true); // 23.4 — version bumped
+        stubOwnedTree(treeId, userId);
+        when(consentService.needsReacceptance(userId)).thenReturn(true);
 
         assertThatThrownBy(() -> service.requireOwner(treeId))
                 .isInstanceOfSatisfying(ApiException.class,
@@ -70,33 +84,31 @@ class AuthorizationServiceTest {
         assertThatThrownBy(() -> service.requireMutationPermitted(treeId, UUID.randomUUID()))
                 .isInstanceOfSatisfying(ApiException.class,
                         ex -> assertThat(ex.code()).isEqualTo(ErrorCode.CONSENT_REQUIRED));
-        // Classification itself is unaffected; only the mutation gate blocks.
         assertThat(service.classify(treeId, null)).isEqualTo(Role.OWNER);
     }
 
     @Test
     void linkedUserIsPermittedToEditOwnClaimedNodeOnly() {
         UUID userId = UUID.randomUUID();
-        UUID ownedTreeId = UUID.randomUUID(); // the linked user may own no tree; use none
-        UUID targetTreeId = UUID.randomUUID(); // the owner's tree, not the linked user's
+        UUID ownedTreeId = UUID.randomUUID();
+        UUID targetTreeId = UUID.randomUUID();
         UUID claimedPerson = UUID.randomUUID();
         UUID otherPerson = UUID.randomUUID();
         holder.set(AuthContext.authenticated(userId, null));
+        when(treeRepository.findById(targetTreeId)).thenReturn(Optional.of(new Tree(UUID.randomUUID())));
         when(claimService.isLinkedUser(claimedPerson, userId)).thenReturn(true);
         lenient().when(claimService.isLinkedUser(otherPerson, userId)).thenReturn(false);
 
-        // 11.6 — linked user may edit their own claimed node.
         assertThat(service.classify(targetTreeId, claimedPerson))
                 .isEqualTo(Role.LINKED_CLAIMED_USER);
         assertThatCode(() -> service.requireMutationPermitted(targetTreeId, claimedPerson))
                 .doesNotThrowAnyException();
 
-        // 13.5 — but not a different node, and not the unused ownedTreeId tree they don't own.
         assertThat(service.classify(targetTreeId, otherPerson)).isEqualTo(Role.NEITHER);
         assertThatThrownBy(() -> service.requireMutationPermitted(targetTreeId, otherPerson))
                 .isInstanceOfSatisfying(ApiException.class,
                         ex -> assertThat(ex.code()).isEqualTo(ErrorCode.NOT_AUTHORIZED));
-        assertThat(ownedTreeId).isNotEqualTo(targetTreeId); // guard: distinct trees in fixture
+        assertThat(ownedTreeId).isNotEqualTo(targetTreeId);
     }
 
     @Test
@@ -105,12 +117,13 @@ class AuthorizationServiceTest {
         UUID targetTreeId = UUID.randomUUID();
         UUID targetPerson = UUID.randomUUID();
         holder.set(AuthContext.authenticated(userId, UUID.randomUUID()));
+        when(treeRepository.findById(targetTreeId)).thenReturn(Optional.of(new Tree(UUID.randomUUID())));
         when(claimService.isLinkedUser(targetPerson, userId)).thenReturn(false);
 
         assertThat(service.classify(targetTreeId, targetPerson)).isEqualTo(Role.NEITHER);
         assertThatThrownBy(() -> service.requireMutationPermitted(targetTreeId, targetPerson))
                 .isInstanceOfSatisfying(ApiException.class,
-                        ex -> assertThat(ex.code()).isEqualTo(ErrorCode.NOT_AUTHORIZED)); // 13.5
+                        ex -> assertThat(ex.code()).isEqualTo(ErrorCode.NOT_AUTHORIZED));
         assertThatThrownBy(() -> service.requireOwner(targetTreeId))
                 .isInstanceOfSatisfying(ApiException.class,
                         ex -> assertThat(ex.code()).isEqualTo(ErrorCode.NOT_AUTHORIZED));

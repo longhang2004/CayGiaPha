@@ -79,7 +79,7 @@ public class AuthenticationFilter extends OncePerRequestFilter {
     }
 
     private AuthContext resolveContext(HttpServletRequest request) {
-        Optional<UUID> token =
+        Optional<String> token =
                 readSessionCookie(request).flatMap(sessionCookieFactory::parseToken);
         if (token.isEmpty()) {
             return AuthContext.anonymous();

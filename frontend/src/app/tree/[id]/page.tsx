@@ -57,8 +57,6 @@ function TreePageContent({ params, searchParams }: TreePageProps) {
   const pathname = usePathname();
   
   const activeTreeId = params.id;
-  const queryShareToken = searchParams.shareToken;
-
   const [persons, setPersons] = useState<Person[]>([]);
   const [relationships, setRelationships] = useState<Relationship[]>([]);
   const [region, setRegionState] = useState<Region>("Bac");
@@ -96,7 +94,9 @@ function TreePageContent({ params, searchParams }: TreePageProps) {
 
   const [updatingSharing, setUpdatingSharing] = useState(false);
   const [updatingRedaction, setUpdatingRedaction] = useState(false);
-  const [shareToken, setShareToken] = useState<string | null>(queryShareToken || null);
+  // Prefer hash fragment (#shareToken=) so tokens are not sent in Referer/server logs.
+  // Query-string shareToken is still accepted for legacy links.
+  const [shareToken, setShareToken] = useState<string | null>(searchParams.shareToken || null);
   const [generatingToken, setGeneratingToken] = useState(false);
 
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -225,14 +225,15 @@ function TreePageContent({ params, searchParams }: TreePageProps) {
     setAddressesReady(false);
     setError(null);
     try {
-      const url = `/trees/${encodeURIComponent(id)}${token ? `?shareToken=${encodeURIComponent(token)}` : ""}`;
       const data = await api.get<{
         persons: Person[];
         relationships: Relationship[];
         region: Region;
         livingRedaction: boolean;
         sharing: string;
-      }>(url);
+      }>(`/trees/${encodeURIComponent(id)}`, {
+        headers: token ? { "X-Share-Token": token } : undefined,
+      });
       setPersons(data.persons);
       setRelationships(data.relationships);
       setRegionState(data.region);
@@ -254,18 +255,36 @@ function TreePageContent({ params, searchParams }: TreePageProps) {
   }, []);
 
   useEffect(() => {
+    // Read share token from hash fragment (preferred) or legacy query param.
+    if (typeof window !== "undefined") {
+      const fromHash = new URLSearchParams(window.location.hash.replace(/^#/, "")).get(
+        "shareToken",
+      );
+      if (fromHash) {
+        setShareToken(fromHash);
+        // Drop query-string token from the address bar if present.
+        if (searchParams.shareToken) {
+          const url = new URL(window.location.href);
+          url.searchParams.delete("shareToken");
+          window.history.replaceState({}, "", url.pathname + url.search + url.hash);
+        }
+      }
+    }
+  }, [searchParams.shareToken]);
+
+  useEffect(() => {
     if (activeTreeId) {
-      loadTree(activeTreeId, queryShareToken);
+      loadTree(activeTreeId, shareToken || undefined);
     } else if (!sessionLoading) {
       setLoadingData(false);
     }
-  }, [activeTreeId, queryShareToken, sessionLoading, loadTree]);
+  }, [activeTreeId, shareToken, sessionLoading, loadTree]);
 
   const refreshTree = useCallback(() => {
     if (activeTreeId) {
-      loadTree(activeTreeId, queryShareToken);
+      loadTree(activeTreeId, shareToken || undefined);
     }
-  }, [activeTreeId, queryShareToken, loadTree]);
+  }, [activeTreeId, shareToken, loadTree]);
 
   const handleAddressesLoaded = useCallback((loaded: Map<string, Address>) => {
     setAddresses(loaded);
@@ -787,7 +806,7 @@ function TreePageContent({ params, searchParams }: TreePageProps) {
                           <input
                             type="text"
                             readOnly
-                            value={typeof window !== "undefined" ? `${window.location.origin}/tree?treeId=${activeTreeId}&shareToken=${shareToken}` : ""}
+                            value={typeof window !== "undefined" ? `${window.location.origin}/tree/${activeTreeId}#shareToken=${encodeURIComponent(shareToken)}` : ""}
                             style={{ width: "100%", fontSize: "0.75rem", margin: "0.5rem 0" }}
                             onClick={(e) => (e.target as HTMLInputElement).select()}
                           />
@@ -797,7 +816,7 @@ function TreePageContent({ params, searchParams }: TreePageProps) {
                               className="btn btn-secondary"
                               style={{ flex: 1 }}
                               onClick={() => {
-                                const url = `${window.location.origin}/tree?treeId=${activeTreeId}&shareToken=${shareToken}`;
+                                const url = `${window.location.origin}/tree/${activeTreeId}#shareToken=${encodeURIComponent(shareToken)}`;
                                 navigator.clipboard.writeText(url);
                                 alert("Đã sao chép liên kết vào bộ nhớ tạm!");
                               }}

@@ -26,9 +26,8 @@ import java.util.UUID;
  *
  * <p>Marital status is a property of the person's {@code Marriage_Edge} rather than of the person
  * row, so it is not projected here; its exposure is governed by {@code vis_marital} wherever
- * marriage data is surfaced. The current per-field visibility settings ({@code visMarital},
- * {@code visAdoption}, {@code visDeath}) are non-sensitive metadata and are always returned so the
- * owner UI can render and edit them.
+ * marriage data is surfaced. Per-field visibility settings are returned only to privileged viewers
+ * (owner / linked / contributor) so public and link readers cannot learn privacy configuration.
  *
  * @param id             the person node identifier
  * @param treeId         owning tree
@@ -114,6 +113,14 @@ public record PersonResponse(
         boolean birthYearHidden = redactLiving
                 || (!privileged && PersonVisibility.PRIVATE.equals(person.getVisBirthYear()));
         boolean deathVisible = visible(privileged, person.getVisDeath());
+        // Visibility settings are owner/editor metadata — omit for non-privileged viewers so
+        // privacy configuration is not disclosed to public/link readers.
+        String visMarital = privileged ? person.getVisMarital() : null;
+        String visAdoption = privileged ? person.getVisAdoption() : null;
+        String visDeath = privileged ? person.getVisDeath() : null;
+        String visName = privileged ? person.getVisName() : null;
+        String visBirthYear = privileged ? person.getVisBirthYear() : null;
+        String visPhoto = privileged ? person.getVisPhoto() : null;
         return new PersonResponse(
                 person.getId(),
                 person.getTreeId(),
@@ -123,12 +130,12 @@ public record PersonResponse(
                 birthYearHidden ? null : person.getBirthYear(),
                 deathVisible ? person.isDeathStatus() : null,
                 visible(privileged, person.getVisAdoption()) ? person.getAdoptionStatus() : null,
-                person.getVisMarital(),
-                person.getVisAdoption(),
-                person.getVisDeath(),
-                person.getVisName(),
-                person.getVisBirthYear(),
-                person.getVisPhoto(),
+                visMarital,
+                visAdoption,
+                visDeath,
+                visName,
+                visBirthYear,
+                visPhoto,
                 deathVisible ? person.getDeathDay() : null,
                 deathVisible ? person.getDeathMonth() : null,
                 deathVisible ? person.getDeathYear() : null,

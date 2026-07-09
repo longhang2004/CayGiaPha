@@ -99,7 +99,7 @@ export async function GET(request: Request) {
 
     // 4. Create session and set the session cookie
     const session = await sessionService.create(user.id);
-    cookies().set("SESSION", session.id, {
+    cookies().set("SESSION", session.rawToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",

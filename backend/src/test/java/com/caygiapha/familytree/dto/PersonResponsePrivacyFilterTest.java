@@ -82,13 +82,20 @@ class PersonResponsePrivacyFilterTest {
     }
 
     @Test
-    void visibilitySettingsAreAlwaysReturnedAsMetadata() {
+    void visibilitySettingsReturnedOnlyToPrivilegedViewer() {
         Person p = person(PersonVisibility.PUBLIC, PersonVisibility.PRIVATE);
 
-        PersonResponse response = PersonResponse.filteredFor(p, false);
+        PersonResponse privileged = PersonResponse.filteredFor(p, true);
+        assertThat(privileged.visDeath()).isEqualTo(PersonVisibility.PUBLIC);
+        assertThat(privileged.visAdoption()).isEqualTo(PersonVisibility.PRIVATE);
+        assertThat(privileged.visMarital()).isEqualTo(PersonVisibility.PRIVATE);
 
-        assertThat(response.visDeath()).isEqualTo(PersonVisibility.PUBLIC);
-        assertThat(response.visAdoption()).isEqualTo(PersonVisibility.PRIVATE);
-        assertThat(response.visMarital()).isEqualTo(PersonVisibility.PRIVATE); // entity default
+        PersonResponse publicViewer = PersonResponse.filteredFor(p, false);
+        assertThat(publicViewer.visDeath()).isNull();
+        assertThat(publicViewer.visAdoption()).isNull();
+        assertThat(publicViewer.visMarital()).isNull();
+        assertThat(publicViewer.visName()).isNull();
+        assertThat(publicViewer.visBirthYear()).isNull();
+        assertThat(publicViewer.visPhoto()).isNull();
     }
 }

@@ -60,6 +60,10 @@ public class AuthorizationService {
     /**
      * Classify the current caller relative to the given target (Property 18).
      *
+     * <p>Ownership is resolved from the database ({@code trees.owner_user_id}) so multi-tree
+     * accounts are authorized correctly for every owned tree, not only the legacy first tree
+     * cached on {@link AuthContext#ownedTreeId()}.
+     *
      * @param targetTreeId   the tree the mutation targets (may be {@code null})
      * @param targetPersonId the person the mutation targets, when node-scoped (may be {@code null})
      * @return the caller's {@link Role}
@@ -69,18 +73,13 @@ public class AuthorizationService {
         if (!context.isAuthenticated()) {
             return Role.NEITHER;
         }
-        // OWNER: a user owns at most one tree (13.2), so owning the target tree is an id match.
-        boolean ownsTargetTree = targetTreeId != null
-                && context.ownedTreeId().map(targetTreeId::equals).orElse(false);
-        if (ownsTargetTree) {
+        if (targetTreeId != null && isOwnerOf(targetTreeId, context.userId())) {
             return Role.OWNER;
         }
-        // CONTRIBUTOR: check if the user is a registered collaborator for the target tree.
         if (targetTreeId != null
                 && collaboratorRepository.existsByTreeIdAndUserId(targetTreeId, context.userId())) {
             return Role.CONTRIBUTOR;
         }
-        // LINKED_CLAIMED_USER: the target node is claimed by, and linked to, this user (11.6).
         if (targetPersonId != null
                 && claimService.isLinkedUser(targetPersonId, context.userId())) {
             return Role.LINKED_CLAIMED_USER;
@@ -132,10 +131,10 @@ public class AuthorizationService {
     }
 
     /**
-     * Resolve the tree owned by the authenticated caller, used by owner-only create operations that
-     * derive the acting tree from the session rather than trusting a request-body {@code treeId}.
+     * Resolve a legacy default owned tree for callers that still omit {@code treeId}. Prefer
+     * {@link #requireOwner(UUID)} with an explicit tree id for multi-tree accounts.
      *
-     * @return the authenticated owner's tree id
+     * @return the authenticated owner's earliest tree id
      * @throws ApiException {@code NOT_AUTHORIZED} when the caller is unauthenticated or owns no tree
      */
     public UUID requireOwnedTreeId() {
@@ -144,6 +143,9 @@ public class AuthorizationService {
             throw ApiException.notAuthorized("Authentication is required for this operation.");
         }
         return context.ownedTreeId()
+                .or(() -> treeRepository
+                        .findFirstByOwnerUserIdOrderByCreatedAtAsc(context.userId())
+                        .map(Tree::getId))
                 .orElseThrow(() -> ApiException.notAuthorized(
                         "You do not own a tree to perform this operation on."));
     }
@@ -182,8 +184,8 @@ public class AuthorizationService {
      * Whether the current caller may read the given tree under the sharing model (Requirement 19):
      * <ul>
      *   <li>every read requires an authenticated session (19.2);</li>
-     *   <li>the tree Owner and any User linked to a {@code Claimed_Node} in the tree may always read
-     *       (19.3);</li>
+     *   <li>the tree Owner, collaborators, and any User linked to a {@code Claimed_Node} in the tree
+     *       may always read (19.3);</li>
      *   <li>{@code public} trees are readable by any authenticated user (19.6);</li>
      *   <li>{@code link} trees are additionally readable by a caller presenting a valid, non-revoked
      *       share token for that tree (19.4);</li>
@@ -196,14 +198,16 @@ public class AuthorizationService {
         if (!context.isAuthenticated() || treeId == null) {
             return false; // 19.2 — reads require authentication.
         }
-        // Owner or a linked family member of this tree always has read access (19.3).
-        if (context.ownedTreeId().map(treeId::equals).orElse(false)
-                || claimService.isLinkedToTree(treeId, context.userId())) {
-            return true;
-        }
         Optional<Tree> tree = treeRepository.findById(treeId);
         if (tree.isEmpty()) {
             return false; // unknown tree — uniform denial (19.7, 25.4).
+        }
+        UUID userId = context.userId();
+        // Owner, collaborator, or linked family member always has read access (19.3).
+        if (userId.equals(tree.get().getOwnerUserId())
+                || collaboratorRepository.existsByTreeIdAndUserId(treeId, userId)
+                || claimService.isLinkedToTree(treeId, userId)) {
+            return true;
         }
         String sharing = tree.get().getSharing();
         if (Tree.DEFAULT_SHARING.equals(sharing)) { // 'private' (19.3)
@@ -214,5 +218,12 @@ public class AuthorizationService {
         }
         // 'link' (19.4) — a valid, non-revoked token for this specific tree grants access.
         return shareTokenService.resolveTreeId(shareToken).map(treeId::equals).orElse(false);
+    }
+
+    private boolean isOwnerOf(UUID treeId, UUID userId) {
+        return treeRepository
+                .findById(treeId)
+                .map(tree -> userId.equals(tree.getOwnerUserId()))
+                .orElse(false);
     }
 }

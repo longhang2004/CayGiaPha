@@ -1,6 +1,7 @@
 package com.caygiapha.familytree.security;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -17,15 +18,6 @@ import org.junit.jupiter.api.Test;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
 
-/**
- * Unit tests for {@link AuthenticationFilter} (design "Request Flow Summary"; Requirements 2.3,
- * 2.8): a valid session resolves to an authenticated {@link AuthContext} carrying the user and
- * their owned tree, while a missing / malformed / expired-or-revoked session yields the anonymous
- * context. The bound context is always cleared once the request completes.
- *
- * <p>A real {@link SessionCookieFactory} (pure token parsing) and {@link AuthContextHolder} are
- * used; {@link SessionService}, {@link UserRepository}, and {@link TreeRepository} are mocked.
- */
 class AuthenticationFilterTest {
 
     private final SessionService sessionService = mock(SessionService.class);
@@ -44,7 +36,7 @@ class AuthenticationFilterTest {
 
     @Test
     void validSessionResolvesAuthenticatedContextWithOwnedTree() throws Exception {
-        UUID token = UUID.randomUUID();
+        String token = "opaque-token-value";
         UUID userId = UUID.randomUUID();
         UUID treeId = UUID.randomUUID();
         when(sessionService.resolveUserId(token)).thenReturn(Optional.of(userId));
@@ -53,24 +45,23 @@ class AuthenticationFilterTest {
         when(tree.getId()).thenReturn(treeId);
         when(treeRepository.findFirstByOwnerUserIdOrderByCreatedAtAsc(userId)).thenReturn(Optional.of(tree));
 
-        AuthContext captured = runFilterWithCookie(token.toString());
+        AuthContext captured = runFilterWithCookie(token);
 
         assertThat(captured.isAuthenticated()).isTrue();
         assertThat(captured.userId()).isEqualTo(userId);
         assertThat(captured.ownedTreeId()).contains(treeId);
-        // Context is cleared after the request completes.
         assertThat(holder.current().isAuthenticated()).isFalse();
     }
 
     @Test
     void authenticatedUserWithoutTreeHasEmptyOwnedTree() throws Exception {
-        UUID token = UUID.randomUUID();
+        String token = "opaque-token-value";
         UUID userId = UUID.randomUUID();
         when(sessionService.resolveUserId(token)).thenReturn(Optional.of(userId));
         when(userRepository.existsById(userId)).thenReturn(true);
         when(treeRepository.findFirstByOwnerUserIdOrderByCreatedAtAsc(userId)).thenReturn(Optional.empty());
 
-        AuthContext captured = runFilterWithCookie(token.toString());
+        AuthContext captured = runFilterWithCookie(token);
 
         assertThat(captured.isAuthenticated()).isTrue();
         assertThat(captured.userId()).isEqualTo(userId);
@@ -85,31 +76,32 @@ class AuthenticationFilterTest {
     }
 
     @Test
-    void malformedTokenYieldsAnonymousContext() throws Exception {
-        AuthContext captured = runFilterWithCookie("not-a-uuid");
+    void unknownTokenYieldsAnonymousContext() throws Exception {
+        when(sessionService.resolveUserId(anyString())).thenReturn(Optional.empty());
+
+        AuthContext captured = runFilterWithCookie("not-a-known-token");
 
         assertThat(captured.isAuthenticated()).isFalse();
     }
 
     @Test
     void expiredOrRevokedSessionYieldsAnonymousContext() throws Exception {
-        UUID token = UUID.randomUUID();
-        // SessionService enforces server-side expiry/revocation and returns empty (2.3, 2.8).
+        String token = "expired-token";
         when(sessionService.resolveUserId(token)).thenReturn(Optional.empty());
 
-        AuthContext captured = runFilterWithCookie(token.toString());
+        AuthContext captured = runFilterWithCookie(token);
 
         assertThat(captured.isAuthenticated()).isFalse();
     }
 
     @Test
     void sessionForMissingUserYieldsAnonymousContext() throws Exception {
-        UUID token = UUID.randomUUID();
+        String token = "orphan-token";
         UUID userId = UUID.randomUUID();
         when(sessionService.resolveUserId(token)).thenReturn(Optional.of(userId));
         when(userRepository.existsById(userId)).thenReturn(false);
 
-        AuthContext captured = runFilterWithCookie(token.toString());
+        AuthContext captured = runFilterWithCookie(token);
 
         assertThat(captured.isAuthenticated()).isFalse();
     }
@@ -122,9 +114,10 @@ class AuthenticationFilterTest {
 
     private AuthContext runFilter(MockHttpServletRequest request) throws Exception {
         MockHttpServletResponse response = new MockHttpServletResponse();
-        AuthContext[] captured = {null};
-        filter.doFilter(request, response, (req, res) -> captured[0] = holder.current());
-        // The context is also exposed as a request attribute for the duration of the request.
+        final AuthContext[] captured = new AuthContext[1];
+        filter.doFilter(request, response, (req, res) -> {
+            captured[0] = holder.current();
+        });
         return captured[0];
     }
 }

@@ -392,8 +392,8 @@ class AuthServiceTest {
 
         assertThatThrownBy(() -> service.signInWithPassword(EMAIL, "wrong-password"))
                 .isInstanceOfSatisfying(ApiException.class, ex -> {
-                    assertThat(ex.code()).isEqualTo(ErrorCode.VALIDATION_ERROR);
-                    assertThat(ex.field()).isEqualTo("password");
+                    // Uniform message with missing-account to reduce enumeration.
+                    assertThat(ex.code()).isEqualTo(ErrorCode.ACCOUNT_NOT_FOUND);
                 });
 
         verify(sessionService, never()).create(any());
@@ -423,7 +423,7 @@ class AuthServiceTest {
         when(sessionService.create(any())).thenReturn(session);
 
         AuthService.PasswordSignUpResult result =
-                service.signUpWithPassword(EMAIL, "strong-password", "Nam", true, true);
+                service.signUpWithPassword(EMAIL, "strong-password1", "Nam", true, true);
 
         assertThat(result.session()).isSameAs(session);
         assertThat(result.response().treeId()).isNotNull();
@@ -520,7 +520,7 @@ class AuthServiceTest {
 
     @Test
     void signOutRevokesTheSession() {
-        UUID token = UUID.randomUUID();
+        String token = "opaque-session-token";
 
         service.signOut(token);
 

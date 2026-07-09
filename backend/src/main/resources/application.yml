@@ -41,3 +41,6 @@ app:
   auth:
     google:
       client-id: ${GOOGLE_CLIENT_ID:}
+  security:
+    # Comma-separated browser origins allowed for credentialed mutating requests (CSRF Origin check).
+    allowed-origins: ${APP_ALLOWED_ORIGINS:http://localhost:3000,http://127.0.0.1:3000}

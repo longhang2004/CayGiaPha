@@ -7,13 +7,16 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 
+import com.caygiapha.familytree.entity.Tree;
 import com.caygiapha.familytree.error.ApiException;
 import com.caygiapha.familytree.error.ErrorCode;
+import com.caygiapha.familytree.repository.TreeCollaboratorRepository;
 import com.caygiapha.familytree.repository.TreeRepository;
 import com.caygiapha.familytree.security.AuthorizationService.Role;
 import com.caygiapha.familytree.service.ClaimService;
 import com.caygiapha.familytree.service.ConsentService;
 import com.caygiapha.familytree.service.ShareTokenService;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 import net.jqwik.api.Arbitraries;
@@ -140,9 +143,21 @@ class MutationAuthorizationProperties {
                             && callerUserId.equals(userArg);
                 });
 
+        TreeRepository treeRepository = mock(TreeRepository.class);
+        boolean isOwnerOfTarget =
+                scenario.authenticated() && scenario.ownedTree() == OwnedTree.TARGET;
+        lenient()
+                .when(treeRepository.findById(targetTreeId))
+                .thenReturn(Optional.of(new Tree(
+                        isOwnerOfTarget ? callerUserId : UUID.randomUUID())));
+
         AuthContextHolder holder = new AuthContextHolder();
         AuthorizationService service = new AuthorizationService(
-                holder, claimService, mock(TreeRepository.class), mock(com.caygiapha.familytree.repository.TreeCollaboratorRepository.class), mock(ShareTokenService.class),
+                holder,
+                claimService,
+                treeRepository,
+                mock(TreeCollaboratorRepository.class),
+                mock(ShareTokenService.class),
                 mock(ConsentService.class));
 
         // ----- Independent oracle (does not consult the service under test) -----

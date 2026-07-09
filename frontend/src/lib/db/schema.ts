@@ -66,12 +66,15 @@ export const sessions = pgTable(
     userId: uuid("user_id")
       .notNull()
       .references(() => users.id),
+    /** SHA-256 hex of the opaque cookie token; never the raw token. */
+    tokenHash: text("token_hash").notNull(),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
     revoked: boolean("revoked").notNull().default(false),
   },
   (table) => ({
     userIdIdx: index("ix_sessions_user_id").on(table.userId),
+    tokenHashUniqueIdx: uniqueIndex("ux_sessions_token_hash").on(table.tokenHash),
   })
 );
 

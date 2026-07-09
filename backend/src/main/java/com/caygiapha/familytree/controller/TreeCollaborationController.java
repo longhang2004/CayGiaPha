@@ -2,8 +2,11 @@ package com.caygiapha.familytree.controller;
 
 import com.caygiapha.familytree.entity.CollaborationInvitation;
 import com.caygiapha.familytree.entity.TreeCollaborator;
+import com.caygiapha.familytree.security.AuthContext;
 import com.caygiapha.familytree.security.AuthorizationService;
+import com.caygiapha.familytree.service.RateLimiter;
 import com.caygiapha.familytree.service.TreeCollaborationService;
+import jakarta.servlet.http.HttpServletRequest;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
@@ -23,60 +26,78 @@ public class TreeCollaborationController {
 
     private final TreeCollaborationService collaborationService;
     private final AuthorizationService authorizationService;
+    private final RateLimiter rateLimiter;
 
     public TreeCollaborationController(
             TreeCollaborationService collaborationService,
-            AuthorizationService authorizationService) {
+            AuthorizationService authorizationService,
+            RateLimiter rateLimiter) {
         this.collaborationService = collaborationService;
         this.authorizationService = authorizationService;
+        this.rateLimiter = rateLimiter;
     }
 
     public record InviteRequest(String email) {}
+
+    /** Safe invitation view for join-link UI — never includes the raw invite code. */
+    public record InvitationView(
+            UUID id,
+            UUID treeId,
+            String status,
+            java.time.Instant expiresAt) {
+        static InvitationView from(CollaborationInvitation invite) {
+            return new InvitationView(
+                    invite.getId(), invite.getTreeId(), invite.getStatus(), invite.getExpiresAt());
+        }
+    }
 
     @PostMapping("/{treeId}/collaborators/invite")
     @ResponseStatus(HttpStatus.CREATED)
     public CollaborationInvitation invite(
             @PathVariable("treeId") UUID treeId,
             @RequestBody InviteRequest request) {
-        UUID currentUserId = authorizationService.currentContext().userId();
-        return collaborationService.invite(treeId, request.email(), currentUserId);
+        AuthContext auth = authorizationService.requireAuthenticatedViewer();
+        return collaborationService.invite(treeId, request.email(), auth.userId());
     }
 
     @PostMapping("/{treeId}/collaborators/invite-link")
     @ResponseStatus(HttpStatus.CREATED)
     public CollaborationInvitation createGenericInvite(
             @PathVariable("treeId") UUID treeId) {
-        UUID currentUserId = authorizationService.currentContext().userId();
-        return collaborationService.createGenericInvite(treeId, currentUserId);
+        AuthContext auth = authorizationService.requireAuthenticatedViewer();
+        return collaborationService.createGenericInvite(treeId, auth.userId());
     }
 
     @GetMapping("/{treeId}/collaborators/pending")
     public List<CollaborationInvitation> getPending(
             @PathVariable("treeId") UUID treeId) {
-        UUID currentUserId = authorizationService.currentContext().userId();
-        return collaborationService.getPendingInvitations(treeId, currentUserId);
+        AuthContext auth = authorizationService.requireAuthenticatedViewer();
+        return collaborationService.getPendingInvitations(treeId, auth.userId());
     }
 
     @PostMapping("/{treeId}/collaborators/approve/{inviteId}")
     public void approve(
             @PathVariable("treeId") UUID treeId,
             @PathVariable("inviteId") UUID inviteId) {
-        UUID currentUserId = authorizationService.currentContext().userId();
-        collaborationService.approveInvitation(treeId, inviteId, currentUserId);
+        AuthContext auth = authorizationService.requireAuthenticatedViewer();
+        collaborationService.approveInvitation(treeId, inviteId, auth.userId());
     }
 
     @PostMapping("/{treeId}/collaborators/reject/{inviteId}")
     public void reject(
             @PathVariable("treeId") UUID treeId,
             @PathVariable("inviteId") UUID inviteId) {
-        UUID currentUserId = authorizationService.currentContext().userId();
-        collaborationService.rejectInvitation(treeId, inviteId, currentUserId);
+        AuthContext auth = authorizationService.requireAuthenticatedViewer();
+        collaborationService.rejectInvitation(treeId, inviteId, auth.userId());
     }
 
     @PostMapping("/collaborators/join")
-    public ResponseEntity<?> join(@RequestParam("code") String code) {
-        UUID currentUserId = authorizationService.currentContext().userId();
-        Object result = collaborationService.joinTree(code, currentUserId);
+    public ResponseEntity<?> join(
+            @RequestParam("code") String code, HttpServletRequest http) {
+        AuthContext auth = authorizationService.requireAuthenticatedViewer();
+        rateLimiter.check("collab-join:" + auth.userId());
+        rateLimiter.check("collab-join-ip:" + http.getRemoteAddr());
+        Object result = collaborationService.joinTree(code, auth.userId());
         if (result instanceof CollaborationInvitation) {
             return ResponseEntity.accepted().body(result);
         }
@@ -84,14 +105,19 @@ public class TreeCollaborationController {
     }
 
     @GetMapping("/collaborators/invitations/{inviteId}")
-    public CollaborationInvitation getInvitation(@PathVariable("inviteId") UUID inviteId) {
-        return collaborationService.getInvitation(inviteId);
+    public InvitationView getInvitation(@PathVariable("inviteId") UUID inviteId) {
+        // Authenticated only; never return the raw invite code (prevents IDOR code leak).
+        authorizationService.requireAuthenticatedViewer();
+        return InvitationView.from(collaborationService.getInvitation(inviteId));
     }
 
     @PostMapping("/collaborators/join-link")
-    public ResponseEntity<?> joinWithLink(@RequestParam("inviteId") UUID inviteId) {
-        UUID currentUserId = authorizationService.currentContext().userId();
-        Object result = collaborationService.joinTreeWithLink(inviteId, currentUserId);
+    public ResponseEntity<?> joinWithLink(
+            @RequestParam("inviteId") UUID inviteId, HttpServletRequest http) {
+        AuthContext auth = authorizationService.requireAuthenticatedViewer();
+        rateLimiter.check("collab-join:" + auth.userId());
+        rateLimiter.check("collab-join-ip:" + http.getRemoteAddr());
+        Object result = collaborationService.joinTreeWithLink(inviteId, auth.userId());
         if (result instanceof CollaborationInvitation) {
             return ResponseEntity.accepted().body(result);
         }
@@ -99,9 +125,12 @@ public class TreeCollaborationController {
     }
 
     @GetMapping("/{treeId}/collaborators")
-    public List<TreeCollaborator> getCollaborators(@PathVariable("treeId") UUID treeId) {
-        // Enforce reader permissions
-        authorizationService.requireAuthenticatedViewer();
+    public List<TreeCollaborator> getCollaborators(
+            @PathVariable("treeId") UUID treeId,
+            @org.springframework.web.bind.annotation.RequestHeader(
+                            value = "X-Share-Token", required = false)
+                    String shareToken) {
+        authorizationService.requireReadAccess(treeId, shareToken);
         return collaborationService.getCollaborators(treeId);
     }
 }

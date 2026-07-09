@@ -77,10 +77,19 @@ class SensitiveFieldPrivacyFilterProperties {
         assertThat(response.birthOrder()).isEqualTo(person.getBirthOrder());
         assertThat(response.birthYear()).isEqualTo(person.getBirthYear());
 
-        // ----- Visibility metadata is non-sensitive and ALWAYS returned unchanged.
-        assertThat(response.visMarital()).isEqualTo(person.getVisMarital());
-        assertThat(response.visAdoption()).isEqualTo(person.getVisAdoption());
-        assertThat(response.visDeath()).isEqualTo(person.getVisDeath());
+        // ----- Visibility metadata is owner/editor-only (not disclosed to public/link readers).
+        if (privileged) {
+            assertThat(response.visMarital()).isEqualTo(person.getVisMarital());
+            assertThat(response.visAdoption()).isEqualTo(person.getVisAdoption());
+            assertThat(response.visDeath()).isEqualTo(person.getVisDeath());
+        } else {
+            assertThat(response.visMarital()).isNull();
+            assertThat(response.visAdoption()).isNull();
+            assertThat(response.visDeath()).isNull();
+            assertThat(response.visName()).isNull();
+            assertThat(response.visBirthYear()).isNull();
+            assertThat(response.visPhoto()).isNull();
+        }
     }
 
     // --------------------------------------------------------------------------------------------

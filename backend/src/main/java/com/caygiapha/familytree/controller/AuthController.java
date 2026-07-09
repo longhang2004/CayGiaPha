@@ -105,7 +105,7 @@ public class AuthController {
             return ResponseEntity.status(HttpStatus.CREATED)
                     .header(
                             HttpHeaders.SET_COOKIE,
-                            sessionCookieFactory.create(result.session().getId()).toString())
+                            sessionCookieFactory.create(result.session().getRawToken()).toString())
                     .body(result.response());
         }
         return ResponseEntity.status(HttpStatus.CREATED).body(authService.signUp(request.identifier()));
@@ -137,7 +137,7 @@ public class AuthController {
             return ResponseEntity.ok()
                     .header(
                             HttpHeaders.SET_COOKIE,
-                            sessionCookieFactory.create(session.getId()).toString())
+                            sessionCookieFactory.create(session.getRawToken()).toString())
                     .body(new SignInVerifyResponse(session.getUserId(), session.getExpiresAt()));
         }
         return ResponseEntity.ok(authService.signIn(request.identifier()));
@@ -153,14 +153,16 @@ public class AuthController {
 
     @PostMapping("/password-reset/confirm")
     public ResponseEntity<SignInVerifyResponse> confirmPasswordReset(
-            @RequestBody PasswordResetConfirmRequest request) {
+            @RequestBody PasswordResetConfirmRequest request, HttpServletRequest http) {
+        rateLimiter.check("pwdreset-confirm:" + request.identifier(), signInRateLimit);
+        rateLimiter.check("ip:" + http.getRemoteAddr(), signInRateLimit);
         Session session = authService.confirmPasswordReset(request.identifier(), request.code(), request.password());
         auditService.recordAs(session.getUserId(), AuditService.SIGN_IN, "user",
                 session.getUserId(), "password_reset");
         return ResponseEntity.ok()
                 .header(
                         HttpHeaders.SET_COOKIE,
-                        sessionCookieFactory.create(session.getId()).toString())
+                        sessionCookieFactory.create(session.getRawToken()).toString())
                 .body(new SignInVerifyResponse(session.getUserId(), session.getExpiresAt()));
     }
 
@@ -174,7 +176,7 @@ public class AuthController {
         return ResponseEntity.ok()
                 .header(
                         HttpHeaders.SET_COOKIE,
-                        sessionCookieFactory.create(session.getId()).toString())
+                        sessionCookieFactory.create(session.getRawToken()).toString())
                 .body(new SignInVerifyResponse(session.getUserId(), session.getExpiresAt()));
     }
 
@@ -186,7 +188,7 @@ public class AuthController {
         return ResponseEntity.ok()
                 .header(
                         HttpHeaders.SET_COOKIE,
-                        sessionCookieFactory.create(session.getId()).toString())
+                        sessionCookieFactory.create(session.getRawToken()).toString())
                 .body(new SignInVerifyResponse(session.getUserId(), session.getExpiresAt()));
     }
 

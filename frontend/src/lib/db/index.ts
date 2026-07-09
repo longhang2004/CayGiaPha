@@ -49,10 +49,14 @@ async function ensureAdminAccount() {
     .then((rows) => rows[0]);
 
   if (existing) {
-    await dbInstance
-      .update(schema.users)
-      .set({ role: "admin", verified: true, passwordHash })
-      .where(eq(schema.users.id, existing.id));
+    // Never silently reset passwords or re-elevate accounts on every boot.
+    // Only ensure role=admin when ADMIN_FORCE_RESET=true (explicit ops action).
+    if (process.env.ADMIN_FORCE_RESET === "true") {
+      await dbInstance
+        .update(schema.users)
+        .set({ role: "admin", verified: true, passwordHash })
+        .where(eq(schema.users.id, existing.id));
+    }
     return;
   }
 
@@ -110,6 +114,17 @@ if (databaseUrl && !isProductionBuild) {
       await ensureAdminAccount();
       await dbInstance.execute(sql`ALTER TABLE person_photos ADD COLUMN IF NOT EXISTS photo_year INTEGER;`);
       await dbInstance.execute(sql`ALTER TABLE person_photos ADD COLUMN IF NOT EXISTS description TEXT;`);
+      // V20/V21: high-entropy invite codes + hashed session tokens
+      await dbInstance.execute(sql`ALTER TABLE collaboration_invitations ALTER COLUMN code TYPE VARCHAR(64);`);
+      await dbInstance.execute(sql`ALTER TABLE sessions ADD COLUMN IF NOT EXISTS token_hash TEXT;`);
+      await dbInstance.execute(sql`
+        UPDATE sessions
+        SET token_hash = md5(id::text) || md5(id::text || 'session')
+        WHERE token_hash IS NULL;
+      `);
+      await dbInstance.execute(sql`
+        CREATE UNIQUE INDEX IF NOT EXISTS ux_sessions_token_hash ON sessions (token_hash);
+      `);
       await dbInstance.execute(sql`
         CREATE TABLE IF NOT EXISTS tree_collaborators (
             id UUID NOT NULL,

@@ -63,7 +63,8 @@ class TreeReadAccessProperties {
         lenient().when(claimService.isLinkedToTree(treeId, userId))
                 .thenReturn(s.viewer() == Viewer.LINKED);
 
-        Tree tree = new Tree(UUID.randomUUID());
+        // OWNER must match trees.owner_user_id (multi-tree safe ownership check).
+        Tree tree = new Tree(s.viewer() == Viewer.OWNER ? userId : UUID.randomUUID());
         tree.setSharing(s.sharing());
         lenient().when(treeRepository.findById(treeId))
                 .thenReturn(s.treeExists() ? Optional.of(tree) : Optional.empty());
@@ -96,11 +97,11 @@ class TreeReadAccessProperties {
         if (s.viewer() == Viewer.ANONYMOUS) {
             return false; // 19.2 — reads require authentication.
         }
+        if (!s.treeExists()) {
+            return false; // 19.7 — unknown tree never readable (incl. owner/linked).
+        }
         if (s.viewer() == Viewer.OWNER || s.viewer() == Viewer.LINKED) {
             return true; // 19.3 — owner / linked family member always.
-        }
-        if (!s.treeExists()) {
-            return false; // 19.7 — unknown tree never readable.
         }
         return switch (s.sharing()) {
             case "public" -> true; // 19.6

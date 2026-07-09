@@ -128,12 +128,7 @@ public class AuthService {
             boolean acceptedTos,
             boolean acceptedPrivacy) {
         consentService.requireConsent(acceptedTos, acceptedPrivacy);
-        if (password == null || password.isBlank()) {
-            throw ApiException.validation("password", "Vui lòng nhập mật khẩu.");
-        }
-        if (password.length() < 8) {
-            throw ApiException.validation("password", "Mật khẩu cần có ít nhất 8 ký tự.");
-        }
+        PasswordPolicy.requireValid(password);
 
         String resolvedRegion = resolveRegion(region);
         IdentifierType type = identifierValidator.requireValid("identifier", identifier);
@@ -278,12 +273,7 @@ public class AuthService {
                 .orElseThrow(() -> ApiException.accountNotFound(
                         "No verified account was found for the provided identifier."));
 
-        if (password == null || password.isBlank()) {
-            throw ApiException.validation("password", "Vui lòng nhập mật khẩu mới.");
-        }
-        if (password.length() < 8) {
-            throw ApiException.validation("password", "Mật khẩu cần có ít nhất 8 ký tự.");
-        }
+        PasswordPolicy.requireValid(password);
 
         verificationCodeService.verifyForAccount(VerificationPurpose.PASSWORD_RESET, user.getId(), code);
 
@@ -322,7 +312,9 @@ public class AuthService {
             }
         }
         if (!matches) {
-            throw ApiException.validation("password", "Mật khẩu không chính xác.");
+            // Same message as missing account to reduce account enumeration.
+            throw ApiException.accountNotFound(
+                    "Không tìm thấy tài khoản với thông tin đăng nhập đã cung cấp.");
         }
 
         return sessionService.create(user.getId());
@@ -397,8 +389,10 @@ public class AuthService {
 
                 return sessionService.create(saved.getId());
             }
+        } catch (ApiException e) {
+            throw e;
         } catch (Exception e) {
-            throw ApiException.validation("idToken", "Failed to verify ID token: " + e.getMessage());
+            throw ApiException.validation("idToken", "Failed to verify ID token.");
         }
     }
 
@@ -411,7 +405,7 @@ public class AuthService {
      * @param sessionToken the session token id from the cookie (may be {@code null})
      */
     @Mutation
-    public void signOut(UUID sessionToken) {
+    public void signOut(String sessionToken) {
         sessionService.revoke(sessionToken);
     }
 

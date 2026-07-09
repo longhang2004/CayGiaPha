@@ -21,7 +21,7 @@ export async function POST(request: Request) {
     );
 
     // Set HttpOnly secure session cookie
-    cookies().set("SESSION", session.id, {
+    cookies().set("SESSION", session.rawToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",

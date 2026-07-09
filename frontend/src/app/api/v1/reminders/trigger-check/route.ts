@@ -68,6 +68,14 @@ function formatOriginalDeathDate(day: number, month: number, calendar: string, l
 
 export async function POST() {
   return handleApiRoute(async () => {
+    const { getAuthContext } = await import("@/lib/services/authorization");
+    const { ApiException } = await import("@/lib/services/errors");
+    const auth = await getAuthContext();
+    if (!auth.isAuthenticated || !auth.userId) {
+      throw ApiException.notAuthorized("Vui lòng đăng nhập.");
+    }
+    const onlyUserId = auth.userId;
+
     const today = new Date();
     // Fetch all deceased persons and their corresponding trees
     const deceased = await db
@@ -116,6 +124,11 @@ export async function POST() {
           recipients.add(claim.userId);
         }
 
+        // Manual trigger only creates reminders for the authenticated user.
+        if (!recipients.has(onlyUserId)) {
+          continue;
+        }
+
         const originalDateStr = formatOriginalDeathDate(
           day,
           month,
@@ -123,48 +136,47 @@ export async function POST() {
           person.deathLunarLeap || false
         );
 
-        for (const userId of recipients) {
-          // Check if reminder already exists
-          const existing = await db
-            .select()
-            .from(inAppReminders)
-            .where(
-              and(
-                eq(inAppReminders.userId, userId),
-                eq(inAppReminders.personId, person.id),
-                eq(inAppReminders.anniversaryDate, nextAnniversary),
-                eq(inAppReminders.daysUntil, diff)
-              )
+        const userId = onlyUserId;
+        // Check if reminder already exists
+        const existing = await db
+          .select()
+          .from(inAppReminders)
+          .where(
+            and(
+              eq(inAppReminders.userId, userId),
+              eq(inAppReminders.personId, person.id),
+              eq(inAppReminders.anniversaryDate, nextAnniversary),
+              eq(inAppReminders.daysUntil, diff)
             )
-            .then((rows) => rows[0]);
+          )
+          .then((rows) => rows[0]);
 
-          if (!existing) {
-            let title = "";
-            let content = "";
-            if (diff === 0) {
-              title = `Hôm nay Giỗ: ${person.displayName}`;
-              content = `Hôm nay ngày ${String(nextAnniversary.getDate()).padStart(2, "0")}/${String(
-                nextAnniversary.getMonth() + 1
-              ).padStart(2, "0")} là ngày giỗ (${originalDateStr}) của ${person.displayName}.`;
-            } else {
-              title = `Sắp đến Giỗ: ${person.displayName} (sau ${diff} ngày)`;
-              content = `Ngày giỗ (${originalDateStr}) của ${person.displayName} sẽ diễn ra vào ngày ${String(
-                nextAnniversary.getDate()
-              ).padStart(2, "0")}/${String(nextAnniversary.getMonth() + 1).padStart(2, "0")} (sau ${diff} ngày nữa).`;
-            }
-
-            await db.insert(inAppReminders).values({
-              userId,
-              personId: person.id,
-              title,
-              content,
-              daysUntil: diff,
-              anniversaryDate: nextAnniversary,
-              isRead: false,
-            });
-
-            countCreated++;
+        if (!existing) {
+          let title = "";
+          let content = "";
+          if (diff === 0) {
+            title = `Hôm nay Giỗ: ${person.displayName}`;
+            content = `Hôm nay ngày ${String(nextAnniversary.getDate()).padStart(2, "0")}/${String(
+              nextAnniversary.getMonth() + 1
+            ).padStart(2, "0")} là ngày giỗ (${originalDateStr}) của ${person.displayName}.`;
+          } else {
+            title = `Sắp đến Giỗ: ${person.displayName} (sau ${diff} ngày)`;
+            content = `Ngày giỗ (${originalDateStr}) của ${person.displayName} sẽ diễn ra vào ngày ${String(
+              nextAnniversary.getDate()
+            ).padStart(2, "0")}/${String(nextAnniversary.getMonth() + 1).padStart(2, "0")} (sau ${diff} ngày nữa).`;
           }
+
+          await db.insert(inAppReminders).values({
+            userId,
+            personId: person.id,
+            title,
+            content,
+            daysUntil: diff,
+            anniversaryDate: nextAnniversary,
+            isRead: false,
+          });
+
+          countCreated++;
         }
       }
     }

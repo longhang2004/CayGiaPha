@@ -8,6 +8,7 @@ import com.caygiapha.familytree.dto.EditPersonRequest;
 import com.caygiapha.familytree.dto.PersonResponse;
 import com.caygiapha.familytree.dto.VisibilityUpdateRequest;
 import com.caygiapha.familytree.entity.Tree;
+import com.caygiapha.familytree.error.ApiException;
 import com.caygiapha.familytree.repository.TreeRepository;
 import com.caygiapha.familytree.security.AuthorizationService;
 import com.caygiapha.familytree.security.AuthorizationService.Role;
@@ -86,17 +87,13 @@ public class PersonController {
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public CreatedPersonResponse create(@RequestBody CreatePersonRequest request) {
-        // 13.4 — only an authenticated owner may create; scope the node to their tree rather than
-        // trusting the request-body treeId (which is retained only as a transitional placeholder).
-        UUID treeId = authorizationService.requireOwnedTreeId();
-        CreatePersonRequest scoped = new CreatePersonRequest(
-                treeId,
-                request.displayName(),
-                request.gender(),
-                request.birthOrder(),
-                request.birthYear(),
-                request.deathStatus());
-        UUID id = personService.create(scoped);
+        // 13.4 — owner/contributor may create; treeId comes from the request and is ownership-checked
+        // so multi-tree accounts write into the intended tree.
+        if (request.treeId() == null) {
+            throw ApiException.validation("treeId", "Tree id is required.");
+        }
+        authorizationService.requireMutationPermitted(request.treeId(), null);
+        UUID id = personService.create(request);
         return new CreatedPersonResponse(id);
     }
 

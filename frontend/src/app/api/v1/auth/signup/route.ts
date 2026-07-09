@@ -29,7 +29,7 @@ export async function POST(request: Request) {
 
     // Create session and set HttpOnly secure session cookie directly
     const session = await sessionService.create(res.userId);
-    cookies().set("SESSION", session.id, {
+    cookies().set("SESSION", session.rawToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",

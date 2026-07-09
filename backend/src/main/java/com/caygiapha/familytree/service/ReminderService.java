@@ -53,6 +53,16 @@ public class ReminderService {
 
     @Transactional
     public int generateReminders() {
+        return generateReminders(null);
+    }
+
+    /** Generate reminders only for the given user (manual trigger); null = all recipients. */
+    @Transactional
+    public int generateRemindersForUser(UUID onlyUserId) {
+        return generateReminders(onlyUserId);
+    }
+
+    private int generateReminders(UUID onlyUserId) {
         LocalDate today = LocalDate.now();
         List<Person> deceased = personRepository.findAll(); // Simple lookup to check all deceased
         int countCreated = 0;
@@ -87,6 +97,12 @@ public class ReminderService {
                 Set<UUID> recipients = new HashSet<>();
                 recipients.add(tree.getOwnerUserId());
                 recipients.addAll(claimRepository.findUserIdsWithClaimsInTree(treeId));
+                if (onlyUserId != null) {
+                    if (!recipients.contains(onlyUserId)) {
+                        continue;
+                    }
+                    recipients = Set.of(onlyUserId);
+                }
 
                 String originalDate = formatOriginalDeathDate(day, month, person.getDeathCalendar(), Boolean.TRUE.equals(person.getDeathLunarLeap()));
 

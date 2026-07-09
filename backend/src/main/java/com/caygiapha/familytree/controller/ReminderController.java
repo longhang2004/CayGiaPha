@@ -74,6 +74,7 @@ public class ReminderController {
         if (!context.isAuthenticated()) {
             throw ApiException.notAuthorized("Vui lòng đăng nhập.");
         }
-        return reminderService.generateReminders();
+        // Only generate reminders for the authenticated user, not the whole system.
+        return reminderService.generateRemindersForUser(context.userId());
     }
 }

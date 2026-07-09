@@ -43,4 +43,16 @@ public class SecurityConfig {
         registration.setName("authenticationFilter");
         return registration;
     }
+
+    @Bean
+    public FilterRegistrationBean<CsrfOriginFilter> csrfOriginFilterRegistration(
+            CsrfOriginFilter csrfOriginFilter) {
+        FilterRegistrationBean<CsrfOriginFilter> registration =
+                new FilterRegistrationBean<>(csrfOriginFilter);
+        registration.addUrlPatterns("/api/*");
+        // Run before authentication so cross-origin mutations are rejected early.
+        registration.setOrder(Ordered.HIGHEST_PRECEDENCE + 5);
+        registration.setName("csrfOriginFilter");
+        return registration;
+    }
 }

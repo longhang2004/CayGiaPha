@@ -5,7 +5,6 @@ import com.caygiapha.familytree.service.RelationshipService;
 import com.caygiapha.familytree.service.RelationshipService.CreateRelationshipCommand;
 import com.caygiapha.familytree.service.RelationshipService.RelationshipMutationResult;
 import jakarta.validation.Valid;
-import java.util.UUID;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -42,10 +41,10 @@ public class RelationshipController {
     @PostMapping("/relationships")
     public ResponseEntity<RelationshipResponse> create(
             @Valid @RequestBody CreateRelationshipRequest request) {
-        // 13.4 — only the authenticated owner may add edges; scope to their tree.
-        UUID treeId = authorizationService.requireOwnedTreeId();
+        // 13.4 — owner/contributor may add edges; use request treeId after authorization.
+        authorizationService.requireMutationPermitted(request.treeId(), null);
         CreateRelationshipCommand command = new CreateRelationshipCommand(
-                treeId,
+                request.treeId(),
                 request.type(),
                 request.sourceId(),
                 request.targetId(),

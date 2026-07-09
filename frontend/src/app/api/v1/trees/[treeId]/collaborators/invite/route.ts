@@ -3,16 +3,13 @@ import { getAuthContext, authorizationService } from "@/lib/services/authorizati
 import { ApiException } from "@/lib/services/errors";
 import { db } from "@/lib/db";
 import { collaborationInvitations, users, trees } from "@/lib/db/schema";
-import { eq, and } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { sendEmail } from "@/lib/services/email";
+import crypto from "crypto";
 
 function generateRandomCode(): string {
-  const chars = "abcdefghijklmnopqrstuvwxyz123456789";
-  let code = "";
-  for (let i = 0; i < 6; i++) {
-    code += chars[Math.floor(Math.random() * chars.length)];
-  }
-  return code;
+  // ~128 bits of entropy (16 bytes, base64url, no padding).
+  return crypto.randomBytes(16).toString("base64url");
 }
 
 export async function POST(

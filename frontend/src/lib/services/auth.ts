@@ -114,7 +114,9 @@ export async function deliverOtp(
   };
 
   console.log(`[OTP] Delivered ${purpose} verification code to ${mask(destination)}`);
-  console.log(`[dev-only] ${purpose} code for ${destination} = ${code}`);
+  if (process.env.NODE_ENV !== "production") {
+    console.log(`[dev-only] ${purpose} code for ${destination} = ${code}`);
+  }
 
   const mailEnabled = process.env.EMAIL_ENABLED === "true";
   const zaloEnabled = process.env.ZALO_ENABLED === "true";
@@ -479,30 +481,66 @@ export const verificationCodeService = new VerificationCodeService();
 // ------------------------------------------
 // SESSION SERVICE
 // ------------------------------------------
+function hashSessionToken(rawToken: string): string {
+  return crypto.createHash("sha256").update(rawToken, "utf8").digest("hex");
+}
+
+/** Shared password strength rules (min 8, max 128, letter + digit). */
+function requirePasswordPolicy(password: string | undefined | null) {
+  if (!password || !password.trim()) {
+    throw ApiException.validation("password", "Vui lòng nhập mật khẩu.");
+  }
+  if (password.length < 8) {
+    throw ApiException.validation("password", "Mật khẩu cần có ít nhất 8 ký tự.");
+  }
+  if (password.length > 128) {
+    throw ApiException.validation("password", "Mật khẩu tối đa 128 ký tự.");
+  }
+  if (!/[A-Za-z]/.test(password) || !/\d/.test(password)) {
+    throw ApiException.validation(
+      "password",
+      "Mật khẩu cần có ít nhất một chữ cái và một chữ số.",
+    );
+  }
+}
+
 export class SessionService {
   private SESSION_DURATION = 30 * 24 * 60 * 60 * 1000; // 30 days in ms
 
   async create(userId: string) {
     const expiresAt = new Date(Date.now() + this.SESSION_DURATION);
+    const rawToken = crypto.randomBytes(32).toString("base64url");
+    const tokenHash = hashSessionToken(rawToken);
     const [session] = await db
       .insert(sessions)
       .values({
         userId,
+        tokenHash,
         expiresAt,
         revoked: false,
       })
       .returning();
 
-    return session;
+    return { ...session, rawToken };
   }
 
   async resolve(token: string) {
     if (!token) return null;
-    const session = await db
+    const tokenHash = hashSessionToken(token);
+    let session = await db
       .select()
       .from(sessions)
-      .where(eq(sessions.id, token))
+      .where(eq(sessions.tokenHash, tokenHash))
       .then((rows) => rows[0]);
+
+    // Legacy dual-lookup: older cookies stored the session UUID itself.
+    if (!session) {
+      session = await db
+        .select()
+        .from(sessions)
+        .where(eq(sessions.id, token))
+        .then((rows) => rows[0]);
+    }
 
     if (!session || session.revoked || new Date() > session.expiresAt) {
       return null;
@@ -512,10 +550,15 @@ export class SessionService {
 
   async revoke(token: string) {
     if (!token) return;
-    await db
+    const tokenHash = hashSessionToken(token);
+    const updated = await db
       .update(sessions)
       .set({ revoked: true })
-      .where(eq(sessions.id, token));
+      .where(eq(sessions.tokenHash, tokenHash))
+      .returning({ id: sessions.id });
+    if (updated.length === 0) {
+      await db.update(sessions).set({ revoked: true }).where(eq(sessions.id, token));
+    }
   }
 }
 
@@ -561,6 +604,8 @@ export class AuthService {
 
     // Accept consents
     consentService.requireConsent(!!acceptedTos, !!acceptedPrivacy);
+
+    requirePasswordPolicy(password);
 
     // Hash password with bcryptjs
     const bcrypt = require("bcryptjs");
@@ -639,7 +684,10 @@ export class AuthService {
     const isMatch = user.passwordHash ? bcrypt.compareSync(password, user.passwordHash) : false;
 
     if (!isMatch) {
-      throw ApiException.validation("password", "Mật khẩu không chính xác.");
+      // Same message as missing account to reduce account enumeration.
+      throw ApiException.accountNotFound(
+        "Không tìm thấy tài khoản với thông tin đăng nhập đã cung cấp.",
+      );
     }
 
     return sessionService.create(user.id);

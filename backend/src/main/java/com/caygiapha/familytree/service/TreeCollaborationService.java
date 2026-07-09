@@ -9,8 +9,8 @@ import com.caygiapha.familytree.repository.TreeRepository;
 import com.caygiapha.familytree.repository.UserRepository;
 import java.security.SecureRandom;
 import java.time.Instant;
+import java.util.Base64;
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -21,7 +21,8 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class TreeCollaborationService {
 
-    private static final int CODE_LENGTH = 6;
+    /** 22 URL-safe chars ≈ 128 bits of entropy (16 random bytes, base64url no padding). */
+    private static final int CODE_BYTES = 16;
     private static final long EXPIRY_SECONDS = 7 * 24 * 3600; // 7 days
 
     private final TreeCollaboratorRepository collaboratorRepository;
@@ -175,15 +176,10 @@ public class TreeCollaborationService {
         }
     }
 
-    private static final String CODE_CHARS = "abcdefghijklmnopqrstuvwxyz123456789";
-
     private String generateRandomCode() {
-        StringBuilder sb = new StringBuilder(CODE_LENGTH);
-        for (int i = 0; i < CODE_LENGTH; i++) {
-            int index = secureRandom.nextInt(CODE_CHARS.length());
-            sb.append(CODE_CHARS.charAt(index));
-        }
-        return sb.toString();
+        byte[] raw = new byte[CODE_BYTES];
+        secureRandom.nextBytes(raw);
+        return Base64.getUrlEncoder().withoutPadding().encodeToString(raw);
     }
 
     @Transactional(readOnly = true)
