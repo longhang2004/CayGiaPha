@@ -78,6 +78,17 @@ public class EmailService {
         return enabled;
     }
 
+    /** True when this process can actually deliver mail (Resend, or SMTP when enabled). */
+    public boolean canDeliverServerSide() {
+        if (!enabled) {
+            return false;
+        }
+        if (StringUtils.hasText(resendApiKey)) {
+            return true;
+        }
+        return smtpEnabled;
+    }
+
     public void sendHtml(String to, String subject, String text, String html) {
         if (to == null || to.isBlank()) {
             throw new IllegalArgumentException("Email recipient is required.");
@@ -91,14 +102,12 @@ public class EmailService {
             return;
         }
         if (!smtpEnabled) {
-            // Soft-skip so collaboration invite can still be created; FE may deliver the email.
             log.info(
                     "[EMAIL-DELEGATED] Skipping SMTP for to={} subject={} (EMAIL_SMTP_ENABLED=false)",
                     to,
                     subject);
-            throw new IllegalStateException(
-                    "SMTP disabled on this host (EMAIL_SMTP_ENABLED=false). "
-                            + "Set RESEND_API_KEY or send email from the frontend.");
+            // Do not throw — callers treat this as "not sent server-side".
+            return;
         }
         sendViaSmtp(to, subject, text, html);
     }

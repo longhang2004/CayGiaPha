@@ -88,6 +88,8 @@ public class TreeCollaborationService {
         invitation.setStatus("approved");
 
         CollaborationInvitation saved = invitationRepository.save(invitation);
+        // Cloud BE hosts often block SMTP. Prefer frontend delivery (Vercel) for invite emails.
+        // Only attempt server-side send when Resend HTTPS is configured.
         EmailDelivery delivery = sendInviteEmail(treeId, saved);
         return new InviteResult(saved, delivery.sent(), delivery.message());
     }
@@ -244,15 +246,16 @@ public class TreeCollaborationService {
                 </div>
                 """.formatted(treeName, description, inviteUrl, buttonText, invite.getCode());
 
-        if (!emailService.isEnabled()) {
-            log.warn(
-                    "Invite {} created for {} but EMAIL_ENABLED is false — email not sent.",
+        // Only send from BE when HTTPS provider (Resend) is available. SMTP is frequently blocked
+        // on PaaS; the frontend always attempts delivery after this response.
+        if (!emailService.canDeliverServerSide()) {
+            log.info(
+                    "Invite {} for {} created; server-side email skipped (frontend will deliver).",
                     invite.getCode(),
                     invite.getEmail());
             return new EmailDelivery(
                     false,
-                    "Lời mời đã tạo nhưng email chưa gửi (EMAIL_ENABLED=false trên server). Mã: "
-                            + invite.getCode());
+                    "Lời mời đã tạo (mã " + invite.getCode() + "). Đang gửi email từ frontend…");
         }
         try {
             emailService.sendHtml(invite.getEmail(), subject, text, html);
@@ -262,13 +265,11 @@ public class TreeCollaborationService {
                             + ". Nhắc người nhận kiểm tra cả thư rác/spam. Mã: "
                             + invite.getCode());
         } catch (RuntimeException ex) {
-            // Invitation is already saved; surface a soft failure so the owner still gets the code.
             log.warn("Invite email failed for {}: {}", invite.getEmail(), ex.getMessage());
             return new EmailDelivery(
                     false,
                     "Lời mời đã tạo (mã " + invite.getCode()
-                            + ") nhưng gửi email thất bại: "
-                            + ex.getMessage());
+                            + "). Server không gửi được email — frontend sẽ thử lại.");
         }
     }
 

@@ -49,6 +49,21 @@ export async function POST(request: Request) {
       ? `Tài khoản với email <strong>${email}</strong> đã có trên hệ thống. Hãy đăng nhập và nhấp nút dưới đây:`
       : `Email <strong>${email}</strong> chưa đăng ký. Hãy nhấp nút dưới đây để đăng ký và tham gia:`;
 
+    const mailEnabled =
+      process.env.EMAIL_ENABLED === "true" || !!process.env.RESEND_API_KEY?.trim();
+    if (!mailEnabled) {
+      return NextResponse.json({
+        emailSent: false,
+        emailMessage: `EMAIL_ENABLED≠true trên Vercel — chưa gửi email. Mã: ${code}`,
+        debug: {
+          hasHost: !!process.env.EMAIL_HOST,
+          hasUser: !!process.env.EMAIL_USER,
+          hasPass: !!process.env.EMAIL_PASS,
+          hasResend: !!process.env.RESEND_API_KEY?.trim(),
+        },
+      });
+    }
+
     await sendEmail({
       to: email,
       subject: `Mời tham gia hợp tác xây dựng Cây Gia Phả "${treeName}"`,
@@ -72,21 +87,15 @@ export async function POST(request: Request) {
       `,
     });
 
-    const emailSent =
-      process.env.EMAIL_ENABLED === "true" || !!process.env.RESEND_API_KEY?.trim();
     return NextResponse.json({
-      emailSent,
-      emailMessage: emailSent
-        ? `Đã gửi email tới ${email}. Nhắc người nhận kiểm tra cả thư rác/spam. Mã: ${code}`
-        : `EMAIL_ENABLED≠true trên Vercel — email chỉ được log. Mã: ${code}`,
+      emailSent: true,
+      emailMessage: `Đã gửi email tới ${email}. Nhắc người nhận kiểm tra cả thư rác/spam. Mã: ${code}`,
     });
   } catch (err: any) {
-    return NextResponse.json(
-      {
-        emailSent: false,
-        emailMessage: `Gửi email thất bại: ${err?.message || "unknown"}`,
-      },
-      { status: 200 },
-    );
+    console.error("[send-invite-email] failed:", err);
+    return NextResponse.json({
+      emailSent: false,
+      emailMessage: `Gửi email từ Vercel thất bại: ${err?.message || "unknown"}. Mã vẫn dùng được để tham gia thủ công.`,
+    });
   }
 }

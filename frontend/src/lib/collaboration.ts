@@ -26,6 +26,49 @@ export interface TreeCollaborator {
   joinedAt: string;
 }
 
+async function deliverInviteEmailFromFrontend(input: {
+  email: string;
+  code: string;
+  inviteId: string;
+  treeName?: string;
+}): Promise<{ emailSent: boolean; emailMessage: string }> {
+  const res = await fetch("/_internal/send-invite-email", {
+    method: "POST",
+    credentials: "same-origin",
+    headers: { "Content-Type": "application/json", Accept: "application/json" },
+    body: JSON.stringify({
+      email: input.email,
+      code: input.code,
+      inviteId: input.inviteId,
+      treeName: input.treeName || "Cây Gia Phả",
+      registered: true,
+    }),
+  });
+
+  let delivery: { emailSent?: boolean; emailMessage?: string; error?: { message?: string } } = {};
+  try {
+    delivery = await res.json();
+  } catch {
+    // non-JSON
+  }
+
+  if (!res.ok) {
+    return {
+      emailSent: false,
+      emailMessage: `Gửi email từ frontend thất bại (HTTP ${res.status}). Kiểm tra EMAIL_* trên Vercel. Mã: ${input.code}`,
+    };
+  }
+
+  return {
+    emailSent: delivery.emailSent === true,
+    emailMessage:
+      delivery.emailMessage ||
+      (delivery.emailSent
+        ? `Đã gửi email tới ${input.email}. Mã: ${input.code}`
+        : `Không gửi được email từ frontend. Kiểm tra EMAIL_ENABLED/EMAIL_HOST/EMAIL_USER/EMAIL_PASS trên Vercel. Mã: ${input.code}`),
+  };
+}
+
 export async function inviteCollaborator(
   treeId: string,
   email: string
@@ -35,43 +78,29 @@ export async function inviteCollaborator(
     { email }
   );
 
-  // Cloud Spring hosts often block SMTP. Always try FE-only mail delivery when BE did not send.
-  // Path is outside /api/* so USE_BACKEND rewrites never proxy it away.
-  if (invite.emailSent === true) {
+  // Always deliver from the Next.js host when BE did not send.
+  // Never surface BE SMTP errors — those are expected on cloud hosts.
+  if (invite.emailSent === true && invite.emailMessage) {
     return invite;
   }
+
   try {
-    const res = await fetch("/_internal/send-invite-email", {
-      method: "POST",
-      credentials: "include",
-      headers: { "Content-Type": "application/json", Accept: "application/json" },
-      body: JSON.stringify({
-        email,
-        code: invite.code,
-        inviteId: invite.id,
-        treeName: "Cây Gia Phả",
-        registered: true,
-      }),
+    const delivery = await deliverInviteEmailFromFrontend({
+      email,
+      code: invite.code,
+      inviteId: invite.id,
     });
-    const delivery = (await res.json().catch(() => ({}))) as {
-      emailSent?: boolean;
-      emailMessage?: string;
-    };
     return {
       ...invite,
-      emailSent: delivery.emailSent === true,
-      emailMessage:
-        delivery.emailMessage ||
-        invite.emailMessage ||
-        `Lời mời đã tạo (mã ${invite.code}).`,
+      emailSent: delivery.emailSent,
+      emailMessage: delivery.emailMessage,
     };
-  } catch {
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : "unknown";
     return {
       ...invite,
       emailSent: false,
-      emailMessage:
-        invite.emailMessage ||
-        `Lời mời đã tạo (mã ${invite.code}) nhưng không gửi được email từ frontend.`,
+      emailMessage: `Lời mời đã tạo (mã ${invite.code}) nhưng frontend không gọi được /_internal/send-invite-email: ${msg}`,
     };
   }
 }
