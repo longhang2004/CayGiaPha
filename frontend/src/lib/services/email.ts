@@ -27,8 +27,16 @@ export async function sendEmail({
       },
     });
 
+    const from =
+      process.env.EMAIL_FROM?.trim() ||
+      (process.env.EMAIL_USER ? `"Cây Gia Phả" <${process.env.EMAIL_USER}>` : undefined);
+    if (!process.env.EMAIL_HOST || !process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
+      throw new Error(
+        "Thiếu EMAIL_HOST / EMAIL_USER / EMAIL_PASS. Cấu hình SMTP trước khi gửi email.",
+      );
+    }
     await transporter.sendMail({
-      from: `"Cây Gia Phả" <${process.env.EMAIL_USER}>`,
+      from,
       to,
       subject,
       text,

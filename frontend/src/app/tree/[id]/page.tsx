@@ -157,10 +157,12 @@ function TreePageContent({ params, searchParams }: TreePageProps) {
     if (!activeTreeId || !inviteEmail.trim()) return;
     try {
       const result = await inviteCollaborator(activeTreeId, inviteEmail.trim());
-      if (result.status === "approved") {
+      if (result.emailMessage) {
+        showToast(result.emailMessage, result.emailSent ? "success" : "error");
+      } else if (result.status === "approved") {
         showToast(
-          `Đã gửi lời mời tới ${inviteEmail.trim()}. Mã mời: ${result.code}. Nhắc người nhận kiểm tra cả hộp thư rác/spam.`,
-          "success",
+          `Đã tạo lời mời (mã ${result.code}). Nếu email không tới, kiểm tra cấu hình EMAIL_* trên server và hộp thư rác.`,
+          "info",
         );
       } else {
         showToast("Đã gửi yêu cầu tham gia. Đang chờ chủ cây duyệt.", "info");

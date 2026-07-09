@@ -59,7 +59,9 @@ class TreeCollaborationServiceTest {
         when(invitationRepository.save(any(CollaborationInvitation.class)))
                 .thenAnswer(inv -> inv.getArgument(0));
 
-        CollaborationInvitation invite = service.invite(treeId, "test@test.com", ownerId);
+        TreeCollaborationService.InviteResult result =
+                service.invite(treeId, "test@test.com", ownerId);
+        CollaborationInvitation invite = result.invitation();
         assertThat(invite.getStatus()).isEqualTo("approved");
         assertThat(invite.getEmail()).isEqualTo("test@test.com");
         assertThat(invite.getCode()).hasSize(6);
@@ -71,8 +73,9 @@ class TreeCollaborationServiceTest {
         when(invitationRepository.save(any(CollaborationInvitation.class)))
                 .thenAnswer(inv -> inv.getArgument(0));
 
-        CollaborationInvitation invite = service.invite(treeId, "test@test.com", contributorId);
-        assertThat(invite.getStatus()).isEqualTo("approved");
+        TreeCollaborationService.InviteResult result =
+                service.invite(treeId, "test@test.com", contributorId);
+        assertThat(result.invitation().getStatus()).isEqualTo("approved");
     }
 
     @Test

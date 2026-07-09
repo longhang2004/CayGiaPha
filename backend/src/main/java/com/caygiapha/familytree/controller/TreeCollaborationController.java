@@ -51,13 +51,36 @@ public class TreeCollaborationController {
         }
     }
 
+    public record InviteResponse(
+            UUID id,
+            UUID treeId,
+            UUID inviterUserId,
+            String email,
+            String code,
+            String status,
+            java.time.Instant expiresAt,
+            boolean emailSent,
+            String emailMessage) {}
+
     @PostMapping("/{treeId}/collaborators/invite")
     @ResponseStatus(HttpStatus.CREATED)
-    public CollaborationInvitation invite(
+    public InviteResponse invite(
             @PathVariable("treeId") UUID treeId,
             @RequestBody InviteRequest request) {
         AuthContext auth = authorizationService.requireAuthenticatedViewer();
-        return collaborationService.invite(treeId, request.email(), auth.userId());
+        TreeCollaborationService.InviteResult result =
+                collaborationService.invite(treeId, request.email(), auth.userId());
+        CollaborationInvitation inv = result.invitation();
+        return new InviteResponse(
+                inv.getId(),
+                inv.getTreeId(),
+                inv.getInviterUserId(),
+                inv.getEmail(),
+                inv.getCode(),
+                inv.getStatus(),
+                inv.getExpiresAt(),
+                result.emailSent(),
+                result.emailMessage());
     }
 
     @PostMapping("/{treeId}/collaborators/invite-link")

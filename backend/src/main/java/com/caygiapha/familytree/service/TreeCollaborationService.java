@@ -55,9 +55,13 @@ public class TreeCollaborationService {
         this.appUrl = appUrl == null || appUrl.isBlank() ? "http://localhost:3000" : appUrl.replaceAll("/$", "");
     }
 
+    /** Result of creating an email invite, including delivery status for the UI. */
+    public record InviteResult(
+            CollaborationInvitation invitation, boolean emailSent, String emailMessage) {}
+
     /** Invite a user by email to co-build the tree. */
     @Transactional
-    public CollaborationInvitation invite(UUID treeId, String email, UUID inviterId) {
+    public InviteResult invite(UUID treeId, String email, UUID inviterId) {
         // Enforce inviter has tree access
         boolean isOwner = treeRepository.findById(treeId)
                 .map(t -> t.getOwnerUserId().equals(inviterId))
@@ -84,8 +88,8 @@ public class TreeCollaborationService {
         invitation.setStatus("approved");
 
         CollaborationInvitation saved = invitationRepository.save(invitation);
-        sendInviteEmail(treeId, saved);
-        return saved;
+        EmailDelivery delivery = sendInviteEmail(treeId, saved);
+        return new InviteResult(saved, delivery.sent(), delivery.message());
     }
 
     /** Create a generic invitation code (no email tied). */
@@ -203,7 +207,9 @@ public class TreeCollaborationService {
         return sb.toString();
     }
 
-    private void sendInviteEmail(UUID treeId, CollaborationInvitation invite) {
+    private record EmailDelivery(boolean sent, String message) {}
+
+    private EmailDelivery sendInviteEmail(UUID treeId, CollaborationInvitation invite) {
         Tree tree = treeRepository.findById(treeId).orElse(null);
         String treeName = tree != null && tree.getName() != null ? tree.getName() : "Cây Gia Phả";
         boolean registered = userRepository.findByEmail(invite.getEmail()).isPresent();
@@ -238,11 +244,31 @@ public class TreeCollaborationService {
                 </div>
                 """.formatted(treeName, description, inviteUrl, buttonText, invite.getCode());
 
+        if (!emailService.isEnabled()) {
+            log.warn(
+                    "Invite {} created for {} but EMAIL_ENABLED is false — email not sent.",
+                    invite.getCode(),
+                    invite.getEmail());
+            return new EmailDelivery(
+                    false,
+                    "Lời mời đã tạo nhưng email chưa gửi (EMAIL_ENABLED=false trên server). Mã: "
+                            + invite.getCode());
+        }
         try {
             emailService.sendHtml(invite.getEmail(), subject, text, html);
+            return new EmailDelivery(
+                    true,
+                    "Đã gửi email tới " + invite.getEmail()
+                            + ". Nhắc người nhận kiểm tra cả thư rác/spam. Mã: "
+                            + invite.getCode());
         } catch (RuntimeException ex) {
             // Invitation is already saved; surface a soft failure so the owner still gets the code.
             log.warn("Invite email failed for {}: {}", invite.getEmail(), ex.getMessage());
+            return new EmailDelivery(
+                    false,
+                    "Lời mời đã tạo (mã " + invite.getCode()
+                            + ") nhưng gửi email thất bại: "
+                            + ex.getMessage());
         }
     }
 

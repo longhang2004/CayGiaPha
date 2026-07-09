@@ -10,9 +10,12 @@ export interface CollaborationInvitation {
   inviterUserId: string;
   email: string | null;
   code: string;
-  status: "pending" | "approved" | "joined" | "rejected" | "expired";
-  createdAt: string;
+  status: "pending" | "approved" | "joined" | "rejected" | "expired" | "generic";
+  createdAt?: string;
   expiresAt: string;
+  /** Present on invite-by-email responses. */
+  emailSent?: boolean;
+  emailMessage?: string;
 }
 
 export interface TreeCollaborator {

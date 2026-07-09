@@ -90,11 +90,14 @@ export async function POST(
     }
 
     // Send invitation email
-    await sendEmail({
-      to: email,
-      subject: `Mời tham gia hợp tác xây dựng Cây Gia Phả "${tree.name}"`,
-      text: `Mã mời hợp tác của bạn là: ${code}. Link tham gia: ${inviteUrl}`,
-      html: `
+    let emailSent = false;
+    let emailMessage = "";
+    try {
+      await sendEmail({
+        to: email,
+        subject: `Mời tham gia hợp tác xây dựng Cây Gia Phả "${tree.name}"`,
+        text: `Mã mời hợp tác của bạn là: ${code}. Link tham gia: ${inviteUrl}`,
+        html: `
         <div style="font-family: Arial, sans-serif; max-width: 500px; margin: 0 auto; padding: 20px; border: 1px solid #e9e9e9; border-radius: 8px;">
           <h2 style="color: #b94b34; text-align: center;">Mời Hợp Tác Gia Phả</h2>
           <p>Xin chào,</p>
@@ -111,8 +114,16 @@ export async function POST(
           </p>
         </div>
       `,
-    });
+      });
+      emailSent = process.env.EMAIL_ENABLED === "true";
+      emailMessage = emailSent
+        ? `Đã gửi email tới ${email}. Nhắc người nhận kiểm tra cả thư rác/spam. Mã: ${code}`
+        : `Lời mời đã tạo (mã ${code}) nhưng EMAIL_ENABLED≠true nên email chỉ được log, không gửi thật.`;
+    } catch (err: any) {
+      emailSent = false;
+      emailMessage = `Lời mời đã tạo (mã ${code}) nhưng gửi email thất bại: ${err?.message || "unknown"}`;
+    }
 
-    return Response.json(invite);
+    return Response.json({ ...invite, emailSent, emailMessage });
   });
 }

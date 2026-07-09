@@ -5,6 +5,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.mail.javamail.JavaMailSenderImpl;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
 
@@ -26,15 +27,31 @@ public class EmailService {
     public EmailService(
             JavaMailSender mailSender,
             @Value("${app.mail.enabled:false}") boolean enabled,
-            @Value("${app.mail.from:}") String fromAddress) {
+            @Value("${app.mail.from:}") String fromAddress,
+            @Value("${spring.mail.username:}") String mailUsername) {
         this.mailSender = mailSender;
         this.enabled = enabled;
-        this.fromAddress = fromAddress == null ? "" : fromAddress.trim();
+        this.fromAddress = resolveFrom(fromAddress, mailUsername);
+        if (enabled) {
+            String host = mailSender instanceof JavaMailSenderImpl impl ? impl.getHost() : "?";
+            log.info(
+                    "Email delivery ENABLED (host={}, from={})",
+                    host == null || host.isBlank() ? "<unset>" : host,
+                    this.fromAddress.isBlank() ? "<default>" : this.fromAddress);
+        } else {
+            log.warn(
+                    "Email delivery DISABLED (app.mail.enabled=false / EMAIL_ENABLED!=true). "
+                            + "Invites will be saved but not emailed.");
+        }
+    }
+
+    public boolean isEnabled() {
+        return enabled;
     }
 
     public void sendHtml(String to, String subject, String text, String html) {
         if (to == null || to.isBlank()) {
-            return;
+            throw new IllegalArgumentException("Email recipient is required.");
         }
         if (!enabled) {
             log.info("[EMAIL-MOCK] to={} subject={}", to, subject);
@@ -52,14 +69,14 @@ public class EmailService {
             mailSender.send(message);
             log.info("Sent email to {} subject={}", to, subject);
         } catch (Exception ex) {
-            log.error("Failed to send email to {}: {}", to, ex.getMessage());
+            log.error("Failed to send email to {}: {}", to, ex.getMessage(), ex);
             throw new IllegalStateException("Email sending failed: " + ex.getMessage(), ex);
         }
     }
 
     public void sendText(String to, String subject, String text) {
         if (to == null || to.isBlank()) {
-            return;
+            throw new IllegalArgumentException("Email recipient is required.");
         }
         if (!enabled) {
             log.info("[EMAIL-MOCK] to={} subject={}", to, subject);
@@ -73,5 +90,33 @@ public class EmailService {
         message.setSubject(subject);
         message.setText(text == null ? "" : text);
         mailSender.send(message);
+    }
+
+    /**
+     * Prefer explicit from; fall back to SMTP username. Reject malformed addresses like
+     * {@code noreply@user@gmail.com}.
+     */
+    static String resolveFrom(String fromAddress, String mailUsername) {
+        String from = fromAddress == null ? "" : fromAddress.trim();
+        if (!from.isBlank() && isPlausibleFrom(from)) {
+            return from;
+        }
+        String user = mailUsername == null ? "" : mailUsername.trim();
+        if (!user.isBlank() && user.contains("@") && user.indexOf('@') == user.lastIndexOf('@')) {
+            return "Cây Gia Phả <" + user + ">";
+        }
+        return from;
+    }
+
+    private static boolean isPlausibleFrom(String from) {
+        // Extract address inside <> if present.
+        String addr = from;
+        int lt = from.lastIndexOf('<');
+        int gt = from.lastIndexOf('>');
+        if (lt >= 0 && gt > lt) {
+            addr = from.substring(lt + 1, gt).trim();
+        }
+        int at = addr.indexOf('@');
+        return at > 0 && at == addr.lastIndexOf('@') && at < addr.length() - 1;
     }
 }
