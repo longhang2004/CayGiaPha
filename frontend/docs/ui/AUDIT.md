@@ -1,14 +1,48 @@
 # Frontend UI/UX audit
 
-Audit date: 2026-07-10
+Audit date: 2026-07-10 (snapshot taken before commits `f7ee39d` and `23224fc`)
 
 Scope: all production/prototype page TSX, all non-test UI component TSX, global
 SCSS, graph CSS, UI assets, layout/providers, relevant Kiro requirements, and
 rendered prototypes.
 
+## Post-audit revalidation — 2026-07-10
+
+This file preserves the evidence and recommendations from the original audit. It is **not a live
+backlog**. Several findings were corrected by later commits on the same day; every finding must be
+rechecked against current code and rendered prototypes before it becomes a task.
+
+| Original finding | Current status | Evidence after audit |
+|---|---|---|
+| Undefined semantic tokens | **Resolved for the named tokens** | `23224fc` defines light/dark `--color-danger`, `--color-surface-hover`, `--color-primary`, `--color-background`, `--color-surface`, `--color-fg-muted`, and `--color-accent-rgb` in `_01_variables.scss`. A general undefined-token check is still useful. |
+| Navigation targets below floor | **Materially improved; route-level regression coverage still required** | `23224fc` restores `--min-touch-target` sizing for sidebar/mobile navigation and increases help/auth hit areas. Re-measure rendered routes before closing the requirement globally. |
+| Landing hero image collapses | **Resolved in CSS** | `23224fc` makes `.home-hero__image` non-shrinking with an explicit 220px desktop height. |
+| Anonymous route-shell classification | **Resolved for known routes** | `e12e60b` and `23224fc` map auth/recovery/invitation/legal to bare, landing/help to marketing, and workspace routes to in-app chrome. |
+| Modal semantics/focus behavior | **Resolved for the shared primitive and migrated tree modals** | `f7ee39d` adds `role=dialog`, `aria-modal`, labeling, focus trap, Escape, initial focus, scroll lock, and focus restoration; settings, collaboration, and deletion use the primitive. Recheck any independent overlay that does not use it. |
+| Prototype discovery drift | **Resolved** | `f7ee39d` adds `src/lib/prototype/manifest.ts` and drives discovery/tests from the typed manifest. |
+| Graph legend absent | **Resolved** | `f7ee39d` adds `GraphLegend` to production and prototype tree workspaces. |
+
+### Confirmed remaining debt
+
+- The populated tree prototype renders `UpcomingEventsWidget` with `PROTOTYPE_TREE_ID`; the widget
+  calls the real upcoming-events API and produces a 401 console error under mock session. Visual
+  rendering survives, but the prototype is not fully backend-independent.
+- Production and prototype invitation pages use `h2` as the first visible heading and have no `h1`.
+- `ForgotPasswordFlow` and its client helpers exist, but the active Next.js API tree has no
+  password-reset request/confirm Route Handlers while `USE_BACKEND=false`; the journey is not
+  end-to-end complete in the production-priority runtime.
+- Inline styles and broad global selectors remain common. A current static count finds 483
+  `style={{...}}` occurrences under `frontend/src` (down from the audit's 550), so ownership is
+  improved but not centralized.
+- Breakpoints still use 1024, 900, 860, 640, 560, 539, and 480px; the vocabulary remains
+  inconsistent even though several viewport-unit and shell issues were fixed.
+- Kiro architecture/auth documentation must be read with the 2026-07-10 active baseline: Next.js
+  full-stack and password/Google are active; Spring Boot and OTP-only sign-up/sign-in are legacy.
+- Photo formats are JPEG/PNG only. WebP remains deferred and must be rejected.
+
 ## Executive summary
 
-The frontend already has a recognizable, appropriate visual identity. Warm paper
+At the time of the snapshot, the frontend already had a recognizable, appropriate visual identity. Warm paper
 surfaces, terracotta, Vietnamese typography, a graph-first workspace, and
 deliberate accessibility foundations make it stronger than a generic library UI.
 The main risk is design-system fragmentation: presentation is split across global
@@ -16,8 +50,8 @@ SCSS, graph CSS, and 550 JSX `style` props; some semantic tokens do not exist;
 route shells and prototype coverage have drifted; and rendered navigation targets
 contradict the intended 48px target.
 
-No production UI was changed during this audit. Recommendations require a
-separate approved implementation task.
+No production UI was changed during the original audit. Later same-day commits resolved several
+findings as recorded above. Unresolved recommendations still require a separate approved task.
 
 ## Method and evidence
 

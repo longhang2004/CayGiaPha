@@ -38,15 +38,21 @@ giapha.org, MyTree.vn, MyHeritage, FamilySearch.
 ### v1 — Foundation *(current spec, `requirements.md`)*
 
 Core graph model, Kinship Resolver (Bắc/Trung/Nam), solid/dashed relationships, node claiming,
-OTP auth, privacy controls, photo storage, search/filter, help system, accessibility.
+password/Google auth, privacy controls, photo storage, search/filter, help system, accessibility.
 
 #### Implementation Audit — 2026-07-10
 
-The repository already contains the following v1 capabilities: OTP/email authentication, tree and
+The active Next.js repository contains the following v1 capabilities: password/Google authentication, tree and
 person CRUD, primitive parent/spouse relationships, Vietnamese kinship resolution, privacy and
 living-person redaction, photo uploads, search, share tokens, node claiming, audit/legal flows, and
 basic collaboration invitations. These are the strongest current product foundations and should be
 treated as existing capability rather than future roadmap work.
+
+The production-priority runtime is Next.js full-stack with Drizzle/PostgreSQL. The Spring Boot
+module is an inactive reference/future synchronization target. OTP-only sign-up/sign-in is legacy;
+bounded verification codes remain relevant to recovery and person-node claiming. Checked items in
+`tasks.md` are historical implementation records, not proof that the active runtime, prototypes,
+and current verification are synchronized.
 
 The following roadmap items are partially implemented:
 

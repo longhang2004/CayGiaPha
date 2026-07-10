@@ -10,13 +10,13 @@ context before a UI change.
 | `/` | `src/app/page.tsx` | Landing | Hero, feature card, 3-step strip; session loading/anonymous/authenticated | `/prototype/home` |
 | `/signin` | `src/app/signin/page.tsx` | Focused | `SignInFlow`; credentials, Google, error/loading | `/prototype/signin` |
 | `/signup` | `src/app/signup/page.tsx` | Focused | `SignUpFlow`; credentials, region, consent, Google | `/prototype/signup` |
-| `/forgot-password` | `src/app/forgot-password/page.tsx` | In-app (current) | `ForgotPasswordFlow`; request/reset, loading/error | `/prototype/forgot-password` |
-| `/login` | `src/app/login/page.tsx` | In-app | Legacy placeholder, not the main auth flow | none |
+| `/forgot-password` | `src/app/forgot-password/page.tsx` | Bare/focused | `ForgotPasswordFlow`; request/reset, loading/error; active Next.js password-reset Route Handlers are currently missing | `/prototype/forgot-password` |
+| `/login` | `src/app/login/page.tsx` | Bare/focused | Legacy placeholder, not the main auth flow | none |
 | `/tree` | `src/app/tree/page.tsx` | In-app | Tree list, create popup, onboarding; loading/error/empty/list/delete | no list prototype |
 | `/tree/[id]` | `src/app/tree/[id]/page.tsx` | In-app/full canvas | Graph, floating commands, panels; loading/empty/populated/search/edit/settings/collaboration/tour | `/prototype/tree`, `/prototype/tree/empty`, `?panel=settings` |
 | `/person` | `src/app/person/page.tsx` | In-app | Standalone `PersonForm` / `AddRelativeForm` harness | none |
-| `/invitation/[id]` | `src/app/invitation/[id]/page.tsx` | In-app (current) | Invitation card; loading/invalid/auth/accept/decline/result | `/prototype/invitation/[id]` |
-| `/help` | `src/app/help/page.tsx` | In-app | `HelpGuide`, contents, long-form topics | `/prototype/help` |
+| `/invitation/[id]` | `src/app/invitation/[id]/page.tsx` | Bare/focused | Invitation card; loading/invalid/auth/accept/decline/result; first visible heading is currently `h2` (known debt) | `/prototype/invitation/[id]` |
+| `/help` | `src/app/help/page.tsx` | Marketing | `HelpGuide`, contents, long-form topics | `/prototype/help` |
 | `/support` | `src/app/support/page.tsx` | In-app | Support/QR half of shared support-feedback component | none |
 | `/feedback` | `src/app/feedback/page.tsx` | In-app | Feedback form, attachments, success/error | none |
 | `/settings` | `src/app/settings/page.tsx` | In-app | Theme and account information | none |
@@ -37,14 +37,14 @@ and `AppLayoutWrapper`. `src/app/providers.tsx` owns session context.
 | `/prototype/signup` | Sign-up credentials/region/consent; local state/no API |
 | `/prototype/forgot-password` | Password recovery; local state/no API |
 | `/prototype/invitation/[id]` | Fixed invitation data |
-| `/prototype/tree` | Populated workspace with `MockSessionProvider` and mock graph |
+| `/prototype/tree` | Populated workspace with `MockSessionProvider` and mock graph; upcoming-events widget still calls the real API and can log 401 |
 | `/prototype/tree?panel=settings` | Workspace settings open |
 | `/prototype/tree/empty` | Empty workspace with real `PersonForm` |
 | `/prototype/help` | Real static `HelpGuide` |
 
-Known drift: the prototype index still lists non-existent
-`/prototype/signin/otp` and `/prototype/signup/otp`, and omits existing
-forgot-password/invitation pages. See [AUDIT.md](./AUDIT.md).
+Prototype discovery is driven by `src/lib/prototype/manifest.ts`; the former stale OTP links and
+missing recovery/invitation entries were fixed in `f7ee39d`. See [AUDIT.md](./AUDIT.md) for the
+historical snapshot and current revalidation notes.
 
 ## Layout and navigation
 
@@ -64,7 +64,7 @@ forgot-password/invitation pages. See [AUDIT.md](./AUDIT.md).
 | `Card` | `src/components/ui/Card.tsx` | Inline-styled surface wrapper |
 | `Badge` | `src/components/ui/Badge.tsx` | Inline-styled status badge |
 | `FormControl`, `Input`, `Select` | `src/components/ui/FormControls.tsx` | Label/error association, double bezel, password visibility |
-| `Modal` family | `src/components/ui/Modal.tsx` | Settings overlay/card sections; incomplete dialog behavior |
+| `Modal` family | `src/components/ui/Modal.tsx` | Shared accessible dialog: semantics, labeling, focus trap/restoration, Escape, scroll lock |
 | `ConfirmProvider` | `src/components/ui/ConfirmProvider.tsx` | Promise-based global confirmation |
 | `ToastProvider` | `src/components/ui/ToastProvider.tsx` | Global toast queue |
 | `NotificationBell` | `src/components/ui/NotificationBell.tsx` | Reminder count/dropdown and states |

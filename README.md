@@ -26,7 +26,9 @@ The system is built with strict privacy controls, regional kinship dialect resol
   * Agnostic storage service backing, featuring built-in support for **Cloudinary**, **MinIO (S3-compatible)**, and local filesystem caching.
 * **Safety & Compliance**:
   * Two-phase node deletion (Cascade vs. Neighbor-Preservation modes).
-  * OTP-based authentication (phone/email validation, code hashing, attempt lockouts).
+  * Password and Google authentication with hashed password verifiers, server-side identity
+    verification, HttpOnly sessions, claim-code controls, and rate limiting. Password-recovery UI
+    exists but its active Next.js Route Handlers are still pending.
   * Full audit logs for security mutations and rate-limiting to prevent abuse.
   * Terms of Service & Privacy Policy acceptance gates.
 * **Accessibility (WCAG 2.1)**:
@@ -38,34 +40,34 @@ The system is built with strict privacy controls, regional kinship dialect resol
 
 ## 🛠️ Technology Stack
 
-### Backend
-* **Java 21** & **Spring Boot 3.3.5** (REST API)
-* **PostgreSQL** & **Hibernate / JPA**
-* **Flyway** (database migrations)
-* **jqwik** (Property-Based Testing) & **JUnit 5**
-* **Testcontainers** (integration testing database isolation)
-* **Cloudinary SDK** (object media storage)
+### Active application
+* **Next.js 14** (App Router and Route Handlers), **React 18**, and **TypeScript**
+* **Drizzle ORM** and **PostgreSQL**
+* Global **SCSS/CSS** design system (no Tailwind)
+* **Vitest**, Testing Library, Playwright, axe-core, and fast-check
+* Google Identity, Cloudinary-compatible object storage, and Redis-compatible rate limiting where configured
 
-### Frontend
-* **Next.js 14** (App Router) & **React 18** & **TypeScript**
-* **TailwindCSS / Vanilla CSS**
-* **Vitest** & **Testing Library (jsdom)**
-* **fast-check** (Property-Based Testing for TS helpers)
+### Reference backend
+* **Java 21** and **Spring Boot 3.3.5**, Hibernate/JPA, Flyway, jqwik, JUnit 5, and Testcontainers
+* Retained for domain reference and future synchronization; disabled by default (`USE_BACKEND=false`)
+* Implement active behavior and schema changes in the Next.js application first, then mirror
+  forward migrations to the Java module when required
 
 ---
 
 ## ⚙️ Configuration & Environment Variables
 
-To switch the application storage provider to **Cloudinary**, configure the following variables in the backend [`.env`](file:///c:/Users/hi/Documents/Non-Backup/CayGiaPha/backend/.env) file:
+Runtime configuration is managed by the frontend environment files. For example, a Cloudinary
+deployment uses:
 
 ```env
 APP_STORAGE_TYPE=cloudinary
 CLOUDINARY_URL=cloudinary://api_key:api_secret@cloud_name
 ```
 
-To run the application locally or set up databases, consult the module-specific READMEs:
-* [Backend README](file:///c:/Users/hi/Documents/Non-Backup/CayGiaPha/backend/pom.xml)
-* [Frontend README](file:///c:/Users/hi/Documents/Non-Backup/CayGiaPha/frontend/README.md)
+To run the application locally or inspect the reference module, consult:
+* [Frontend README](frontend/README.md)
+* [Reference backend module](backend/pom.xml)
 
 ---
 
@@ -79,8 +81,11 @@ cd backend
 mvn test
 ```
 
-### Frontend Tests
+### Active application checks
 ```bash
 cd frontend
-npm test
+pnpm run typecheck
+pnpm test
+pnpm run lint
+pnpm run build
 ```

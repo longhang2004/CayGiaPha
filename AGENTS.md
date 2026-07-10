@@ -5,8 +5,10 @@ Shared operating instructions for AI agents working in this repository. These ru
 ## Repository Snapshot
 
 - Product: Vietnamese family tree application with privacy controls and Vietnamese kinship resolution.
-- Backend: Java 21, Spring Boot 3.3.5, PostgreSQL, Flyway, JPA, jqwik, JUnit 5, Testcontainers.
-- Frontend: Next.js 14 App Router, React 18, TypeScript, Vitest, Testing Library, fast-check.
+- Active application: Next.js 14 App Router/Route Handlers, React 18, TypeScript, Drizzle ORM,
+  PostgreSQL, Vitest, Testing Library, Playwright, and fast-check.
+- Reference backend: Java 21, Spring Boot 3.3.5, Flyway, JPA, jqwik, JUnit 5, and Testcontainers;
+  disabled by default and not the production-priority request path.
 - Specs: `.kiro/specs/vietnamese-family-tree/requirements.md`, `design.md`, and `tasks.md` are the product source of truth.
 
 ## Agent Workflow

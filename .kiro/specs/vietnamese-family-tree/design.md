@@ -7,18 +7,23 @@ relationship graph, with the defining feature being automatic computation of the
 Vietnamese form of address (cách xưng hô) between any two persons. Address computation accounts
 for paternal-vs-maternal side, gender, birth order/age, and regional dialect (Bắc/Trung/Nam).
 
-The system is built on the user-chosen stack:
+The active system is built on this stack:
 
-- **Frontend — Next.js (React).** Renders the tree/graph, handles viewpoint switching, search and
-  filter UI, the in-app help system, and accessibility features (scalable text, contrast,
-  keyboard navigation, screen-reader support).
-- **Backend — Spring Boot (Java).** Exposes a REST API and hosts the domain services:
-  `Auth_Service`, `Verification_Service`, `Graph_Store`, `Kinship_Resolver`, `Search_Service`,
-  and orchestration logic for `Family_Tree_System`.
-- **Database — PostgreSQL.** Stores users, persons, typed relationship edges, trees, claims,
-  verification codes, and the region-keyed kinship-term configuration.
-- **External dependency — OTP delivery provider(s).** An SMS provider and an email provider
-  deliver 6-digit one-time codes for sign-up, sign-in, and node claiming.
+- **Application — Next.js 14 (React + Route Handlers).** Renders the product and hosts the active
+  server-side API, session, authorization, domain-service, and persistence orchestration paths.
+- **Persistence — Drizzle ORM + PostgreSQL.** Stores users, trees, persons, typed relationship
+  edges, claims, sessions, visibility settings, collaboration data, reminders, and the
+  region-keyed kinship-term configuration.
+- **External dependencies.** Google Identity supports optional Google sign-in; configured email,
+  object-storage, and Redis-compatible providers support invitation/recovery delivery, photos, and
+  distributed rate limiting where enabled.
+- **Inactive reference — Spring Boot (Java).** The Java module remains available for future
+  synchronization and domain reference, but `USE_BACKEND=false` means it is not the production-
+  priority runtime. New product behavior must be implemented in the Next.js application first.
+
+> **Architecture decision record — 2026-07-10.** Password and Google authentication are the active
+> sign-up/sign-in contract. OTP-only authentication is legacy behavior. Verification codes remain
+> bounded to flows that explicitly need them, such as password recovery or person-node claiming.
 
 ### Design Goals and Key Decisions
 
@@ -39,82 +44,71 @@ The system is built on the user-chosen stack:
    table keyed by `(region, canonical_relation)`. The resolver computes a canonical relation from
    a path, then looks up the term for the tree's region. Adding or correcting a dialect is a data
    change, not a code change. (Requirement 9)
-5. **OTP-only authentication.** No passwords. Identity is proven by a 6-digit code delivered to a
-   phone or email, with strict validity windows and attempt lockouts. Sessions last 30 days.
-   (Requirements 1, 2, 11)
+5. **Password or Google authentication.** A user signs up or signs in using a validated phone/email
+   identifier and password, or a verified Google identity. Password verifiers are hashed; Google
+   credentials are verified server-side; sessions last 30 days. Short-lived codes are retained only
+   for recovery/claim flows that require them. (Requirements 1, 2, 11)
 
 ## Architecture
 
-The system is a three-tier web application. The Next.js frontend talks to the Spring Boot REST
-API over HTTPS; the API persists to PostgreSQL and calls the external OTP provider for code
-delivery.
+The production-priority system is a Next.js full-stack web application. Browser requests reach
+Next.js pages and `/api/v1` Route Handlers in the same application. Route Handlers call TypeScript
+domain services, persist through Drizzle/PostgreSQL, and use external providers only for bounded
+capabilities such as Google identity, email delivery, photo storage, and distributed rate limits.
 
 ```mermaid
 graph TB
-    subgraph Client["Client (browser / mobile web)"]
-        UI["Next.js Frontend (React)<br/>Tree renderer, viewpoint switch,<br/>search/filter UI, Help System,<br/>accessibility (text scale, contrast,<br/>keyboard nav, screen reader)"]
-    end
+    BROWSER["Browser / mobile web"]
+    UI["Next.js React UI<br/>pages, prototypes, graph, help, accessibility"]
+    ROUTES["Next.js Route Handlers<br/>/api/v1"]
+    SERVICES["TypeScript domain services<br/>auth, authorization, graph, kinship,<br/>search, privacy, collaboration, audit"]
+    DB[("PostgreSQL via Drizzle ORM")]
+    GOOGLE["Google Identity"]
+    PROVIDERS["Email / object storage / Redis-compatible providers"]
+    JAVA["Spring Boot reference module<br/>(inactive by default)"]
 
-    subgraph Server["Spring Boot REST API (Java)"]
-        AUTH["Auth_Service"]
-        VERIF["Verification_Service"]
-        GRAPH["Graph_Store"]
-        KIN["Kinship_Resolver"]
-        SEARCH["Search_Service"]
-        ORCH["Family_Tree_System<br/>(orchestration)"]
-    end
-
-    DB[("PostgreSQL<br/>users, trees, persons,<br/>relationships, claims,<br/>verification_codes,<br/>region_kinship_terms")]
-
-    OTP["External OTP Delivery<br/>(SMS provider + Email provider)"]
-
-    UI -->|"REST/JSON over HTTPS<br/>(session cookie)"| ORCH
-    ORCH --> AUTH
-    ORCH --> VERIF
-    ORCH --> GRAPH
-    ORCH --> KIN
-    ORCH --> SEARCH
-    AUTH --> DB
-    VERIF --> DB
-    GRAPH --> DB
-    KIN --> DB
-    SEARCH --> DB
-    VERIF -->|"send 6-digit code"| OTP
-    AUTH -.->|"validate session"| DB
+    BROWSER --> UI
+    UI -->|"JSON + HttpOnly session cookie"| ROUTES
+    ROUTES --> SERVICES
+    SERVICES --> DB
+    SERVICES --> GOOGLE
+    SERVICES --> PROVIDERS
+    JAVA -.->|"future synchronization only"| DB
 ```
 
 ### Request Flow Summary
 
-- **Authenticated requests** carry a session cookie. A Spring `OncePerRequestFilter` resolves the
-  session to a `User`, loads the user's tree, and attaches an authorization context (owner vs
-  linked claimed-node user vs neither) used by `Graph_Store` and the privacy filter.
+- **Authenticated requests** carry the `SESSION` cookie. Next.js Route Handlers resolve the session
+  and apply owner, collaborator, linked-claimed-user, read-sharing, and privacy checks before
+  returning or mutating family data.
 - **Kinship computation** is read-only and runs against an in-memory projection of the tree's
   primitive graph loaded per request (or cached per tree, invalidated on edge mutation).
-- **OTP delivery** is the only outbound integration. The `Verification_Service` writes a
-  `verification_codes` row (storing a hash of the code) and asks the provider to deliver the
-  plaintext code. Delivery is treated as a best-effort external dependency with timeouts.
+- **External identity and delivery** are bounded integrations. Google credentials are verified
+  before a session is created. Recovery/claim codes are hashed, single-use, rate-limited, and
+  delivered through the configured provider without being written to logs.
 
 ### Layering
 
-Each Spring Boot service is split into a controller (REST), a service (domain logic), and a
-repository (Spring Data JPA / JDBC). The `Kinship_Resolver` is a pure domain service with no I/O
-beyond reading the graph projection and the region term table, which makes it directly amenable
-to property-based testing.
+The active Next.js implementation separates Route Handlers, TypeScript domain services, Drizzle
+schema/query code, and React components. Pure kinship/search/graph logic remains isolated enough for
+property-based tests. The Java controller/service/repository layering documents a reference design,
+not the active request path.
 
 ### Security Considerations
 
-- **OTP brute-force protection**: codes are 6-digit numeric, single-use, hashed at rest, bound to
-  a short validity window (300s auth / 900s claim), and locked after 5 failed attempts. Code
-  generation uses a cryptographically secure RNG. Rate-limit code *requests* per identifier to
-  prevent SMS/email flooding and enumeration. (1.4, 1.8, 2.7, 11.5)
+- **Credential protection**: passwords follow the active policy (8–128 characters, letter + digit)
+  and are stored only as one-way hashes. Unknown-account and wrong-password failures use a uniform
+  response. Google credentials are verified server-side. Recovery/claim codes are single-use,
+  hashed at rest, expire, and are rate-limited. (Requirements 1, 2, 11, 25)
 - **Session security**: session tokens are random (≥128 bits), stored server-side, transmitted in
   an `HttpOnly`, `Secure`, `SameSite` cookie over HTTPS, and revocable on sign-out. The 30-day
   expiry is enforced server-side; expired/revoked sessions are rejected. (2.3, 2.8)
-- **External OTP provider is a trust/availability dependency**: delivery is best-effort with
-  timeouts; provider outages degrade sign-up/sign-in/claiming but must never persist a session or
-  claim without a verified code. Treat provider responses as untrusted input.
-- **Minimize unauthenticated surface**: only `/auth/signup`, `/auth/signin`, their `/verify`
-  endpoints, and claim verification are reachable without a session; all of these are rate-limited.
+- **External providers are trust/availability dependencies**: Google or email/storage outages may
+  degrade the bounded capability, but must not create an authenticated session, claim, or public
+  photo without successful verification and authorization. Treat provider responses as untrusted.
+- **Minimize unauthenticated surface**: sign-up, sign-in, Google auth, legal documents, recovery,
+  and the public entry portion of invitation/claim flows are reachable without a session; these
+  endpoints are rate-limited or otherwise bounded as appropriate.
   Every other endpoint requires an authenticated session, and all mutations additionally enforce
   the ownership / claimed-node authorization model (Property 18). Avoid leaking whether an
   identifier exists beyond what Requirement 2.4 mandates.
@@ -123,40 +117,44 @@ to property-based testing.
 
 ## Components and Interfaces
 
-All endpoints are under `/api/v1`. All mutating endpoints require an authenticated session and
-enforce tree ownership (or claimed-node linkage). Responses are JSON. Error responses use the
-envelope described in **Error Handling**.
+Active endpoints are implemented as Next.js Route Handlers under `/api/v1`. Family-data mutations
+require an authenticated session and enforce the applicable owner, collaborator, or claimed-node
+authority. Responses are JSON. Error responses use the envelope described in **Error Handling**.
 
 ### Auth_Service
 
-Handles sign-up, sign-in, session lifecycle. (Requirements 1, 2, 13)
+Handles password/Google sign-up, sign-in, recovery, and session lifecycle. (Requirements 1, 2, 13)
 
 | Method | Path | Purpose |
 |---|---|---|
-| `POST` | `/auth/signup` | Create an unverified `User` for a phone/email; trigger code send. (1.1–1.3, 1.6, 1.7, 1.9) |
-| `POST` | `/auth/signup/verify` | Submit code to verify a new account; on success create the user's single tree. (1.4, 1.8, 13.1) |
-| `POST` | `/auth/signin` | Request a sign-in code for a verified identifier. (2.1, 2.4) |
-| `POST` | `/auth/signin/verify` | Submit code; establish a 30-day session. (2.2, 2.3, 2.5–2.7) |
+| `POST` | `/auth/signup` | Create a verified phone/email account with password, Region, and current consents; establish a 30-day session. (Requirement 1) |
+| `POST` | `/auth/signin` | Verify identifier + password and establish a 30-day session. (Requirement 2) |
+| `POST` | `/auth/google` | Verify a Google credential; sign in or create a consented email account; establish a session. (Requirements 1, 2) |
 | `POST` | `/auth/signout` | Terminate the current session. (2.8) |
+| `POST` | `/auth/password-reset/request` | Required recovery endpoint; active Next.js Route Handler is currently missing. (2.6) |
+| `POST` | `/auth/password-reset/confirm` | Required recovery endpoint; active Next.js Route Handler is currently missing. (2.6) |
 
 Key behaviors:
 - Identifier validation: VN phone (`0` + 9 digits, or `+84` + 9 digits) or email (≤254 chars,
-  `local-part@domain`). (1.1, 1.2, 1.7)
-- Duplicate check has a 5-second budget; on timeout the account is created as unverified. (1.9)
-- Verification attempt counter locks an account/request after 5 failures (900s for sign-up;
-  invalidate issued code for sign-in). (1.8, 2.7)
+  `local-part@domain`).
+- Password policy: 8–128 characters with at least one ASCII letter and one digit; bcrypt-compatible
+  one-way hash storage in the active implementation.
+- Unknown identifier and wrong password use the same failure message to reduce enumeration.
+- Google identity is verified server-side before account/session creation.
+- Recovery codes are bounded, single-use, hashed, rate-limited, and never logged in plaintext.
 
 ### Verification_Service
 
-Sends and validates one-time codes; manages node claiming. (Requirements 1, 2, 11)
+Sends and validates bounded recovery/claim codes; manages node claiming. (Requirements 2, 11)
 
 | Method | Path | Purpose |
 |---|---|---|
 | `POST` | `/persons/{personId}/invite` | Owner invites a phone/email to claim a node (code valid 15 min). (11.1, 11.7) |
 | `POST` | `/persons/{personId}/claim/verify` | Recipient submits code to claim the node. (11.2–11.5) |
 
-Code rules: 6-digit numeric; hashed at rest; validity windows of 300s (auth) / 900s (15 min,
-claiming); max 5 attempts; single active code per (purpose, target).
+Recovery and claim code rules are flow-specific: codes are hashed at rest, expire, are single-use,
+and enforce attempt/rate limits. Collaboration invitation links/codes are a separate mechanism and
+must not be conflated with person-node claim codes.
 
 ### Graph_Store
 
@@ -231,7 +229,7 @@ erDiagram
     USERS ||--o{ CLAIMS : links
     PERSONS ||--o| CLAIMS : "claimed by"
     TREES ||--o{ REGION_KINSHIP_TERMS : "(region config is global, referenced by tree.region)"
-    USERS ||--o{ VERIFICATION_CODES : "auth codes"
+    USERS ||--o{ VERIFICATION_CODES : "recovery / legacy codes"
     PERSONS ||--o{ VERIFICATION_CODES : "claim codes"
 ```
 
@@ -242,7 +240,8 @@ erDiagram
 | `id` | `uuid` PK | |
 | `phone` | `text` unique nullable | VN format; unique among non-null |
 | `email` | `text` unique nullable | ≤254 chars; unique among non-null |
-| `verified` | `boolean` not null default false | (1.5) |
+| `password_hash` | `text` nullable | one-way password hash; nullable for Google-only accounts |
+| `verified` | `boolean` not null default false | password/Google sign-up creates a verified account |
 | `created_at` | `timestamptz` | |
 
 Constraint: at least one of `phone`/`email` present. Partial unique indexes on `phone` and
@@ -335,13 +334,13 @@ permitted to the linked user and the tree owner. (11.6, 13.4)
 | Column | Type | Notes |
 |---|---|---|
 | `id` | `uuid` PK | |
-| `purpose` | `text` not null | {signup, signin, claim} |
-| `user_id` | `uuid` nullable | for signup/signin |
+| `purpose` | `text` not null | active uses include password recovery and claim; legacy rows may contain signup/signin |
+| `user_id` | `uuid` nullable | for account-bound recovery/legacy codes |
 | `person_id` | `uuid` nullable | for claim invitations |
 | `destination` | `text` not null | phone or email the code was sent to |
-| `code_hash` | `text` not null | hash of the 6-digit code (never stored in plaintext) |
+| `code_hash` | `text` not null | hash of the flow-specific code (never stored in plaintext) |
 | `issued_at` | `timestamptz` not null | |
-| `expires_at` | `timestamptz` not null | issued_at + 300s or + 900s (15 min) |
+| `expires_at` | `timestamptz` not null | flow-specific bounded validity window |
 | `attempts` | `int` not null default 0 | failed attempts (lockout at 5) |
 | `consumed` | `boolean` not null default false | single-use |
 
@@ -520,28 +519,28 @@ validated by a single property-based test running ≥100 iterations.
 
 ### Authentication and Verification
 
-### Property 1: Code validity window
+### Property 1: Credential acceptance
 
-*For any* issue time and check time, a verification code is accepted as valid **if and only if**
-the check time is within the code's validity window after issue (300s for sign-up/sign-in, 900s
-for node claiming) and the code has not been consumed.
+*For any* sign-up password, password sign-in attempt, or Google credential, authentication succeeds
+**if and only if** the credential satisfies its active validation contract; rejected credentials
+create neither an account nor a session and do not reveal account existence.
 
-**Validates: Requirements 1.4, 2.2, 2.6, 11.4**
+**Validates: Requirements 1.3, 1.4, 1.8, 1.9, 2.1, 2.2, 2.4, 2.5**
 
-### Property 2: Attempt lockout
+### Property 2: Recovery and claim code validity
 
-*For any* sequence of verification attempts, after exactly 5 non-matching submissions for the same
-account/sign-in request/invitation, every subsequent submission is rejected (and the issued code
-invalidated / locked for its lockout window).
+*For any* recovery or person-node claim code, it is accepted **if and only if** it matches the
+issued code, is inside the flow's validity window, has not been consumed, and has not exceeded its
+attempt/rate limit.
 
-**Validates: Requirements 1.8, 2.7, 11.5**
+**Validates: Requirements 2.6, 2.7, 11.2–11.5**
 
 ### Property 3: Identifier validation
 
-*For any* string submitted as an identifier, sign-up is accepted **if and only if** the string is
+*For any* string submitted as an identifier, password sign-up is accepted only when the string is
 a valid Vietnamese phone number (10 digits beginning with 0, or +84 followed by 9 digits) or a
-valid email (≤254 chars, `local-part@domain`); invalid identifiers are rejected with the offending
-field identified and no account created.
+valid email (≤254 chars, `local-part@domain`), and every other required field is valid; invalid
+identifiers are rejected with the offending field identified and no account created.
 
 **Validates: Requirements 1.1, 1.2, 1.7**
 
@@ -674,7 +673,7 @@ all other mutations are rejected with the tree contents unchanged.
 
 ### Property 19: At most one tree per user
 
-*For any* sequence of verification/tree-creation events for a single user, the user owns exactly one
+*For any* sequence of sign-up/tree-creation events for a single user, the user owns exactly one
 tree (never more).
 
 **Validates: Requirements 13.2**
@@ -743,9 +742,8 @@ accessible messages:
 |---|---|---|---|
 | Validation | 400 | `VALIDATION_ERROR` | Field-level rejection; offending field named; no mutation. (1.7, 3.6, 4.2, 6.2, 9.6, 12.2, 16.8) |
 | Duplicate identifier | 409 | `IDENTIFIER_TAKEN` | Sign-up rejected; identifier-already-registered message. (1.6) |
-| Duplicate-check timeout | 201 | — | Fallback: create account unverified (not an error). (1.9) |
-| Authentication | 401 | `ACCOUNT_NOT_FOUND`, `CODE_INVALID`, `CODE_EXPIRED` | Sign-in/claim failures; existing session unchanged on wrong code. (2.4–2.6, 11.3, 11.4) |
-| Lockout | 429 | `TOO_MANY_ATTEMPTS` | After 5 failures; lockout window enforced. (1.8, 2.7, 11.5) |
+| Authentication | 401 | `ACCOUNT_NOT_FOUND`, `AUTHENTICATION_FAILED`, `CODE_INVALID`, `CODE_EXPIRED` | Uniform password/Google failures and bounded recovery/claim failures; existing session unchanged. (Requirements 2, 11) |
+| Lockout | 429 | `TOO_MANY_ATTEMPTS` | Credential or recovery/claim rate/attempt limit enforced. (2.7, 11.5, 25.1) |
 | Authorization | 403 | `NOT_AUTHORIZED` | Non-owner / non-linked mutation rejected; contents unchanged. (13.5) |
 | Not found / not accessible | 404 | `NODE_NOT_ACCESSIBLE`, `MISSING_NODE` | Target/referenced node not in tree. (3.7, 4.8, 5.5, 10.4, 15.10) |
 | Structural constraint | 409 | `SELF_REFERENCE`, `CYCLE_VIOLATION`, `PARENT_LIMIT`, `ALREADY_CLAIMED` | Graph invariant violations. (4.2, 4.4, 4.9, 11.7) |
@@ -758,9 +756,8 @@ Principles:
   "leave unchanged" criteria throughout.
 - **Totality over exceptions**: the `Kinship_Resolver` returns an `UNRESOLVED`/`UNDEFINED_REGION`
   indicator rather than throwing, so unresolved paths never crash a viewpoint render. (8.7, 9.4)
-- **External-dependency failures**: OTP send failures (provider down/timeout) return a retryable
-  error to the client and do not leave a half-created session; codes are issued only after the row
-  is persisted.
+- **External-dependency failures**: Google verification or recovery/claim delivery failures return
+  a safe retryable error where appropriate and do not leave a half-created session or claim.
 
 ## Testing Strategy
 
@@ -777,20 +774,21 @@ are pure functions over large structured input spaces.
 - **Iterations**: each property test runs a minimum of 100 generated cases.
 - **Tagging**: each property test is tagged with a comment referencing its design property in the
   form **Feature: vietnamese-family-tree, Property {number}: {property_text}**.
-- **One test per property**: each of Properties 1–25 is implemented by a single property-based test.
+- **One test per property**: each of Properties 1–31 is intended to be implemented by a single
+  property-based test; active Next.js coverage must be verified independently from legacy Java tests.
 - **Generators**: custom generators produce random tree graphs (DAGs of bloodline edges + marriage
   + non-bloodline + asserted edges), random persons (with/without birth order/year, diacritics in
   names), random region tables, random viewpoints, and random viewer/authorization contexts.
 - **Highest-value properties to prioritize**: symmetry (Property 13), regional coverage
   (Property 16), and filter-monotonicity (Property 25), plus bloodline acyclicity (Property 8) and
   neighbor-preservation (Property 22).
-- **Mocks**: the OTP provider and persistence are mocked/in-memory for resolver, validation, and
-  graph properties so 100+ iterations are cheap and deterministic.
+- **Mocks**: Google identity, recovery/claim delivery providers, and persistence are mocked/in-memory
+  where relevant so 100+ iterations are cheap and deterministic.
 
 ### Unit (Example) Tests
 
-Concrete scenarios and state transitions: account marked unverified (1.5), 30-day session creation
-(2.3), sign-out (2.8), death-status boolean (3.5), bloodline type/direction (4.3), marital/social
+Concrete scenarios and state transitions: password/Google account creation, 30-day session creation
+(2.1–2.3), sign-out (2.8), death-status boolean (3.5), bloodline type/direction (4.3), marital/social
 enums (4.5, 4.6), storage mappings and edge styles (5.1–5.3, 6.3, 12.4, 15.6), claim transitions
 (11.2, 11.3), tree creation (13.1), visibility storage/default (14.1, 14.2), deletion prompt gating
 (15.1, 15.2), filter capability coverage (16.3), and help content coverage (17.1, 17.2, 17.4, 17.5).
@@ -805,8 +803,8 @@ query/range (16.8).
 
 ### Integration Tests (1–3 examples each)
 
-External and infrastructure behavior not suited to PBT: OTP code delivery and timing (1.3, 2.1,
-11.1) against a mocked SMS/email provider; end-to-end sign-up→verify→tree-creation; and claim flow.
+External and infrastructure behavior not suited to PBT: Google credential verification,
+recovery/claim delivery and timing, password sign-up/sign-in→session, and invite→claim flows.
 
 ### Performance Tests
 
@@ -891,8 +889,8 @@ compose by union (a field hidden by either rule is hidden).
 - `legal_documents` holds the current version per document; `user_consents` records
   `(user_id, document, version, accepted_at)`.
 - Sign-up verification requires an `acceptedTos`/`acceptedPrivacy` acknowledgement; the
-  `AuthService.verifySignUp` flow records consent at the same point it creates the tree, and refuses
-  account creation without it (23.2, 23.3). A version bump forces re-acceptance, enforced as a
+  active password/Google sign-up flow records consent before creating the account/session and
+  refuses account creation without it (23.2, 23.3). A version bump forces re-acceptance, enforced as a
   pre-mutation check in the authorization layer (23.4).
 
 ### Person photos (Requirement 24)
@@ -903,8 +901,9 @@ compose by union (a field hidden by either rule is hidden).
 - New `person_photos` table: `id`, `person_id` (FK, indexed), `object_key`, `content_type`,
   `width`, `height`, `byte_size`, `is_primary` (at most one true per person), `created_at`. Binary
   bytes never enter Postgres (24.7).
-- Upload pipeline: validate content-type (JPEG/PNG/WebP) and size; **re-encode and strip EXIF/GPS
-  metadata** before persisting (24.4); reject anything else (24.3). Re-encoding also neutralizes
+- Upload pipeline: validate content-type (JPEG/PNG only) and size; **re-encode and strip EXIF/GPS
+  metadata** before persisting (24.4); reject WebP and every other unsupported type (24.3).
+  Re-encoding also neutralizes
   polyglot/malicious payloads.
 - Serving: `GET /persons/{id}/photos/{photoId}` streams via the backend (or a short-lived signed
   URL) only after `requireReadAccess` and the `vis_photo` / living-person checks pass (24.5). The
@@ -915,7 +914,8 @@ compose by union (a field hidden by either rule is hidden).
 
 - A `RateLimiter` (per-identifier and per-IP token bucket; in-memory for single-node, pluggable to a
   shared store) guards verification-code issuance; over-threshold returns `429 TOO_MANY_ATTEMPTS`
-  without revealing identifier existence (25.1). This complements existing OTP brute-force controls.
+  without revealing identifier existence (25.1). This complements password/Google attempt controls
+  and bounded recovery/claim-code protections.
 - An `audit_log` table records `actor_user_id`, `action`, `target_type`, `target_id`, `created_at`,
   and a redacted `detail` for authentication events, sharing/visibility changes, data-rights
   operations, and deletions (25.2). Codes, session tokens, and share tokens are never written in
@@ -926,13 +926,14 @@ compose by union (a field hidden by either rule is hidden).
 - **`trees`** (new columns): `sharing` text not null default `'private'` ({private, link, public});
   `living_redaction` boolean not null default true.
 - **`tree_share_tokens`**: `id`, `tree_id` (FK), `token_hash`, `created_at`, `revoked_at` nullable.
-- **`persons`** (new columns): `vis_name`, `vis_birth_year`, `vis_photo` text not null default
-  `'private'`.
+- **`persons`** (new columns): `vis_name` and `vis_birth_year` text not null default `'public'`;
+  `vis_photo` text not null default `'private'`.
 - **`person_photos`**: as described above.
 - **`legal_documents`**, **`user_consents`**, **`audit_log`**: as described above.
 
-All new columns/tables are introduced via forward Flyway migrations (next is `V5`), preserving the
-existing checksum history.
+Active schema changes are introduced in the Next.js/Drizzle persistence layer first and mirrored
+to forward-only Flyway migrations in the inactive Java module for future synchronization. Existing
+migration checksum history must be preserved in both representations.
 
 ### API additions
 
@@ -993,7 +994,7 @@ owner); otherwise it is rejected with no change.
 
 ### Property 30: Consent gate at sign-up
 
-*For any* sign-up verification, the account and tree are created **iff** valid current-version ToS
+*For any* sign-up attempt, the account and tree are created **iff** valid current-version ToS
 and Privacy consents are supplied; absent or stale consent creates nothing (and forces
 re-acceptance before the next mutation).
 
@@ -1001,7 +1002,7 @@ re-acceptance before the next mutation).
 
 ### Property 31: Photo upload validation and metadata stripping
 
-*For any* uploaded file, it is stored **iff** its type is JPEG/PNG/WebP and its size is within the
+*For any* uploaded file, it is stored **iff** its type is JPEG/PNG and its size is within the
 limit; a stored image contains no EXIF/geolocation metadata, and at most one photo per person is
 marked primary.
 

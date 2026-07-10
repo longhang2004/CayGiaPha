@@ -10,7 +10,8 @@ precedence.
 1. Read this file for the visual model and editing rules.
 2. Use [INDEX.md](./INDEX.md) to find the route, component, stylesheet, and
    prototype affected by a change.
-3. Check [AUDIT.md](./AUDIT.md) before introducing a pattern or fixing one.
+3. Check [AUDIT.md](./AUDIT.md) before introducing a pattern or fixing one. Its main body is a
+   pre-fix snapshot; use the post-audit revalidation table before treating a finding as current.
 4. For privacy, accessibility, auth, persistence, or kinship behavior, read the
    relevant Kiro requirements and design sections before editing.
 
@@ -39,13 +40,13 @@ workspace. Preserve their warm palette, typography, and purposeful whitespace.
 
 | Shell | Current routes | Visual structure |
 |---|---|---|
-| Landing | `/`, `/prototype/home` | Fixed translucent header + content |
-| Focused | `/signin`, `/signup`, their prototypes, `/legal/*` | Content only; page/component supplies its frame |
-| In-app | Everything else | Desktop sidebar, mobile top bar/drawer, scrollable content |
+| Marketing | `/`, `/help`, `/prototype/home`, `/prototype/help` | Fixed translucent header + content |
+| Bare/focused | `/signin`, `/signup`, `/forgot-password`, `/invitation/*`, `/legal/*`, their prototypes, `/prototype` | Content only; page/component supplies its frame |
+| In-app | Tree, settings, support, feedback, admin, and other authenticated product routes | Desktop sidebar, mobile top bar/drawer, scrollable content |
 
-This is currently string-based. Check the audit before adding a route:
-`/forgot-password` and invitation pages presently inherit the in-app shell even
-for anonymous visitors.
+This remains a centralized string-based map in `AppLayoutWrapper`. Known recovery and invitation
+routes now use the bare shell; update the map and corresponding prototype whenever a new route
+family is introduced.
 
 ## Styling architecture
 
@@ -87,9 +88,10 @@ domain meaning and has a dark-theme counterpart.
 | Motion | `--ease-spring`, `--ease-fluid` |
 | Elevation | `--shadow-ambient`, `--shadow-ambient-lg`, `--shadow-inner` |
 
-Several names are used but not defined (`--color-danger`,
-`--color-surface-hover`, `--color-primary`, and others). They are audit debt,
-not approved tokens.
+The semantic aliases named in the original audit (`--color-danger`, `--color-surface-hover`,
+`--color-primary`, `--color-background`, `--color-surface`, `--color-fg-muted`, and
+`--color-accent-rgb`) are now defined for light and dark themes. Continue to avoid inventing aliases
+without adding both definitions and an undefined-token check.
 
 ## Responsive model
 

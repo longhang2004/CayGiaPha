@@ -2,8 +2,12 @@
 
 ## Overview
 
-This plan implements the Vietnamese Family Tree on **Next.js** (frontend), **Spring Boot / Java**
-(REST API), and **PostgreSQL**, following the approved design. Work is sequenced so foundations
+This plan records implementation of the Vietnamese Family Tree across the active **Next.js
+full-stack application**, the inactive/reference **Spring Boot / Java** module, and
+**PostgreSQL**. As of 2026-07-10, `frontend/` is the production-priority runtime: Next.js Route
+Handlers and TypeScript services own active behavior and persistence through Drizzle ORM. Java
+tasks below are retained as historical/reference implementation records and must not be used to
+infer the active request path. Work was sequenced so foundations
 come first: scaffolding, then the pure-domain core (Graph_Store structural invariants and the
 Kinship_Resolver) which is fully property-testable in isolation, then asserted/derived handling and
 deletion, then authentication/authorization/privacy, search, the frontend, the help system,
@@ -13,9 +17,22 @@ Property-based tests (PBT) use **jqwik** for the Java domain layer and **fast-ch
 TypeScript logic. Each PBT is a separate, optional (`*`) sub-task placed next to the implementation
 it validates, references its design **Property number**, and is tagged per the design convention:
 `Feature: vietnamese-family-tree, Property {number}`. Each property runs ≥100 generated cases. The
-external OTP provider and persistence are mocked/in-memory for property tests.
+external identity/delivery providers and persistence are mocked/in-memory for property tests.
 
-All 18 requirements and all 25 correctness properties are covered by at least one task.
+All 25 requirements and all 31 correctness properties are referenced by at least one task. A checked
+box records that an implementation task landed; it is not evidence that current runtime behavior,
+documentation, prototypes, and verification remain synchronized. Current readiness must be checked
+against the active Next.js code and current tests.
+
+### Known active-runtime gaps — 2026-07-10
+
+- Password-recovery UI/helpers exist, but the active Next.js API tree has no
+  `/api/v1/auth/password-reset/request` or `/confirm` Route Handlers while `USE_BACKEND=false`.
+  Recovery must not be reported complete until active handlers and end-to-end verification exist.
+- `/prototype/tree` still mounts the real upcoming-events client and may log 401 under mock session.
+- Production and prototype invitation pages begin with `h2` and have no page-level `h1`.
+- The post-audit UI status is maintained in `frontend/docs/ui/AUDIT.md`; historical findings must
+  be revalidated before creating work.
 
 ## Tasks
 
@@ -225,23 +242,23 @@ All 18 requirements and all 25 correctness properties are covered by at least on
     - _Validates: Requirements 15.4, 15.5, 15.7, 15.8_
 
 - [x] 6. Authentication, verification, sessions, and ownership
-  - [x] 6.1 Implement identifier validation and the verification code lifecycle
-    - Validate VN phone / email formats; generate 6-digit codes with a CSRNG, store hashed, with
-      validity windows (300s auth / 900s claim) and single-use semantics; enforce the 5-attempt
-      lockout (900s for sign-up; invalidate the issued code for sign-in/claim).
-    - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.7, 1.8, 2.2, 2.6, 2.7, 11.4, 11.5_
+  - [x] 6.1 Implement active credential and bounded-code lifecycles
+    - Validate VN phone/email formats; enforce the active password policy and hash passwords;
+      verify Google credentials server-side; keep expiring, single-use, rate-limited codes for
+      password recovery and person-node claiming only. OTP-only sign-up/sign-in is legacy.
+    - _Requirements: 1.1–1.9, 2.1–2.8, 11.1–11.5_
 
-  - [x] 6.2 Write property test for code validity window
-    - **Property 1: Code validity window** — a code is accepted iff the check time is within the
-      validity window after issue and the code is not consumed.
-    - Tag: `Feature: vietnamese-family-tree, Property 1`
-    - _Validates: Requirements 1.4, 2.2, 2.6, 11.4_
+  - [x] 6.2 Write property tests for credential and bounded-code validity
+    - **Properties 1–2** — password/Google credentials satisfy their active validation contract;
+      recovery/claim codes are accepted iff matching, unexpired, unconsumed, and within limits.
+    - Tags: `Feature: vietnamese-family-tree, Property 1` and `Property 2`
+    - _Validates: Requirements 1.3, 1.4, 1.8, 1.9, 2.1, 2.2, 2.4–2.6, 11.2–11.5_
 
-  - [x] 6.3 Write property test for attempt lockout
-    - **Property 2: Attempt lockout** — after exactly 5 non-matching submissions, every subsequent
-      submission is rejected and the code invalidated/locked.
+  - [x] 6.3 Write property tests for rate and attempt limits
+    - Credential attempts and recovery/claim code submissions are rejected after their configured
+      limits without exposing account existence.
     - Tag: `Feature: vietnamese-family-tree, Property 2`
-    - _Validates: Requirements 1.8, 2.7, 11.5_
+    - _Validates: Requirements 2.7, 11.5, 25.1_
 
   - [x] 6.4 Write property test for identifier validation
     - **Property 3: Identifier validation** — sign-up accepted iff the identifier is a valid VN phone
@@ -250,22 +267,22 @@ All 18 requirements and all 25 correctness properties are covered by at least on
     - Tag: `Feature: vietnamese-family-tree, Property 3`
     - _Validates: Requirements 1.1, 1.2, 1.7_
 
-  - [x] 6.5 Implement sign-up and single-tree creation on verification
-    - Create an unverified user; run the duplicate-identifier check with a 5s budget and unverified
-      fallback on timeout; on successful verification create exactly one tree (default region Bắc).
-    - _Requirements: 1.5, 1.6, 1.9, 9.2, 13.1, 13.2, 13.3_
+  - [x] 6.5 Implement password/Google sign-up and initial tree journey
+    - Create a verified user after password or Google validation and current consent; establish a
+      session and make the single-tree creation journey available (default region Bắc).
+    - _Requirements: 1.1–1.9, 9.2, 13.1, 13.2, 13.3_
 
   - [x] 6.6 Write property test for at-most-one tree per user
-    - **Property 19: At most one tree per user** — for any sequence of verification/tree-creation
+    - **Property 19: At most one tree per user** — for any sequence of sign-up/tree-creation
       events, the user owns exactly one tree.
     - Tag: `Feature: vietnamese-family-tree, Property 19`
     - _Validates: Requirements 13.2_
 
-  - [x] 6.7 Implement sign-in, session management, and sign-out
-    - Issue sign-in codes only for verified accounts; establish a 30-day server-side session in an
-      HttpOnly/Secure/SameSite cookie; reject wrong/expired codes leaving any existing session
-      unchanged; revoke the session on sign-out.
-    - _Requirements: 2.1, 2.3, 2.4, 2.5, 2.8_
+  - [x] 6.7 Implement password/Google sign-in, session management, and sign-out
+    - Validate password or Google identity; establish a 30-day server-side session in an
+      HttpOnly/Secure-in-production/SameSite cookie; use uniform authentication failures; revoke the
+      session on sign-out.
+    - _Requirements: 2.1–2.5, 2.7, 2.8_
 
   - [x] 6.8 Implement node invitation and OTP claiming
     - Owner invites a phone/email (15-minute code) for an unclaimed node; verify the code to create a
@@ -275,9 +292,9 @@ All 18 requirements and all 25 correctness properties are covered by at least on
 
 - [x] 7. Authorization and privacy enforcement
   - [x] 7.1 Implement the authentication filter and authorization context
-    - Add a `OncePerRequestFilter` resolving the session to a user/tree and an authorization context
-      (owner / linked-claimed-user / neither); enforce ownership (or claimed-node linkage) on every
-      mutation, leaving contents unchanged on rejection.
+    - Active Next.js Route Handlers resolve the session and apply owner/collaborator/linked-user
+      authorization before each protected operation. The Java reference module uses a
+      `OncePerRequestFilter`. Both paths leave contents unchanged on rejection.
     - _Requirements: 11.6, 13.4, 13.5_
 
   - [x] 7.2 Write property test for mutation authorization
@@ -333,10 +350,11 @@ All 18 requirements and all 25 correctness properties are covered by at least on
     - _Validates: Requirements 16.4, 16.5_
 
 - [x] 10. Frontend (Next.js)
-  - [x] 10.1 Implement auth UI (sign-up, sign-in, OTP verify, sign-out)
-    - Build forms and OTP verification screens wired to the auth endpoints with accessible,
-      field-level error messages from the error envelope.
-    - _Requirements: 1.1, 1.2, 1.3, 2.1, 2.3, 2.8_
+  - [x] 10.1 Implement auth UI (password/Google sign-up and sign-in, recovery, sign-out)
+    - Build password and Google auth flows plus password recovery, with accessible field-level error
+      messages from the error envelope. Legacy `IdentifierForm`/`OtpForm` components are not the
+      active sign-up/sign-in journey.
+    - _Requirements: 1.1–1.9, 2.1–2.8_
 
   - [x] 10.2 Implement the tree/graph renderer with distinct edge styles and viewpoint switching
     - Render solid (derived), dashed (asserted), and a third distinct style (non-bloodline) edges;
@@ -383,11 +401,11 @@ All 18 requirements and all 25 correctness properties are covered by at least on
     - _Requirements: 18.1, 18.2, 18.3, 18.4, 18.5, 18.6_
 
 - [x] 13. Integration and performance verification
-  - [x] 13.1 Write integration tests for OTP delivery and core flows
-    - Mock the SMS/email provider; verify code delivery and timing; end-to-end
-      sign-up→verify→tree-creation; and the invite→claim flow; assert no half-created session/claim on
-      provider failure.
-    - _Requirements: 1.3, 2.1, 11.1_
+  - [x] 13.1 Write integration tests for active authentication and bounded-code flows
+    - Verify password and Google auth/session behavior; mock recovery/claim delivery where needed;
+      cover sign-up→session→tree journey and invite→claim; assert no half-created session/claim on
+      credential or provider failure.
+    - _Requirements: 1, 2, 11.1_
 
   - [x] 13.2 Write performance benchmarks on a generated 1,000-node tree
     - Single-pair address < 1s; viewpoint all-addresses < 2s; search < 2s; help render < 2s;
@@ -456,7 +474,7 @@ All 18 requirements and all 25 correctness properties are covered by at least on
 - [x] 19. Terms of Service, Privacy Policy, and consent (Phase 2)
   - [x] 19.1 Implement legal documents, consent capture, and re-acceptance gate
     - `V7` migration: `legal_documents`, `user_consents`. Serve `/legal/tos` and `/legal/privacy`
-      (public). Require ToS/Privacy acceptance in `AuthService.verifySignUp` (record version +
+      (public). Require ToS/Privacy acceptance in the active password/Google sign-up flow (record version +
       timestamp; refuse account creation without it); force re-acceptance before next mutation on a
       version bump; show the owner the lawful-basis notice when adding/editing a non-self node.
     - _Requirements: 23.1, 23.2, 23.3, 23.4, 23.5, 23.6_
@@ -481,8 +499,8 @@ All 18 requirements and all 25 correctness properties are covered by at least on
       one primary per person). Binary content stays out of Postgres.
     - _Requirements: 24.7_
   - [x] 21.2 Implement upload, primary selection, gated serving, and deletion
-    - `POST /persons/{id}/photos` (multipart): validate type (JPEG/PNG/WebP) and size, re-encode to
-      strip EXIF/GPS, reject otherwise. `PATCH .../primary`; `GET .../{photoId}` gated by
+    - `POST /persons/{id}/photos` (multipart): validate type (JPEG/PNG only) and size, re-encode to
+      strip EXIF/GPS, and reject WebP or any other unsupported type. `PATCH .../primary`; `GET .../{photoId}` gated by
       `requireReadAccess` + `vis_photo` + living rules; `DELETE .../{photoId}`; cascade photo deletion
       on person delete/erase. Owner and linked user only for mutations.
     - _Requirements: 24.1, 24.2, 24.3, 24.4, 24.5, 24.6, 24.8_
@@ -500,11 +518,12 @@ All 18 requirements and all 25 correctness properties are covered by at least on
 
 - Tasks marked with `*` are optional test sub-tasks and can be skipped for a faster MVP; core
   implementation tasks are never optional.
-- Each PBT sub-task implements exactly one design Property (1–25), is tagged
+- Each PBT sub-task implements exactly one design Property (1–31), is tagged
   `Feature: vietnamese-family-tree, Property {number}`, runs ≥100 generated cases, and is placed next
   to the implementation it validates to catch errors early.
-- jqwik covers the Java domain layer; fast-check covers shared TypeScript logic (diacritic
-  normalization). The OTP provider and persistence are mocked/in-memory for property tests.
+- jqwik covers the Java reference domain layer; fast-check covers active/shared TypeScript logic.
+  Google identity, recovery/claim delivery providers, and persistence are mocked/in-memory where
+  relevant for property tests.
 - Every requirement (1–25) and every correctness property (1–31) is referenced by at least one task.
 - Checkpoints (tasks 8, 14, and 22) provide incremental validation points.
 - Tasks 15–22 (Requirements 19–25) extend the original plan with tree-level read authorization,

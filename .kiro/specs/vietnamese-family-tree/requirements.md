@@ -4,6 +4,14 @@
 
 This document specifies the requirements for a Vietnamese family tree (cây gia phả) web/mobile application. The application lets a user build and visualize the relationships of a Vietnamese clan as a graph rendered as a tree/diagram. The defining domain feature is automatic computation of the correct Vietnamese form of address (cách xưng hô) between any two persons, accounting for paternal-vs-maternal side, gender, birth order/age, and regional dialect (Bắc/Trung/Nam).
 
+> **Active implementation baseline — 2026-07-10.** The production-priority implementation is
+> the Next.js full-stack application under `frontend/`, using Next.js Route Handlers, Drizzle ORM,
+> and PostgreSQL. The Spring Boot module is retained as an inactive reference implementation and
+> future synchronization target; it is not the default runtime. User authentication uses a
+> password or Google sign-in. OTP-only sign-up/sign-in is legacy behavior and must not be treated
+> as the active product contract. Verification codes remain valid for bounded flows that explicitly
+> require them, such as password recovery or claiming a person node.
+
 The core data model is a graph: each Person is a node and each Relationship is a typed edge. Only primitive bloodline edges (parent-child) and marriage edges are stored; all higher-order kinship terms are derived from these edges. Relatives can be added in two modes: a well-defined primitive relationship (rendered as a SOLID line) from which address can be computed, and an asserted direct label such as "this person is my bác" (rendered as a DASHED line) that lacks intermediate nodes and therefore cannot yet be auto-derived. The system attempts to upgrade dashed relations to solid when intermediate nodes are added and warns on conflicts.
 
 In v1 each User owns their own tree. A User invites relatives via phone number or email so the relative can verify and claim their own Person node. Tree merging and cross-tree linking are deferred to a later version.
@@ -11,8 +19,8 @@ In v1 each User owns their own tree. A User invites relatives via phone number o
 ## Glossary
 
 - **Family_Tree_System**: The overall application that stores the relationship graph, computes forms of address, and renders the tree.
-- **Auth_Service**: The component responsible for user sign-up, sign-in, and session management via phone number or email.
-- **Verification_Service**: The component that sends and validates one-time verification codes over phone number or email, and manages node claiming.
+- **Auth_Service**: The component responsible for password/Google sign-up, sign-in, recovery, and session management via phone number or email identity.
+- **Verification_Service**: The component that sends and validates bounded recovery or person-node claim codes over configured channels; it does not define the active sign-up/sign-in method.
 - **Graph_Store**: The component that persists Person nodes and Relationship edges.
 - **Kinship_Resolver**: The component that computes the Vietnamese form of address between two Person nodes given a viewpoint, using the relationship path, side, gender, birth order, and region.
 - **Renderer**: The component that draws the relationship graph as a tree/diagram, including solid and dashed edges.
@@ -36,33 +44,33 @@ In v1 each User owns their own tree. A User invites relatives via phone number o
 
 ### Requirement 1: User Sign-Up
 
-**User Story:** As a new user, I want to sign up using my phone number or email, so that I can create and own a family tree.
+**User Story:** As a new user, I want to sign up using my phone number or email and password, or use Google sign-in, so that I can create and own a family tree.
 
 #### Acceptance Criteria
 
-1. WHEN a visitor submits a sign-up request with a phone number in valid Vietnamese format (10 digits beginning with 0, or +84 followed by 9 digits), THE Auth_Service SHALL create a User account associated with that phone number.
-2. WHEN a visitor submits a sign-up request with an email address of 254 characters or fewer in valid email format (local-part@domain), THE Auth_Service SHALL create a User account associated with that email address.
-3. WHEN a User account is created, THE Verification_Service SHALL send a 6-digit numeric one-time verification code to the provided phone number or email address within 60 seconds.
-4. WHEN a verification code is sent, THE Verification_Service SHALL accept that code as valid for 300 seconds from the time of sending, and after 300 seconds THE Verification_Service SHALL reject the code as expired.
-5. WHILE a User account has not completed verification, THE Auth_Service SHALL mark the account as unverified.
+1. WHEN a visitor submits a sign-up request with a phone number in valid Vietnamese format (10 digits beginning with 0, or +84 followed by 9 digits), a valid password, the current legal consents, and an allowed Region, THE Auth_Service SHALL create a verified User account associated with that phone number.
+2. WHEN a visitor submits a sign-up request with an email address of 254 characters or fewer in valid email format (`local-part@domain`), a valid password, the current legal consents, and an allowed Region, THE Auth_Service SHALL create a verified User account associated with that email address.
+3. THE Auth_Service SHALL accept a password only when it contains 8 to 128 characters, at least one ASCII letter, and at least one digit; otherwise it SHALL reject the request, create no account, and identify the password field.
+4. WHEN a visitor successfully authenticates with a valid Google credential, THE Auth_Service SHALL sign in the matching email account or create a verified email account after obtaining any required current legal consents.
+5. WHEN password or Google sign-up succeeds, THE Auth_Service SHALL establish an authenticated session and the Family_Tree_System SHALL make the user's tree-creation journey available without an OTP verification step.
 6. IF a sign-up request uses a phone number or email already associated with an existing User account, THEN THE Auth_Service SHALL reject the request, SHALL NOT create a new User account, and SHALL return a message stating the identifier is already registered.
-7. IF a sign-up request contains a phone number that is not in valid Vietnamese format (10 digits beginning with 0, or +84 followed by 9 digits), or an email address that exceeds 254 characters or does not match the local-part@domain format, THEN THE Auth_Service SHALL reject the request, SHALL NOT create a User account, and SHALL return a message identifying the invalid field.
-8. IF an incorrect verification code is submitted 5 times for the same User account, THEN THE Verification_Service SHALL reject all further verification attempts for that account for 900 seconds.
-9. IF the duplicate-identifier check cannot determine within 5 seconds whether a phone number or email already exists, THEN THE Auth_Service SHALL proceed to create the User account and SHALL mark the account as unverified.
+7. IF a sign-up request contains a phone number that is not in valid Vietnamese format, an email address that exceeds 254 characters or does not match the `local-part@domain` format, an unsupported Region, or missing current legal consent, THEN THE Auth_Service SHALL reject the request, SHALL NOT create a User account, and SHALL return a message identifying the invalid field.
+8. THE Auth_Service SHALL store password verifiers as one-way password hashes and SHALL NOT store or log plaintext passwords or Google credentials.
+9. IF a supplied Google credential cannot be verified, THEN THE Auth_Service SHALL reject the request, create no account or session, and return a non-sensitive authentication error.
 
 ### Requirement 2: User Sign-In
 
-**User Story:** As a registered user, I want to sign in using my phone number or email, so that I can access my family tree.
+**User Story:** As a registered user, I want to sign in using my phone number or email and password, or use Google sign-in, so that I can access my family tree.
 
 #### Acceptance Criteria
 
-1. WHEN a User submits a sign-in request with a phone number or email matching a verified User account, THE Verification_Service SHALL send a 6-digit numeric one-time verification code to that identifier within 30 seconds.
-2. WHEN a verification code is sent for sign-in, THE Verification_Service SHALL accept that code as valid for 300 seconds from the time of sending.
-3. WHEN a User submits a verification code that matches the issued code within the 300-second validity period, THE Auth_Service SHALL establish an authenticated session valid for 30 days.
-4. IF a User submits a sign-in request with a phone number or email that does not match any verified User account, THEN THE Auth_Service SHALL reject the request and return an account-not-found message.
-5. IF a User submits a verification code that does not match the issued code, THEN THE Auth_Service SHALL reject the sign-in attempt, leave any existing session unchanged, and return a verification-failure message.
-6. IF a User submits a verification code after the 300-second validity period has elapsed, THEN THE Auth_Service SHALL reject the sign-in attempt and return an expired-code message.
-7. IF an incorrect verification code is submitted 5 times for the same sign-in request, THEN THE Verification_Service SHALL invalidate the issued code and reject further submissions for that request.
+1. WHEN a User submits a valid password for a phone number or email matching a User account, THE Auth_Service SHALL establish an authenticated session valid for 30 days.
+2. WHEN a User successfully authenticates with a valid Google credential matching a User account, THE Auth_Service SHALL establish an authenticated session valid for 30 days.
+3. THE Auth_Service SHALL transmit the session identifier in an `HttpOnly`, `SameSite=Lax` cookie, SHALL use `Secure` in production, and SHALL validate expiry and revocation server-side.
+4. IF a User submits an unknown identifier or an incorrect password, THEN THE Auth_Service SHALL reject the request using a uniform authentication-failure response that does not confirm whether the account exists.
+5. IF a Google credential is invalid, expired, has the wrong audience, or does not provide a usable email identity, THEN THE Auth_Service SHALL reject the request and create no session.
+6. WHEN password recovery is requested, THE Verification_Service SHALL use a bounded, single-use recovery code and SHALL apply expiry, retry, and rate-limit protections without revealing whether the identifier exists.
+7. THE Auth_Service SHALL rate-limit password and Google authentication attempts by relevant identifier and source address and SHALL record authentication events without logging credentials or session tokens.
 8. WHEN an authenticated User submits a sign-out request, THE Auth_Service SHALL terminate and invalidate the authenticated session.
 
 ### Requirement 3: Person Node Management
@@ -157,7 +165,7 @@ In v1 each User owns their own tree. A User invites relatives via phone number o
 5. WHEN an Owner changes the default Region of a tree to one of Bắc, Trung, or Nam, THE Kinship_Resolver SHALL compute every Form_Of_Address requested after the change using the newly selected Region.
 6. IF an Owner attempts to set a tree's default Region to a value other than Bắc, Trung, or Nam, THEN THE Family_Tree_System SHALL reject the change and SHALL retain the previously stored default Region.
 7. FOR ALL Regions in the set {Bắc, Trung, Nam}, THE Kinship_Resolver SHALL resolve every relationship path that it resolves for any other Region in the set to a defined Form_Of_Address (regional coverage property).
-8. WHEN an Owner completes sign-up, THE Family_Tree_System SHALL allow the Owner to specify the new tree's default Region as one of Bắc, Trung, or Nam, SHALL create the tree with the specified Region, and SHALL default to Bắc when the Owner does not specify one; IF the specified value is not one of Bắc, Trung, or Nam, THEN THE Family_Tree_System SHALL reject sign-up verification with a validation error and SHALL NOT create the tree.
+8. WHEN an Owner completes password or Google sign-up, THE Family_Tree_System SHALL allow the Owner to specify the new tree's default Region as one of Bắc, Trung, or Nam, SHALL create the tree with the specified Region, and SHALL default to Bắc when the Owner does not specify one; IF the specified value is not one of Bắc, Trung, or Nam, THEN THE Family_Tree_System SHALL reject sign-up with a validation error and SHALL NOT create the tree.
 
 ### Requirement 10: Change Point of View
 
@@ -201,9 +209,9 @@ In v1 each User owns their own tree. A User invites relatives via phone number o
 
 #### Acceptance Criteria
 
-1. WHEN a User account completes verification and that User owns no existing tree, THE Family_Tree_System SHALL create exactly one tree, assign that User as its Owner, and confirm creation to the User.
-2. IF a User account completes verification while the User already owns one tree, THEN THE Family_Tree_System SHALL NOT create an additional tree and SHALL retain the existing single tree owned by that User.
-3. IF tree creation fails after a User account completes verification, THEN THE Family_Tree_System SHALL leave the User without a tree and return an error message indicating that tree creation did not complete.
+1. WHEN a User completes password or Google sign-up and that User owns no existing tree, THE Family_Tree_System SHALL create exactly one tree, assign that User as its Owner, and confirm creation to the User.
+2. IF a User completes sign-up while already owning one tree, THEN THE Family_Tree_System SHALL NOT create an additional tree and SHALL retain the existing single tree owned by that User.
+3. IF tree creation fails after account creation, THEN THE Family_Tree_System SHALL leave the User without a tree and return an error message indicating that tree creation did not complete.
 4. THE Graph_Store SHALL permit create, edit, and delete operations on Person nodes and Relationship edges within a tree only to the tree Owner, except for Claimed_Node edits, which THE Graph_Store SHALL also permit to the User linked to that Claimed_Node.
 5. IF a User attempts a create, edit, or delete operation on a tree the User does not own and in which the User holds no Claimed_Node, THEN THE Family_Tree_System SHALL reject the operation, leave the tree contents unchanged, and return an authorization-failure message.
 
