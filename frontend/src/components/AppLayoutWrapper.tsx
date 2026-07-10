@@ -52,8 +52,13 @@ function layoutMode(pathname: string | null): "bare" | "marketing" | "inapp" {
     return "bare";
   }
 
-  // Landing
-  if (path === "/" || path === "/prototype/home") {
+  // Landing and Help
+  if (
+    path === "/" ||
+    path === "/prototype/home" ||
+    path === "/help" ||
+    path === "/prototype/help"
+  ) {
     return "marketing";
   }
 

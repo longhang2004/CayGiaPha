@@ -31,6 +31,13 @@
   --color-hairline-strong: #c5beb3;
   --color-surface-card: #ffffff;
   --color-surface-strong: #ebe6dd; /* Be trầm */
+  --color-surface-hover: rgba(0, 0, 0, 0.04);
+  --color-danger: #ef4444; /* Standard danger red */
+  --color-primary: var(--color-brand);
+  --color-background: var(--color-bg);
+  --color-surface: var(--color-surface-card);
+  --color-fg-muted: var(--color-muted);
+  --color-accent-rgb: 185, 75, 52; /* #b94b34 */
 
   /* Theme-aware backgrounds */
   --color-island-bg: rgba(255, 255, 255, 0.85);
@@ -71,7 +78,7 @@
   --shadow-inner: inset 0 1px 1px rgba(255, 255, 255, 0.15);
 }
 
-html.dark {
+@mixin dark-theme-variables {
   --color-bg: #141412; /* Nền tối ấm áp */
   --color-fg: #f5f4f0; /* Chữ sáng ấm áp */
   --color-muted: #a5a298; /* Chữ phụ */
@@ -86,6 +93,13 @@ html.dark {
   --color-hairline-strong: #44423c;
   --color-surface-card: #1e1d1b;
   --color-surface-strong: #2a2824;
+  --color-surface-hover: rgba(255, 255, 255, 0.05);
+  --color-danger: #f87171; /* Dark-mode danger */
+  --color-primary: var(--color-brand);
+  --color-background: var(--color-bg);
+  --color-surface: var(--color-surface-card);
+  --color-fg-muted: var(--color-muted);
+  --color-accent-rgb: 224, 108, 83; /* #e06c53 */
 
   --color-island-bg: rgba(30, 29, 27, 0.85);
   --color-header-bg: rgba(20, 20, 18, 0.85);
@@ -96,30 +110,13 @@ html.dark {
   --color-step-num-text: #ff9b85;
 }
 
+html.dark {
+  @include dark-theme-variables;
+}
+
 @media (prefers-color-scheme: dark) {
   html:not(.light) {
-    --color-bg: #141412; /* Nền tối ấm áp */
-    --color-fg: #f5f4f0; /* Chữ sáng ấm áp */
-    --color-muted: #a5a298; /* Chữ phụ */
-    --color-accent: #e06c53; /* Đất nung sáng cho chế độ tối */
-    --color-border: #6d6b63;
-    --color-focus: #e06c53;
-
-    --color-brand: #e06c53;
-    --color-brand-active: #f38f7a;
-    --color-hairline: #2d2b27;
-    --color-hairline-soft: #23221e;
-    --color-hairline-strong: #44423c;
-    --color-surface-card: #1e1d1b;
-    --color-surface-strong: #2a2824;
-
-    --color-island-bg: rgba(30, 29, 27, 0.85);
-    --color-header-bg: rgba(20, 20, 18, 0.85);
-    --color-hero-card-bg: linear-gradient(145deg, #1e1d1b, #141412);
-    --color-surface-card-translucent: rgba(30, 29, 27, 0.85);
-    --color-overlay-bg: rgba(20, 20, 18, 0.9);
-    --color-step-num-bg: #3a2218;
-    --color-step-num-text: #ff9b85;
+    @include dark-theme-variables;
   }
 }
 

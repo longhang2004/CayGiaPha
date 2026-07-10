@@ -13,7 +13,7 @@ a.button {
   align-items: center;
   justify-content: center;
   gap: var(--space-sm);
-  transition: all 0.7s var(--ease-spring);
+  transition: background-color 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease, border-color 0.2s ease, color 0.2s ease;
   position: relative;
   overflow: hidden;
 }
@@ -24,7 +24,6 @@ button:hover:not(:disabled),
 a.button:hover:not(:disabled) {
   background-color: var(--color-brand-active);
   box-shadow: var(--shadow-ambient-lg);
-  transform: scale(0.98); /* Magnetic physical press */
 }
 
 button:hover:not(:disabled) .btn-trailing-icon,

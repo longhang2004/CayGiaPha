@@ -10,28 +10,21 @@ import { HELP_TOPICS } from "@/content/help/helpTopics";
 export function HelpNav() {
   return (
     <nav aria-label="Mục lục hướng dẫn" data-testid="help-nav">
-      <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: "1.25rem" }}>
+      <ul className="help-nav__list">
         {HELP_TOPICS.map((topic, index) => (
-          <li key={topic.id} style={{ display: "flex", gap: "1rem", alignItems: "baseline" }}>
-            <span style={{ color: "var(--color-brand)", fontWeight: 700, fontSize: "0.9rem", minWidth: "1.5rem" }}>
+          <li key={topic.id} className="help-nav__item">
+            <span className="help-nav__num">
               {(index + 1).toString().padStart(2, '0')}.
             </span>
-            <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
+            <div className="help-nav__link-group">
               <a
                 href={`#${topic.id}`}
                 data-testid="help-nav-link"
-                style={{
-                  fontWeight: 600,
-                  fontSize: "1.05rem",
-                  color: "var(--color-fg)",
-                  textDecoration: "none",
-                  borderBottom: "1px solid transparent",
-                  transition: "all 0.2s"
-                }}
+                className="help-nav__link"
               >
                 {topic.title}
               </a>
-              <span style={{ fontSize: "0.95rem", color: "var(--color-muted)", lineHeight: 1.5 }}>
+              <span className="help-nav__summary">
                 {topic.summary}
               </span>
             </div>

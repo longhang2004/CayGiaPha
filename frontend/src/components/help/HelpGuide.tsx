@@ -14,25 +14,25 @@ import { Card } from "@/components/ui/Card";
  */
 export function HelpGuide() {
   return (
-    <main style={{ maxWidth: "800px", margin: "3rem auto", padding: "0 1.5rem" }} aria-labelledby="help-guide-heading">
-      <div style={{ marginBottom: "3rem" }}>
-        <h1 id="help-guide-heading" style={{ fontSize: "2.5rem", fontWeight: 700, color: "var(--color-brand)", marginBottom: "0.5rem" }}>
+    <main className="help-guide" aria-labelledby="help-guide-heading">
+      <div className="help-guide__header">
+        <h1 id="help-guide-heading" className="help-guide__title">
           Hướng dẫn sử dụng
         </h1>
-        <p style={{ color: "var(--color-muted)", fontSize: "1.05rem", lineHeight: 1.6 }}>
+        <p className="help-guide__desc">
           Hướng dẫn này giải thích các khái niệm và thao tác cốt lõi của ứng dụng
           Cây Gia Phả. Chọn một mục bên dưới để chuyển tới phần tương ứng.
         </p>
       </div>
 
-      <Card style={{ marginBottom: "3.5rem", padding: "1.5rem 2rem", backgroundColor: "var(--color-surface-hover)", border: "1px solid var(--color-hairline)" }}>
-        <h2 style={{ fontSize: "1.25rem", fontWeight: 600, marginTop: 0, marginBottom: "1.25rem", borderBottom: "1px solid var(--color-hairline-strong)", paddingBottom: "0.75rem", color: "var(--color-fg)" }}>
+      <Card className="help-guide__nav-card">
+        <h2 className="help-guide__nav-title">
           Mục lục tra cứu
         </h2>
         <HelpNav />
       </Card>
 
-      <div style={{ display: "flex", flexDirection: "column", gap: "4rem" }}>
+      <div className="help-guide__content">
         {HELP_TOPICS.map((topic) => (
           <HelpSection key={topic.id} topic={topic} />
         ))}

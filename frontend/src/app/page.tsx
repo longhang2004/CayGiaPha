@@ -62,23 +62,23 @@ export default function HomePage() {
         </aside>
 
         <div className="home-steps animate-fade-up-heavy stagger-2" aria-label="Hướng dẫn bắt đầu nhanh">
-          <article className="double-bezel-card">
-            <div className="double-bezel-card__inner">
-              <span>1</span>
+          <article className="home-step">
+            <span className="home-step__num">1</span>
+            <div className="home-step__content">
               <h2>Tạo cây đầu tiên</h2>
               <p>Bắt đầu từ chính bạn hoặc người lớn tuổi nhất mà gia đình cùng biết.</p>
             </div>
           </article>
-          <article className="double-bezel-card">
-            <div className="double-bezel-card__inner">
-              <span>2</span>
+          <article className="home-step">
+            <span className="home-step__num">2</span>
+            <div className="home-step__content">
               <h2>Nối quan hệ cốt lõi</h2>
               <p>Thêm cha mẹ, vợ chồng và con cái trước; các vai vế phức tạp sẽ được suy ra.</p>
             </div>
           </article>
-          <article className="double-bezel-card">
-            <div className="double-bezel-card__inner">
-              <span>3</span>
+          <article className="home-step">
+            <span className="home-step__num">3</span>
+            <div className="home-step__content">
               <h2>Mời người thân cùng sửa</h2>
               <p>Cộng tác viên có thể bổ sung thông tin để cây gia phả luôn đầy đủ hơn.</p>
             </div>

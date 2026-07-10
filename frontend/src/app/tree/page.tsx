@@ -59,7 +59,7 @@ function TreeListContent() {
         }
       }
     }
-  }, [user, sessionLoading]);
+  }, [user, sessionLoading, router]);
 
   const handleDismissTutorial = () => {
     setCookie("tutorial_dismissed", "true", 365);
@@ -95,7 +95,7 @@ function TreeListContent() {
 
     try {
       await api.del(`/trees/${treeId}`);
-      showToast("Đã xóa cây gia phả thành công!", "success");
+      showToast("Đã xóa cây gia phả thành công.", "success");
       fetchTrees();
     } catch (err: any) {
       showToast(err.message || "Xóa cây gia phả thất bại.", "error");
@@ -132,7 +132,7 @@ function TreeListContent() {
         <div>
           <p className="eyebrow tree-list-page__eyebrow">Không gian gia đình</p>
           <h1>
-            Cây Gia Phả Của Bạn
+            Cây gia phả của bạn
           </h1>
           <p>
             Quản lý những cây gia phả bạn sở hữu hoặc đang cộng tác.
@@ -253,7 +253,7 @@ function TreeListContent() {
               &times;
             </button>
             <h2 style={{ fontSize: "1.35rem", fontWeight: 700, color: "var(--color-fg)", marginBottom: "1.5rem" }}>
-              Tạo Cây Gia Phả Mới
+              Tạo cây gia phả mới
             </h2>
             <form onSubmit={handleCreateTree} style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
               <div>
@@ -305,7 +305,7 @@ function TreeListContent() {
                 style={{ width: "100%", padding: "0.75rem", fontSize: "1rem", fontWeight: 600 }}
                 disabled={creating}
               >
-                {creating ? "Đang tạo…" : "Tạo Cây Gia Phả"}
+                {creating ? "Đang tạo…" : "Tạo cây gia phả"}
               </button>
             </form>
           </div>
