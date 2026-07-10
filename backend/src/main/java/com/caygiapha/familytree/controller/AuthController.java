@@ -207,6 +207,7 @@ public class AuthController {
                 user.getId(),
                 auth.ownedTreeId().orElse(null),
                 identifier == null ? "" : identifier,
+                user.getDisplayName(),
                 user.isVerified(),
                 "admin".equals(user.getRole()) ? "admin" : "user");
     }

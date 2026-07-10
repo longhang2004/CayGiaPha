@@ -9,6 +9,7 @@ public record AuthSessionResponse(
         UUID userId,
         UUID treeId,
         String identifier,
+        String displayName,
         boolean verified,
         String role) {
 }
