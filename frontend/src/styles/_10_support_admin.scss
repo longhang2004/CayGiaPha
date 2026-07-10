@@ -444,19 +444,34 @@
 }
 
 @media (max-width: 860px) {
-  .support-feedback__support,
   .support-feedback__feedback,
   .admin-dashboard__grid {
     grid-template-columns: 1fr;
   }
 
+  .support-feedback__support {
+    grid-template-columns: minmax(220px, 320px) minmax(0, 1fr);
+  }
+
   .support-feedback__qr-card {
-    justify-self: stretch;
-    width: min(100%, 360px);
+    order: -1;
+    justify-self: center;
+    width: 100%;
   }
 
   .admin-dashboard__metrics {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .support-feedback__support {
+    grid-template-columns: 1fr;
+  }
+
+  .support-feedback__qr-card {
+    justify-self: center;
+    width: min(100%, 360px);
   }
 }
 
