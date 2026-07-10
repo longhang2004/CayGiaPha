@@ -28,15 +28,20 @@ export function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse }: Side
   const { user, loading } = useSession();
   const pathname = usePathname();
 
-  const isTreeActive = pathname.startsWith("/tree");
-  const isHelpActive = pathname.startsWith("/help");
+  // Treat /prototype/* mirrors the same as real app routes for active states.
+  const isTreeActive =
+    pathname.startsWith("/tree") || pathname.startsWith("/prototype/tree");
+  const isHelpActive =
+    pathname.startsWith("/help") || pathname === "/prototype/help";
   const isSupportActive = pathname.startsWith("/support");
   const isFeedbackActive = pathname.startsWith("/feedback");
   const isAdminActive = pathname.startsWith("/admin");
 
   const pathParts = pathname.split("/");
-  const activeTreeId = (pathParts.length > 2 && pathParts[1] === "tree") ? pathParts[2] : null;
+  const activeTreeId =
+    pathParts.length > 2 && pathParts[1] === "tree" ? pathParts[2] : null;
   const settingsHref = `/settings`;
+  const isTreeListPath = pathname === "/tree" || pathname === "/prototype/tree";
 
   // On mobile the sidebar is an open drawer (isOpen=true). In that mode the
   // toggle button closes the drawer rather than collapsing it to icon-only
@@ -101,17 +106,19 @@ export function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse }: Side
               href="/tree"
               className={`global-sidebar__link ${isTreeActive ? "global-sidebar__link--active" : ""}`}
               onClick={onClose}
-              title={isCollapsed ? (pathname === "/tree" ? "Danh sách cây" : "Quay về danh sách") : undefined}
+              title={
+                isCollapsed
+                  ? isTreeListPath
+                    ? "Danh sách cây"
+                    : "Quay về danh sách"
+                  : undefined
+              }
             >
               <span className="global-sidebar__link-icon" aria-hidden="true">
-                {pathname === "/tree" ? (
-                  <TreeIcon size={18} />
-                ) : (
-                  <ChevronLeftIcon size={18} />
-                )}
+                {isTreeListPath ? <TreeIcon size={18} /> : <ChevronLeftIcon size={18} />}
               </span>
               <span className="global-sidebar__link-text">
-                {pathname === "/tree" ? "Danh sách cây" : "Quay về danh sách"}
+                {isTreeListPath ? "Danh sách cây" : "Quay về danh sách"}
               </span>
             </Link>
             <Link

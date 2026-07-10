@@ -4,10 +4,70 @@ import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { Header } from "./Header";
 import { Sidebar } from "./Sidebar";
-import Link from "next/link";
 import { useSession } from "@/app/providers";
 import { NotificationBell } from "@/components/ui/NotificationBell";
 import { MenuIcon } from "@/components/ui/Icons";
+
+/**
+ * Maps real app routes and their /prototype/* mirrors to the same chrome:
+ * - bare: auth / invitation / legal (no header, no sidebar)
+ * - marketing: landing home (Header only)
+ * - in-app: everything else (Sidebar + mobile top bar)
+ */
+function layoutMode(pathname: string | null): "bare" | "marketing" | "inapp" {
+  if (!pathname) return "inapp";
+
+  // Strip trailing slash except root
+  const path = pathname.length > 1 && pathname.endsWith("/") ? pathname.slice(0, -1) : pathname;
+
+  // Prototype index is a dev discovery page — no app chrome
+  if (path === "/prototype") return "bare";
+
+  // Auth flows (real + prototype mirrors)
+  if (
+    path === "/signin" ||
+    path === "/signup" ||
+    path === "/login" ||
+    path === "/forgot-password" ||
+    path === "/prototype/signin" ||
+    path === "/prototype/signup" ||
+    path === "/prototype/forgot-password" ||
+    path.startsWith("/signin/") ||
+    path.startsWith("/signup/") ||
+    path.startsWith("/forgot-password/") ||
+    path.startsWith("/prototype/signin/") ||
+    path.startsWith("/prototype/signup/") ||
+    path.startsWith("/prototype/forgot-password/")
+  ) {
+    return "bare";
+  }
+
+  // Invitation accept (full-screen card; real + prototype)
+  if (path.startsWith("/invitation/") || path.startsWith("/prototype/invitation/")) {
+    return "bare";
+  }
+
+  // Legal
+  if (path.startsWith("/legal/")) {
+    return "bare";
+  }
+
+  // Landing
+  if (path === "/" || path === "/prototype/home") {
+    return "marketing";
+  }
+
+  return "inapp";
+}
+
+function isTreeWorkspacePath(pathname: string | null): boolean {
+  if (!pathname) return false;
+  const path = pathname.length > 1 && pathname.endsWith("/") ? pathname.slice(0, -1) : pathname;
+  // Real: /tree/[id]  Prototype: /prototype/tree and /prototype/tree/empty
+  if (path.startsWith("/tree/") && path !== "/tree") return true;
+  if (path === "/prototype/tree" || path.startsWith("/prototype/tree/")) return true;
+  return false;
+}
 
 export function AppLayoutWrapper({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -28,15 +88,13 @@ export function AppLayoutWrapper({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const isAuthPage = pathname === "/signin" || pathname === "/signup" || pathname === "/prototype/signin" || pathname === "/prototype/signup";
-  const isLegalPage = pathname.startsWith("/legal/");
-  const isLandingPage = pathname === "/" || pathname === "/prototype/home";
+  const mode = layoutMode(pathname);
 
-  if (isAuthPage || isLegalPage) {
+  if (mode === "bare") {
     return <div id="main-content">{children}</div>;
   }
 
-  if (isLandingPage) {
+  if (mode === "marketing") {
     return (
       <>
         <Header />
@@ -45,11 +103,11 @@ export function AppLayoutWrapper({ children }: { children: React.ReactNode }) {
     );
   }
 
-
   // In-app experience: sidebar + mobile top bar
+  const isTreeWorkspacePage = isTreeWorkspacePath(pathname);
+
   return (
     <div className="inapp-layout">
-      {/* Mobile Top Bar */}
       <div className="mobile-top-bar">
         <button
           type="button"
@@ -71,21 +129,12 @@ export function AppLayoutWrapper({ children }: { children: React.ReactNode }) {
         onToggleCollapse={handleToggleCollapse}
       />
 
-      {
-        (() => {
-          const isTreeWorkspacePage =
-            (pathname.startsWith("/tree/") && pathname !== "/tree") ||
-            pathname === "/prototype/tree";
-          return (
-            <div
-              id="main-content"
-              className={`inapp-content ${isSidebarCollapsed ? "inapp-content--collapsed" : ""} ${isTreeWorkspacePage ? "inapp-content--no-padding" : ""}`}
-            >
-              {children}
-            </div>
-          );
-        })()
-      }
+      <div
+        id="main-content"
+        className={`inapp-content ${isSidebarCollapsed ? "inapp-content--collapsed" : ""} ${isTreeWorkspacePage ? "inapp-content--no-padding" : ""}`}
+      >
+        {children}
+      </div>
     </div>
   );
 }
