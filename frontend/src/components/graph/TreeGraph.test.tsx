@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { TreeGraph } from "./TreeGraph";
@@ -77,6 +77,11 @@ function TreeGraphTestWrapper(props: any) {
 }
 
 describe("TreeGraph renderer", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.restoreAllMocks();
+  });
+
   it("renders the three edge styles so they are distinguishable by class and stroke-dasharray (5.3, 6.3, 12.4)", async () => {
     const fetchAddresses = stubFetcher({
       p1: { egoId: "p1", addresses: [] },
@@ -483,5 +488,122 @@ describe("TreeGraph renderer", () => {
     // The individual father and mother edges should NOT be rendered separately
     expect(document.querySelector('[data-relationship-id="r-father"]')).not.toBeInTheDocument();
     expect(document.querySelector('[data-relationship-id="r-mother"]')).not.toBeInTheDocument();
+  });
+
+  it("provides functional navigation controls (zoom, reset, fullscreen, export)", async () => {
+    const fetchAddresses = vi.fn(async () => ({ egoId: "p1", addresses: [] }));
+    render(
+      <TreeGraph
+        treeId="t1"
+        persons={persons}
+        relationships={relationships}
+        initialEgoId="p1"
+        fetchAddresses={fetchAddresses}
+      />,
+    );
+
+    await waitFor(() => expect(fetchAddresses).toHaveBeenCalled());
+
+    const zoomInBtn = screen.getByTitle("Phóng to");
+    const zoomOutBtn = screen.getByTitle("Thu nhỏ");
+    const resetBtn = screen.getByTitle("Đặt lại góc nhìn");
+    const exportBtn = screen.getByTitle("Tải ảnh sơ đồ (SVG)");
+    const fullscreenBtn = screen.getByTitle("Toàn màn hình");
+
+    expect(zoomInBtn).toBeInTheDocument();
+    expect(zoomOutBtn).toBeInTheDocument();
+    expect(resetBtn).toBeInTheDocument();
+    expect(exportBtn).toBeInTheDocument();
+    expect(fullscreenBtn).toBeInTheDocument();
+
+    // Select a node to see the center button
+    await userEvent.click(screen.getByRole("button", { name: /Bố/ }));
+    const centerBtn = await screen.findByTitle("Căn giữa người được chọn");
+    expect(centerBtn).toBeInTheDocument();
+
+    // Click controls to ensure they don't crash
+    await userEvent.click(zoomInBtn);
+    await userEvent.click(zoomOutBtn);
+    await userEvent.click(centerBtn);
+    await userEvent.click(resetBtn);
+
+    // Mock document.exitFullscreen to avoid error during testing if fullscreen isn't supported in JSDOM
+    document.exitFullscreen = vi.fn().mockResolvedValue(undefined);
+    const mockRequestFullscreen = vi.fn().mockResolvedValue(undefined);
+
+    // Test fullscreen button
+    const canvasContainer = document.querySelector(".tree-graph");
+    if (canvasContainer) {
+      canvasContainer.requestFullscreen = mockRequestFullscreen;
+      await userEvent.click(fullscreenBtn);
+      expect(mockRequestFullscreen).toHaveBeenCalled();
+    }
+  });
+
+  it("scopes SVG export to its own container when multiple graphs exist", async () => {
+    const fetchAddresses = vi.fn(async () => ({ egoId: "p1", addresses: [] }));
+    render(
+      <div data-testid="multi-graph-container">
+        <TreeGraph
+          treeId="t1"
+          persons={persons}
+          relationships={relationships}
+          initialEgoId="p1"
+          fetchAddresses={fetchAddresses}
+        />
+        <TreeGraph
+          treeId="t2"
+          persons={[{ id: "other", displayName: "Other", gender: "male" }]}
+          relationships={[]}
+          initialEgoId="other"
+          fetchAddresses={fetchAddresses}
+        />
+      </div>
+    );
+
+    await waitFor(() => expect(fetchAddresses).toHaveBeenCalledTimes(2));
+
+    // Mock the export APIs
+    const mockCreateObjectURL = vi.fn().mockReturnValue("blob:mock");
+    const mockRevokeObjectURL = vi.fn();
+    vi.stubGlobal("URL", {
+      createObjectURL: mockCreateObjectURL,
+      revokeObjectURL: mockRevokeObjectURL,
+    });
+
+    const mockSerializeToString = vi.fn().mockReturnValue("<svg>mocked</svg>");
+    vi.stubGlobal("XMLSerializer", vi.fn().mockImplementation(() => ({
+      serializeToString: mockSerializeToString,
+    })));
+
+    // Prevent navigation error from link.click()
+    const mockClick = vi.spyOn(window.HTMLAnchorElement.prototype, "click").mockImplementation(() => {});
+
+    // Ensure both graphs have rendered their nodes
+    await waitFor(() => {
+      expect(document.querySelector('[data-person-id="p1"]')).toBeInTheDocument();
+      expect(document.querySelector('[data-person-id="other"]')).toBeInTheDocument();
+    });
+
+    const exportBtns = screen.getAllByTitle("Tải ảnh sơ đồ (SVG)");
+    expect(exportBtns).toHaveLength(2);
+
+    // Click export on the second graph
+    await userEvent.click(exportBtns[1]);
+
+    expect(mockCreateObjectURL).toHaveBeenCalled();
+    expect(mockClick).toHaveBeenCalled();
+
+    // Check if the serialized SVG was the second one (width depends on the layout, but the clone itself should be serialized)
+    const calls = mockSerializeToString.mock.calls;
+    expect(calls.length).toBe(1);
+    const serializedNode = calls[0][0] as SVGSVGElement;
+
+    // We can verify it was from the second graph because it will only have the "other" person node, not "p1"
+    const hasP1 = serializedNode.querySelector('[data-person-id="p1"]');
+    const hasOther = serializedNode.querySelector('[data-person-id="other"]');
+
+    expect(hasP1).toBeNull();
+    expect(hasOther).toBeTruthy();
   });
 });
