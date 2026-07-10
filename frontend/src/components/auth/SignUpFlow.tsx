@@ -18,9 +18,12 @@ interface SignUpFlowProps {
 /**
  * Sign-up flow: collect region, identifier, password, and consents in a single form. (Requirements 1.1, 1.2, 1.3, 9.2)
  */
+const EMPTY_DISPLAY_NAME_ERROR = "Vui lòng nhập tên hiển thị.";
+
 export function SignUpFlow({ redirectTo = "/" }: SignUpFlowProps) {
   const router = useRouter();
   const { refresh } = useSession();
+  const [displayName, setDisplayName] = useState("");
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [region, setRegion] = useState<Region>("Bac");
@@ -30,17 +33,23 @@ export function SignUpFlow({ redirectTo = "/" }: SignUpFlowProps) {
   const [submitting, setSubmitting] = useState(false);
 
   const inputId = useId();
+  const displayNameId = `${inputId}-display-name`;
   const passwordId = `${inputId}-password`;
-  const errorId = `${inputId}-error`;
-  const passwordErrorId = `${passwordId}-error`;
   const formErrorId = `${inputId}-form-error`;
 
+  const displayNameError = fieldErrorFor(error, "displayName");
   const identifierError = fieldErrorFor(error, "identifier");
   const passwordError = fieldErrorFor(error, "password");
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError({});
+
+    const trimmedName = displayName.trim();
+    if (!trimmedName) {
+      setError({ field: { name: "displayName", message: EMPTY_DISPLAY_NAME_ERROR } });
+      return;
+    }
 
     if (!acceptedTos || !acceptedPrivacy) {
       setError({ form: "Bạn cần đồng ý với Điều khoản dịch vụ và Chính sách bảo mật để tiếp tục." });
@@ -49,7 +58,14 @@ export function SignUpFlow({ redirectTo = "/" }: SignUpFlowProps) {
 
     setSubmitting(true);
     try {
-      await signUp(identifier.trim(), password, region, acceptedTos, acceptedPrivacy);
+      await signUp(
+        identifier.trim(),
+        password,
+        region,
+        acceptedTos,
+        acceptedPrivacy,
+        trimmedName,
+      );
       await refresh();
       router.push(redirectTo);
     } catch (caught) {
@@ -60,6 +76,10 @@ export function SignUpFlow({ redirectTo = "/" }: SignUpFlowProps) {
   }
 
   const handleGoogleClick = () => {
+    if (!displayName.trim()) {
+      setError({ field: { name: "displayName", message: EMPTY_DISPLAY_NAME_ERROR } });
+      return false;
+    }
     if (!acceptedTos || !acceptedPrivacy) {
       setError({ form: "Bạn cần đồng ý với Điều khoản dịch vụ và Chính sách bảo mật để tiếp tục đăng ký bằng Google." });
       return false;
@@ -78,7 +98,14 @@ export function SignUpFlow({ redirectTo = "/" }: SignUpFlowProps) {
     setSubmitting(true);
     setError({});
     try {
-      await signInWithGoogle(response.credential, region, acceptedTos, acceptedPrivacy);
+      const trimmedName = displayName.trim();
+      await signInWithGoogle(
+        response.credential,
+        region,
+        acceptedTos,
+        acceptedPrivacy,
+        trimmedName,
+      );
       await refresh();
       router.push(redirectTo);
     } catch (caught) {
@@ -107,6 +134,24 @@ export function SignUpFlow({ redirectTo = "/" }: SignUpFlowProps) {
           {error.form}
         </p>
       ) : null}
+
+      <FormControl id={displayNameId} label="Tên hiển thị" error={displayNameError} required>
+        <Input
+          id={displayNameId}
+          name="displayName"
+          type="text"
+          autoComplete="name"
+          value={displayName}
+          onChange={(event) => setDisplayName(event.target.value)}
+          error={displayNameError}
+          disabled={submitting}
+          required
+          maxLength={100}
+        />
+        <p className="field-hint" style={{ marginTop: "0.5rem" }}>
+          Tên này sẽ được dùng để người thân nhận ra bạn khi cộng tác.
+        </p>
+      </FormControl>
 
       <FormControl id={inputId} label="Số điện thoại hoặc email" error={identifierError} required>
         <Input

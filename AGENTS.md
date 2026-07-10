@@ -40,9 +40,12 @@ For implementation tasks, convert vague requests into verifiable goals before ed
 
 When the user asks for planning, task breakdown, delegation, or prompts for multiple models, read and follow `.agents/multi-model-playbook.md` before producing the plan.
 
+When Plan mode is used for implementation work, also follow `.agents/execution-routing-harness.md`. The default route is **Plan mode → lead/heavy self-implementation**. Escalate to PO/BA, Designer, or Medium/Light Workers only when the routing gates show a concrete quality or time benefit.
+
 For product-delivery work that involves PO/BA, UI/UX Designer, Orchestrator, and Worker roles, also follow `.agents/product-delivery-workflow.md`. In this repository, `PA/BO` in user discussions is treated as an alias/typo for `PO/BA` unless the user defines it differently.
 
 - The planning agent is the default lead, architect, and final integrator; use a heavy-capability model for this role when model selection is available.
+- Planning and implementation may stay in the same lead/heavy session; do not create handoffs merely because multiple roles or model tiers exist.
 - Delegate only workstreams with clear boundaries, inputs, outputs, file ownership, and verification.
 - Assign work to heavy, medium, or light models according to complexity, risk, context breadth, and verification needs rather than provider names.
 - Keep tightly coupled, cross-layer, privacy-sensitive, architectural, or integration-heavy changes with the lead/heavy model unless parallelism has a clear benefit.

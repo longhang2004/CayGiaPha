@@ -4,6 +4,7 @@ import org.springframework.boot.autoconfigure.jdbc.DataSourceProperties;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Profile;
 import javax.sql.DataSource;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -14,6 +15,7 @@ import java.net.URISyntaxException;
  * URI format like {@code postgresql://user:pass@host:port/db}) into JDBC-compliant DataSource properties.
  */
 @Configuration
+@Profile("!test")
 public class DatabaseConfig {
 
     @Bean

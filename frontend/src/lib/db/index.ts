@@ -93,6 +93,26 @@ if (databaseUrl && !isProductionBuild) {
         await dbInstance.execute(sql`ALTER TABLE trees ADD COLUMN IF NOT EXISTS name TEXT NOT NULL DEFAULT 'Cây Gia Phả';`);
       } catch (e) {}
       await dbInstance.execute(sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS role TEXT NOT NULL DEFAULT 'user';`);
+      await dbInstance.execute(sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS display_name TEXT;`);
+      await dbInstance.execute(sql`
+        DO $$
+        BEGIN
+          IF NOT EXISTS (
+            SELECT 1 FROM pg_constraint WHERE conname = 'ck_users_display_name_normalized'
+          ) THEN
+            ALTER TABLE users
+              ADD CONSTRAINT ck_users_display_name_normalized
+              CHECK (
+                display_name IS NULL
+                OR (
+                  char_length(display_name) BETWEEN 1 AND 100
+                  AND display_name !~ '[[:cntrl:]]'
+                  AND display_name = regexp_replace(btrim(display_name), '[[:space:]]+', ' ', 'g')
+                )
+              );
+          END IF;
+        END $$;
+      `);
       await dbInstance.execute(sql`
         CREATE TABLE IF NOT EXISTS feedback_messages (
           id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

@@ -45,9 +45,14 @@ class ExtendedFieldVisibilityProperties {
             assertThat(body.displayName()).isEqualTo(PersonResponse.REDACTED_NAME_PLACEHOLDER); // 21.4
         }
         assertThat(body.birthYear()).isEqualTo(birthYearVisible ? 1990 : null); // 21.3
-        // The visibility settings themselves are always returned as editable metadata.
-        assertThat(body.visName()).isEqualTo(s.visName());
-        assertThat(body.visBirthYear()).isEqualTo(s.visBirthYear());
+        // Visibility settings are owner/editor metadata only — never disclosed to public/link readers.
+        if (s.privileged()) {
+            assertThat(body.visName()).isEqualTo(s.visName());
+            assertThat(body.visBirthYear()).isEqualTo(s.visBirthYear());
+        } else {
+            assertThat(body.visName()).isNull();
+            assertThat(body.visBirthYear()).isNull();
+        }
     }
 
     @Provide

@@ -157,7 +157,8 @@ function PrototypeTreeContent() {
 
   const mockAdapter = useMemo<CollaborationAdapter>(() => {
     let mockCollaborators: TreeCollaborator[] = [
-      { id: "collab-1", treeId: PROTOTYPE_TREE_ID, userId: "contributor@example.com", displayName: "Nguyễn Văn A", role: "contributor", joinedAt: new Date().toISOString() }
+      { id: "owner:prototype-tree-id-0001", treeId: PROTOTYPE_TREE_ID, userId: MOCK_USER.userId, displayName: MOCK_USER.displayName, email: MOCK_USER.identifier, role: "owner", joinedAt: new Date().toISOString() },
+      { id: "collab-1", treeId: PROTOTYPE_TREE_ID, userId: "prototype-contributor-id", displayName: "Nguyễn Văn A", email: "contributor@example.test", role: "contributor", joinedAt: new Date().toISOString() }
     ];
     let mockPendingInvites: CollaborationInvitation[] = [
       { id: "invite-1", treeId: PROTOTYPE_TREE_ID, inviterUserId: "system", email: "pending-contributor@example.com", code: "654321", status: "pending", expiresAt: new Date(Date.now() + 86400000).toISOString() }
@@ -178,7 +179,7 @@ function PrototypeTreeContent() {
         const invite = mockPendingInvites.find(i => i.id === inviteId);
         if (invite) {
           mockPendingInvites = mockPendingInvites.filter(i => i.id !== inviteId);
-          mockCollaborators = [...mockCollaborators, { id: `collab-${Date.now()}`, treeId, userId: invite.email || "unknown", role: "contributor", joinedAt: new Date().toISOString() }];
+          mockCollaborators = [...mockCollaborators, { id: `collab-${Date.now()}`, treeId, userId: "prototype-approved-user", displayName: null, email: invite.email, role: "contributor", joinedAt: new Date().toISOString() }];
         }
       },
       rejectInvitation: async (treeId: string, inviteId: string) => {

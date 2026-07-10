@@ -36,7 +36,8 @@ export function signUp(
   password?: string,
   region?: string,
   acceptedTos?: boolean,
-  acceptedPrivacy?: boolean
+  acceptedPrivacy?: boolean,
+  displayName?: string,
 ): Promise<SignUpVerifyResponse> {
   return api.post<SignUpVerifyResponse>("/auth/signup", {
     identifier,
@@ -44,6 +45,7 @@ export function signUp(
     region,
     acceptedTos,
     acceptedPrivacy,
+    displayName,
   });
 }
 
@@ -68,13 +70,15 @@ export function signInWithGoogle(
   idToken: string,
   region?: string,
   acceptedTos?: boolean,
-  acceptedPrivacy?: boolean
+  acceptedPrivacy?: boolean,
+  displayName?: string,
 ): Promise<void> {
   return api.post<void>("/auth/google", {
     idToken,
     region,
     acceptedTos,
     acceptedPrivacy,
+    displayName,
   });
 }
 

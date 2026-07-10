@@ -131,6 +131,8 @@ Handles password/Google sign-up, sign-in, recovery, and session lifecycle. (Requ
 | `POST` | `/auth/signin` | Verify identifier + password and establish a 30-day session. (Requirement 2) |
 | `POST` | `/auth/google` | Verify a Google credential; sign in or create a consented email account; establish a session. (Requirements 1, 2) |
 | `POST` | `/auth/signout` | Terminate the current session. (2.8) |
+| `GET` | `/auth/session` | Resolve the current account including nullable account display name. |
+| `PATCH` | `/me/profile` | Update only the authenticated account's display name. |
 | `POST` | `/auth/password-reset/request` | Required recovery endpoint; active Next.js Route Handler is currently missing. (2.6) |
 | `POST` | `/auth/password-reset/confirm` | Required recovery endpoint; active Next.js Route Handler is currently missing. (2.6) |
 
@@ -240,12 +242,23 @@ erDiagram
 | `id` | `uuid` PK | |
 | `phone` | `text` unique nullable | VN format; unique among non-null |
 | `email` | `text` unique nullable | ≤254 chars; unique among non-null |
+| `display_name` | `text` nullable | Account-level collaboration identity; normalized 1–100 Unicode characters when present; independent from `persons.display_name` |
 | `password_hash` | `text` nullable | one-way password hash; nullable for Google-only accounts |
 | `verified` | `boolean` not null default false | password/Google sign-up creates a verified account |
 | `created_at` | `timestamptz` | |
 
 Constraint: at least one of `phone`/`email` present. Partial unique indexes on `phone` and
-`email` where not null.
+`email` where not null. Legacy rows may keep `display_name = NULL`; new password/Google accounts
+must supply it. Existing Google sign-in never overwrites it.
+
+### Account identity and collaboration roster
+
+Authenticated identity surfaces present the account display name first and identifier/email second,
+falling back to identifier and then `Người dùng` without displaying a UUID as the normal label.
+The collaboration roster is an array containing a virtual owner membership followed by active
+contributors. Its member identity fields are readable only by the direct tree owner or an active
+`tree_collaborators` member; claimed-node, public, link-token, and unrelated viewers are rejected
+with the uniform authorization response.
 
 ### `sessions`
 

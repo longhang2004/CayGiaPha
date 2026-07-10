@@ -154,9 +154,25 @@ export default function InvitationPage({ params }: InvitationPageProps) {
                 </p>
               ) : user ? (
                 <div>
-                  <p style={{ fontSize: "0.9rem", color: "var(--color-muted)", marginBottom: "2rem" }}>
-                    Tài khoản hiện tại: <strong>{user.identifier}</strong>
-                  </p>
+                  {(() => {
+                    const primaryLabel =
+                      user.displayName?.trim() || user.identifier || "Người dùng";
+                    return (
+                      <div className="account-identity invitation-account" style={{ marginBottom: "2rem" }}>
+                        <p style={{ fontSize: "0.85rem", color: "var(--color-muted)", margin: "0 0 0.35rem" }}>
+                          Tài khoản hiện tại
+                        </p>
+                        <p className="account-identity__primary" style={{ fontSize: "1rem", margin: 0, wordBreak: "break-word" }}>
+                          <strong>{primaryLabel}</strong>
+                        </p>
+                        {user.displayName?.trim() ? (
+                          <p className="account-identity__secondary" style={{ fontSize: "0.85rem", color: "var(--color-muted)", margin: "0.25rem 0 0", wordBreak: "break-word" }}>
+                            {user.identifier}
+                          </p>
+                        ) : null}
+                      </div>
+                    );
+                  })()}
                   <button
                     type="button"
                     className="btn btn-primary btn-terracotta"

@@ -57,6 +57,9 @@ In v1 each User owns their own tree. A User invites relatives via phone number o
 7. IF a sign-up request contains a phone number that is not in valid Vietnamese format, an email address that exceeds 254 characters or does not match the `local-part@domain` format, an unsupported Region, or missing current legal consent, THEN THE Auth_Service SHALL reject the request, SHALL NOT create a User account, and SHALL return a message identifying the invalid field.
 8. THE Auth_Service SHALL store password verifiers as one-way password hashes and SHALL NOT store or log plaintext passwords or Google credentials.
 9. IF a supplied Google credential cannot be verified, THEN THE Auth_Service SHALL reject the request, create no account or session, and return a non-sensitive authentication error.
+10. WHEN a visitor creates a password account or a Google authentication creates a new account, THE Auth_Service SHALL require an explicit account display name, normalize its whitespace, reject control characters, enforce a normalized length of 1–100 Unicode characters, and store it independently from every Person node name.
+11. WHEN an existing Google account signs in, THE Auth_Service SHALL NOT require or overwrite that account's stored display name.
+12. THE Family_Tree_System SHALL allow an authenticated User to update only their own account display name using the same normalization and validation rules, while legacy accounts with no display name remain usable and use their identifier as a non-blocking fallback.
 
 ### Requirement 2: User Sign-In
 

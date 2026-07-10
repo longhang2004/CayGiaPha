@@ -141,6 +141,12 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <configuration>
+                    <!-- Docker Engine 29 rejects docker-java's legacy default API during
+                         Testcontainers discovery. API 1.44 is supported by the PostgreSQL
+                         test environment and keeps integration tests from silently skipping. -->
+                    <systemPropertyVariables>
+                        <api.version>1.44</api.version>
+                    </systemPropertyVariables>
                     <!-- jqwik runs via the JUnit Platform engine -->
                     <includes>
                         <include>**/*Test.java</include>

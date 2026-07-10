@@ -40,6 +40,10 @@ public class User {
     @Column(name = "email")
     private String email;
 
+    /** Optional account-level name used to identify the user in collaboration surfaces. */
+    @Column(name = "display_name")
+    private String displayName;
+
     /** Whether the account has completed verification (1.5); flipped true on successful sign-up verify. */
     @Column(name = "verified", nullable = false)
     private boolean verified = false;
@@ -85,6 +89,14 @@ public class User {
 
     public String getEmail() {
         return email;
+    }
+
+    public String getDisplayName() {
+        return displayName;
+    }
+
+    public void setDisplayName(String displayName) {
+        this.displayName = displayName;
     }
 
     public boolean isVerified() {

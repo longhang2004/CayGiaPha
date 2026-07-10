@@ -514,6 +514,14 @@ against the active Next.js code and current tests.
   - Ensure all new and existing tests pass against the Docker database; confirm the read-access gate,
     living-person redaction, consent gate, and photo access controls behave end-to-end.
 
+- [ ] 23. Account display names (CGP-USER-001)
+  - [ ] 23.1 Add nullable account display-name persistence and validation
+    - Add forward migration V25, Drizzle/Java mappings, normalized Unicode validation, and legacy-null compatibility without syncing Person names.
+  - [ ] 23.2 Extend signup, Google, session, and self-profile contracts
+    - Require display name for new password/Google accounts, preserve existing Google names, expose it in session, and add self-only `PATCH /me/profile`.
+  - [ ] 23.3 Present account identities and protect the collaboration roster
+    - Update settings, invitation, tree settings, roster UI/prototypes; return owner plus contributors only to active tree members and never use UUID labels.
+
 ## Notes
 
 - Tasks marked with `*` are optional test sub-tasks and can be skipped for a faster MVP; core

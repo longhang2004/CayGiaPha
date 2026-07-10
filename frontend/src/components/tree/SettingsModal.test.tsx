@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { render, screen, fireEvent } from "@testing-library/react";
 import { SettingsModal } from "./SettingsModal";
 import { MockSessionProvider } from "@/lib/prototype/mockSession";
 import { ToastProvider } from "@/components/ui/ToastProvider";
@@ -15,7 +15,6 @@ vi.mock("@/components/region/RegionSelector", () => ({
   )
 }));
 
-// Mock next/navigation
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ refresh: vi.fn(), push: vi.fn(), replace: vi.fn() })
 }));
@@ -39,9 +38,19 @@ describe("SettingsModal", () => {
     onShowBirthYearsChange: vi.fn(),
   };
 
-  const renderModal = (props = {}) => {
+  const renderModal = (props = {}, userOverrides: Record<string, unknown> = {}) => {
     return render(
-      <MockSessionProvider user={{ id: "u1", identifier: "test@example.com", treeId: "test-tree", role: "user" } as any}>
+      <MockSessionProvider
+        user={{
+          userId: "u1",
+          identifier: "test@example.com",
+          treeId: "test-tree",
+          role: "user",
+          verified: true,
+          displayName: "Nguyễn Văn A",
+          ...userOverrides,
+        } as any}
+      >
         <ToastProvider>
           <TextSizeProvider>
             <SettingsModal {...defaultProps} {...props} />
@@ -75,5 +84,17 @@ describe("SettingsModal", () => {
     const signoutBtn = screen.getByRole("button", { name: "Đăng xuất" });
     fireEvent.click(signoutBtn);
     expect(defaultProps.onClose).toHaveBeenCalled();
+  });
+
+  it("shows displayName as primary and identifier as secondary", () => {
+    renderModal({}, { displayName: "Nguyễn Văn A", identifier: "test@example.com" });
+    expect(screen.getByText("Nguyễn Văn A")).toBeInTheDocument();
+    expect(screen.getByText("test@example.com")).toBeInTheDocument();
+  });
+
+  it("falls back to identifier when displayName is null", () => {
+    renderModal({}, { displayName: null, identifier: "legacy@example.com" });
+    const primary = document.querySelector(".account-identity__primary");
+    expect(primary).toHaveTextContent("legacy@example.com");
   });
 });

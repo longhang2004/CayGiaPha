@@ -16,6 +16,7 @@ vi.mock("@/app/providers", () => ({
 
 vi.mock("@/lib/auth", () => ({
   signUp: vi.fn(),
+  signInWithGoogle: vi.fn(),
 }));
 
 import { signUp } from "@/lib/auth";
@@ -26,8 +27,44 @@ afterEach(() => {
   vi.clearAllMocks();
 });
 
+async function fillRequiredFields(options?: { displayName?: string; skipDisplayName?: boolean }) {
+  const [tos, privacy] = screen.getAllByRole("checkbox");
+  await userEvent.click(tos);
+  await userEvent.click(privacy);
+
+  if (!options?.skipDisplayName) {
+    await userEvent.type(
+      screen.getByLabelText(/Tên hiển thị/i),
+      options?.displayName ?? "Nguyễn Văn A",
+    );
+  }
+  await userEvent.type(
+    screen.getByLabelText(/Số điện thoại hoặc email/i),
+    "0901234567",
+  );
+  await userEvent.type(
+    screen.getByLabelText(/^Mật khẩu/i),
+    "password123",
+  );
+}
+
 describe("SignUpFlow", () => {
-  it("calls the signup endpoint directly and routes into the app", async () => {
+  it("requires display name with autocomplete=name and hint", () => {
+    render(
+      <GoogleOAuthProvider clientId="test">
+        <SignUpFlow />
+      </GoogleOAuthProvider>
+    );
+
+    const nameInput = screen.getByLabelText(/Tên hiển thị/i);
+    expect(nameInput).toBeRequired();
+    expect(nameInput).toHaveAttribute("autoComplete", "name");
+    expect(
+      screen.getByText("Tên này sẽ được dùng để người thân nhận ra bạn khi cộng tác."),
+    ).toBeInTheDocument();
+  });
+
+  it("calls the signup endpoint with displayName and routes into the app", async () => {
     vi.mocked(signUp).mockResolvedValue({
       userId: "u1",
       treeId: "t1",
@@ -40,23 +77,35 @@ describe("SignUpFlow", () => {
       </GoogleOAuthProvider>
     );
 
-    const [tos, privacy] = screen.getAllByRole("checkbox");
-    await userEvent.click(tos);
-    await userEvent.click(privacy);
-
-    await userEvent.type(
-      screen.getByLabelText(/Số điện thoại hoặc email/i),
-      "0901234567",
-    );
-    await userEvent.type(
-      screen.getByLabelText(/^Mật khẩu/i),
-      "password123",
-    );
+    await fillRequiredFields({ displayName: "Nguyễn Văn A" });
     await userEvent.click(screen.getByRole("button", { name: "Đăng ký" }));
 
-    expect(signUp).toHaveBeenCalledWith("0901234567", "password123", "Bac", true, true);
+    expect(signUp).toHaveBeenCalledWith(
+      "0901234567",
+      "password123",
+      "Bac",
+      true,
+      true,
+      "Nguyễn Văn A",
+    );
     expect(refresh).toHaveBeenCalledTimes(1);
     expect(push).toHaveBeenCalledWith("/");
+  });
+
+  it("shows a field-level error when display name is empty", async () => {
+    render(
+      <GoogleOAuthProvider clientId="test">
+        <SignUpFlow />
+      </GoogleOAuthProvider>
+    );
+
+    await fillRequiredFields({ skipDisplayName: true });
+    await userEvent.click(screen.getByRole("button", { name: "Đăng ký" }));
+
+    const alert = await screen.findByRole("alert");
+    expect(alert).toHaveTextContent("Vui lòng nhập tên hiển thị.");
+    expect(signUp).not.toHaveBeenCalled();
+    expect(screen.getByLabelText(/Tên hiển thị/i)).toHaveAttribute("aria-invalid", "true");
   });
 
   it("passes the chosen region (Nam) through to signUp", async () => {
@@ -72,25 +121,21 @@ describe("SignUpFlow", () => {
       </GoogleOAuthProvider>
     );
 
-    const [tos, privacy] = screen.getAllByRole("checkbox");
-    await userEvent.click(tos);
-    await userEvent.click(privacy);
-
     await userEvent.selectOptions(
       screen.getByLabelText(/Vùng miền/i),
       "Nam",
     );
-    await userEvent.type(
-      screen.getByLabelText(/Số điện thoại hoặc email/i),
-      "0901234567",
-    );
-    await userEvent.type(
-      screen.getByLabelText(/^Mật khẩu/i),
-      "password123",
-    );
+    await fillRequiredFields({ displayName: "Trần Thị B" });
     await userEvent.click(screen.getByRole("button", { name: "Đăng ký" }));
 
-    expect(signUp).toHaveBeenCalledWith("0901234567", "password123", "Nam", true, true);
+    expect(signUp).toHaveBeenCalledWith(
+      "0901234567",
+      "password123",
+      "Nam",
+      true,
+      true,
+      "Trần Thị B",
+    );
   });
 
   it("shows a field error from the envelope", async () => {
@@ -108,20 +153,34 @@ describe("SignUpFlow", () => {
       </GoogleOAuthProvider>
     );
 
-    const [tos, privacy] = screen.getAllByRole("checkbox");
-    await userEvent.click(tos);
-    await userEvent.click(privacy);
-
-    const input = screen.getByLabelText(/Số điện thoại hoặc email/i);
-    await userEvent.type(input, "0901234567");
-    await userEvent.type(
-      screen.getByLabelText(/^Mật khẩu/i),
-      "password123",
-    );
+    await fillRequiredFields();
     await userEvent.click(screen.getByRole("button", { name: "Đăng ký" }));
 
     const alert = await screen.findByRole("alert");
     expect(alert).toHaveTextContent("Số điện thoại đã được đăng ký.");
-    expect(input).toHaveAttribute("aria-invalid", "true");
+    expect(screen.getByLabelText(/Số điện thoại hoặc email/i)).toHaveAttribute("aria-invalid", "true");
+  });
+
+  it("shows a displayName field error from the envelope", async () => {
+    vi.mocked(signUp).mockRejectedValue(
+      new ApiError(400, {
+        code: "validation_error",
+        field: "displayName",
+        message: "Tên hiển thị phải từ 1 đến 100 ký tự.",
+      }),
+    );
+
+    render(
+      <GoogleOAuthProvider clientId="test">
+        <SignUpFlow />
+      </GoogleOAuthProvider>
+    );
+
+    await fillRequiredFields({ displayName: "X" });
+    await userEvent.click(screen.getByRole("button", { name: "Đăng ký" }));
+
+    const alert = await screen.findByRole("alert");
+    expect(alert).toHaveTextContent("Tên hiển thị phải từ 1 đến 100 ký tự.");
+    expect(screen.getByLabelText(/Tên hiển thị/i)).toHaveAttribute("aria-invalid", "true");
   });
 });

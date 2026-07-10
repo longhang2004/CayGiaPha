@@ -28,6 +28,7 @@ export async function GET() {
       userId: user.id,
       treeId: auth.ownedTreeId,
       identifier: user.phone || user.email || "",
+      displayName: user.displayName,
       verified: user.verified,
       role: user.role === "admin" ? "admin" : "user",
     });

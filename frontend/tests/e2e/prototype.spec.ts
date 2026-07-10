@@ -70,6 +70,8 @@ test.describe("Prototype Pages — smoke tests (no auth required)", () => {
     await expect(page.locator('select#signup-region')).toBeVisible();
     await expect(page.locator('input[name="identifier"]')).toBeVisible();
     await expect(page.locator('input[name="password"]')).toBeVisible();
+    await expect(page.locator('input[name="displayName"]')).toHaveAttribute("autocomplete", "name");
+    await expect(page.getByText("Tên này sẽ được dùng để người thân nhận ra bạn khi cộng tác.")).toBeVisible();
     // Submit should be disabled until both checkboxes are checked
     await expect(page.locator('button[type="submit"]')).toBeDisabled();
     await page.locator('input[type="checkbox"]').first().check();
@@ -107,6 +109,25 @@ test.describe("Prototype Pages — smoke tests (no auth required)", () => {
     await page.goto("/prototype/tree?panel=settings");
     await expect(page.locator(".settings-modal")).toBeVisible();
     await expect(page.locator(".settings-modal h2")).toContainText("Cài đặt");
+    await expect(page.getByText("Hàng Nhựt Prototype")).toBeVisible();
+    await expect(page.getByText("prototype@caygipha.dev")).toBeVisible();
+  });
+
+  test("tree prototype — collaboration roster shows owner and contributor identities without UUID labels", async ({ page }) => {
+    await page.goto("/prototype/tree");
+    await page.getByRole("button", { name: "Cộng tác" }).click();
+    const roster = page.locator(".collaborator-roster");
+    await expect(roster.getByText("Hàng Nhựt Prototype", { exact: true })).toBeVisible();
+    await expect(roster.getByText("Nguyễn Văn A", { exact: true })).toBeVisible();
+    await expect(roster.getByText("Chủ cây", { exact: true })).toBeVisible();
+    await expect(roster.getByText("Cộng tác viên", { exact: true })).toBeVisible();
+    await expect(page.getByText("prototype-user-id-0001")).toHaveCount(0);
+  });
+
+  test("invitation prototype — shows authenticated account name and identifier", async ({ page }) => {
+    await page.goto("/prototype/invitation/test-invite-123");
+    await expect(page.getByText("Hàng Nhựt Prototype")).toBeVisible();
+    await expect(page.getByText("prototype@caygipha.dev")).toBeVisible();
   });
 
   test("tree prototype — empty/onboarding state renders first-member form", async ({

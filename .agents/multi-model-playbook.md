@@ -4,11 +4,13 @@ This document defines the default collaboration model when the user asks an agen
 
 When work originates from the product workflow, the Orchestrator must also read `.agents/product-delivery-workflow.md` and treat the PO/BA-approved task document, design package, and orchestration prompt as its input contract.
 
+For implementation planning, apply `.agents/execution-routing-harness.md` before creating Worker prompts. Self-implementation by the lead/heavy model is the default; delegation must pass the harness's independence and net-benefit gates.
+
 ## Operating Model
 
 The planning agent is the lead and final integrator. When model selection is available, this role defaults to a heavy model. The lead owns repository discovery, requirements interpretation, architecture, dependency mapping, task boundaries, integration, review, and final verification.
 
-Use other models as implementation workers only when a workstream is sufficiently independent to hand off safely:
+The lead/heavy model may implement the complete plan itself. Use other models as implementation workers only when a workstream is sufficiently independent to hand off safely and delegation has a positive net benefit:
 
 - **Heavy model:** architecture, ambiguous or high-risk logic, cross-layer changes, difficult debugging, security/privacy/auth, migrations, domain invariants, shared contracts, integration, and final review.
 - **Medium model:** well-specified implementation with moderate reasoning, such as bounded services, API handlers, stateful components, non-trivial tests, isolated refactors, or logic whose contracts and edge cases are already defined.

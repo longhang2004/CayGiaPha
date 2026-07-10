@@ -186,29 +186,53 @@ export function CollaborationModal({ isOpen, onClose, treeId, isOwner, adapter =
       <ModalBody>
         <section className="settings-section">
           <h3>Thành viên hiện tại</h3>
-          <div style={{ marginBottom: "1.5rem", display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-            <Card style={{ display: "flex", alignItems: "center", gap: "0.75rem", padding: "0.75rem" }}>
-              <div style={{ width: "32px", height: "32px", borderRadius: "50%", backgroundColor: "var(--color-brand)", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: "bold", fontSize: "0.9rem" }}>
-                C
-              </div>
-              <div>
-                <div style={{ fontWeight: 600, fontSize: "0.95rem" }}>Chủ cây (Owner)</div>
-                <div style={{ fontSize: "0.8rem", color: "var(--color-muted)" }}>Quyền cao nhất</div>
-              </div>
-            </Card>
-            {collaborators.map((c) => (
-              <Card key={c.id} style={{ display: "flex", alignItems: "center", gap: "0.75rem", padding: "0.75rem" }}>
-                <div style={{ width: "32px", height: "32px", borderRadius: "50%", backgroundColor: "var(--color-surface-hover)", color: "var(--color-fg)", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: "bold", fontSize: "0.9rem" }}>
-                  {(c.displayName || c.userId).substring(0, 1).toUpperCase()}
-                </div>
-                <div>
-                  <div style={{ fontWeight: 600, fontSize: "0.95rem" }}>{c.displayName || c.userId}</div>
-                  <div style={{ fontSize: "0.8rem", color: "var(--color-muted)", display: "flex", gap: "0.5rem", marginTop: "0.2rem" }}>
-                    {c.role === "owner" ? <Badge variant="brand">Chủ cây</Badge> : <Badge variant="neutral">Cộng tác viên</Badge>}
+          <div className="collaborator-roster" style={{ marginBottom: "1.5rem", display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+            {loadingCollaborators && collaborators.length === 0 ? (
+              <p style={{ fontSize: "0.9rem", color: "var(--color-muted)", margin: 0 }}>Đang tải thành viên…</p>
+            ) : null}
+            {collaborators.map((c) => {
+              const primaryLabel =
+                (c.displayName && c.displayName.trim()) ||
+                (c.email && c.email.trim()) ||
+                "Người dùng";
+              const initial = primaryLabel.substring(0, 1).toUpperCase();
+              return (
+                <Card key={c.id} className="collaborator-roster__row" style={{ display: "flex", alignItems: "flex-start", gap: "0.75rem", padding: "0.75rem" }}>
+                  <div
+                    className="collaborator-roster__avatar"
+                    style={{
+                      width: "32px",
+                      height: "32px",
+                      minWidth: "32px",
+                      borderRadius: "50%",
+                      backgroundColor: c.role === "owner" ? "var(--color-brand)" : "var(--color-surface-hover)",
+                      color: c.role === "owner" ? "#fff" : "var(--color-fg)",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      fontWeight: "bold",
+                      fontSize: "0.9rem",
+                    }}
+                    aria-hidden="true"
+                  >
+                    {initial}
                   </div>
-                </div>
-              </Card>
-            ))}
+                  <div className="collaborator-roster__meta" style={{ minWidth: 0, flex: 1 }}>
+                    <div className="collaborator-roster__name" style={{ fontWeight: 600, fontSize: "0.95rem", wordBreak: "break-word" }}>
+                      {primaryLabel}
+                    </div>
+                    {c.email && c.displayName ? (
+                      <div className="collaborator-roster__email" style={{ fontSize: "0.8rem", color: "var(--color-muted)", wordBreak: "break-word" }}>
+                        {c.email}
+                      </div>
+                    ) : null}
+                    <div className="collaborator-roster__badges" style={{ fontSize: "0.8rem", color: "var(--color-muted)", display: "flex", flexWrap: "wrap", gap: "0.5rem", marginTop: "0.2rem" }}>
+                      {c.role === "owner" ? <Badge variant="brand">Chủ cây</Badge> : <Badge variant="neutral">Cộng tác viên</Badge>}
+                    </div>
+                  </div>
+                </Card>
+              );
+            })}
           </div>
 
           {isOwner && (

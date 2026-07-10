@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { type CollaborationInvitation } from "@/lib/collaboration";
+import { MOCK_USER } from "@/lib/prototype/mockData";
 
 interface InvitationPageProps {
   params: {
@@ -45,6 +46,21 @@ export default function PrototypeInvitationPage({ params }: InvitationPageProps)
             <p style={{ fontSize: "1rem", lineHeight: "1.6", color: "var(--color-fg)", marginBottom: "1.5rem" }}>
               Bạn đã nhận được lời mời tham gia cộng tác biên soạn sơ đồ dòng họ từ email <strong>{invitation.email}</strong>.
             </p>
+
+            <div className="account-identity invitation-account" style={{ marginBottom: "2rem" }}>
+              <p style={{ fontSize: "0.85rem", color: "var(--color-muted)", margin: "0 0 0.35rem" }}>
+                Tài khoản hiện tại
+              </p>
+              <p className="account-identity__primary" style={{ fontSize: "1rem", margin: 0, wordBreak: "break-word" }}>
+                <strong>{MOCK_USER.displayName || MOCK_USER.identifier}</strong>
+              </p>
+              {MOCK_USER.displayName ? (
+                <p className="account-identity__secondary" style={{ fontSize: "0.85rem", color: "var(--color-muted)", margin: "0.25rem 0 0", wordBreak: "break-word" }}>
+                  {MOCK_USER.identifier}
+                </p>
+              ) : null}
+            </div>
+
             <button
               type="button"
               className="btn btn-primary btn-terracotta"

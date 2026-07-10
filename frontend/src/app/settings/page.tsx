@@ -1,13 +1,27 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useId, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "@/app/providers";
+import { Button } from "@/components/Button";
+import { FormControl, Input } from "@/components/ui/FormControls";
+import { ApiError } from "@/lib/apiClient";
+import { updateMyProfile } from "@/lib/profile";
+
+const SUCCESS_MESSAGE = "Đã cập nhật tên hiển thị.";
+const LEGACY_PROMPT =
+  "Thêm tên hiển thị để người thân dễ nhận ra bạn khi cộng tác.";
+const EMPTY_NAME_ERROR = "Vui lòng nhập tên hiển thị.";
 
 export default function SettingsPage() {
   const router = useRouter();
-  const { user, loading: sessionLoading } = useSession();
+  const { user, loading: sessionLoading, refresh } = useSession();
   const [theme, setTheme] = useState<"light" | "dark" | "system">("system");
+  const [displayNameInput, setDisplayNameInput] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [fieldError, setFieldError] = useState<string | undefined>();
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const displayNameId = useId();
 
   useEffect(() => {
     if (!sessionLoading && !user) {
@@ -24,6 +38,12 @@ export default function SettingsPage() {
     }
   }, []);
 
+  useEffect(() => {
+    if (user) {
+      setDisplayNameInput(user.displayName ?? "");
+    }
+  }, [user]);
+
   const handleThemeChange = (newTheme: "light" | "dark" | "system") => {
     setTheme(newTheme);
     localStorage.setItem("theme", newTheme);
@@ -39,6 +59,34 @@ export default function SettingsPage() {
     }
   };
 
+  async function handleProfileSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setFieldError(undefined);
+    setSuccessMessage(null);
+
+    const trimmed = displayNameInput.trim();
+    if (!trimmed) {
+      setFieldError(EMPTY_NAME_ERROR);
+      return;
+    }
+
+    setSaving(true);
+    try {
+      const result = await updateMyProfile(trimmed);
+      setDisplayNameInput(result.displayName);
+      setSuccessMessage(SUCCESS_MESSAGE);
+      await refresh();
+    } catch (err) {
+      if (err instanceof ApiError && err.field === "displayName") {
+        setFieldError(err.message);
+      } else {
+        setFieldError(err instanceof ApiError ? err.message : "Không thể cập nhật tên hiển thị.");
+      }
+    } finally {
+      setSaving(false);
+    }
+  }
+
   if (sessionLoading || !user) {
     return (
       <section className="center-state" aria-live="polite">
@@ -49,6 +97,8 @@ export default function SettingsPage() {
       </section>
     );
   }
+
+  const isLegacyMissingName = !user.displayName;
 
   return (
     <main style={{ maxWidth: "800px", margin: "3rem auto", padding: "0 1.5rem" }}>
@@ -95,14 +145,68 @@ export default function SettingsPage() {
           <h2 style={{ fontSize: "1.25rem", fontWeight: 600, marginBottom: "1rem", color: "var(--color-fg)" }}>
             Tài khoản của bạn
           </h2>
-          <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-            <p style={{ margin: 0, fontSize: "0.9rem", color: "var(--color-muted)" }}>
-              Tên tài khoản: <strong style={{ color: "var(--color-fg)" }}>{user.identifier}</strong>
+
+          {isLegacyMissingName ? (
+            <p
+              className="settings-profile__legacy-prompt"
+              style={{
+                margin: "0 0 1rem",
+                fontSize: "0.9rem",
+                color: "var(--color-muted)",
+                lineHeight: 1.5,
+              }}
+            >
+              {LEGACY_PROMPT}
             </p>
-            <p style={{ margin: 0, fontSize: "0.9rem", color: "var(--color-muted)" }}>
-              ID Người dùng: <strong style={{ color: "var(--color-fg)" }}>{user.userId}</strong>
-            </p>
-          </div>
+          ) : null}
+
+          <form onSubmit={handleProfileSubmit} noValidate className="settings-profile__form">
+            <FormControl id={displayNameId} label="Tên hiển thị" error={fieldError} required>
+              <Input
+                id={displayNameId}
+                name="displayName"
+                type="text"
+                autoComplete="name"
+                value={displayNameInput}
+                onChange={(e) => setDisplayNameInput(e.target.value)}
+                error={fieldError}
+                disabled={saving}
+                required
+                maxLength={100}
+              />
+            </FormControl>
+
+            <div style={{ marginBottom: "1rem" }}>
+              <p style={{ margin: 0, fontSize: "0.9rem", color: "var(--color-muted)" }}>
+                Số điện thoại hoặc email
+              </p>
+              <p
+                className="settings-profile__identifier"
+                style={{
+                  margin: "0.25rem 0 0",
+                  fontSize: "0.95rem",
+                  fontWeight: 600,
+                  color: "var(--color-fg)",
+                  wordBreak: "break-word",
+                }}
+              >
+                {user.identifier}
+              </p>
+              <p className="field-hint" style={{ marginTop: "0.35rem" }}>
+                Định danh đăng nhập (chỉ đọc).
+              </p>
+            </div>
+
+            {successMessage ? (
+              <p role="status" className="settings-profile__success" style={{ marginBottom: "1rem", color: "var(--color-success, #15803d)", fontSize: "0.9rem" }}>
+                {successMessage}
+              </p>
+            ) : null}
+
+            <Button type="submit" loading={saving} loadingLabel="Đang lưu…" disabled={saving}>
+              Lưu tên
+            </Button>
+          </form>
         </section>
       </div>
     </main>

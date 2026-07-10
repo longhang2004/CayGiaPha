@@ -159,6 +159,13 @@ export class AuthorizationService {
     }
   }
 
+  async requireAuthenticatedAccountMutation(currentUserId: string | null): Promise<void> {
+    if (!currentUserId) {
+      throw ApiException.notAuthorized("You must be signed in to update this account.");
+    }
+    await this.requireCurrentConsent(currentUserId);
+  }
+
   private async requireCurrentConsent(userId: string | null): Promise<void> {
     if (userId && (await consentService.needsReacceptance(userId))) {
       throw ApiException.consentRequired(
@@ -255,6 +262,37 @@ export class AuthorizationService {
     const hasAccess = await this.hasReadAccess(currentUserId, ownedTreeId, targetTreeId, shareToken);
     if (!hasAccess) {
       throw ApiException.notAuthorized("You are not authorized to view this tree.");
+    }
+  }
+
+  async requireCollaborationRosterAccess(
+    currentUserId: string | null,
+    targetTreeId: string,
+  ): Promise<void> {
+    if (!currentUserId) {
+      throw ApiException.notAuthorized("You are not authorized to view this collaboration roster.");
+    }
+
+    const [owned, collaborated] = await Promise.all([
+      db
+        .select({ id: trees.id })
+        .from(trees)
+        .where(and(eq(trees.id, targetTreeId), eq(trees.ownerUserId, currentUserId)))
+        .then((rows) => rows[0]),
+      db
+        .select({ id: treeCollaborators.id })
+        .from(treeCollaborators)
+        .where(
+          and(
+            eq(treeCollaborators.treeId, targetTreeId),
+            eq(treeCollaborators.userId, currentUserId),
+          ),
+        )
+        .then((rows) => rows[0]),
+    ]);
+
+    if (!owned && !collaborated) {
+      throw ApiException.notAuthorized("You are not authorized to view this collaboration roster.");
     }
   }
 

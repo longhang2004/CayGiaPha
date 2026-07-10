@@ -18,6 +18,7 @@ import { Button } from "@/components/Button";
 import { FormControl, Input, Select } from "@/components/ui/FormControls";
 
 export default function PrototypeSignUpPage() {
+  const [displayName, setDisplayName] = useState("");
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [region, setRegion] = useState<Region>("Bac");
@@ -25,6 +26,7 @@ export default function PrototypeSignUpPage() {
   const [acceptedPrivacy, setAcceptedPrivacy] = useState(false);
 
   const inputId = useId();
+  const displayNameId = `${inputId}-display-name`;
   const passwordId = `${inputId}-password`;
 
   return (
@@ -41,6 +43,22 @@ export default function PrototypeSignUpPage() {
           <form onSubmit={(e) => { e.preventDefault(); /* no-op in prototype */ }} noValidate>
           <h1 id={`${inputId}-heading`}>Đăng ký</h1>
           <p>Tạo tài khoản cây gia phả mới của bạn.</p>
+
+        <FormControl id={displayNameId} label="Tên hiển thị" required>
+          <Input
+            id={displayNameId}
+            name="displayName"
+            type="text"
+            autoComplete="name"
+            value={displayName}
+            onChange={(event) => setDisplayName(event.target.value)}
+            required
+            maxLength={100}
+          />
+          <p className="field-hint" style={{ marginTop: "0.5rem" }}>
+            Tên này sẽ được dùng để người thân nhận ra bạn khi cộng tác.
+          </p>
+        </FormControl>
 
         <FormControl id={inputId} label="Số điện thoại hoặc email" required>
           <Input

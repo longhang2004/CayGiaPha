@@ -7,6 +7,7 @@ import { ApiException } from "./errors";
 import { consentService } from "./consent";
 import { auditService, AuditActions } from "./audit";
 import { OAuth2Client } from "google-auth-library";
+import { normalizeAndValidateDisplayName } from "../account/displayName";
 
 export type IdentifierType = "PHONE" | "EMAIL";
 
@@ -575,12 +576,14 @@ export class AuthService {
     region?: string | null;
     acceptedTos?: boolean;
     acceptedPrivacy?: boolean;
+    displayName?: string;
   }) {
     let identifier: string;
     let password = "default_password";
     let region: string | null = "Bac";
     let acceptedTos = true;
     let acceptedPrivacy = true;
+    let displayName: unknown;
 
     if (typeof identifierOrCommand === "string") {
       identifier = identifierOrCommand;
@@ -590,6 +593,7 @@ export class AuthService {
       region = identifierOrCommand.region || region;
       acceptedTos = identifierOrCommand.acceptedTos ?? acceptedTos;
       acceptedPrivacy = identifierOrCommand.acceptedPrivacy ?? acceptedPrivacy;
+      displayName = identifierOrCommand.displayName;
     }
 
     const type = identifierValidator.requireValid("identifier", identifier);
@@ -606,6 +610,7 @@ export class AuthService {
     consentService.requireConsent(!!acceptedTos, !!acceptedPrivacy);
 
     requirePasswordPolicy(password);
+    const normalizedDisplayName = normalizeAndValidateDisplayName(displayName);
 
     // Hash password with bcryptjs
     const bcrypt = require("bcryptjs");
@@ -617,8 +622,8 @@ export class AuthService {
       .insert(users)
       .values(
         type === "PHONE"
-          ? { phone: identifier, email: null, verified: true, passwordHash }
-          : { phone: null, email: identifier, verified: true, passwordHash }
+          ? { phone: identifier, email: null, displayName: normalizedDisplayName, verified: true, passwordHash }
+          : { phone: null, email: identifier, displayName: normalizedDisplayName, verified: true, passwordHash }
       )
       .returning();
 
@@ -708,7 +713,13 @@ export class AuthService {
     return sessionService.create(user.id);
   }
 
-  async verifyGoogleAuth(idToken: string, _region?: string | null, acceptedTos?: boolean, acceptedPrivacy?: boolean) {
+  async verifyGoogleAuth(
+    idToken: string,
+    region?: string | null,
+    acceptedTos?: boolean,
+    acceptedPrivacy?: boolean,
+    displayName?: string,
+  ) {
     let email: string;
     try {
       // First try verifying as an ID Token
@@ -743,13 +754,15 @@ export class AuthService {
       return sessionService.create(user.id);
     } else {
       consentService.requireConsent(!!acceptedTos, !!acceptedPrivacy);
+      const normalizedDisplayName = normalizeAndValidateDisplayName(displayName);
 
       const [saved] = await db
         .insert(users)
-        .values({ phone: null, email, verified: true, passwordHash: null })
+        .values({ phone: null, email, displayName: normalizedDisplayName, verified: true, passwordHash: null })
         .returning();
 
       await consentService.recordConsent(saved.id);
+      await this.createSingleTree(saved.id, this.resolveRegion(region));
 
       return sessionService.create(saved.id);
     }

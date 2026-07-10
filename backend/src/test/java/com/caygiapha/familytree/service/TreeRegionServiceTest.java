@@ -11,6 +11,7 @@ import static org.mockito.Mockito.when;
 import com.caygiapha.familytree.entity.Tree;
 import com.caygiapha.familytree.error.ApiException;
 import com.caygiapha.familytree.error.ErrorCode;
+import com.caygiapha.familytree.repository.TreeCollaboratorRepository;
 import com.caygiapha.familytree.repository.TreeRepository;
 import com.caygiapha.familytree.security.AuthContext;
 import com.caygiapha.familytree.security.AuthContextHolder;
@@ -28,21 +29,25 @@ import org.junit.jupiter.api.Test;
  *   <li>a valid region from the owner is accepted and persisted (9.5);</li>
  *   <li>an invalid region is rejected with a field-level error and the previous region retained
  *       (9.6);</li>
- *   <li>a non-owner caller is rejected and nothing is read or written (13.4).</li>
+ *   <li>a non-owner caller is rejected and nothing is written (13.4).</li>
  * </ul>
  *
- * <p>A real {@link AuthorizationService}/{@link AuthContextHolder} drives ownership; the
- * {@link TreeRepository} is mocked to observe persistence.
+ * <p>Ownership is resolved from {@link TreeRepository} (multi-tree model), so the same mock
+ * repository is shared by {@link AuthorizationService} and {@link TreeRegionService}.
  */
 class TreeRegionServiceTest {
 
     private final AuthContextHolder holder = new AuthContextHolder();
     private final ClaimService claimService = mock(ClaimService.class);
+    private final TreeRepository treeRepository = mock(TreeRepository.class);
     private final AuthorizationService authorizationService =
             new AuthorizationService(
-                    holder, claimService, mock(TreeRepository.class), mock(com.caygiapha.familytree.repository.TreeCollaboratorRepository.class), mock(ShareTokenService.class),
+                    holder,
+                    claimService,
+                    treeRepository,
+                    mock(TreeCollaboratorRepository.class),
+                    mock(ShareTokenService.class),
                     mock(ConsentService.class));
-    private final TreeRepository treeRepository = mock(TreeRepository.class);
     private final TreeRegionService service =
             new TreeRegionService(treeRepository, authorizationService);
 
@@ -118,18 +123,19 @@ class TreeRegionServiceTest {
     }
 
     @Test
-    void nonOwnerIsRejectedWithoutReadingOrWriting() {
+    void nonOwnerIsRejectedWithoutWriting() {
         UUID otherUser = UUID.randomUUID();
         UUID someOtherTree = UUID.randomUUID();
         UUID targetTree = UUID.randomUUID();
+        Tree ownedBySomeoneElse = new Tree(UUID.randomUUID());
         // Caller owns a different tree, so is not the owner of targetTree (13.4).
         holder.set(AuthContext.authenticated(otherUser, someOtherTree));
+        when(treeRepository.findById(targetTree)).thenReturn(Optional.of(ownedBySomeoneElse));
 
         assertThatThrownBy(() -> service.changeRegion(targetTree, "Nam"))
                 .isInstanceOfSatisfying(ApiException.class,
                         ex -> assertThat(ex.code()).isEqualTo(ErrorCode.NOT_AUTHORIZED));
 
-        verify(treeRepository, never()).findById(any(UUID.class));
         verify(treeRepository, never()).save(any(Tree.class));
     }
 }

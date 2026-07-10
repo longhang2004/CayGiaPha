@@ -90,12 +90,15 @@ Required responsibilities:
 - Read relevant specs, memory, code structure, and repository rules.
 - Resolve technical ambiguity without changing approved product intent; return unresolved product/design questions to PO/BA.
 - Decompose by dependency and file ownership, not merely by frontend/backend labels.
+- Apply `.agents/execution-routing-harness.md` and keep the implementation in the same Heavy session unless specialist escalation or worker delegation passes its gates.
 - Assign capability tier based on complexity and risk.
 - Write every Worker Execution Prompt and explicitly require a Worker Review Prompt in return.
 - Review actual diffs and artifacts, run independent checks, integrate results, and issue corrective prompts when evidence is insufficient.
 - Approve commit readiness only after the integrated repository meets acceptance criteria.
 
 Orchestrator may make small implementation decisions inside approved scope. It must not silently reinterpret product outcomes or unapproved design behavior.
+
+The existence of PO/BA, Designer, and Worker roles does not make every task a multi-session workflow. For a clear, approved task with no unresolved design decision, the Heavy Orchestrator should normally plan, implement, test, and review in one session.
 
 ### Medium/Light Workers
 

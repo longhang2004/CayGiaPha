@@ -16,6 +16,7 @@ export const MOCK_USER: SessionUser = {
   userId: "prototype-user-id-0001",
   treeId: PROTOTYPE_TREE_ID,
   identifier: "prototype@caygipha.dev",
+  displayName: "Hàng Nhựt Prototype",
   verified: true,
   role: "user",
 };

@@ -11,6 +11,7 @@ import static org.mockito.Mockito.when;
 import com.caygiapha.familytree.entity.Tree;
 import com.caygiapha.familytree.error.ApiException;
 import com.caygiapha.familytree.error.ErrorCode;
+import com.caygiapha.familytree.repository.TreeCollaboratorRepository;
 import com.caygiapha.familytree.repository.TreeRepository;
 import com.caygiapha.familytree.security.AuthContext;
 import com.caygiapha.familytree.security.AuthContextHolder;
@@ -27,21 +28,27 @@ import org.junit.jupiter.api.Test;
  * <ul>
  *   <li>a valid sharing mode from the owner is accepted and persisted (19.1);</li>
  *   <li>an invalid mode is rejected with a field-level error and the previous mode retained;</li>
- *   <li>a non-owner caller is rejected for every operation and nothing is read or written
- *       (19.8);</li>
+ *   <li>a non-owner caller is rejected for every operation and nothing is written (19.8);</li>
  *   <li>issuing/revoking a share token is owner-gated and delegates to {@link ShareTokenService}.</li>
  * </ul>
+ *
+ * <p>Ownership is resolved from {@link TreeRepository} (multi-tree model), so the same mock
+ * repository is shared by {@link AuthorizationService} and {@link TreeSharingService}.
  */
 class TreeSharingServiceTest {
 
     private final AuthContextHolder holder = new AuthContextHolder();
     private final ClaimService claimService = mock(ClaimService.class);
-    private final AuthorizationService authorizationService =
-            new AuthorizationService(
-                    holder, claimService, mock(TreeRepository.class), mock(com.caygiapha.familytree.repository.TreeCollaboratorRepository.class), mock(ShareTokenService.class),
-                    mock(ConsentService.class));
     private final TreeRepository treeRepository = mock(TreeRepository.class);
     private final ShareTokenService shareTokenService = mock(ShareTokenService.class);
+    private final AuthorizationService authorizationService =
+            new AuthorizationService(
+                    holder,
+                    claimService,
+                    treeRepository,
+                    mock(TreeCollaboratorRepository.class),
+                    shareTokenService,
+                    mock(ConsentService.class));
     private final TreeSharingService service =
             new TreeSharingService(treeRepository, authorizationService, shareTokenService);
 
@@ -86,17 +93,18 @@ class TreeSharingServiceTest {
     }
 
     @Test
-    void nonOwnerCannotChangeSharingAndNothingIsReadOrWritten() {
+    void nonOwnerCannotChangeSharingAndNothingIsWritten() {
         UUID otherUser = UUID.randomUUID();
         UUID ownTree = UUID.randomUUID();
         UUID targetTree = UUID.randomUUID();
+        Tree ownedBySomeoneElse = new Tree(UUID.randomUUID());
         holder.set(AuthContext.authenticated(otherUser, ownTree));
+        when(treeRepository.findById(targetTree)).thenReturn(Optional.of(ownedBySomeoneElse));
 
         assertThatThrownBy(() -> service.changeSharing(targetTree, "public"))
                 .isInstanceOfSatisfying(ApiException.class,
                         ex -> assertThat(ex.code()).isEqualTo(ErrorCode.NOT_AUTHORIZED)); // 19.8
 
-        verify(treeRepository, never()).findById(any(UUID.class));
         verify(treeRepository, never()).save(any(Tree.class));
     }
 
@@ -104,7 +112,9 @@ class TreeSharingServiceTest {
     void ownerCanIssueAndRevokeShareToken() {
         UUID userId = UUID.randomUUID();
         UUID treeId = UUID.randomUUID();
+        Tree tree = new Tree(userId);
         holder.set(AuthContext.authenticated(userId, treeId));
+        when(treeRepository.findById(treeId)).thenReturn(Optional.of(tree));
         when(treeRepository.existsById(treeId)).thenReturn(true);
         when(shareTokenService.issueToken(treeId)).thenReturn("plaintext-token");
 
@@ -120,7 +130,9 @@ class TreeSharingServiceTest {
         UUID otherUser = UUID.randomUUID();
         UUID ownTree = UUID.randomUUID();
         UUID targetTree = UUID.randomUUID();
+        Tree ownedBySomeoneElse = new Tree(UUID.randomUUID());
         holder.set(AuthContext.authenticated(otherUser, ownTree));
+        when(treeRepository.findById(targetTree)).thenReturn(Optional.of(ownedBySomeoneElse));
 
         assertThatThrownBy(() -> service.issueShareToken(targetTree))
                 .isInstanceOfSatisfying(ApiException.class,

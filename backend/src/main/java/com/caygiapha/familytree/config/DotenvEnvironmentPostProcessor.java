@@ -12,6 +12,7 @@ import org.springframework.boot.env.EnvironmentPostProcessor;
 import org.springframework.core.Ordered;
 import org.springframework.core.env.ConfigurableEnvironment;
 import org.springframework.core.env.MapPropertySource;
+import org.springframework.core.env.Profiles;
 
 /**
  * Loads {@code backend/.env} / {@code backend/.env.local} / {@code backend/.env.production} into the
@@ -23,6 +24,11 @@ public class DotenvEnvironmentPostProcessor implements EnvironmentPostProcessor,
     @Override
     public void postProcessEnvironment(
             ConfigurableEnvironment environment, SpringApplication application) {
+        // Test profiles obtain isolated connection details from Testcontainers. Local dotenv
+        // files must not override those details or make tests depend on developer credentials.
+        if (environment.acceptsProfiles(Profiles.of("test"))) {
+            return;
+        }
         for (String name : new String[] {".env", ".env.local", ".env.production"}) {
             Path path = Path.of(name);
             if (!Files.isRegularFile(path)) {

@@ -317,9 +317,23 @@ export function SettingsModal({
           <h3>Thông tin tài khoản</h3>
           {!sessionLoading && user && (
             <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
-              <span className="settings-modal__user" title={user.identifier}>
-                Đã đăng nhập: <strong>{user.identifier}</strong>
-              </span>
+              {(() => {
+                const hasDisplayName = Boolean(user.displayName?.trim());
+                const primaryLabel =
+                  user.displayName?.trim() || user.identifier || "Người dùng";
+                return (
+                  <div className="settings-modal__user account-identity">
+                    <div className="account-identity__primary" title={primaryLabel}>
+                      <strong>{primaryLabel}</strong>
+                    </div>
+                    {hasDisplayName ? (
+                      <div className="account-identity__secondary" title={user.identifier}>
+                        {user.identifier}
+                      </div>
+                    ) : null}
+                  </div>
+                );
+              })()}
               {isPrototype ? (
                 <button
                   type="button"
