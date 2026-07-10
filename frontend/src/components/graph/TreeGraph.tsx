@@ -38,7 +38,7 @@ import {
 } from "@/lib/graph";
 import { GraphEdge } from "./EdgeStyles";
 import { ViewpointSelector } from "./ViewpointSelector";
-import { SearchIcon, DownloadIcon, MaximizeIcon, MinimizeIcon, TreeIcon } from "@/components/ui/Icons";
+import { CenterIcon, DownloadIcon, MaximizeIcon, MinimizeIcon, TreeIcon } from "@/components/ui/Icons";
 
 export interface TreeGraphProps {
   treeId: string;
@@ -1018,7 +1018,7 @@ export function TreeGraph({
             }}
             title="Đặt lại góc nhìn"
           >
-            <SearchIcon size={18} />
+            <CenterIcon size={18} />
           </button>
 
           {/* Export SVG Button */}

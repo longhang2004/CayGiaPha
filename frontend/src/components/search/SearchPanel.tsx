@@ -81,6 +81,8 @@ export function SearchPanel({
   const [isListening, setIsListening] = useState(false);
 
   const startVoiceSearch = () => {
+    if (isListening) return;
+
     if (typeof window !== "undefined" && ("SpeechRecognition" in window || "webkitSpeechRecognition" in window)) {
       const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
       const recognition = new SpeechRecognition();
@@ -90,11 +92,16 @@ export function SearchPanel({
 
       recognition.onstart = () => {
         setIsListening(true);
+        setFormError(null);
       };
 
       recognition.onerror = (e: any) => {
-        console.error("Speech recognition error", e);
+        const message = e?.error === "not-allowed" || e?.error === "service-not-allowed"
+          ? "Microphone đang bị chặn. Hãy cấp quyền microphone cho trình duyệt rồi thử lại."
+          : "Không thể tìm kiếm bằng giọng nói lúc này. Vui lòng thử lại.";
         setIsListening(false);
+        setFormError(message);
+        setShowDropdown(true);
       };
 
       recognition.onend = () => {
@@ -107,13 +114,16 @@ export function SearchPanel({
         setShowDropdown(true);
       };
 
-      recognition.start();
-    } else {
-      setIsListening(true);
-      setTimeout(() => {
+      try {
+        recognition.start();
+      } catch {
         setIsListening(false);
-        setFormError("Trình duyệt của bạn chưa hỗ trợ tìm kiếm bằng giọng nói.");
-      }, 1500);
+        setFormError("Không thể khởi động microphone. Vui lòng thử lại.");
+        setShowDropdown(true);
+      }
+    } else {
+      setFormError("Trình duyệt của bạn chưa hỗ trợ tìm kiếm bằng giọng nói.");
+      setShowDropdown(true);
     }
   };
 
