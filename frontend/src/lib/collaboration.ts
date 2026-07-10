@@ -87,8 +87,10 @@ export async function inviteCollaborator(
   }
 
   try {
+    // Only inviteId is authoritative; code is included so the email body can show it
+    // (GET invitation intentionally omits code). Endpoint re-validates session + ownership.
     const delivery = await deliverInviteEmailFromFrontend({
-      email,
+      email: invite.email || email,
       code: invite.code,
       inviteId: invite.id,
     });

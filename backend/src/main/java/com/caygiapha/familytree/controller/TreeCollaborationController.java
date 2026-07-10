@@ -135,8 +135,11 @@ public class TreeCollaborationController {
     @GetMapping("/collaborators/invitations/{inviteId}")
     public InvitationView getInvitation(@PathVariable("inviteId") UUID inviteId) {
         // Authenticated only; never return the raw invite code (prevents IDOR code leak).
-        authorizationService.requireAuthenticatedViewer();
-        return InvitationView.from(collaborationService.getInvitation(inviteId));
+        // Detail is limited to owner of the tree or the invited email account.
+        AuthContext auth = authorizationService.requireAuthenticatedViewer();
+        CollaborationInvitation invite = collaborationService.getInvitation(inviteId);
+        collaborationService.requireCanViewInvitation(invite, auth.userId());
+        return InvitationView.from(invite);
     }
 
     @PostMapping("/collaborators/join-link")

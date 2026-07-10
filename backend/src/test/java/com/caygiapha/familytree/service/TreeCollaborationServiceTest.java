@@ -90,11 +90,14 @@ class TreeCollaborationServiceTest {
         CollaborationInvitation invite = new CollaborationInvitation(
                 treeId, contributorId, "unknown@test.com", "123456", Instant.now().plusSeconds(3600));
         invite.setStatus("pending");
+        invite.setRequesterUserId(guestId);
         when(invitationRepository.findById(inviteId)).thenReturn(Optional.of(invite));
-        when(userRepository.findByEmail("unknown@test.com")).thenReturn(Optional.empty());
+        when(collaboratorRepository.findByTreeIdAndUserId(treeId, guestId)).thenReturn(Optional.empty());
+        when(collaboratorRepository.save(any(TreeCollaborator.class)))
+                .thenAnswer(inv -> inv.getArgument(0));
 
         service.approveInvitation(treeId, inviteId, ownerId);
-        assertThat(invite.getStatus()).isEqualTo("approved");
+        assertThat(invite.getStatus()).isEqualTo("joined");
     }
 
     @Test

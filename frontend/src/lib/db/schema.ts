@@ -397,6 +397,9 @@ export const collaborationInvitations = pgTable(
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
     email: text("email"),
+    requesterUserId: uuid("requester_user_id").references(() => users.id, {
+      onDelete: "set null",
+    }),
     code: text("code").notNull(),
     status: text("status").notNull().default("pending"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),

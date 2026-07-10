@@ -31,6 +31,10 @@ public class CollaborationInvitation {
     @Column(name = "email")
     private String email;
 
+    /** User who requested join via a generic code (phone-only accounts included). */
+    @Column(name = "requester_user_id")
+    private UUID requesterUserId;
+
     @Column(name = "code", nullable = false)
     private String code;
 
@@ -70,6 +74,14 @@ public class CollaborationInvitation {
 
     public String getEmail() {
         return email;
+    }
+
+    public UUID getRequesterUserId() {
+        return requesterUserId;
+    }
+
+    public void setRequesterUserId(UUID requesterUserId) {
+        this.requesterUserId = requesterUserId;
     }
 
     public String getCode() {

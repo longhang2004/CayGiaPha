@@ -27,9 +27,16 @@ export async function GET(
       .innerJoin(users, eq(treeCollaborators.userId, users.id))
       .where(eq(treeCollaborators.treeId, treeId));
 
-    return Response.json(collabs.map(c => ({
-      ...c,
-      userId: c.identifier || c.userId,
-    })));
+    // Keep userId as UUID for UI ownership checks; expose display label separately.
+    return Response.json(
+      collabs.map((c) => ({
+        id: c.id,
+        treeId: c.treeId,
+        userId: c.userId,
+        role: c.role,
+        joinedAt: c.joinedAt,
+        displayName: c.identifier || c.userId,
+      })),
+    );
   });
 }

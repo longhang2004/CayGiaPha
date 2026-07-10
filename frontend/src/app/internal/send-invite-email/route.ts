@@ -1,81 +1,147 @@
 import { NextResponse } from "next/server";
+import { cookies } from "next/headers";
 import { sendEmail } from "@/lib/services/email";
 
 export const dynamic = "force-dynamic";
 
 /**
- * FE-only email delivery (not under /api/* so USE_BACKEND rewrites never proxy it).
- * Creates no invite — only sends mail for an already-created invitation.
+ * FE-only email delivery (outside /api/* so USE_BACKEND rewrites never proxy it).
+ * Requires SESSION cookie; loads invite from Spring (source of truth) by inviteId only.
+ * Client-supplied email/code/treeName are ignored for delivery content.
  */
 export async function POST(request: Request) {
   try {
     const body = await request.json().catch(() => ({}));
-    const email = String(body.email || "").trim().toLowerCase();
-    const code = String(body.code || "").trim();
     const inviteId = String(body.inviteId || "").trim();
-    const treeName = String(body.treeName || "Cây Gia Phả").trim() || "Cây Gia Phả";
-
-    if (!email || !email.includes("@")) {
+    if (!inviteId) {
       return NextResponse.json(
-        { error: { code: "VALIDATION_ERROR", field: "email", message: "Email không hợp lệ." } },
-        { status: 400 },
-      );
-    }
-    if (!code || !inviteId) {
-      return NextResponse.json(
-        {
-          error: {
-            code: "VALIDATION_ERROR",
-            message: "Thiếu mã mời hoặc inviteId.",
-          },
-        },
+        { error: { code: "VALIDATION_ERROR", message: "Thiếu inviteId." } },
         { status: 400 },
       );
     }
 
-    const baseUrl = (
+    const session = cookies().get("SESSION")?.value;
+    if (!session) {
+      return NextResponse.json(
+        { error: { code: "NOT_AUTHORIZED", message: "Vui lòng đăng nhập." } },
+        { status: 401 },
+      );
+    }
+
+    const backend = (process.env.BACKEND_API_URL || "http://localhost:8080").replace(/\/$/, "");
+    const origin =
       process.env.NEXT_PUBLIC_APP_URL ||
       process.env.NEXT_PUBLIC_BASE_URL ||
-      "http://localhost:3000"
-    ).replace(/\/$/, "");
-    const inviteUrl = `${baseUrl}/invitation/${inviteId}`;
-    const registered = body.registered !== false;
-    const buttonText = registered
-      ? "Tham gia xây dựng cây"
-      : "Đăng ký & Tham gia xây dựng cây";
-    const signupUrl = `${baseUrl}/signup?redirect=/invitation/${inviteId}`;
-    const link = registered ? inviteUrl : signupUrl;
-    const description = registered
-      ? `Tài khoản với email <strong>${email}</strong> đã có trên hệ thống. Hãy đăng nhập và nhấp nút dưới đây:`
-      : `Email <strong>${email}</strong> chưa đăng ký. Hãy nhấp nút dưới đây để đăng ký và tham gia:`;
+      "http://localhost:3000";
 
+    // Load invite from BE with the caller's session (owner/invitee only).
+    const inviteRes = await fetch(
+      `${backend}/api/v1/trees/collaborators/invitations/${encodeURIComponent(inviteId)}`,
+      {
+        method: "GET",
+        headers: {
+          Accept: "application/json",
+          Cookie: `SESSION=${session}`,
+          Origin: origin.replace(/\/$/, ""),
+        },
+        cache: "no-store",
+      },
+    );
+
+    if (inviteRes.status === 401 || inviteRes.status === 403) {
+      return NextResponse.json(
+        { error: { code: "NOT_AUTHORIZED", message: "Không có quyền gửi lại lời mời này." } },
+        { status: inviteRes.status },
+      );
+    }
+    if (!inviteRes.ok) {
+      return NextResponse.json(
+        {
+          emailSent: false,
+          emailMessage: `Không tải được lời mời từ backend (HTTP ${inviteRes.status}).`,
+        },
+        { status: 200 },
+      );
+    }
+
+    const invite = (await inviteRes.json()) as {
+      id?: string;
+      treeId?: string;
+      email?: string | null;
+      status?: string;
+      code?: string;
+    };
+
+    // Prefer server fields; fall back to body only for code if BE view omits it.
+    // Owner who just created invite has code from create response — pass via body.code.
+    const email = (invite.email || String(body.email || "")).trim().toLowerCase();
+    const code = String(body.code || invite.code || "").trim();
+    if (!email || !email.includes("@")) {
+      return NextResponse.json(
+        {
+          emailSent: false,
+          emailMessage: "Lời mời không có email người nhận (generic code).",
+        },
+        { status: 200 },
+      );
+    }
+    if (!code) {
+      return NextResponse.json(
+        {
+          emailSent: false,
+          emailMessage: "Thiếu mã mời để đưa vào email.",
+        },
+        { status: 200 },
+      );
+    }
+
+    // Resolve tree name from BE tree detail if possible (optional).
+    let treeName = "Cây Gia Phả";
+    if (invite.treeId) {
+      try {
+        const treeRes = await fetch(
+          `${backend}/api/v1/trees/${encodeURIComponent(invite.treeId)}`,
+          {
+            headers: {
+              Accept: "application/json",
+              Cookie: `SESSION=${session}`,
+              Origin: origin.replace(/\/$/, ""),
+            },
+            cache: "no-store",
+          },
+        );
+        if (treeRes.ok) {
+          const tree = (await treeRes.json()) as { name?: string };
+          if (tree.name) treeName = tree.name;
+        }
+      } catch {
+        // keep default
+      }
+    }
+
+    const baseUrl = origin.replace(/\/$/, "");
+    const inviteUrl = `${baseUrl}/invitation/${inviteId}`;
     const mailEnabled =
       process.env.EMAIL_ENABLED === "true" || !!process.env.RESEND_API_KEY?.trim();
     if (!mailEnabled) {
       return NextResponse.json({
         emailSent: false,
         emailMessage: `EMAIL_ENABLED≠true trên Vercel — chưa gửi email. Mã: ${code}`,
-        debug: {
-          hasHost: !!process.env.EMAIL_HOST,
-          hasUser: !!process.env.EMAIL_USER,
-          hasPass: !!process.env.EMAIL_PASS,
-          hasResend: !!process.env.RESEND_API_KEY?.trim(),
-        },
       });
     }
 
     await sendEmail({
       to: email,
       subject: `Mời tham gia hợp tác xây dựng Cây Gia Phả "${treeName}"`,
-      text: `Mã mời: ${code}. Link: ${link}. Nếu không thấy thư, kiểm tra hộp thư rác/spam.`,
+      text: `Mã mời: ${code}. Link: ${inviteUrl}. Nếu không thấy thư, kiểm tra hộp thư rác/spam.`,
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 500px; margin: 0 auto; padding: 20px; border: 1px solid #e9e9e9; border-radius: 8px;">
           <h2 style="color: #b94b34; text-align: center;">Mời Hợp Tác Gia Phả</h2>
           <p>Xin chào,</p>
           <p>Bạn đã nhận được lời mời cộng tác xây dựng cây gia phả <strong>"${treeName}"</strong>.</p>
-          <p>${description}</p>
+          <p>Email <strong>${email}</strong> — hãy đăng nhập đúng tài khoản và mở liên kết bên dưới.</p>
           <div style="text-align: center; margin: 30px 0;">
-            <a href="${link}" style="background-color: #b94b34; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">${buttonText}</a>
+            <a href="${inviteUrl}" style="background-color: #b94b34; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">Tham gia xây dựng cây</a>
           </div>
           <p style="font-size: 0.9rem; color: #666; text-align: center;">
             Mã mời: <strong>${code}</strong>

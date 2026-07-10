@@ -16,5 +16,8 @@ public interface CollaborationInvitationRepository extends JpaRepository<Collabo
 
     Optional<CollaborationInvitation> findByCodeIgnoreCase(String code);
 
+    Optional<CollaborationInvitation> findByTreeIdAndRequesterUserIdAndStatus(
+            UUID treeId, UUID requesterUserId, String status);
+
     void deleteByTreeId(UUID treeId);
 }

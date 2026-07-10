@@ -7,10 +7,10 @@ const nextConfig = {
   reactStrictMode: true,
   async rewrites() {
     if (process.env.USE_BACKEND === "true") {
-      // afterFiles: local App Router handlers (e.g. invite email) take precedence;
-      // everything else is proxied to the Spring API.
+      // beforeFiles: always proxy /api/* to Spring so local Drizzle collab routes cannot
+      // shadow the backend (split-brain). FE-only mail lives at /internal/send-invite-email.
       return {
-        afterFiles: [
+        beforeFiles: [
           {
             source: "/api/:path*",
             destination: `${API_PROXY_TARGET}/api/:path*`,

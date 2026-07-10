@@ -22,17 +22,26 @@ export default function InvitationPage({ params }: InvitationPageProps) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Fetch invitation details
+    // Wait for session resolution so anonymous users see sign-in CTA instead of a hard error.
+    if (sessionLoading) return;
+    if (!user) {
+      setLoading(false);
+      setInvitation(null);
+      setError(null);
+      return;
+    }
+    setLoading(true);
     getInvitationDetails(inviteId)
       .then((details) => {
         setInvitation(details);
+        setError(null);
         setLoading(false);
       })
       .catch((err) => {
-        setError(err.message || "Lời mời không tồn tại hoặc đã hết hạn.");
+        setError(err.message || "Lời mời không tồn tại hoặc bạn không có quyền xem.");
         setLoading(false);
       });
-  }, [inviteId]);
+  }, [inviteId, sessionLoading, user]);
 
   const handleJoin = async () => {
     if (!invitation) return;
@@ -70,7 +79,32 @@ export default function InvitationPage({ params }: InvitationPageProps) {
           👥 Cộng tác xây dựng Cây Gia Phả
         </h2>
 
-        {error ? (
+        {!user && !sessionLoading ? (
+          <div>
+            <p style={{ fontSize: "1rem", lineHeight: "1.6", color: "var(--color-fg)", marginBottom: "1.5rem" }}>
+              Bạn đã nhận được lời mời cộng tác xây dựng cây gia phả. Vui lòng đăng nhập hoặc đăng ký
+              để xem chi tiết và chấp nhận.
+            </p>
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+              <button
+                type="button"
+                className="btn btn-primary btn-terracotta"
+                style={{ width: "100%", minHeight: "44px" }}
+                onClick={handleSignInRedirect}
+              >
+                Đăng nhập để tham gia
+              </button>
+              <button
+                type="button"
+                className="btn btn-secondary"
+                style={{ width: "100%", minHeight: "44px" }}
+                onClick={() => router.push(`/signup?redirect=/invitation/${inviteId}`)}
+              >
+                Đăng ký tài khoản mới
+              </button>
+            </div>
+          </div>
+        ) : error ? (
           <div style={{ margin: "1.5rem 0" }}>
             <p style={{ color: "red", fontSize: "0.95rem", marginBottom: "1.5rem" }}>{error}</p>
             <button
