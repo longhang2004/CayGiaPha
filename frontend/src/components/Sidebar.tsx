@@ -36,6 +36,7 @@ export function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse }: Side
   const isSupportActive = pathname.startsWith("/support");
   const isFeedbackActive = pathname.startsWith("/feedback");
   const isAdminActive = pathname.startsWith("/admin");
+  const isSettingsActive = pathname.startsWith("/settings");
 
   const pathParts = pathname.split("/");
   const activeTreeId =
@@ -152,7 +153,7 @@ export function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse }: Side
             {user && (
               <Link
                 href={settingsHref}
-                className="global-sidebar__link"
+                className={`global-sidebar__link ${isSettingsActive ? "global-sidebar__link--active" : ""}`}
                 onClick={onClose}
                 title={isCollapsed ? "Cài đặt" : undefined}
               >

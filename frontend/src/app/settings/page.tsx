@@ -21,6 +21,7 @@ export default function SettingsPage() {
   const [saving, setSaving] = useState(false);
   const [fieldError, setFieldError] = useState<string | undefined>();
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [isEditingName, setIsEditingName] = useState(false);
   const displayNameId = useId();
 
   useEffect(() => {
@@ -75,6 +76,7 @@ export default function SettingsPage() {
       const result = await updateMyProfile(trimmed);
       setDisplayNameInput(result.displayName);
       setSuccessMessage(SUCCESS_MESSAGE);
+      setIsEditingName(false);
       await refresh();
     } catch (err) {
       if (err instanceof ApiError && err.field === "displayName") {
@@ -160,21 +162,62 @@ export default function SettingsPage() {
             </p>
           ) : null}
 
-          <form onSubmit={handleProfileSubmit} noValidate className="settings-profile__form">
-            <FormControl id={displayNameId} label="Tên hiển thị" error={fieldError} required>
-              <Input
-                id={displayNameId}
-                name="displayName"
-                type="text"
-                autoComplete="name"
-                value={displayNameInput}
-                onChange={(e) => setDisplayNameInput(e.target.value)}
-                error={fieldError}
-                disabled={saving}
-                required
-                maxLength={100}
-              />
-            </FormControl>
+          {!isEditingName && !isLegacyMissingName ? (
+            <div style={{ marginBottom: "1.5rem" }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "0.5rem" }}>
+                <p style={{ margin: 0, fontSize: "0.9rem", color: "var(--color-muted)" }}>Tên hiển thị</p>
+                <button
+                  type="button"
+                  onClick={() => setIsEditingName(true)}
+                  className="btn btn-secondary"
+                  style={{ padding: "0.25rem 0.75rem", fontSize: "0.8rem", height: "auto", minHeight: "32px" }}
+                >
+                  Sửa tên
+                </button>
+              </div>
+              <p style={{ margin: 0, fontSize: "1rem", fontWeight: 500, color: "var(--color-fg)" }}>
+                {user.displayName}
+              </p>
+            </div>
+          ) : (
+            <form onSubmit={handleProfileSubmit} noValidate className="settings-profile__form">
+              <FormControl id={displayNameId} label="Tên hiển thị" error={fieldError} required>
+                <Input
+                  id={displayNameId}
+                  name="displayName"
+                  type="text"
+                  autoComplete="name"
+                  value={displayNameInput}
+                  onChange={(e) => setDisplayNameInput(e.target.value)}
+                  error={fieldError}
+                  disabled={saving}
+                  required
+                  maxLength={100}
+                />
+              </FormControl>
+
+              <div style={{ display: "flex", gap: "0.75rem", marginBottom: "1.5rem" }}>
+                <Button type="submit" loading={saving} loadingLabel="Đang lưu…" disabled={saving}>
+                  Lưu tên
+                </Button>
+                {!isLegacyMissingName && (
+                  <button
+                    type="button"
+                    className="btn btn-secondary"
+                    onClick={() => {
+                      setIsEditingName(false);
+                      setDisplayNameInput(user.displayName ?? "");
+                      setFieldError(undefined);
+                      setSuccessMessage(null);
+                    }}
+                    disabled={saving}
+                  >
+                    Hủy
+                  </button>
+                )}
+              </div>
+            </form>
+          )}
 
             <div style={{ marginBottom: "1rem" }}>
               <p style={{ margin: 0, fontSize: "0.9rem", color: "var(--color-muted)" }}>
@@ -202,12 +245,7 @@ export default function SettingsPage() {
                 {successMessage}
               </p>
             ) : null}
-
-            <Button type="submit" loading={saving} loadingLabel="Đang lưu…" disabled={saving}>
-              Lưu tên
-            </Button>
-          </form>
-        </section>
+          </section>
       </div>
     </main>
   );
