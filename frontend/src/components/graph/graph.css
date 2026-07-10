@@ -795,13 +795,15 @@ html.dark .graph-legend__node--deceased {
 
 @media (max-width: 640px) {
   .graph-legend {
-    position: fixed !important;
-    top: 50% !important;
-    left: 50% !important;
-    bottom: auto !important;
+    position: absolute !important;
+    bottom: calc(100% + 1rem) !important;
+    left: 0 !important;
     right: auto !important;
-    transform: translate(-50%, -50%) !important;
-    width: 90vw !important;
+    top: auto !important;
+    transform: none !important;
+    width: calc(100vw - 2rem) !important;
     max-width: 320px !important;
+    max-height: 60vh !important;
+    overflow-y: auto !important;
   }
 }
