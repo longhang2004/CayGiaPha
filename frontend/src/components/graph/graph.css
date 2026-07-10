@@ -704,22 +704,26 @@ html.dark .tree-graph__node-tooltip::after {
 }
 
 .graph-legend__close {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  background: transparent;
-  border: none;
-  color: var(--color-muted);
-  cursor: pointer;
-  transition: background-color 0.2s ease, color 0.2s ease;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 28px !important;
+  min-width: 28px !important;
+  height: 28px !important;
+  min-height: 28px !important;
+  border-radius: 50% !important;
+  background-color: transparent !important;
+  border: none !important;
+  color: var(--color-muted) !important;
+  cursor: pointer !important;
+  padding: 0 !important;
+  flex-shrink: 0 !important;
+  transition: background-color 0.2s ease, color 0.2s ease !important;
 }
 
 .graph-legend__close:hover {
-  background-color: var(--color-surface-hover);
-  color: var(--color-fg);
+  background-color: var(--color-surface-hover) !important;
+  color: var(--color-fg) !important;
 }
 
 .graph-legend__body {
@@ -791,6 +795,13 @@ html.dark .graph-legend__node--deceased {
 
 @media (max-width: 640px) {
   .graph-legend {
-    right: 0;
+    position: fixed !important;
+    top: 50% !important;
+    left: 50% !important;
+    bottom: auto !important;
+    right: auto !important;
+    transform: translate(-50%, -50%) !important;
+    width: 90vw !important;
+    max-width: 320px !important;
   }
 }
