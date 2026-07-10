@@ -618,7 +618,12 @@ export function PersonForm({
       ) : null}
 
       <div className="form-actions">
-        <Button type="submit" disabled={submitting} style={(onCancel && !hideCancelButton) ? { flex: 1 } : undefined}>
+        <Button
+          type="submit"
+          loading={submitting}
+          loadingLabel={mode === "create" ? "Đang lưu…" : "Đang cập nhật…"}
+          style={(onCancel && !hideCancelButton) ? { flex: 1 } : undefined}
+        >
           {mode === "create" ? "Lưu thành viên" : "Cập nhật thông tin"}
         </Button>
         {onCancel && !hideCancelButton && (

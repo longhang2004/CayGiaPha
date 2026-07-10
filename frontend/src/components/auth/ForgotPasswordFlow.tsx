@@ -126,8 +126,8 @@ export function ForgotPasswordFlow() {
             </FormControl>
 
             <div style={{ marginTop: "1.5rem", display: "flex", flexDirection: "column", gap: "0.75rem" }}>
-              <Button type="submit" disabled={submitting} style={{ width: "100%" }}>
-                {submitting ? "Đang xử lý…" : "Cập nhật mật khẩu"}
+              <Button type="submit" loading={submitting} loadingLabel="Đang xử lý…" style={{ width: "100%" }}>
+                Cập nhật mật khẩu
               </Button>
             </div>
           </form>

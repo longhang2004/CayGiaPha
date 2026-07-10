@@ -179,8 +179,8 @@ export function SignUpFlow({ redirectTo = "/" }: SignUpFlowProps) {
       </div>
 
       <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
-        <Button type="submit" disabled={submitting || !acceptedTos || !acceptedPrivacy} style={{ width: "100%" }}>
-          {submitting ? "Đang đăng ký…" : "Đăng ký"}
+        <Button type="submit" disabled={!acceptedTos || !acceptedPrivacy} loading={submitting} loadingLabel="Đang đăng ký…" style={{ width: "100%" }}>
+          Đăng ký
         </Button>
         <div style={{ display: "flex", alignItems: "center", textTransform: "uppercase", fontSize: "0.75rem", color: "var(--color-muted)" }}>
           <div style={{ flex: 1, height: "1px", backgroundColor: "var(--color-hairline)" }} />

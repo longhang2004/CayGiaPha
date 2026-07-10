@@ -701,7 +701,12 @@ export function AddRelativeForm({ treeId, persons, preselectedPersonId, onCreate
       )}
 
       <div className="form-actions">
-        <Button type="submit" disabled={submitting} style={(onCancel && !hideCancelButton) ? { flex: 1 } : undefined}>
+        <Button
+          type="submit"
+          loading={submitting}
+          loadingLabel={isNewPerson ? "Đang thêm…" : "Đang tạo kết nối…"}
+          style={(onCancel && !hideCancelButton) ? { flex: 1 } : undefined}
+        >
           {isNewPerson ? "Thêm thành viên mới" : "Thêm kết nối"}
         </Button>
         {onCancel && !hideCancelButton && (

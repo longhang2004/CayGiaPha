@@ -118,6 +118,8 @@ function PrototypeTreeContent() {
   const [region, setRegionState] = useState<Region>("Bac");
   const [livingRedaction] = useState(false);
   const [sharing] = useState("private");
+  const [treeName, setTreeName] = useState("Gia Phả Dòng Họ");
+  const [treeNameInput, setTreeNameInput] = useState("Gia Phả Dòng Họ");
 
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [selectedAddress, setSelectedAddress] = useState<
@@ -158,42 +160,75 @@ function PrototypeTreeContent() {
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteCode, setInviteCode] = useState("");
   const [generatedInviteCode, setGeneratedInviteCode] = useState("");
+  const [collaborationAction, setCollaborationAction] = useState<string | null>(null);
 
-  const handleSendInvite = (e: React.FormEvent) => {
+  const waitForCollaborationAction = () => new Promise((resolve) => window.setTimeout(resolve, 350));
+
+  const handleSendInvite = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!inviteEmail.trim()) return;
-    const newInvite = {
-      id: `invite-${Date.now()}`,
-      email: inviteEmail.trim(),
-      code: "111222",
-      status: "approved"
-    };
-    showToast(`Đã tạo lời mời email đã duyệt sẵn. Mã mời: ${newInvite.code}`, "success");
-    setInviteEmail("");
+    setCollaborationAction("invite");
+    try {
+      await waitForCollaborationAction();
+      const newInvite = {
+        id: `invite-${Date.now()}`,
+        email: inviteEmail.trim(),
+        code: "111222",
+        status: "approved"
+      };
+      showToast(`Đã tạo lời mời email đã duyệt sẵn. Mã mời: ${newInvite.code}`, "success");
+      setInviteEmail("");
+    } finally {
+      setCollaborationAction(null);
+    }
   };
 
-  const handleCreateGenericInvite = () => {
-    setGeneratedInviteCode("999888");
+  const handleCreateGenericInvite = async () => {
+    setCollaborationAction("generate");
+    try {
+      await waitForCollaborationAction();
+      setGeneratedInviteCode("999888");
+    } finally {
+      setCollaborationAction(null);
+    }
   };
 
-  const handleApproveInvite = (id: string) => {
+  const handleApproveInvite = async (id: string) => {
     const invite = pendingInvites.find(i => i.id === id);
     if (!invite) return;
-    setPendingInvites(prev => prev.filter(i => i.id !== id));
-    setCollaborators(prev => [...prev, { id: `collab-${Date.now()}`, userId: invite.email, role: "contributor" }]);
-    showToast("Bạn đã tham gia nhóm cộng tác xây dựng cây thành công!", "success");
+    setCollaborationAction(`approve:${id}`);
+    try {
+      await waitForCollaborationAction();
+      setPendingInvites(prev => prev.filter(i => i.id !== id));
+      setCollaborators(prev => [...prev, { id: `collab-${Date.now()}`, userId: invite.email, role: "contributor" }]);
+      showToast("Bạn đã tham gia nhóm cộng tác xây dựng cây thành công!", "success");
+    } finally {
+      setCollaborationAction(null);
+    }
   };
 
-  const handleRejectInvite = (id: string) => {
-    setPendingInvites(prev => prev.filter(i => i.id !== id));
-    showToast("Đã từ chối lời mời cộng tác!", "success");
+  const handleRejectInvite = async (id: string) => {
+    setCollaborationAction(`reject:${id}`);
+    try {
+      await waitForCollaborationAction();
+      setPendingInvites(prev => prev.filter(i => i.id !== id));
+      showToast("Đã từ chối lời mời cộng tác!", "success");
+    } finally {
+      setCollaborationAction(null);
+    }
   };
 
-  const handleJoinTree = (e: React.FormEvent) => {
+  const handleJoinTree = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!inviteCode.trim()) return;
-    showToast("Yêu cầu của bạn đã được gửi. Vui lòng chờ chủ cây duyệt.", "success");
-    setInviteCode("");
+    setCollaborationAction("join");
+    try {
+      await waitForCollaborationAction();
+      showToast("Yêu cầu của bạn đã được gửi. Vui lòng chờ chủ cây duyệt.", "success");
+      setInviteCode("");
+    } finally {
+      setCollaborationAction(null);
+    }
   };
 
   const refreshTree = useCallback(() => {
@@ -256,7 +291,7 @@ function PrototypeTreeContent() {
             <div className="tree-page-header__brand">
               <img src="/logo.svg" alt="Logo Cây Gia Phả" className="tree-page-header__logo" />
               <div className="tree-page-header__title-container">
-                <h1 className="tree-page-header__title">Gia Phả Dòng Họ</h1>
+                <h1 className="tree-page-header__title">{treeName}</h1>
                 <span className="tree-page-header__count">{persons.length} thành viên</span>
               </div>
             </div>
@@ -563,6 +598,13 @@ function PrototypeTreeContent() {
               {isOwner && (
                 <section className="settings-section">
                   <h3>Cài đặt gia phả</h3>
+                  <form onSubmit={(e) => { e.preventDefault(); if (treeNameInput.trim()) setTreeName(treeNameInput.trim()); }} className="field" style={{ marginBottom: "1rem" }}>
+                    <label htmlFor="proto-tree-name-input">Tên cây gia phả</label>
+                    <div style={{ display: "flex", gap: "0.5rem", marginTop: "0.5rem" }}>
+                      <Input id="proto-tree-name-input" value={treeNameInput} onChange={(e) => setTreeNameInput(e.target.value)} maxLength={120} required style={{ flex: 1 }} />
+                      <button type="submit" className="btn">Lưu</button>
+                    </div>
+                  </form>
                   <RegionSelector
                     treeId={PROTOTYPE_TREE_ID}
                     region={region}
@@ -736,7 +778,9 @@ function PrototypeTreeContent() {
                         required
                         style={{ flex: 1 }}
                       />
-                      <button type="submit" className="btn btn-secondary">Mời</button>
+                      <button type="submit" className="btn btn-secondary" disabled={collaborationAction !== null} aria-busy={collaborationAction === "invite" || undefined}>
+                        {collaborationAction === "invite" ? <><span className="btn__spinner" aria-hidden="true" />Đang gửi mail…</> : "Mời"}
+                      </button>
                     </div>
                   </form>
                 )}
@@ -758,8 +802,8 @@ function PrototypeTreeContent() {
                         </button>
                       </div>
                     ) : (
-                      <button type="button" className="btn btn-secondary" onClick={handleCreateGenericInvite} style={{ alignSelf: "flex-start" }}>
-                        Tạo mã mời
+                      <button type="button" className="btn btn-secondary" onClick={() => void handleCreateGenericInvite()} disabled={collaborationAction !== null} aria-busy={collaborationAction === "generate" || undefined} style={{ alignSelf: "flex-start" }}>
+                        {collaborationAction === "generate" ? <><span className="btn__spinner" aria-hidden="true" />Đang tạo…</> : "Tạo mã mời"}
                       </button>
                     )}
                   </div>
@@ -773,8 +817,12 @@ function PrototypeTreeContent() {
                         <Card key={invite.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "0.75rem", borderLeftWidth: "4px", borderLeftColor: "var(--color-danger)" }}>
                           <span style={{ fontSize: "0.85rem", fontWeight: 600 }}>{invite.email}</span>
                           <div style={{ display: "flex", gap: "0.25rem" }}>
-                            <button type="button" className="btn" style={{ padding: "0.2rem 0.5rem", fontSize: "0.75rem" }} onClick={() => handleApproveInvite(invite.id)}>Duyệt</button>
-                            <button type="button" className="btn btn-secondary" style={{ padding: "0.2rem 0.5rem", fontSize: "0.75rem" }} onClick={() => handleRejectInvite(invite.id)}>Từ chối</button>
+                            <button type="button" className="btn" style={{ padding: "0.2rem 0.5rem", fontSize: "0.75rem" }} onClick={() => void handleApproveInvite(invite.id)} disabled={collaborationAction !== null} aria-busy={collaborationAction === `approve:${invite.id}` || undefined}>
+                              {collaborationAction === `approve:${invite.id}` ? <span className="btn__spinner" aria-hidden="true" /> : "Duyệt"}
+                            </button>
+                            <button type="button" className="btn btn-secondary" style={{ padding: "0.2rem 0.5rem", fontSize: "0.75rem" }} onClick={() => void handleRejectInvite(invite.id)} disabled={collaborationAction !== null} aria-busy={collaborationAction === `reject:${invite.id}` || undefined}>
+                              {collaborationAction === `reject:${invite.id}` ? <span className="btn__spinner" aria-hidden="true" /> : "Từ chối"}
+                            </button>
                           </div>
                         </Card>
                       ))}
@@ -795,7 +843,9 @@ function PrototypeTreeContent() {
                       required
                       style={{ flex: 1 }}
                     />
-                    <button type="submit" className="btn btn-secondary">Tham gia</button>
+                    <button type="submit" className="btn btn-secondary" disabled={collaborationAction !== null} aria-busy={collaborationAction === "join" || undefined}>
+                      {collaborationAction === "join" ? <><span className="btn__spinner" aria-hidden="true" />Đang tham gia…</> : "Tham gia"}
+                    </button>
                   </div>
                 </form>
               </section>

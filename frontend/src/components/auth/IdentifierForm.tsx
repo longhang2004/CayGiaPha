@@ -93,8 +93,8 @@ export function IdentifierForm({
         ) : null}
       </div>
 
-      <Button type="submit" disabled={submitting || disabled}>
-        {submitting ? "Đang gửi…" : submitLabel}
+      <Button type="submit" disabled={disabled} loading={submitting} loadingLabel="Đang gửi…">
+        {submitLabel}
       </Button>
     </form>
   );

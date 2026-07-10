@@ -10,6 +10,8 @@ import com.caygiapha.familytree.dto.SharingUpdateRequest;
 import com.caygiapha.familytree.dto.ShareTokenResponse;
 import com.caygiapha.familytree.dto.TreeDetailResponse;
 import com.caygiapha.familytree.dto.TreeSummaryResponse;
+import com.caygiapha.familytree.dto.TreeNameUpdateRequest;
+import com.caygiapha.familytree.dto.TreeNameUpdateResponse;
 import com.caygiapha.familytree.dto.UpcomingEventResponse;
 import com.caygiapha.familytree.entity.Person;
 import com.caygiapha.familytree.entity.Relationship;
@@ -211,6 +213,23 @@ public class TreeController {
             @PathVariable("treeId") UUID treeId, @RequestBody RegionChangeRequest request) {
         Tree tree = treeRegionService.changeRegion(treeId, request.region());
         return RegionChangeResponse.from(tree);
+    }
+
+    @PatchMapping("/{treeId}/name")
+    public TreeNameUpdateResponse changeName(
+            @PathVariable("treeId") UUID treeId, @RequestBody TreeNameUpdateRequest request) {
+        authorizationService.requireOwner(treeId);
+        String name = request == null || request.name() == null ? "" : request.name().trim();
+        if (name.isBlank()) {
+            throw ApiException.validation("name", "Tên cây gia phả không được để trống.");
+        }
+        if (name.length() > 120) {
+            throw ApiException.validation("name", "Tên cây gia phả không được dài quá 120 ký tự.");
+        }
+        Tree tree = treeRepository.findById(treeId)
+                .orElseThrow(() -> ApiException.nodeNotAccessible("The specified tree was not found."));
+        tree.setName(name);
+        return TreeNameUpdateResponse.from(treeRepository.save(tree));
     }
 
     @PatchMapping("/{treeId}/sharing")

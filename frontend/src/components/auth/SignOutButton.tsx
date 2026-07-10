@@ -41,8 +41,8 @@ export function SignOutButton({ redirectTo = "/signin" }: SignOutButtonProps) {
           {error}
         </p>
       ) : null}
-      <Button onClick={handleClick} disabled={submitting}>
-        {submitting ? "Đang đăng xuất…" : "Đăng xuất"}
+      <Button onClick={handleClick} loading={submitting} loadingLabel="Đang đăng xuất…">
+        Đăng xuất
       </Button>
     </>
   );

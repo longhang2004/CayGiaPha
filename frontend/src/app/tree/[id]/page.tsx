@@ -22,6 +22,7 @@ import { PersonInfoPanel } from "@/components/graph/PersonInfoPanel";
 import { ViewpointSelector } from "@/components/graph/ViewpointSelector";
 import { TreeGraphSkeleton } from "@/components/graph/TreeGraphSkeleton";
 import { UpcomingEventsWidget } from "@/components/graph/UpcomingEventsWidget";
+import { Button } from "@/components/Button";
 import { TreeWorkspaceTour } from "@/components/onboarding/TreeWorkspaceTour";
 import { api, ApiError } from "@/lib/apiClient";
 import type { Person, Relationship, Address } from "@/lib/graph";
@@ -62,6 +63,9 @@ function TreePageContent({ params, searchParams }: TreePageProps) {
   const [region, setRegionState] = useState<Region>("Bac");
   const [livingRedaction, setLivingRedaction] = useState(true);
   const [sharing, setSharing] = useState("private");
+  const [treeName, setTreeName] = useState("Cây Gia Phả");
+  const [treeNameInput, setTreeNameInput] = useState("");
+  const [updatingTreeName, setUpdatingTreeName] = useState(false);
   
   const [loadingData, setLoadingData] = useState(true);
   const [addressesReady, setAddressesReady] = useState(false);
@@ -128,6 +132,7 @@ function TreePageContent({ params, searchParams }: TreePageProps) {
   const [inviteCode, setInviteCode] = useState("");
   const [generatedInviteCode, setGeneratedInviteCode] = useState("");
   const [loadingCollaborators, setLoadingCollaborators] = useState(false);
+  const [collaborationAction, setCollaborationAction] = useState<string | null>(null);
 
   const fetchCollaborationData = useCallback(async () => {
     if (!activeTreeId || !user) return;
@@ -155,6 +160,7 @@ function TreePageContent({ params, searchParams }: TreePageProps) {
   async function handleSendInvite(e: React.FormEvent) {
     e.preventDefault();
     if (!activeTreeId || !inviteEmail.trim()) return;
+    setCollaborationAction("invite");
     try {
       const result = await inviteCollaborator(activeTreeId, inviteEmail.trim());
       if (result.emailMessage) {
@@ -171,11 +177,14 @@ function TreePageContent({ params, searchParams }: TreePageProps) {
       fetchCollaborationData();
     } catch (err) {
       showToast(err instanceof ApiError ? err.message : "Không thể gửi lời mời.", "error");
+    } finally {
+      setCollaborationAction(null);
     }
   }
 
   async function handleCreateGenericInvite() {
     if (!activeTreeId) return;
+    setCollaborationAction("generate");
     try {
       const result = await createInviteLink(activeTreeId);
       setGeneratedInviteCode(result.code);
@@ -183,34 +192,43 @@ function TreePageContent({ params, searchParams }: TreePageProps) {
       fetchCollaborationData();
     } catch (err) {
       showToast(err instanceof ApiError ? err.message : "Không thể tạo mã mời.", "error");
+    } finally {
+      setCollaborationAction(null);
     }
   }
 
   async function handleApproveInvite(inviteId: string) {
     if (!activeTreeId) return;
+    setCollaborationAction(`approve:${inviteId}`);
     try {
       await approveInvitation(activeTreeId, inviteId);
       showToast("Đã duyệt lời mời cộng tác thành công!", "success");
       fetchCollaborationData();
     } catch (err) {
       showToast(err instanceof ApiError ? err.message : "Thao tác thất bại.", "error");
+    } finally {
+      setCollaborationAction(null);
     }
   }
 
   async function handleRejectInvite(inviteId: string) {
     if (!activeTreeId) return;
+    setCollaborationAction(`reject:${inviteId}`);
     try {
       await rejectInvitation(activeTreeId, inviteId);
       showToast("Đã từ chối/hủy lời mời cộng tác!", "success");
       fetchCollaborationData();
     } catch (err) {
       showToast(err instanceof ApiError ? err.message : "Thao tác thất bại.", "error");
+    } finally {
+      setCollaborationAction(null);
     }
   }
 
   async function handleJoinTree(e: React.FormEvent) {
     e.preventDefault();
     if (!inviteCode.trim()) return;
+    setCollaborationAction("join");
     try {
       const result = await joinTreeGroup(inviteCode.trim());
       if ("status" in result && result.status === "pending") {
@@ -223,6 +241,8 @@ function TreePageContent({ params, searchParams }: TreePageProps) {
       window.location.reload();
     } catch (err) {
       showToast(err instanceof ApiError ? err.message : "Mã mời không hợp lệ.", "error");
+    } finally {
+      setCollaborationAction(null);
     }
   }
 
@@ -237,6 +257,7 @@ function TreePageContent({ params, searchParams }: TreePageProps) {
         region: Region;
         livingRedaction: boolean;
         sharing: string;
+        name: string;
       }>(`/trees/${encodeURIComponent(id)}`, {
         headers: token ? { "X-Share-Token": token } : undefined,
       });
@@ -245,6 +266,8 @@ function TreePageContent({ params, searchParams }: TreePageProps) {
       setRegionState(data.region);
       setLivingRedaction(data.livingRedaction);
       setSharing(data.sharing);
+      setTreeName(data.name || "Cây Gia Phả");
+      setTreeNameInput(data.name || "Cây Gia Phả");
     } catch (err) {
       if (err instanceof ApiError) {
         if (err.status === 401) {
@@ -324,6 +347,25 @@ function TreePageContent({ params, searchParams }: TreePageProps) {
       console.warn(err instanceof ApiError ? err.message : "Không thể cập nhật cấu hình bảo vệ.");
     } finally {
       setUpdatingRedaction(false);
+    }
+  }
+
+  async function handleTreeNameSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!activeTreeId || !treeNameInput.trim()) return;
+    setUpdatingTreeName(true);
+    try {
+      const result = await api.patch<{ treeId: string; name: string }>(
+        `/trees/${encodeURIComponent(activeTreeId)}/name`,
+        { name: treeNameInput.trim() },
+      );
+      setTreeName(result.name);
+      setTreeNameInput(result.name);
+      showToast("Đã cập nhật tên cây gia phả.", "success");
+    } catch (err) {
+      showToast(err instanceof ApiError ? err.message : "Không thể đổi tên cây.", "error");
+    } finally {
+      setUpdatingTreeName(false);
     }
   }
 
@@ -477,7 +519,7 @@ function TreePageContent({ params, searchParams }: TreePageProps) {
             <div className="tree-page-header__brand">
               <img src="/logo.svg" alt="Logo Cây Gia Phả" className="tree-page-header__logo" />
               <div className="tree-page-header__title-container">
-                <h1 className="tree-page-header__title">Gia Phả Dòng Họ</h1>
+                <h1 className="tree-page-header__title">{treeName}</h1>
                 <span className="tree-page-header__count">{persons.length} thành viên</span>
               </div>
             </div>
@@ -766,6 +808,22 @@ function TreePageContent({ params, searchParams }: TreePageProps) {
               {isOwner && (
                 <section className="settings-section">
                   <h3>Cài đặt gia phả</h3>
+                  <form onSubmit={handleTreeNameSubmit} className="field" style={{ marginBottom: "1rem" }}>
+                    <label htmlFor="tree-name-input">Tên cây gia phả</label>
+                    <div style={{ display: "flex", gap: "0.5rem", marginTop: "0.5rem" }}>
+                      <Input
+                        id="tree-name-input"
+                        value={treeNameInput}
+                        onChange={(e) => setTreeNameInput(e.target.value)}
+                        maxLength={120}
+                        required
+                        style={{ flex: 1 }}
+                      />
+                      <Button type="submit" loading={updatingTreeName} loadingLabel="Đang lưu…" disabled={!treeNameInput.trim()}>
+                        Lưu
+                      </Button>
+                    </div>
+                  </form>
                   <RegionSelector
                     treeId={activeTreeId}
                     region={region}
@@ -938,7 +996,9 @@ function TreePageContent({ params, searchParams }: TreePageProps) {
                         required
                         style={{ flex: 1 }}
                       />
-                      <button type="submit" className="btn btn-secondary">Mời</button>
+                      <button type="submit" className="btn btn-secondary" disabled={collaborationAction !== null} aria-busy={collaborationAction === "invite" || undefined}>
+                        {collaborationAction === "invite" ? <><span className="btn__spinner" aria-hidden="true" />Đang gửi mail…</> : "Mời"}
+                      </button>
                     </div>
                   </form>
                 )}
@@ -960,8 +1020,8 @@ function TreePageContent({ params, searchParams }: TreePageProps) {
                         </button>
                       </div>
                     ) : (
-                      <button type="button" className="btn btn-secondary" onClick={handleCreateGenericInvite} style={{ alignSelf: "flex-start" }}>
-                        Tạo mã mời
+                      <button type="button" className="btn btn-secondary" onClick={handleCreateGenericInvite} disabled={collaborationAction !== null} aria-busy={collaborationAction === "generate" || undefined} style={{ alignSelf: "flex-start" }}>
+                        {collaborationAction === "generate" ? <><span className="btn__spinner" aria-hidden="true" />Đang tạo…</> : "Tạo mã mời"}
                       </button>
                     )}
                   </div>
@@ -975,8 +1035,12 @@ function TreePageContent({ params, searchParams }: TreePageProps) {
                         <Card key={invite.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "0.75rem", borderLeftWidth: "4px", borderLeftColor: "var(--color-danger)" }}>
                           <span style={{ fontSize: "0.85rem", fontWeight: 600 }}>{invite.email}</span>
                           <div style={{ display: "flex", gap: "0.25rem" }}>
-                            <button type="button" className="btn" style={{ padding: "0.2rem 0.5rem", fontSize: "0.75rem" }} onClick={() => handleApproveInvite(invite.id)}>Duyệt</button>
-                            <button type="button" className="btn btn-secondary" style={{ padding: "0.2rem 0.5rem", fontSize: "0.75rem" }} onClick={() => handleRejectInvite(invite.id)}>Từ chối</button>
+                            <button type="button" className="btn" style={{ padding: "0.2rem 0.5rem", fontSize: "0.75rem" }} onClick={() => handleApproveInvite(invite.id)} disabled={collaborationAction !== null} aria-busy={collaborationAction === `approve:${invite.id}` || undefined}>
+                              {collaborationAction === `approve:${invite.id}` ? <span className="btn__spinner" aria-hidden="true" /> : "Duyệt"}
+                            </button>
+                            <button type="button" className="btn btn-secondary" style={{ padding: "0.2rem 0.5rem", fontSize: "0.75rem" }} onClick={() => handleRejectInvite(invite.id)} disabled={collaborationAction !== null} aria-busy={collaborationAction === `reject:${invite.id}` || undefined}>
+                              {collaborationAction === `reject:${invite.id}` ? <span className="btn__spinner" aria-hidden="true" /> : "Từ chối"}
+                            </button>
                           </div>
                         </Card>
                       ))}
@@ -998,7 +1062,9 @@ function TreePageContent({ params, searchParams }: TreePageProps) {
                         required
                         style={{ flex: 1 }}
                       />
-                      <button type="submit" className="btn btn-secondary">Tham gia</button>
+                      <button type="submit" className="btn btn-secondary" disabled={collaborationAction !== null} aria-busy={collaborationAction === "join" || undefined}>
+                        {collaborationAction === "join" ? <><span className="btn__spinner" aria-hidden="true" />Đang tham gia…</> : "Tham gia"}
+                      </button>
                     </div>
                   </form>
                 )}

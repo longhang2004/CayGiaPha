@@ -119,7 +119,7 @@ export function DeletionDialog({
 
   return (
     <div>
-      <Button type="button" onClick={handleOpen} disabled={loading} className={className}>
+      <Button type="button" onClick={handleOpen} loading={loading} loadingLabel="Đang chuẩn bị..." className={className}>
         {triggerLabel}
       </Button>
 
@@ -156,7 +156,7 @@ export function DeletionDialog({
           <Button type="button" onClick={handleDismiss} disabled={executing} className="btn-secondary">
             Hủy
           </Button>
-          <Button type="button" onClick={handleConfirm} disabled={executing || !strategy} className="btn-danger">
+          <Button type="button" onClick={handleConfirm} disabled={!strategy} loading={executing} loadingLabel="Đang xóa..." className="btn-danger">
             Xóa thành viên
           </Button>
         </ModalFooter>

@@ -96,8 +96,8 @@ export function OtpForm({
         ) : null}
       </div>
 
-      <Button type="submit" disabled={submitting}>
-        {submitting ? "Đang xác thực…" : submitLabel}
+      <Button type="submit" loading={submitting} loadingLabel="Đang xác thực…">
+        {submitLabel}
       </Button>
       {onBack ? (
         <Button onClick={onBack} disabled={submitting} className="btn-secondary">

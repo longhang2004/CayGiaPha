@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useMemo } from "react";
+import { Button } from "@/components/Button";
 import { ApiError } from "@/lib/apiClient";
 import {
   deletePhoto,
@@ -204,9 +205,9 @@ export function PersonPhotos({ treeId, personId, canEdit = false }: PersonPhotos
             </div>
 
             <div style={{ display: "flex", gap: "0.5rem", justifyContent: "flex-end" }}>
-              <button
+              <Button
                 type="button"
-                className="btn btn-secondary"
+                className="btn-secondary"
                 onClick={() => {
                   setSelectedFile(null);
                   if (fileInput.current) fileInput.current.value = "";
@@ -214,15 +215,15 @@ export function PersonPhotos({ treeId, personId, canEdit = false }: PersonPhotos
                 disabled={busy}
               >
                 Hủy
-              </button>
-              <button
+              </Button>
+              <Button
                 type="button"
-                className="btn"
                 onClick={() => void handleConfirmUpload()}
-                disabled={busy}
+                loading={busy}
+                loadingLabel="Đang tải lên…"
               >
-                {busy ? "Đang tải lên…" : "Lưu ảnh"}
-              </button>
+                Lưu ảnh
+              </Button>
             </div>
           </div>
         ) : (

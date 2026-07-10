@@ -4,6 +4,7 @@ import { useState, type DragEvent, type FormEvent } from "react";
 import { useSession } from "@/app/providers";
 import { ApiError, api } from "@/lib/apiClient";
 import { MoneyIcon } from "@/components/ui/Icons";
+import { Button } from "@/components/Button";
 
 interface SupportFeedbackSectionProps {
   prototype?: boolean;
@@ -257,9 +258,9 @@ export function FeedbackSection({
           </p>
         )}
 
-        <button type="submit" className="btn" disabled={status === "submitting"}>
-          {status === "submitting" ? "Đang gửi..." : "Gửi feedback"}
-        </button>
+        <Button type="submit" loading={status === "submitting"} loadingLabel="Đang gửi feedback…">
+          Gửi feedback
+        </Button>
       </form>
     </div>
   );

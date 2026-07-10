@@ -3,6 +3,8 @@ import type { ButtonHTMLAttributes, ReactNode } from "react";
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   children: ReactNode;
   icon?: ReactNode;
+  loading?: boolean;
+  loadingLabel?: ReactNode;
 }
 
 /**
@@ -20,12 +22,16 @@ export function Button({
   type = "button",
   className,
   icon,
+  loading = false,
+  loadingLabel,
+  disabled,
   ...rest
 }: ButtonProps) {
   const classes = className ? `btn ${className}` : "btn";
   return (
-    <button type={type} className={classes} {...rest}>
-      {children}
+    <button type={type} className={classes} disabled={disabled || loading} aria-busy={loading || undefined} {...rest}>
+      {loading ? <span className="btn__spinner" aria-hidden="true" /> : null}
+      {loading ? (loadingLabel ?? children) : children}
       {icon && (
         <span
           className="btn-trailing-icon"

@@ -191,3 +191,34 @@ export async function DELETE(
     return Response.json({ success: true });
   });
 }
+
+export async function PATCH(
+  request: Request,
+  { params }: { params: { treeId: string } },
+) {
+  return handleApiRoute(async () => {
+    const auth = await getAuthContext();
+    const treeId = params.treeId;
+    await authorizationService.requireOwner(auth.userId, auth.ownedTreeId, treeId);
+
+    const body = await request.json().catch(() => null) as { name?: unknown } | null;
+    const name = typeof body?.name === "string" ? body.name.trim() : "";
+    if (!name) {
+      throw ApiException.validation("name", "Tên cây gia phả không được để trống.");
+    }
+    if (name.length > 120) {
+      throw ApiException.validation("name", "Tên cây gia phả không được dài quá 120 ký tự.");
+    }
+
+    const updated = await db
+      .update(trees)
+      .set({ name })
+      .where(eq(trees.id, treeId))
+      .returning({ id: trees.id, name: trees.name });
+    const tree = updated[0];
+    if (!tree) {
+      throw ApiException.nodeNotAccessible("The specified tree was not found.");
+    }
+    return Response.json({ treeId: tree.id, name: tree.name });
+  });
+}

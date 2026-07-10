@@ -123,8 +123,8 @@ export function SignInFlow({ redirectTo = "/" }: SignInFlowProps) {
       </div>
 
       <div style={{ marginTop: "1.5rem", display: "flex", flexDirection: "column", gap: "0.75rem" }}>
-        <Button type="submit" disabled={submitting} style={{ width: "100%" }}>
-          {submitting ? "Đang đăng nhập…" : "Đăng nhập"}
+        <Button type="submit" loading={submitting} loadingLabel="Đang đăng nhập…" style={{ width: "100%" }}>
+          Đăng nhập
         </Button>
         <div style={{ display: "flex", alignItems: "center", textTransform: "uppercase", fontSize: "0.75rem", color: "var(--color-muted)" }}>
           <div style={{ flex: 1, height: "1px", backgroundColor: "var(--color-hairline)" }} />
