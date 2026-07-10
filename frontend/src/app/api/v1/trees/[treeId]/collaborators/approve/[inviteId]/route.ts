@@ -54,6 +54,7 @@ export async function POST(
         await db
           .insert(treeCollaborators)
           .values({
+            id: randomUUID(),
             treeId: invite.treeId,
             userId: user.id,
             role: "contributor",

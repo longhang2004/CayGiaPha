@@ -127,7 +127,7 @@ if (databaseUrl && !isProductionBuild) {
       `);
       await dbInstance.execute(sql`
         CREATE TABLE IF NOT EXISTS tree_collaborators (
-            id UUID NOT NULL,
+            id UUID NOT NULL DEFAULT gen_random_uuid(),
             tree_id UUID NOT NULL,
             user_id UUID NOT NULL,
             role VARCHAR(20) NOT NULL DEFAULT 'contributor',
@@ -140,11 +140,11 @@ if (databaseUrl && !isProductionBuild) {
       `);
       await dbInstance.execute(sql`
         CREATE TABLE IF NOT EXISTS collaboration_invitations (
-            id UUID NOT NULL,
+            id UUID NOT NULL DEFAULT gen_random_uuid(),
             tree_id UUID NOT NULL,
             inviter_user_id UUID NOT NULL,
-            email VARCHAR(255) NOT NULL,
-            code VARCHAR(6) NOT NULL,
+            email VARCHAR(255),
+            code VARCHAR(64) NOT NULL,
             status VARCHAR(25) NOT NULL DEFAULT 'pending',
             created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
             expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
@@ -153,6 +153,13 @@ if (databaseUrl && !isProductionBuild) {
             CONSTRAINT fk_collaboration_invitations_inviter FOREIGN KEY (inviter_user_id) REFERENCES users(id) ON DELETE CASCADE
       );
     `);
+      // Repair older schemas created without UUID defaults (join insert used DEFAULT).
+      await dbInstance.execute(sql`
+        ALTER TABLE tree_collaborators ALTER COLUMN id SET DEFAULT gen_random_uuid();
+      `);
+      await dbInstance.execute(sql`
+        ALTER TABLE collaboration_invitations ALTER COLUMN id SET DEFAULT gen_random_uuid();
+      `);
       console.log("[drizzle] Schema migrations verified and applied.");
     } catch (err) {
       console.warn("[drizzle] Schema migration check completed with warning (usually safe if already applied):", err);
