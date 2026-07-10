@@ -26,7 +26,7 @@ Durable project knowledge for future AI agents. Keep entries short, verified, an
 
 ## 2026-06-24
 
-- **Prototype Pages**: Added a `(prototype)` route group at `frontend/src/app/(prototype)/`. Prototype pages render real components with mock data — no auth required. Routes: `/prototype` (index), `/prototype/home`, `/prototype/signin`, `/prototype/signin/otp`, `/prototype/signup`, `/prototype/signup/otp`, `/prototype/tree`, `/prototype/tree?panel=settings`, `/prototype/tree/empty`, `/prototype/help`.
+- **Prototype Pages**: Added a `(prototype)` route group at `frontend/src/app/(prototype)/`. Prototype pages render real components with mock data — no auth required. Actual routes as of 2026-07-10: `/prototype` (index), `/prototype/home`, `/prototype/signin`, `/prototype/signup`, `/prototype/forgot-password`, `/prototype/invitation/[id]`, `/prototype/tree`, `/prototype/tree?panel=settings`, `/prototype/tree/empty`, `/prototype/help`. The index UI still contains stale OTP links; check the UI audit before relying on it.
 - **Prototype Guard**: Middleware blocks `/prototype/*` in production (NODE_ENV=production) with 404. Layout also calls `notFound()` as a second guard.
 - **MockSessionProvider**: Lives in `frontend/src/lib/prototype/mockSession.tsx`. Injects mock session into the real `SessionContext` (exported from `providers.tsx`) so all `useSession()` calls across real components work without a real backend session.
 - **SessionContext export**: `SessionContext` and `SessionContextValue` are now exported from `frontend/src/app/providers.tsx` — intentional, required by `MockSessionProvider`. Do not remove.
@@ -62,3 +62,11 @@ Durable project knowledge for future AI agents. Keep entries short, verified, an
 
 - **Playwright Dev Server Rule**: Before starting a dev server for browser/Playwright checks, inspect port 3000 first. If port 3000 is already this project's dev server, reuse it. If port 3000 is free, start this project on 3000. If port 3000 belongs to another process/project, start the dev server on a different free port.
 - **Extended Family Branch UX**: The tree graph is ego-centric. Render the active viewpoint's bloodline, show spouse/in-law nodes as one-hop boundary nodes, and collapse each boundary node's separate family branch behind an expansion badge until the user switches the viewpoint to that person.
+
+## 2026-07-10
+
+- **Frontend UI context**: Durable design guidance, the route/component/style/prototype map, and the evidence-backed audit backlog live in `frontend/docs/ui/README.md`, `INDEX.md`, and `AUDIT.md`. Read them before UI work.
+- **UI audit baseline**: The 2026-07-10 audit rendered 9 prototypes at desktop/tablet/mobile without runtime errors, passed 29/29 a11y tests, and found one stale populated-tree Playwright heading assertion. See the audit for token, touch-target, shell, modal, and prototype drift details.
+- **Multi-model planning**: When the user asks for a plan, task split, or prompts for multiple models, follow `.agents/multi-model-playbook.md`. Classify work by required capability tier (`heavy`, `medium`, or `light`) instead of provider/model names. The planning agent leads architecture, integration, and review—preferably using a heavy model—and delegation remains optional based on independence, risk, and coordination cost.
+- **Cross-model prompt handoff**: Model communication is prompt-based in both directions. Heavy writes an explicit execution prompt for Medium/Light and must require the worker to return a standardized review prompt containing artifacts, evidence, verification, risks, and focused review instructions. Corrections use a new execution-prompt/review-prompt cycle.
+- **Product delivery roles**: Follow `.agents/product-delivery-workflow.md` for work involving PO/BA, UI/UX Designer, Heavy Orchestrator, and Medium/Light Workers. The gated flow is PO/BA task discovery → optional required design request → Designer review prompt → PO/BA approval and task docs/orchestration prompt → Heavy decomposition → Worker execution/review prompts → Heavy verification/rework → commit-ready approval (and commit only when authorized).

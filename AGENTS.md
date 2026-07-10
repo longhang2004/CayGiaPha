@@ -34,6 +34,21 @@ Constraints: smallest correct change; protect privacy/security; preserve existin
 
 For implementation tasks, convert vague requests into verifiable goals before editing.
 
+## Multi-Model Planning and Delegation
+
+When the user asks for planning, task breakdown, delegation, or prompts for multiple models, read and follow `.agents/multi-model-playbook.md` before producing the plan.
+
+For product-delivery work that involves PO/BA, UI/UX Designer, Orchestrator, and Worker roles, also follow `.agents/product-delivery-workflow.md`. In this repository, `PA/BO` in user discussions is treated as an alias/typo for `PO/BA` unless the user defines it differently.
+
+- The planning agent is the default lead, architect, and final integrator; use a heavy-capability model for this role when model selection is available.
+- Delegate only workstreams with clear boundaries, inputs, outputs, file ownership, and verification.
+- Assign work to heavy, medium, or light models according to complexity, risk, context breadth, and verification needs rather than provider names.
+- Keep tightly coupled, cross-layer, privacy-sensitive, architectural, or integration-heavy changes with the lead/heavy model unless parallelism has a clear benefit.
+- Every delegated task must include the repository context, allowed scope, dependencies, acceptance criteria, required tests, prohibited changes, and handoff format.
+- Cross-model communication must use explicit prompt handoffs: the lead/heavy model writes the execution prompt, and each medium/light model returns a self-contained review prompt for the heavy model. The execution prompt must explicitly require this return prompt.
+- Product and design handoffs are also prompt-based: PO/BA requests design work, Designer returns a design-review prompt, PO/BA approves or requests revision, then PO/BA produces the approved task document and orchestration prompt.
+- The final plan must include integration order, review ownership, and end-to-end verification; delegated output is never accepted without lead review.
+
 ## Codegraph Workflow
 
 Use Codegraph when available:
@@ -133,13 +148,13 @@ Prototype pages render each main functional page with mock data — no login req
 |---|---|
 | `/prototype` | Index / discovery page |
 | `/prototype/home` | `src/app/page.tsx` |
-| `/prototype/signin` | `src/app/signin/page.tsx` — identifier step |
-| `/prototype/signin/otp` | `src/app/signin/page.tsx` — OTP step |
-| `/prototype/signup` | `src/app/signup/page.tsx` — identifier+TOS step |
-| `/prototype/signup/otp` | `src/app/signup/page.tsx` — OTP step |
-| `/prototype/tree` | `src/app/tree/page.tsx` — populated tree |
-| `/prototype/tree?panel=settings` | `src/app/tree/page.tsx` — settings modal open |
-| `/prototype/tree/empty` | `src/app/tree/page.tsx` — empty/onboarding state |
+| `/prototype/signin` | `src/app/signin/page.tsx` / `SignInFlow` |
+| `/prototype/signup` | `src/app/signup/page.tsx` / `SignUpFlow` |
+| `/prototype/forgot-password` | `src/app/forgot-password/page.tsx` / `ForgotPasswordFlow` |
+| `/prototype/invitation/[id]` | `src/app/invitation/[id]/page.tsx` |
+| `/prototype/tree` | `src/app/tree/[id]/page.tsx` — populated workspace |
+| `/prototype/tree?panel=settings` | `src/app/tree/[id]/page.tsx` — settings modal open |
+| `/prototype/tree/empty` | `src/app/tree/[id]/page.tsx` — empty/onboarding state |
 | `/prototype/help` | `src/app/help/page.tsx` |
 
 ### Mandatory Sync Rule

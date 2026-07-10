@@ -46,3 +46,11 @@ src/
   components/     # Reusable UI components
   lib/            # API client, session helpers, test support
 ```
+
+## UI design context
+
+Before changing a page, component, layout, or style, start with
+[`docs/ui/README.md`](docs/ui/README.md). The companion
+[`docs/ui/INDEX.md`](docs/ui/INDEX.md) maps routes to
+components/styles/prototypes, and
+[`docs/ui/AUDIT.md`](docs/ui/AUDIT.md) records the current improvement backlog.

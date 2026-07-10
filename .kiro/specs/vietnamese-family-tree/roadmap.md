@@ -40,6 +40,78 @@ giapha.org, MyTree.vn, MyHeritage, FamilySearch.
 Core graph model, Kinship Resolver (Bắc/Trung/Nam), solid/dashed relationships, node claiming,
 OTP auth, privacy controls, photo storage, search/filter, help system, accessibility.
 
+#### Implementation Audit — 2026-07-10
+
+The repository already contains the following v1 capabilities: OTP/email authentication, tree and
+person CRUD, primitive parent/spouse relationships, Vietnamese kinship resolution, privacy and
+living-person redaction, photo uploads, search, share tokens, node claiming, audit/legal flows, and
+basic collaboration invitations. These are the strongest current product foundations and should be
+treated as existing capability rather than future roadmap work.
+
+The following roadmap items are partially implemented:
+
+- **F-1:** Vietnamese lunar/solar conversion, upcoming death-anniversary events, and in-app
+  reminders exist. Push/email/Zalo delivery, a full monthly event view, RSVP, and rotating host
+  duty do not yet exist.
+- **F-4:** Collaborator invitation, joining, approval/rejection, and a contributor role exist.
+  Branch-scoped permissions, read-only roles, proposed changes, approval before commit, and a
+  complete change-review workflow do not yet exist.
+
+The following items have no clear implementation in the current repository: grave/site map (F-2),
+QR identity cards (F-3), oral history recording (F-5), AI narrative generation (F-6), dual-language
+support (F-7), clan fund management (F-8), clan announcements and RSVP (F-9), OCR/Hán Nôm (F-10),
+cross-tree discovery (F-11), health/trait tracking (F-12), and gamification (F-13).
+
+This audit is based on the current controllers, services, entities, and frontend schema. “No clear
+implementation” means the capability was not found in the repository; it is not a claim that no
+prototype or external experiment exists elsewhere.
+
+#### Current Product Gap vs. Market
+
+Competitors such as [MyTree.vn](https://mytree.vn/), Phả Tuệ, Gia Phả Đại Việt, and giapha.org
+commonly advertise visual tree browsing, import/export (Excel, GEDCOM, PDF, PNG), public clan
+websites, media libraries, QR member cards, event/reminder tools, maps, and administrator/editor
+permissions. CayGiaPha is currently differentiated less by feature breadth and more by its domain
+depth: regional Vietnamese kinship resolution, asserted-versus-derived relationships, privacy
+redaction, and node claiming.
+
+The product risk is therefore not lack of a large feature count. It is that the current strengths are
+hard to discover while several familiar migration and sharing workflows are missing. Import/export,
+reviewable collaboration, reminders that reach people outside the app, and a reliable clan event
+workflow should come before high-risk AI features.
+
+#### Evidence-Based Pain Points to Validate
+
+The market and community review surfaced recurring problems: fear that a collaborator will corrupt
+the official tree; manual re-entry of names and dates from paper books or spreadsheets; loss of
+photos and family knowledge in scattered Zalo/Facebook chats; uncertainty about who owns the data or
+whether it can be exported; and difficulty finding graves or ancestral temples after migration.
+These are hypotheses from public discussions and competitor positioning, not quantified survey
+results. Product discovery should validate them with Vietnamese clan administrators and family
+historians before committing to large builds.
+
+#### Recommended Near-Term Bets
+
+To create customer-visible value and a defensible adoption loop, prioritize in this order:
+
+1. **Complete F-1:** monthly lunar event calendar, push/email delivery, RSVP, and rotating host
+   assignment. This turns an occasional archive into a recurring family habit.
+2. **Strengthen F-4:** branch editor/read-only roles, proposed changes, approval queue, locks for
+   verified records, and a readable audit history. This addresses the trust barrier to inviting an
+   entire clan.
+3. **Add F-3:** QR profile cards with viewpoint-aware `cách xưng hô` for clan gatherings. This is
+   low effort, highly demonstrable, and directly showcases the Kinship Resolver moat.
+4. **Add import/export:** Excel and GEDCOM import plus PDF/PNG/GEDCOM export. This is a prerequisite
+   for switching from existing tools and is more urgent than F-6/F-10 AI work.
+5. **Add F-2's online slice:** grave and nhà thờ tổ coordinates, photos, and map directions first;
+   defer offline navigation until real usage proves it is needed.
+6. **Add F-5's capture slice:** audio recording, consent, storage, playback, and Vietnamese
+   transcription before guided AI interviews or memory-book generation.
+
+The three best experiments for the next product cycle are: “ngày giỗ không quên”, “quét QR biết
+xưng hô”, and “cộng tác nhưng không làm hỏng gia phả”. Each can be tested with a small number of
+real clans before committing to the broader feature scope below.
+
 ---
 
 ### v1.1 — Cultural Utility Layer
@@ -342,6 +414,6 @@ Research shows they engage with genealogy through discovery experiences, not dat
 
 ---
 
-*Last updated: 2026-06-23. Maintained by the CayGiaPha product team.*
+*Last updated: 2026-07-10. Maintained by the CayGiaPha product team.*
 *Source research: Vietnamese genealogy forums, Facebook clan groups, Reddit r/genealogy,
 global genealogy product analysis 2024–2026.*
