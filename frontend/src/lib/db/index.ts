@@ -5,7 +5,7 @@ import { Pool as PgPool } from "pg";
 import { eq, sql } from "drizzle-orm";
 import * as schema from "./schema";
 
-const databaseUrl = process.env.DATABASE_URL || "";
+const databaseUrl = process.env.DATABASE_URL || process.env.POSTGRES_URL || "";
 const isNeon = databaseUrl.includes("neon.tech") || databaseUrl.includes("neon.development");
 const isProductionBuild = process.env.NEXT_PHASE === "phase-production-build";
 
@@ -97,7 +97,7 @@ export async function ensureUserDisplayNameSchema(): Promise<void> {
                   AND display_name !~ '[[:cntrl:]]'
                   AND display_name = regexp_replace(btrim(display_name), '[[:space:]]+', ' ', 'g')
                 )
-              );
+              ) NOT VALID;
           END IF;
         END $$;
       `);

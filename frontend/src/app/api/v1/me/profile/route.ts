@@ -54,11 +54,15 @@ export async function PATCH(request: Request) {
     } catch (error) {
       if (isMissingDisplayNameColumn(error)) {
         await ensureUserDisplayNameSchema();
-        [updated] = await db
-          .update(users)
-          .set({ displayName })
-          .where(eq(users.id, auth.userId))
-          .returning({ userId: users.id, displayName: users.displayName });
+        try {
+          [updated] = await db
+            .update(users)
+            .set({ displayName })
+            .where(eq(users.id, auth.userId))
+            .returning({ userId: users.id, displayName: users.displayName });
+        } catch (fallbackError) {
+          throw ApiException.internal("Không thể cập nhật tên hiển thị lúc này do lỗi hệ thống.");
+        }
       } else if (isDisplayNameConstraintViolation(error)) {
         throw ApiException.validation(
           "displayName",
