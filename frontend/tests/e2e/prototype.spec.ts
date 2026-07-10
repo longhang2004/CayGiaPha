@@ -1,5 +1,17 @@
 import { test, expect } from "@playwright/test";
 
+const PROTOTYPE_PAGES = [
+  { href: "/prototype/home", label: "Trang chủ" },
+  { href: "/prototype/signin", label: "Đăng nhập" },
+  { href: "/prototype/signup", label: "Đăng ký" },
+  { href: "/prototype/forgot-password", label: "Quên mật khẩu" },
+  { href: "/prototype/tree", label: "Cây gia phả" },
+  { href: "/prototype/tree?panel=settings", label: "Cây gia phả - Cài đặt" },
+  { href: "/prototype/tree/empty", label: "Cây gia phả rỗng" },
+  { href: "/prototype/invitation/test-invite-123", label: "Thư mời" },
+  { href: "/prototype/help", label: "Hướng dẫn" },
+];
+
 /**
  * Prototype pages smoke tests.
  *
@@ -15,6 +27,14 @@ test.describe("Prototype Pages — smoke tests (no auth required)", () => {
     // At minimum the tree link should be visible
     await expect(page.locator('a[href="/prototype/tree"]')).toBeVisible();
   });
+
+  for (const p of PROTOTYPE_PAGES) {
+    test(`manifest route renders without error: ${p.href}`, async ({ page }) => {
+      const response = await page.goto(p.href);
+      expect(response?.status()).toBe(200);
+      await expect(page.locator("body")).toBeVisible();
+    });
+  }
 
   test("home prototype — logged-out state renders sign-up and sign-in CTAs", async ({
     page,
@@ -61,7 +81,7 @@ test.describe("Prototype Pages — smoke tests (no auth required)", () => {
     page,
   }) => {
     await page.goto("/prototype/tree");
-    await expect(page.locator("h1")).toContainText("Sơ đồ gia phả");
+    await expect(page.locator("h1")).toContainText("Gia phả dòng họ");
     await expect(page.locator(".tree-graph__canvas")).toBeVisible();
     // Mock persons appear as nodes
     await expect(

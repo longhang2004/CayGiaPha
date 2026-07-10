@@ -20,7 +20,7 @@
  * update this file in the SAME commit/PR.
  */
 
-import { useState, useCallback, Suspense } from "react";
+import React, { useState, useEffect, useCallback, Suspense, useMemo } from "react";
 import { useSearchParams } from "next/navigation";
 import { TreeGraph } from "@/components/graph/TreeGraph";
 import { useToast } from "@/components/ui/ToastProvider";
@@ -28,6 +28,7 @@ import { Modal, ModalHeader, ModalBody, ModalFooter } from "@/components/ui/Moda
 import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { Input } from "@/components/ui/FormControls";
+import { GraphLegend } from "@/components/graph/GraphLegend";
 import { PersonForm } from "@/components/person/PersonForm";
 import { AddRelativeForm } from "@/components/person/AddRelativeForm";
 import { DeletionDialog } from "@/components/deletion/DeletionDialog";
@@ -40,6 +41,7 @@ import { ViewpointSelector } from "@/components/graph/ViewpointSelector";
 import { UpcomingEventsWidget } from "@/components/graph/UpcomingEventsWidget";
 import type { Person, Relationship, Address, ViewpointAddresses } from "@/lib/graph";
 import type { Region } from "@/lib/region";
+import type { TreeCollaborator, CollaborationInvitation } from "@/lib/collaboration";
 import { MockSessionProvider } from "@/lib/prototype/mockSession";
 import {
   MOCK_PERSONS,
@@ -49,6 +51,8 @@ import {
 } from "@/lib/prototype/mockData";
 import "@/components/graph/graph.css";
 import { CollaborationIcon, PlusIcon, CloseIcon } from "@/components/ui/Icons";
+import { CollaborationModal, type CollaborationAdapter } from "@/components/collaboration/CollaborationModal";
+import { SettingsModal } from "@/components/tree/SettingsModal";
 import { OnboardingModal } from "@/components/onboarding/OnboardingModal";
 import { TreeWorkspaceTour } from "@/components/onboarding/TreeWorkspaceTour";
 
@@ -116,10 +120,10 @@ function PrototypeTreeContent() {
   const [persons] = useState<Person[]>(MOCK_PERSONS);
   const [relationships] = useState<Relationship[]>(MOCK_RELATIONSHIPS);
   const [region, setRegionState] = useState<Region>("Bac");
-  const [livingRedaction] = useState(false);
-  const [sharing] = useState("private");
-  const [treeName, setTreeName] = useState("Gia Phả Dòng Họ");
-  const [treeNameInput, setTreeNameInput] = useState("Gia Phả Dòng Họ");
+  const [livingRedaction, setLivingRedaction] = useState(false);
+  const [sharing, setSharing] = useState("private");
+  const [shareToken, setShareToken] = useState<string | null>(null);
+  const [treeName, setTreeName] = useState("Gia phả dòng họ");
 
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [selectedAddress, setSelectedAddress] = useState<
@@ -151,85 +155,50 @@ function PrototypeTreeContent() {
     setIsSettingsOpen(false);
   }, []);
 
-  const [collaborators, setCollaborators] = useState<any[]>([
-    { id: "collab-1", userId: "contributor@example.com", role: "contributor", joinedAt: new Date().toISOString() }
-  ]);
-  const [pendingInvites, setPendingInvites] = useState<any[]>([
-    { id: "invite-1", email: "pending-contributor@example.com", code: "654321", status: "pending" }
-  ]);
-  const [inviteEmail, setInviteEmail] = useState("");
-  const [inviteCode, setInviteCode] = useState("");
-  const [generatedInviteCode, setGeneratedInviteCode] = useState("");
-  const [collaborationAction, setCollaborationAction] = useState<string | null>(null);
+  const mockAdapter = useMemo<CollaborationAdapter>(() => {
+    let mockCollaborators: TreeCollaborator[] = [
+      { id: "collab-1", treeId: PROTOTYPE_TREE_ID, userId: "contributor@example.com", role: "contributor", joinedAt: new Date().toISOString() }
+    ];
+    let mockPendingInvites: CollaborationInvitation[] = [
+      { id: "invite-1", treeId: PROTOTYPE_TREE_ID, inviterUserId: "system", email: "pending-contributor@example.com", code: "654321", status: "pending", expiresAt: new Date(Date.now() + 86400000).toISOString() }
+    ];
 
-  const waitForCollaborationAction = () => new Promise((resolve) => window.setTimeout(resolve, 350));
+    const wait = () => new Promise((resolve) => window.setTimeout(resolve, 350));
 
-  const handleSendInvite = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!inviteEmail.trim()) return;
-    setCollaborationAction("invite");
-    try {
-      await waitForCollaborationAction();
-      const newInvite = {
-        id: `invite-${Date.now()}`,
-        email: inviteEmail.trim(),
-        code: "111222",
-        status: "approved"
-      };
-      showToast(`Đã tạo lời mời email đã duyệt sẵn. Mã mời: ${newInvite.code}`, "success");
-      setInviteEmail("");
-    } finally {
-      setCollaborationAction(null);
-    }
-  };
-
-  const handleCreateGenericInvite = async () => {
-    setCollaborationAction("generate");
-    try {
-      await waitForCollaborationAction();
-      setGeneratedInviteCode("999888");
-    } finally {
-      setCollaborationAction(null);
-    }
-  };
-
-  const handleApproveInvite = async (id: string) => {
-    const invite = pendingInvites.find(i => i.id === id);
-    if (!invite) return;
-    setCollaborationAction(`approve:${id}`);
-    try {
-      await waitForCollaborationAction();
-      setPendingInvites(prev => prev.filter(i => i.id !== id));
-      setCollaborators(prev => [...prev, { id: `collab-${Date.now()}`, userId: invite.email, role: "contributor" }]);
-      showToast("Bạn đã tham gia nhóm cộng tác xây dựng cây thành công!", "success");
-    } finally {
-      setCollaborationAction(null);
-    }
-  };
-
-  const handleRejectInvite = async (id: string) => {
-    setCollaborationAction(`reject:${id}`);
-    try {
-      await waitForCollaborationAction();
-      setPendingInvites(prev => prev.filter(i => i.id !== id));
-      showToast("Đã từ chối lời mời cộng tác!", "success");
-    } finally {
-      setCollaborationAction(null);
-    }
-  };
-
-  const handleJoinTree = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!inviteCode.trim()) return;
-    setCollaborationAction("join");
-    try {
-      await waitForCollaborationAction();
-      showToast("Yêu cầu của bạn đã được gửi. Vui lòng chờ chủ cây duyệt.", "success");
-      setInviteCode("");
-    } finally {
-      setCollaborationAction(null);
-    }
-  };
+    return {
+      getCollaborators: async () => { await wait(); return mockCollaborators; },
+      getPendingInvitations: async () => { await wait(); return mockPendingInvites; },
+      inviteCollaborator: async (treeId: string, email: string) => {
+        await wait();
+        return { status: "approved", code: "111222", emailMessage: `Đã gửi lời mời tới ${email}` };
+      },
+      createInviteLink: async (treeId: string) => { await wait(); return { code: "999888" }; },
+      approveInvitation: async (treeId: string, inviteId: string) => {
+        await wait();
+        const invite = mockPendingInvites.find(i => i.id === inviteId);
+        if (invite) {
+          mockPendingInvites = mockPendingInvites.filter(i => i.id !== inviteId);
+          mockCollaborators = [...mockCollaborators, { id: `collab-${Date.now()}`, treeId, userId: invite.email || "unknown", role: "contributor", joinedAt: new Date().toISOString() }];
+        }
+      },
+      rejectInvitation: async (treeId: string, inviteId: string) => {
+        await wait();
+        mockPendingInvites = mockPendingInvites.filter(i => i.id !== inviteId);
+      },
+      joinTreeGroup: async (code: string) => {
+        await wait();
+        return {
+          id: `invite-${Date.now()}`,
+          treeId: PROTOTYPE_TREE_ID,
+          inviterUserId: "system",
+          email: null,
+          code,
+          status: "pending",
+          expiresAt: new Date(Date.now() + 86400000).toISOString()
+        } as any;
+      }
+    };
+  }, []);
 
   const refreshTree = useCallback(() => {
     /* no-op in prototype */
@@ -395,6 +364,7 @@ function PrototypeTreeContent() {
               onFocusChange={setFocusId}
               showBirthYears={showBirthYears}
             />
+            <GraphLegend />
           </div>
         </div>
 
@@ -592,270 +562,41 @@ function PrototypeTreeContent() {
       </div>
 
       {/* Settings Modal (Cài đặt) */}
-      <Modal isOpen={isSettingsOpen} onClose={handleCloseSettings} aria-label="Cài đặt">
-        <ModalHeader title="Cài đặt" onClose={handleCloseSettings} />
-        <ModalBody>
-              {isOwner && (
-                <section className="settings-section">
-                  <h3>Cài đặt gia phả</h3>
-                  <form onSubmit={(e) => { e.preventDefault(); if (treeNameInput.trim()) setTreeName(treeNameInput.trim()); }} className="field" style={{ marginBottom: "1rem" }}>
-                    <label htmlFor="proto-tree-name-input">Tên cây gia phả</label>
-                    <div style={{ display: "flex", gap: "0.5rem", marginTop: "0.5rem" }}>
-                      <Input id="proto-tree-name-input" value={treeNameInput} onChange={(e) => setTreeNameInput(e.target.value)} maxLength={120} required style={{ flex: 1 }} />
-                      <button type="submit" className="btn">Lưu</button>
-                    </div>
-                  </form>
-                  <RegionSelector
-                    treeId={PROTOTYPE_TREE_ID}
-                    region={region}
-                    onChange={(nextRegion) => {
-                      setRegionState(nextRegion);
-                      setAddressRefreshKey((k) => k + 1);
-                    }}
-                  />
-
-                  <div className="field" style={{ marginTop: "1rem" }}>
-                    <label
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "0.5rem",
-                        cursor: "pointer",
-                      }}
-                    >
-                      <input
-                        type="checkbox"
-                        checked={livingRedaction}
-                        readOnly
-                      />
-                      <span>Ẩn thông tin người còn sống</span>
-                    </label>
-                  </div>
-
-                  <div className="field" style={{ marginTop: "1rem" }}>
-                    <label htmlFor="proto-sharing-select">
-                      Chế độ chia sẻ
-                    </label>
-                    <select
-                      id="proto-sharing-select"
-                      value={sharing}
-                      onChange={() => { /* read-only in prototype */ }}
-                      style={{ width: "100%", marginTop: "0.5rem" }}
-                    >
-                      <option value="private">Riêng tư (Private)</option>
-                      <option value="link">
-                        Bằng liên kết bí mật (Link)
-                      </option>
-                      <option value="public">
-                        Công khai cho thành viên (Public)
-                      </option>
-                    </select>
-                  </div>
-                </section>
-              )}
-
-
-
-              <section
-                className="settings-section"
-                style={{
-                  borderTop: "1px solid var(--color-hairline-soft)",
-                  paddingTop: "1.5rem",
-                  marginTop: "1.5rem",
-                }}
-              >
-                <h3>Cài đặt hiển thị</h3>
-                <TextSizeControl />
-
-                <div className="field" style={{ marginTop: "1rem" }}>
-                  <label style={{ display: "flex", alignItems: "center", gap: "0.5rem", cursor: "pointer", fontSize: "0.95rem" }}>
-                    <input
-                      type="checkbox"
-                      checked={showBirthYears}
-                      onChange={(e) => setShowBirthYears(e.target.checked)}
-                    />
-                    <span>Hiển thị năm sinh/năm mất trực tiếp trên các node cây</span>
-                  </label>
-                </div>
-
-                <div style={{ marginTop: "1rem" }}>
-                  <button
-                    type="button"
-                    className="btn btn-secondary"
-                    style={{ width: "100%", justifyContent: "center" }}
-                    onClick={() => {
-                      setShowTutorial(true);
-                      setIsSettingsOpen(false);
-                    }}
-                  >
-                    📖 Xem lại hướng dẫn sử dụng
-                  </button>
-                </div>
-              </section>
-
-              <section
-                className="settings-section"
-                style={{
-                  borderTop: "1px solid var(--color-hairline-soft)",
-                  paddingTop: "1.5rem",
-                  marginTop: "1.5rem",
-                }}
-              >
-                <h3>Thông tin tài khoản</h3>
-                <div
-                  style={{
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: "0.75rem",
-                  }}
-                >
-                  <span
-                    className="settings-modal__user"
-                    title={MOCK_USER.identifier}
-                  >
-                    Đã đăng nhập:{" "}
-                    <strong>{MOCK_USER.identifier}</strong>
-                  </span>
-                  {/* SignOutButton omitted in prototype to avoid redirect */}
-                  <button
-                    type="button"
-                    className="btn btn-secondary"
-                    onClick={() => showToast("[Prototype] Đăng xuất — no-op", "info")}
-                  >
-                    Đăng xuất
-                  </button>
-                </div>
-              </section>
-        </ModalBody>
-        <ModalFooter>
-          <button type="button" className="btn btn-secondary" onClick={handleCloseSettings}>
-            Đóng
-          </button>
-        </ModalFooter>
-      </Modal>
+      <SettingsModal
+        isOpen={isSettingsOpen}
+        onClose={handleCloseSettings}
+        treeId={PROTOTYPE_TREE_ID}
+        isOwner={isOwner}
+        treeName={treeName}
+        region={region}
+        livingRedaction={livingRedaction}
+        sharing={sharing}
+        shareToken={shareToken}
+        showBirthYears={showBirthYears}
+        onTreeNameChange={setTreeName}
+        onRegionChange={(newRegion) => {
+          setRegionState(newRegion);
+          setAddressRefreshKey((k) => k + 1);
+        }}
+        onLivingRedactionChange={setLivingRedaction}
+        onSharingChange={(mode, token) => {
+          setSharing(mode);
+          setShareToken(token);
+        }}
+        onShowBirthYearsChange={setShowBirthYears}
+        onShowTutorial={() => setShowTutorial(true)}
+        isPrototype={true}
+      />
 
       {/* Collaboration Modal (Cộng tác) */}
-      <Modal className="collaboration-modal" isOpen={isCollaborationOpen} onClose={handleCloseCollaboration} aria-label="Quản lý cộng tác viên">
-        <ModalHeader title="Quản lý cộng tác viên" onClose={handleCloseCollaboration} />
-        <ModalBody>
-          <section className="settings-section">
-                <h3 style={{ fontSize: "1.1rem", marginBottom: "1rem" }}>Thành viên hiện tại</h3>
-                <div style={{ marginBottom: "1.5rem", display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-                  <Card style={{ display: "flex", alignItems: "center", gap: "0.75rem", padding: "0.75rem" }}>
-                    <div style={{ width: "32px", height: "32px", borderRadius: "50%", backgroundColor: "var(--color-brand)", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: "bold", fontSize: "0.9rem" }}>
-                      C
-                    </div>
-                    <div>
-                      <div style={{ fontWeight: 600, fontSize: "0.95rem" }}>Chủ cây (Owner)</div>
-                      <div style={{ fontSize: "0.8rem", color: "var(--color-muted)" }}>Quyền cao nhất</div>
-                    </div>
-                  </Card>
-                  {collaborators.map((c) => (
-                    <Card key={c.id} style={{ display: "flex", alignItems: "center", gap: "0.75rem", padding: "0.75rem" }}>
-                      <div style={{ width: "32px", height: "32px", borderRadius: "50%", backgroundColor: "var(--color-surface-hover)", color: "var(--color-fg)", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: "bold", fontSize: "0.9rem" }}>
-                        {c.userId.substring(0, 1).toUpperCase()}
-                      </div>
-                      <div>
-                        <div style={{ fontWeight: 600, fontSize: "0.95rem" }}>{c.userId}</div>
-                        <div style={{ fontSize: "0.8rem", color: "var(--color-muted)", display: "flex", gap: "0.5rem", marginTop: "0.2rem" }}>
-                          {c.role === "owner" ? <Badge variant="brand">Chủ cây</Badge> : <Badge variant="neutral">Cộng tác viên</Badge>}
-                        </div>
-                      </div>
-                    </Card>
-                  ))}
-                </div>
-
-                {isOwner && (
-                  <form onSubmit={handleSendInvite} style={{ display: "flex", flexDirection: "column", gap: "0.5rem", marginBottom: "1.5rem", borderTop: "1px solid var(--color-hairline-soft)", paddingTop: "1.5rem" }}>
-                    <label htmlFor="invite-email" style={{ fontWeight: "bold" }}>Thêm cộng tác viên mới</label>
-                    <div style={{ display: "flex", gap: "0.5rem" }}>
-                      <Input
-                        id="invite-email"
-                        type="email"
-                        value={inviteEmail}
-                        onChange={(e) => setInviteEmail(e.target.value)}
-                        placeholder="email@example.com"
-                        required
-                        style={{ flex: 1 }}
-                      />
-                      <button type="submit" className="btn btn-secondary" disabled={collaborationAction !== null} aria-busy={collaborationAction === "invite" || undefined}>
-                        {collaborationAction === "invite" ? <><span className="btn__spinner" aria-hidden="true" />Đang gửi mail…</> : "Mời"}
-                      </button>
-                    </div>
-                  </form>
-                )}
-
-                {isOwner && (
-                  <div style={{ marginBottom: "1.5rem", borderTop: "1px solid var(--color-hairline-soft)", paddingTop: "1.5rem", display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-                    <label style={{ fontWeight: "bold" }}>Tạo mã mời chia sẻ</label>
-                    <p style={{ fontSize: "0.85rem", color: "var(--color-muted)" }}>
-                      Tạo mã mời chung để những người khác có thể tự tham gia (cần được bạn duyệt).
-                    </p>
-                    {generatedInviteCode ? (
-                      <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
-                        <Input value={generatedInviteCode} readOnly style={{ flex: 1, fontWeight: "bold", letterSpacing: "1px" }} />
-                        <button type="button" className="btn" onClick={() => {
-                          navigator.clipboard.writeText(generatedInviteCode);
-                          showToast("Đã sao chép mã mời!", "success");
-                        }}>
-                          Copy
-                        </button>
-                      </div>
-                    ) : (
-                      <button type="button" className="btn btn-secondary" onClick={() => void handleCreateGenericInvite()} disabled={collaborationAction !== null} aria-busy={collaborationAction === "generate" || undefined} style={{ alignSelf: "flex-start" }}>
-                        {collaborationAction === "generate" ? <><span className="btn__spinner" aria-hidden="true" />Đang tạo…</> : "Tạo mã mời"}
-                      </button>
-                    )}
-                  </div>
-                )}
-
-                {isOwner && pendingInvites.length > 0 && (
-                  <div style={{ marginBottom: "1.5rem", paddingTop: "1.5rem", borderTop: "1px solid var(--color-hairline-soft)" }}>
-                    <h3 style={{ fontSize: "1.1rem", marginBottom: "1rem", color: "var(--color-danger)" }}>Đang chờ duyệt ({pendingInvites.length} yêu cầu):</h3>
-                    <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-                      {pendingInvites.map((invite) => (
-                        <Card key={invite.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "0.75rem", borderLeftWidth: "4px", borderLeftColor: "var(--color-danger)" }}>
-                          <span style={{ fontSize: "0.85rem", fontWeight: 600 }}>{invite.email}</span>
-                          <div style={{ display: "flex", gap: "0.25rem" }}>
-                            <button type="button" className="btn" style={{ padding: "0.2rem 0.5rem", fontSize: "0.75rem" }} onClick={() => void handleApproveInvite(invite.id)} disabled={collaborationAction !== null} aria-busy={collaborationAction === `approve:${invite.id}` || undefined}>
-                              {collaborationAction === `approve:${invite.id}` ? <span className="btn__spinner" aria-hidden="true" /> : "Duyệt"}
-                            </button>
-                            <button type="button" className="btn btn-secondary" style={{ padding: "0.2rem 0.5rem", fontSize: "0.75rem" }} onClick={() => void handleRejectInvite(invite.id)} disabled={collaborationAction !== null} aria-busy={collaborationAction === `reject:${invite.id}` || undefined}>
-                              {collaborationAction === `reject:${invite.id}` ? <span className="btn__spinner" aria-hidden="true" /> : "Từ chối"}
-                            </button>
-                          </div>
-                        </Card>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                <form onSubmit={handleJoinTree} style={{ display: "flex", flexDirection: "column", gap: "0.5rem", borderTop: "1px dashed var(--color-hairline-soft)", paddingTop: "1.5rem" }}>
-                  <label htmlFor="invite-code" style={{ fontWeight: "bold" }}>Tham gia gia phả bằng mã mời</label>
-                  <div style={{ display: "flex", gap: "0.5rem" }}>
-                    <Input
-                      id="invite-code"
-                      type="text"
-                      value={inviteCode}
-                      onChange={(e) => setInviteCode(e.target.value)}
-                      placeholder="Nhập mã 6 chữ số"
-                      maxLength={6}
-                      required
-                      style={{ flex: 1 }}
-                    />
-                    <button type="submit" className="btn btn-secondary" disabled={collaborationAction !== null} aria-busy={collaborationAction === "join" || undefined}>
-                      {collaborationAction === "join" ? <><span className="btn__spinner" aria-hidden="true" />Đang tham gia…</> : "Tham gia"}
-                    </button>
-                  </div>
-                </form>
-              </section>
-        </ModalBody>
-        <ModalFooter>
-          <button type="button" className="btn btn-secondary" onClick={handleCloseCollaboration}>
-            Đóng
-          </button>
-        </ModalFooter>
-      </Modal>
+      <CollaborationModal
+        isOpen={isCollaborationOpen}
+        onClose={handleCloseCollaboration}
+        treeId={PROTOTYPE_TREE_ID}
+        isOwner={isOwner}
+        adapter={mockAdapter}
+        isPrototype={true}
+      />
     </section>
     /* ===== END: mirror of src/app/tree/page.tsx (populated branch) ===== */
   );

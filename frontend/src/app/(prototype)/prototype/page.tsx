@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import type { Metadata } from "next";
+import { PROTOTYPE_PAGES } from "@/lib/prototype/manifest";
 
 export const metadata: Metadata = {
   title: "Prototype Index — Cây Gia Phả",
@@ -18,54 +19,6 @@ export default function PrototypeIndexPage() {
   if (process.env.NODE_ENV === "production") {
     notFound();
   }
-
-  const pages = [
-    {
-      href: "/prototype/home",
-      label: "🏠 Trang chủ (Home)",
-      description: "Landing page — logged-out and logged-in states",
-    },
-    {
-      href: "/prototype/signin",
-      label: "🔑 Đăng nhập — Bước 1 (Sign-in: identifier)",
-      description: "IdentifierForm step of the sign-in flow",
-    },
-    {
-      href: "/prototype/signin/otp",
-      label: "🔑 Đăng nhập — Bước 2 (Sign-in: OTP)",
-      description: "OtpForm step of the sign-in flow",
-    },
-    {
-      href: "/prototype/signup",
-      label: "✏️ Đăng ký — Bước 1 (Sign-up: identifier + TOS)",
-      description: "Identifier + TOS step of the sign-up flow",
-    },
-    {
-      href: "/prototype/signup/otp",
-      label: "✏️ Đăng ký — Bước 2 (Sign-up: OTP)",
-      description: "OTP verification step of the sign-up flow",
-    },
-    {
-      href: "/prototype/tree",
-      label: "🌳 Cây gia phả (Tree — populated)",
-      description: "Full tree workspace with mock persons and relationships",
-    },
-    {
-      href: "/prototype/tree?panel=settings",
-      label: "🌳 Cây gia phả — Cài đặt (Tree — settings panel open)",
-      description: "Tree workspace with the settings modal open",
-    },
-    {
-      href: "/prototype/tree/empty",
-      label: "🌱 Cây gia phả rỗng (Tree — empty / onboarding)",
-      description: "Empty tree onboarding state — first member form",
-    },
-    {
-      href: "/prototype/help",
-      label: "❓ Hướng dẫn (Help)",
-      description: "In-app help guide",
-    },
-  ];
 
   return (
     <section
@@ -91,7 +44,7 @@ export default function PrototypeIndexPage() {
           gap: "0.75rem",
         }}
       >
-        {pages.map((page) => (
+        {PROTOTYPE_PAGES.map((page) => (
           <li key={page.href}>
             <Link
               href={page.href}

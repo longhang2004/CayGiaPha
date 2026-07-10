@@ -18,9 +18,10 @@ interface RegionSelectorProps {
   /** The tree's current stored region. */
   region: Region;
   onChange?: (region: Region) => void;
+  isPrototype?: boolean;
 }
 
-export function RegionSelector({ treeId, region, onChange }: RegionSelectorProps) {
+export function RegionSelector({ treeId, region, onChange, isPrototype }: RegionSelectorProps) {
   const [value, setValue] = useState<Region>(region);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -33,6 +34,15 @@ export function RegionSelector({ treeId, region, onChange }: RegionSelectorProps
     setSaved(false);
     setSaving(true);
     try {
+      if (isPrototype) {
+        // Mock success without API call
+        await new Promise(r => setTimeout(r, 400));
+        setValue(next);
+        setSaved(true);
+        onChange?.(next);
+        return;
+      }
+
       const result = await setRegion(treeId, next);
       setValue(result.region);
       setSaved(true);

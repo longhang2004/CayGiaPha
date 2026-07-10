@@ -10,6 +10,7 @@ import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { Input } from "@/components/ui/FormControls";
 import { TreeGraph } from "@/components/graph/TreeGraph";
+import { GraphLegend } from "@/components/graph/GraphLegend";
 import { PersonForm } from "@/components/person/PersonForm";
 import { AddRelativeForm } from "@/components/person/AddRelativeForm";
 import { DeletionDialog } from "@/components/deletion/DeletionDialog";
@@ -28,17 +29,9 @@ import { api, ApiError } from "@/lib/apiClient";
 import type { Person, Relationship, Address } from "@/lib/graph";
 import type { Region } from "@/lib/region";
 import { getCookie, setCookie } from "@/lib/cookies";
-import {
-  inviteCollaborator,
-  createInviteLink,
-  getPendingInvitations,
-  approveInvitation,
-  rejectInvitation,
-  joinTreeGroup,
-  getCollaborators,
-  type CollaborationInvitation,
-  type TreeCollaborator
-} from "@/lib/collaboration";
+import { getCollaborators, type TreeCollaborator } from "@/lib/collaboration";
+import { CollaborationModal } from "@/components/collaboration/CollaborationModal";
+import { SettingsModal } from "@/components/tree/SettingsModal";
 import "@/components/graph/graph.css";
 import { CollaborationIcon, PlusIcon, CloseIcon } from "@/components/ui/Icons";
 
@@ -56,7 +49,7 @@ function TreePageContent({ params, searchParams }: TreePageProps) {
   const router = useRouter();
   const nextSearchParams = useSearchParams();
   const pathname = usePathname();
-  
+
   const activeTreeId = params.id;
   const [persons, setPersons] = useState<Person[]>([]);
   const [relationships, setRelationships] = useState<Relationship[]>([]);
@@ -64,9 +57,7 @@ function TreePageContent({ params, searchParams }: TreePageProps) {
   const [livingRedaction, setLivingRedaction] = useState(true);
   const [sharing, setSharing] = useState("private");
   const [treeName, setTreeName] = useState("Cây Gia Phả");
-  const [treeNameInput, setTreeNameInput] = useState("");
-  const [updatingTreeName, setUpdatingTreeName] = useState(false);
-  
+
   const [loadingData, setLoadingData] = useState(true);
   const [addressesReady, setAddressesReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -96,16 +87,37 @@ function TreePageContent({ params, searchParams }: TreePageProps) {
     }
   }, [egoId]);
 
-  const [updatingSharing, setUpdatingSharing] = useState(false);
-  const [updatingRedaction, setUpdatingRedaction] = useState(false);
-  // Prefer hash fragment (#shareToken=) so tokens are not sent in Referer/server logs.
-  // Query-string shareToken is still accepted for legacy links.
   const [shareToken, setShareToken] = useState<string | null>(searchParams.shareToken || null);
-  const [generatingToken, setGeneratingToken] = useState(false);
 
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isCollaborationOpen, setIsCollaborationOpen] = useState(false);
   const [showBirthYears, setShowBirthYears] = useState(true);
+  const [collaborators, setCollaborators] = useState<TreeCollaborator[]>([]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    if (!activeTreeId || !user?.userId) {
+      setCollaborators([]);
+      return;
+    }
+
+    getCollaborators(activeTreeId)
+      .then((result) => {
+        if (!cancelled) {
+          setCollaborators(result);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setCollaborators([]);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [activeTreeId, user?.userId]);
 
   const handleCloseCollaboration = () => {
     setIsCollaborationOpen(false);
@@ -126,125 +138,6 @@ function TreePageContent({ params, searchParams }: TreePageProps) {
   };
 
   const { showToast } = useToast();
-  const [collaborators, setCollaborators] = useState<TreeCollaborator[]>([]);
-  const [pendingInvites, setPendingInvites] = useState<CollaborationInvitation[]>([]);
-  const [inviteEmail, setInviteEmail] = useState("");
-  const [inviteCode, setInviteCode] = useState("");
-  const [generatedInviteCode, setGeneratedInviteCode] = useState("");
-  const [loadingCollaborators, setLoadingCollaborators] = useState(false);
-  const [collaborationAction, setCollaborationAction] = useState<string | null>(null);
-
-  const fetchCollaborationData = useCallback(async () => {
-    if (!activeTreeId || !user) return;
-    setLoadingCollaborators(true);
-    try {
-      const collabs = await getCollaborators(activeTreeId);
-      setCollaborators(collabs);
-      if (user?.treeId === activeTreeId) {
-        const pendings = await getPendingInvitations(activeTreeId);
-        setPendingInvites(pendings);
-      }
-    } catch (err) {
-      console.error("Failed to load collaboration data", err);
-    } finally {
-      setLoadingCollaborators(false);
-    }
-  }, [activeTreeId, user]);
-
-  useEffect(() => {
-    if (isSettingsOpen || isCollaborationOpen) {
-      fetchCollaborationData();
-    }
-  }, [isSettingsOpen, isCollaborationOpen, fetchCollaborationData]);
-
-  async function handleSendInvite(e: React.FormEvent) {
-    e.preventDefault();
-    if (!activeTreeId || !inviteEmail.trim()) return;
-    setCollaborationAction("invite");
-    try {
-      const result = await inviteCollaborator(activeTreeId, inviteEmail.trim());
-      if (result.emailMessage) {
-        showToast(result.emailMessage, result.emailSent ? "success" : "error");
-      } else if (result.status === "approved") {
-        showToast(
-          `Đã tạo lời mời (mã ${result.code}). Nếu email không tới, kiểm tra cấu hình EMAIL_* trên server và hộp thư rác.`,
-          "info",
-        );
-      } else {
-        showToast("Đã gửi yêu cầu tham gia. Đang chờ chủ cây duyệt.", "info");
-      }
-      setInviteEmail("");
-      fetchCollaborationData();
-    } catch (err) {
-      showToast(err instanceof ApiError ? err.message : "Không thể gửi lời mời.", "error");
-    } finally {
-      setCollaborationAction(null);
-    }
-  }
-
-  async function handleCreateGenericInvite() {
-    if (!activeTreeId) return;
-    setCollaborationAction("generate");
-    try {
-      const result = await createInviteLink(activeTreeId);
-      setGeneratedInviteCode(result.code);
-      showToast(`Đã tạo mã mời: ${result.code}`, "success");
-      fetchCollaborationData();
-    } catch (err) {
-      showToast(err instanceof ApiError ? err.message : "Không thể tạo mã mời.", "error");
-    } finally {
-      setCollaborationAction(null);
-    }
-  }
-
-  async function handleApproveInvite(inviteId: string) {
-    if (!activeTreeId) return;
-    setCollaborationAction(`approve:${inviteId}`);
-    try {
-      await approveInvitation(activeTreeId, inviteId);
-      showToast("Đã duyệt lời mời cộng tác thành công!", "success");
-      fetchCollaborationData();
-    } catch (err) {
-      showToast(err instanceof ApiError ? err.message : "Thao tác thất bại.", "error");
-    } finally {
-      setCollaborationAction(null);
-    }
-  }
-
-  async function handleRejectInvite(inviteId: string) {
-    if (!activeTreeId) return;
-    setCollaborationAction(`reject:${inviteId}`);
-    try {
-      await rejectInvitation(activeTreeId, inviteId);
-      showToast("Đã từ chối/hủy lời mời cộng tác!", "success");
-      fetchCollaborationData();
-    } catch (err) {
-      showToast(err instanceof ApiError ? err.message : "Thao tác thất bại.", "error");
-    } finally {
-      setCollaborationAction(null);
-    }
-  }
-
-  async function handleJoinTree(e: React.FormEvent) {
-    e.preventDefault();
-    if (!inviteCode.trim()) return;
-    setCollaborationAction("join");
-    try {
-      const result = await joinTreeGroup(inviteCode.trim());
-      if ("status" in result && result.status === "pending") {
-        showToast("Yêu cầu của bạn đã được gửi. Vui lòng chờ chủ cây duyệt.", "info");
-      } else {
-        showToast("Bạn đã tham gia nhóm cộng tác xây dựng cây thành công!", "success");
-      }
-      setInviteCode("");
-      router.refresh();
-      window.location.reload();
-    } catch (err) {
-      showToast(err instanceof ApiError ? err.message : "Mã mời không hợp lệ.", "error");
-    } finally {
-      setCollaborationAction(null);
-    }
-  }
 
   const loadTree = useCallback(async (id: string, token?: string) => {
     setLoadingData(true);
@@ -267,7 +160,6 @@ function TreePageContent({ params, searchParams }: TreePageProps) {
       setLivingRedaction(data.livingRedaction);
       setSharing(data.sharing);
       setTreeName(data.name || "Cây Gia Phả");
-      setTreeNameInput(data.name || "Cây Gia Phả");
     } catch (err) {
       if (err instanceof ApiError) {
         if (err.status === 401) {
@@ -281,7 +173,7 @@ function TreePageContent({ params, searchParams }: TreePageProps) {
     } finally {
       setLoadingData(false);
     }
-  }, []);
+  }, [router]);
 
   useEffect(() => {
     // Read share token from hash fragment (preferred) or legacy query param.
@@ -319,82 +211,6 @@ function TreePageContent({ params, searchParams }: TreePageProps) {
     setAddresses(loaded);
     setAddressesReady(true);
   }, []);
-
-  async function handleSharingChange(nextSharing: string) {
-    if (!activeTreeId) return;
-    setUpdatingSharing(true);
-    try {
-      const result = await api.patch<{ sharing: string }>(`/trees/${activeTreeId}/sharing`, { sharing: nextSharing });
-      setSharing(result.sharing);
-      if (result.sharing !== "link") {
-        setShareToken(null);
-      }
-    } catch (err) {
-      console.warn(err instanceof ApiError ? err.message : "Không thể thay đổi cấu hình chia sẻ.");
-    } finally {
-      setUpdatingSharing(false);
-    }
-  }
-
-  async function handleRedactionChange(enabled: boolean) {
-    if (!activeTreeId) return;
-    setUpdatingRedaction(true);
-    try {
-      const result = await api.patch<{ enabled: boolean }>(`/trees/${activeTreeId}/living-redaction`, { enabled });
-      setLivingRedaction(result.enabled);
-      refreshTree();
-    } catch (err) {
-      console.warn(err instanceof ApiError ? err.message : "Không thể cập nhật cấu hình bảo vệ.");
-    } finally {
-      setUpdatingRedaction(false);
-    }
-  }
-
-  async function handleTreeNameSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    if (!activeTreeId || !treeNameInput.trim()) return;
-    setUpdatingTreeName(true);
-    try {
-      const result = await api.patch<{ treeId: string; name: string }>(
-        `/trees/${encodeURIComponent(activeTreeId)}/name`,
-        { name: treeNameInput.trim() },
-      );
-      setTreeName(result.name);
-      setTreeNameInput(result.name);
-      showToast("Đã cập nhật tên cây gia phả.", "success");
-    } catch (err) {
-      showToast(err instanceof ApiError ? err.message : "Không thể đổi tên cây.", "error");
-    } finally {
-      setUpdatingTreeName(false);
-    }
-  }
-
-  async function handleGetShareLink() {
-    if (!activeTreeId) return;
-    setGeneratingToken(true);
-    try {
-      const result = await api.post<{ token: string }>(`/trees/${activeTreeId}/share-token`);
-      setShareToken(result.token);
-    } catch (err) {
-      console.warn(err instanceof ApiError ? err.message : "Không thể tạo liên kết chia sẻ.");
-    } finally {
-      setGeneratingToken(false);
-    }
-  }
-
-  async function handleRevokeShareLink() {
-    if (!activeTreeId) return;
-    setGeneratingToken(true);
-    try {
-      await api.del(`/trees/${activeTreeId}/share-token`);
-      setShareToken(null);
-      showToast("Đã hủy bỏ tất cả liên kết chia sẻ trước đó.", "success");
-    } catch (err) {
-      console.warn(err instanceof ApiError ? err.message : "Không thể hủy bỏ liên kết chia sẻ.");
-    } finally {
-      setGeneratingToken(false);
-    }
-  }
 
   const isSessionOrDataLoading = sessionLoading || (loadingData && persons.length === 0);
   // Show full-screen spinner for the initial data + address load.
@@ -474,7 +290,7 @@ function TreePageContent({ params, searchParams }: TreePageProps) {
       : selectedSpouseRelationship.sourceId)
     : undefined;
   const isOwner = user?.treeId === activeTreeId;
-  const isCollaborator = collaborators.some(c => c.userId === user?.userId);
+  const isCollaborator = collaborators.some((collaborator) => collaborator.userId === user?.userId);
   const canEdit = isOwner || isCollaborator;
 
   // Map person option for relation dropdown selection
@@ -624,6 +440,7 @@ function TreePageContent({ params, searchParams }: TreePageProps) {
               onFocusChange={setFocusId}
               showBirthYears={showBirthYears}
             />
+            <GraphLegend />
           </div>
         </div>
 
@@ -802,280 +619,40 @@ function TreePageContent({ params, searchParams }: TreePageProps) {
       </div>
 
       {/* Settings Modal (Cài đặt) */}
-      <Modal isOpen={isSettingsOpen} onClose={handleCloseSettings} aria-label="Cài đặt">
-        <ModalHeader title="Cài đặt" onClose={handleCloseSettings} />
-        <ModalBody>
-              {isOwner && (
-                <section className="settings-section">
-                  <h3>Cài đặt gia phả</h3>
-                  <form onSubmit={handleTreeNameSubmit} className="field" style={{ marginBottom: "1rem" }}>
-                    <label htmlFor="tree-name-input">Tên cây gia phả</label>
-                    <div style={{ display: "flex", gap: "0.5rem", marginTop: "0.5rem" }}>
-                      <Input
-                        id="tree-name-input"
-                        value={treeNameInput}
-                        onChange={(e) => setTreeNameInput(e.target.value)}
-                        maxLength={120}
-                        required
-                        style={{ flex: 1 }}
-                      />
-                      <Button type="submit" loading={updatingTreeName} loadingLabel="Đang lưu…" disabled={!treeNameInput.trim()}>
-                        Lưu
-                      </Button>
-                    </div>
-                  </form>
-                  <RegionSelector
-                    treeId={activeTreeId}
-                    region={region}
-                    onChange={(nextRegion) => {
-                      setRegionState(nextRegion);
-                      // Force TreeGraph to re-fetch addresses with the new
-                      // region immediately, without a full tree reload.
-                      setAddressRefreshKey((k) => k + 1);
-                    }}
-                  />
-
-                  <div className="field" style={{ marginTop: "1rem" }}>
-                    <label style={{ display: "flex", alignItems: "center", gap: "0.5rem", cursor: "pointer" }}>
-                      <input
-                        type="checkbox"
-                        checked={livingRedaction}
-                        disabled={updatingRedaction}
-                        onChange={(e) => handleRedactionChange(e.target.checked)}
-                      />
-                      <span>Ẩn thông tin người còn sống</span>
-                    </label>
-                  </div>
-
-                  <div className="field" style={{ marginTop: "1rem" }}>
-                    <label htmlFor="sharing-select">Chế độ chia sẻ</label>
-                    <select
-                      id="sharing-select"
-                      value={sharing}
-                      disabled={updatingSharing}
-                      onChange={(e) => handleSharingChange(e.target.value)}
-                      style={{ width: "100%", marginTop: "0.5rem" }}
-                    >
-                      <option value="private">Riêng tư (Private)</option>
-                      <option value="link">Bằng liên kết bí mật (Link)</option>
-                      <option value="public">Công khai cho thành viên (Public)</option>
-                    </select>
-                  </div>
-
-                  {sharing === "link" && (
-                    <div style={{ borderTop: "1px solid var(--color-hairline-soft)", paddingTop: "1rem", marginTop: "1rem" }}>
-                      {shareToken ? (
-                        <div>
-                          <label>Liên kết chia sẻ của bạn:</label>
-                          <input
-                            type="text"
-                            readOnly
-                            value={typeof window !== "undefined" ? `${window.location.origin}/tree/${activeTreeId}#shareToken=${encodeURIComponent(shareToken)}` : ""}
-                            style={{ width: "100%", fontSize: "0.75rem", margin: "0.5rem 0" }}
-                            onClick={(e) => (e.target as HTMLInputElement).select()}
-                          />
-                          <div style={{ display: "flex", gap: "0.5rem" }}>
-                            <button
-                              type="button"
-                              className="btn btn-secondary"
-                              style={{ flex: 1 }}
-                              onClick={() => {
-                                const url = `${window.location.origin}/tree/${activeTreeId}#shareToken=${encodeURIComponent(shareToken)}`;
-                                navigator.clipboard.writeText(url);
-                                showToast("Đã sao chép liên kết vào bộ nhớ tạm!", "success");
-                              }}
-                            >
-                              Sao chép
-                            </button>
-                            <button
-                              type="button"
-                              className="btn btn-secondary"
-                              style={{ flex: 1 }}
-                              disabled={generatingToken}
-                              onClick={handleRevokeShareLink}
-                            >
-                              Hủy liên kết
-                            </button>
-                          </div>
-                        </div>
-                      ) : (
-                        <button
-                          type="button"
-                          className="btn btn-secondary"
-                          style={{ width: "100%" }}
-                          disabled={generatingToken}
-                          onClick={handleGetShareLink}
-                        >
-                          Tạo liên kết chia sẻ
-                        </button>
-                      )}
-                    </div>
-                  )}
-                </section>
-              )}
-
-
-
-              <section className="settings-section" style={{ borderTop: "1px solid var(--color-hairline-soft)", paddingTop: "1.5rem", marginTop: "1.5rem" }}>
-                <h3>Cài đặt hiển thị</h3>
-                <TextSizeControl />
-                
-                <div className="field" style={{ marginTop: "1rem" }}>
-                  <label style={{ display: "flex", alignItems: "center", gap: "0.5rem", cursor: "pointer", fontSize: "0.95rem" }}>
-                    <input
-                      type="checkbox"
-                      checked={showBirthYears}
-                      onChange={(e) => setShowBirthYears(e.target.checked)}
-                    />
-                    <span>Hiển thị năm sinh/năm mất trực tiếp trên các node cây</span>
-                  </label>
-                </div>
-
-              </section>
-
-              <section className="settings-section" style={{ borderTop: "1px solid var(--color-hairline-soft)", paddingTop: "1.5rem", marginTop: "1.5rem" }}>
-                <h3>Thông tin tài khoản</h3>
-                {!sessionLoading && user && (
-                  <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
-                    <span className="settings-modal__user" title={user.identifier}>
-                      Đã đăng nhập: <strong>{user.identifier}</strong>
-                    </span>
-                    <SignOutButton redirectTo="/" />
-                  </div>
-                )}
-              </section>
-        </ModalBody>
-        <ModalFooter>
-          <button type="button" className="btn btn-secondary" onClick={handleCloseSettings}>
-            Đóng
-          </button>
-        </ModalFooter>
-      </Modal>
+      <SettingsModal
+        isOpen={isSettingsOpen}
+        onClose={handleCloseSettings}
+        treeId={activeTreeId}
+        isOwner={isOwner}
+        treeName={treeName}
+        region={region}
+        livingRedaction={livingRedaction}
+        sharing={sharing}
+        shareToken={shareToken}
+        showBirthYears={showBirthYears}
+        onTreeNameChange={setTreeName}
+        onRegionChange={(newRegion) => {
+          setRegionState(newRegion);
+          setAddressRefreshKey((k) => k + 1);
+        }}
+        onLivingRedactionChange={(enabled) => {
+          setLivingRedaction(enabled);
+          refreshTree();
+        }}
+        onSharingChange={(newSharing, newToken) => {
+          setSharing(newSharing);
+          setShareToken(newToken);
+        }}
+        onShowBirthYearsChange={setShowBirthYears}
+      />
 
       {/* Collaboration Modal (Cộng tác) */}
-      <Modal className="collaboration-modal" isOpen={isCollaborationOpen} onClose={handleCloseCollaboration} aria-label="Quản lý cộng tác viên">
-        <ModalHeader title="Quản lý cộng tác viên" onClose={handleCloseCollaboration} />
-        <ModalBody>
-          <section className="settings-section">
-                <h3>Thành viên hiện tại</h3>
-                <div style={{ marginBottom: "1.5rem", display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-                  <Card style={{ display: "flex", alignItems: "center", gap: "0.75rem", padding: "0.75rem" }}>
-                    <div style={{ width: "32px", height: "32px", borderRadius: "50%", backgroundColor: "var(--color-brand)", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: "bold", fontSize: "0.9rem" }}>
-                      C
-                    </div>
-                    <div>
-                      <div style={{ fontWeight: 600, fontSize: "0.95rem" }}>Chủ cây (Owner)</div>
-                      <div style={{ fontSize: "0.8rem", color: "var(--color-muted)" }}>Quyền cao nhất</div>
-                    </div>
-                  </Card>
-                  {collaborators.map((c) => (
-                    <Card key={c.id} style={{ display: "flex", alignItems: "center", gap: "0.75rem", padding: "0.75rem" }}>
-                      <div style={{ width: "32px", height: "32px", borderRadius: "50%", backgroundColor: "var(--color-surface-hover)", color: "var(--color-fg)", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: "bold", fontSize: "0.9rem" }}>
-                        {c.userId.substring(0, 1).toUpperCase()}
-                      </div>
-                      <div>
-                        <div style={{ fontWeight: 600, fontSize: "0.95rem" }}>{c.userId}</div>
-                        <div style={{ fontSize: "0.8rem", color: "var(--color-muted)", display: "flex", gap: "0.5rem", marginTop: "0.2rem" }}>
-                          {c.role === "owner" ? <Badge variant="brand">Chủ cây</Badge> : <Badge variant="neutral">Cộng tác viên</Badge>}
-                        </div>
-                      </div>
-                    </Card>
-                  ))}
-                </div>
-
-                {user && (
-                  <form onSubmit={handleSendInvite} style={{ display: "flex", flexDirection: "column", gap: "0.5rem", marginBottom: "1.5rem", borderTop: "1px solid var(--color-hairline-soft)", paddingTop: "1.5rem" }}>
-                    <label htmlFor="invite-email" style={{ fontWeight: "bold" }}>Thêm cộng tác viên mới</label>
-                    <div style={{ display: "flex", gap: "0.5rem" }}>
-                      <Input
-                        id="invite-email"
-                        type="email"
-                        value={inviteEmail}
-                        onChange={(e) => setInviteEmail(e.target.value)}
-                        placeholder="email@example.com"
-                        required
-                        style={{ flex: 1 }}
-                      />
-                      <button type="submit" className="btn btn-secondary" disabled={collaborationAction !== null} aria-busy={collaborationAction === "invite" || undefined}>
-                        {collaborationAction === "invite" ? <><span className="btn__spinner" aria-hidden="true" />Đang gửi mail…</> : "Mời"}
-                      </button>
-                    </div>
-                  </form>
-                )}
-
-                {isOwner && (
-                  <div style={{ marginBottom: "1.5rem", borderTop: "1px solid var(--color-hairline-soft)", paddingTop: "1.5rem", display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-                    <label style={{ fontWeight: "bold" }}>Tạo mã mời chia sẻ</label>
-                    <p style={{ fontSize: "0.85rem", color: "var(--color-muted)" }}>
-                      Tạo mã mời chung để những người khác có thể tự tham gia (cần được bạn duyệt).
-                    </p>
-                    {generatedInviteCode ? (
-                      <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
-                        <Input value={generatedInviteCode} readOnly style={{ flex: 1, fontWeight: "bold", letterSpacing: "1px" }} />
-                        <button type="button" className="btn" onClick={() => {
-                          navigator.clipboard.writeText(generatedInviteCode);
-                          showToast("Đã sao chép mã mời!", "success");
-                        }}>
-                          Copy
-                        </button>
-                      </div>
-                    ) : (
-                      <button type="button" className="btn btn-secondary" onClick={handleCreateGenericInvite} disabled={collaborationAction !== null} aria-busy={collaborationAction === "generate" || undefined} style={{ alignSelf: "flex-start" }}>
-                        {collaborationAction === "generate" ? <><span className="btn__spinner" aria-hidden="true" />Đang tạo…</> : "Tạo mã mời"}
-                      </button>
-                    )}
-                  </div>
-                )}
-
-                {isOwner && pendingInvites.length > 0 && (
-                  <div style={{ marginBottom: "1.5rem", paddingTop: "1.5rem", borderTop: "1px solid var(--color-hairline-soft)" }}>
-                    <h3 style={{ fontSize: "1.1rem", marginBottom: "1rem", color: "var(--color-danger)" }}>Đang chờ duyệt ({pendingInvites.length} yêu cầu):</h3>
-                    <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-                      {pendingInvites.map((invite) => (
-                        <Card key={invite.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "0.75rem", borderLeftWidth: "4px", borderLeftColor: "var(--color-danger)" }}>
-                          <span style={{ fontSize: "0.85rem", fontWeight: 600 }}>{invite.email}</span>
-                          <div style={{ display: "flex", gap: "0.25rem" }}>
-                            <button type="button" className="btn" style={{ padding: "0.2rem 0.5rem", fontSize: "0.75rem" }} onClick={() => handleApproveInvite(invite.id)} disabled={collaborationAction !== null} aria-busy={collaborationAction === `approve:${invite.id}` || undefined}>
-                              {collaborationAction === `approve:${invite.id}` ? <span className="btn__spinner" aria-hidden="true" /> : "Duyệt"}
-                            </button>
-                            <button type="button" className="btn btn-secondary" style={{ padding: "0.2rem 0.5rem", fontSize: "0.75rem" }} onClick={() => handleRejectInvite(invite.id)} disabled={collaborationAction !== null} aria-busy={collaborationAction === `reject:${invite.id}` || undefined}>
-                              {collaborationAction === `reject:${invite.id}` ? <span className="btn__spinner" aria-hidden="true" /> : "Từ chối"}
-                            </button>
-                          </div>
-                        </Card>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {user && (
-                  <form onSubmit={handleJoinTree} style={{ display: "flex", flexDirection: "column", gap: "0.5rem", borderTop: "1px dashed var(--color-hairline-soft)", paddingTop: "1.5rem" }}>
-                    <label htmlFor="invite-code" style={{ fontWeight: "bold" }}>Tham gia gia phả bằng mã mời</label>
-                    <div style={{ display: "flex", gap: "0.5rem" }}>
-                      <Input
-                        id="invite-code"
-                        type="text"
-                        value={inviteCode}
-                        onChange={(e) => setInviteCode(e.target.value)}
-                        placeholder="Nhập mã 6 chữ số"
-                        maxLength={6}
-                        required
-                        style={{ flex: 1 }}
-                      />
-                      <button type="submit" className="btn btn-secondary" disabled={collaborationAction !== null} aria-busy={collaborationAction === "join" || undefined}>
-                        {collaborationAction === "join" ? <><span className="btn__spinner" aria-hidden="true" />Đang tham gia…</> : "Tham gia"}
-                      </button>
-                    </div>
-                  </form>
-                )}
-              </section>
-        </ModalBody>
-        <ModalFooter>
-          <button type="button" className="btn btn-secondary" onClick={handleCloseCollaboration}>
-            Đóng
-          </button>
-        </ModalFooter>
-      </Modal>
+      <CollaborationModal
+        isOpen={isCollaborationOpen}
+        onClose={handleCloseCollaboration}
+        treeId={activeTreeId}
+        isOwner={isOwner}
+      />
     </section>
     </>
   );

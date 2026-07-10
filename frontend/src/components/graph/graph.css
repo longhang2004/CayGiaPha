@@ -675,3 +675,150 @@ html.dark .tree-graph__node-tooltip::after {
     border-color: var(--color-hairline) transparent transparent transparent !important;
   }
 }
+
+/* Graph Legend */
+.graph-legend-toggle {
+  position: absolute;
+  bottom: 1.5rem;
+  left: 1.5rem;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 999px;
+  background-color: var(--color-surface-card);
+  border: 1px solid var(--color-hairline-strong);
+  color: var(--color-fg);
+  font-size: 0.875rem;
+  font-weight: 600;
+  box-shadow: var(--shadow-ambient);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.graph-legend-toggle:hover {
+  background-color: var(--color-surface-hover);
+  border-color: var(--color-brand);
+}
+
+.graph-legend {
+  position: absolute;
+  bottom: 1.5rem;
+  left: 1.5rem;
+  z-index: 10;
+  width: 280px;
+  padding: 1.25rem;
+  border-radius: 16px;
+  background-color: var(--color-surface-card);
+  border: 1px solid var(--color-hairline-strong);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+}
+
+.graph-legend__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.graph-legend__title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.graph-legend__close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: transparent;
+  border: none;
+  color: var(--color-muted);
+  cursor: pointer;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.graph-legend__close:hover {
+  background-color: var(--color-surface-hover);
+  color: var(--color-fg);
+}
+
+.graph-legend__body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.graph-legend__item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 0.875rem;
+  color: var(--color-fg);
+}
+
+.graph-legend__line {
+  width: 32px;
+  height: 3px;
+  background-color: var(--color-fg);
+  border-radius: 2px;
+}
+
+.graph-legend__line--solid {
+  background-color: var(--color-fg);
+}
+
+.graph-legend__line--dashed {
+  background-color: transparent;
+  border-top: 3px dashed var(--color-brand);
+}
+
+.graph-legend__line--non-bloodline {
+  background-color: transparent;
+  border-top: 3px dotted var(--color-muted);
+}
+
+.graph-legend__node {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 24px;
+  border-radius: 6px;
+  border: 1px solid var(--color-hairline-strong);
+  background-color: var(--color-surface-card);
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.graph-legend__node--deceased {
+  background-color: #f3f2ef;
+  border-color: #d1cfc9;
+  color: #787670;
+  text-decoration: line-through;
+  opacity: 0.8;
+}
+
+.graph-legend__node--ego {
+  border-color: var(--color-brand);
+  border-width: 2px;
+}
+
+html.dark .graph-legend__node--deceased {
+  background-color: #242722;
+  border-color: #4b4a42;
+  color: #d7d2c7;
+}
+
+@media (max-width: 640px) {
+  .graph-legend-toggle {
+    bottom: 5rem; /* Above mobile action bar if present */
+  }
+  .graph-legend {
+    bottom: 5rem;
+  }
+}
