@@ -36,13 +36,7 @@ export async function POST(
       throw ApiException.validation("inviteId", "Lời mời đã được xử lý hoặc hết hạn.");
     }
 
-    // Email invites are already approved. Generic link/code requests start as pending.
-    await db
-      .update(collaborationInvitations)
-      .set({ status: "approved" })
-      .where(eq(collaborationInvitations.id, inviteId));
-
-    // Find if user already exists (email invites only).
+    // Pending join requests: if invitee already has an account, add collaborator now.
     if (invite.email) {
       const user = await db
         .select({ id: users.id })
@@ -51,7 +45,6 @@ export async function POST(
         .then((rows) => rows[0]);
 
       if (user) {
-        // Add collaborator record directly
         await db
           .insert(treeCollaborators)
           .values({
@@ -61,9 +54,19 @@ export async function POST(
             role: "contributor",
           })
           .onConflictDoNothing();
+        await db
+          .update(collaborationInvitations)
+          .set({ status: "joined" })
+          .where(eq(collaborationInvitations.id, inviteId));
+        return Response.json({ success: true, status: "joined" });
       }
     }
 
-    return Response.json({ success: true });
+    await db
+      .update(collaborationInvitations)
+      .set({ status: "approved" })
+      .where(eq(collaborationInvitations.id, inviteId));
+
+    return Response.json({ success: true, status: "approved" });
   });
 }

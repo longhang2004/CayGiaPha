@@ -12,6 +12,7 @@ import java.security.SecureRandom;
 import java.time.Instant;
 import java.util.List;
 import java.util.Locale;
+import java.util.Optional;
 import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -52,7 +53,8 @@ public class TreeCollaborationService {
         this.treeRepository = treeRepository;
         this.userRepository = userRepository;
         this.emailService = emailService;
-        this.appUrl = appUrl == null || appUrl.isBlank() ? "http://localhost:3000" : appUrl.replaceAll("/$", "");
+        this.appUrl =
+                appUrl == null || appUrl.isBlank() ? "http://localhost:3000" : appUrl.replaceAll("/$", "");
     }
 
     /** Result of creating an email invite, including delivery status for the UI. */
@@ -62,14 +64,15 @@ public class TreeCollaborationService {
     /** Invite a user by email to co-build the tree. */
     @Transactional
     public InviteResult invite(UUID treeId, String email, UUID inviterId) {
-        // Enforce inviter has tree access
-        boolean isOwner = treeRepository.findById(treeId)
+        boolean isOwner = treeRepository
+                .findById(treeId)
                 .map(t -> t.getOwnerUserId().equals(inviterId))
                 .orElse(false);
         boolean isContributor = collaboratorRepository.existsByTreeIdAndUserId(treeId, inviterId);
 
         if (!isOwner && !isContributor) {
-            throw ApiException.notAuthorized("You must be an owner or contributor of this tree to send invites.");
+            throw ApiException.notAuthorized(
+                    "You must be an owner or contributor of this tree to send invites.");
         }
 
         String normalizedEmail = email == null ? "" : email.trim().toLowerCase(Locale.ROOT);
@@ -80,16 +83,12 @@ public class TreeCollaborationService {
         String code = generateRandomCode();
         Instant expiresAt = Instant.now().plusSeconds(EXPIRY_SECONDS);
 
-        CollaborationInvitation invitation = new CollaborationInvitation(
-                treeId, inviterId, normalizedEmail, code, expiresAt);
-
-        // Direct email invitations are pre-approved. Generic link/code join requests remain pending
-        // until an owner approves them.
+        CollaborationInvitation invitation =
+                new CollaborationInvitation(treeId, inviterId, normalizedEmail, code, expiresAt);
+        // Direct email invitations are pre-approved.
         invitation.setStatus("approved");
 
         CollaborationInvitation saved = invitationRepository.save(invitation);
-        // Cloud BE hosts often block SMTP. Prefer frontend delivery (Vercel) for invite emails.
-        // Only attempt server-side send when Resend HTTPS is configured.
         EmailDelivery delivery = sendInviteEmail(treeId, saved);
         return new InviteResult(saved, delivery.sent(), delivery.message());
     }
@@ -101,8 +100,8 @@ public class TreeCollaborationService {
         String code = generateRandomCode();
         Instant expiresAt = Instant.now().plusSeconds(EXPIRY_SECONDS);
 
-        CollaborationInvitation invitation = new CollaborationInvitation(
-                treeId, inviterId, null, code, expiresAt);
+        CollaborationInvitation invitation =
+                new CollaborationInvitation(treeId, inviterId, null, code, expiresAt);
         invitation.setStatus("generic");
         return invitationRepository.save(invitation);
     }
@@ -114,16 +113,30 @@ public class TreeCollaborationService {
         return invitationRepository.findByTreeIdAndStatus(treeId, "pending");
     }
 
-    /** Approve a contributor-initiated invite. */
+    /**
+     * Approve a pending join request. If the invite email matches a registered user, add them as
+     * collaborator immediately; otherwise leave status {@code approved} for later join-link accept.
+     */
     @Transactional
     public void approveInvitation(UUID treeId, UUID invitationId, UUID ownerId) {
         requireTreeOwner(treeId, ownerId);
-        CollaborationInvitation invite = invitationRepository.findById(invitationId)
+        CollaborationInvitation invite = invitationRepository
+                .findById(invitationId)
                 .orElseThrow(() -> ApiException.validation("invitationId", "Invitation not found."));
         if (!invite.getTreeId().equals(treeId)) {
             throw ApiException.validation("invitationId", "Invitation does not match tree.");
         }
-        invite.setStatus("approved");
+        if (!"pending".equals(invite.getStatus()) && !"approved".equals(invite.getStatus())) {
+            throw ApiException.validation("invitationId", "Lời mời đã được xử lý hoặc không hợp lệ.");
+        }
+
+        Optional<UUID> matchedUserId = resolveUserIdForInviteEmail(invite.getEmail());
+        if (matchedUserId.isPresent()) {
+            ensureCollaborator(treeId, matchedUserId.get());
+            invite.setStatus("joined");
+        } else {
+            invite.setStatus("approved");
+        }
         invitationRepository.save(invite);
     }
 
@@ -131,7 +144,8 @@ public class TreeCollaborationService {
     @Transactional
     public void rejectInvitation(UUID treeId, UUID invitationId, UUID ownerId) {
         requireTreeOwner(treeId, ownerId);
-        CollaborationInvitation invite = invitationRepository.findById(invitationId)
+        CollaborationInvitation invite = invitationRepository
+                .findById(invitationId)
                 .orElseThrow(() -> ApiException.validation("invitationId", "Invitation not found."));
         if (!invite.getTreeId().equals(treeId)) {
             throw ApiException.validation("invitationId", "Invitation does not match tree.");
@@ -143,57 +157,127 @@ public class TreeCollaborationService {
     /** Join a tree co-building group using an invitation code. */
     @Transactional
     public Object joinTree(String code, UUID userId) {
-        CollaborationInvitation invite = invitationRepository.findByCode(code)
-                .orElseThrow(() -> ApiException.validation("code", "Mã mời không chính xác hoặc đã hết hạn."));
+        String normalized = code == null ? "" : code.trim().toLowerCase(Locale.ROOT);
+        CollaborationInvitation invite = invitationRepository
+                .findByCodeIgnoreCase(normalized)
+                .or(() -> invitationRepository.findByCode(normalized))
+                .orElseThrow(() ->
+                        ApiException.validation("code", "Mã mời không chính xác hoặc đã hết hạn."));
 
-        if ("pending".equals(invite.getStatus())) {
-            throw ApiException.validation("code", "Yêu cầu tham gia đang chờ chủ cây duyệt.");
-        }
-
-        if (!"approved".equals(invite.getStatus()) && !"generic".equals(invite.getStatus())) {
-            throw ApiException.validation("code", "Lời mời này đã được sử dụng hoặc không hợp lệ.");
-        }
-
-        if (invite.isExpired()) {
-            invite.setStatus("expired");
-            invitationRepository.save(invite);
-            throw ApiException.validation("code", "Mã mời đã hết hạn sử dụng.");
-        }
-
-        if ("generic".equals(invite.getStatus())) {
-            String userEmail = userRepository.findById(userId)
-                    .map(u -> u.getEmail() != null ? u.getEmail() : u.getPhone())
-                    .orElse("Unknown");
-            CollaborationInvitation pendingReq = new CollaborationInvitation(
-                    invite.getTreeId(), invite.getInviterUserId(), userEmail, generateRandomCode(), invite.getExpiresAt());
-            pendingReq.setStatus("pending");
-            return invitationRepository.save(pendingReq);
-        }
-
-        // Add user as a collaborator
-        TreeCollaborator collaborator = new TreeCollaborator(invite.getTreeId(), userId, "contributor");
-        TreeCollaborator saved = collaboratorRepository.save(collaborator);
-
-        // Update invite status
-        invite.setStatus("joined");
-        invitationRepository.save(invite);
-
-        return saved;
+        return acceptInvite(invite, userId, "code");
     }
 
-    /** List all active collaborators (owner is listed first). */
+    /** List all active collaborators. */
     @Transactional(readOnly = true)
     public List<TreeCollaborator> getCollaborators(UUID treeId) {
         return collaboratorRepository.findByTreeId(treeId);
     }
 
-    /** Check if user is a collaborator (contributor). */
     public boolean hasContributorAccess(UUID treeId, UUID userId) {
         return collaboratorRepository.existsByTreeIdAndUserId(treeId, userId);
     }
 
+    @Transactional(readOnly = true)
+    public CollaborationInvitation getInvitation(UUID invitationId) {
+        return invitationRepository
+                .findById(invitationId)
+                .orElseThrow(() -> ApiException.validation("invitationId", "Lời mời không tồn tại."));
+    }
+
+    @Transactional
+    public Object joinTreeWithLink(UUID invitationId, UUID userId) {
+        CollaborationInvitation invite = invitationRepository
+                .findById(invitationId)
+                .orElseThrow(() -> ApiException.validation("invitationId", "Lời mời không tồn tại."));
+        return acceptInvite(invite, userId, "invitationId");
+    }
+
+    private Object acceptInvite(CollaborationInvitation invite, UUID userId, String field) {
+        if ("pending".equals(invite.getStatus())) {
+            throw ApiException.validation(field, "Yêu cầu tham gia đang chờ chủ cây duyệt.");
+        }
+        if ("rejected".equals(invite.getStatus()) || "expired".equals(invite.getStatus())) {
+            throw ApiException.validation(field, "Lời mời này đã được sử dụng hoặc không hợp lệ.");
+        }
+
+        if (invite.isExpired()) {
+            invite.setStatus("expired");
+            invitationRepository.save(invite);
+            throw ApiException.validation(field, "Lời mời đã hết hạn sử dụng.");
+        }
+
+        // Idempotent: already a collaborator.
+        Optional<TreeCollaborator> existing =
+                collaboratorRepository.findByTreeIdAndUserId(invite.getTreeId(), userId);
+        if (existing.isPresent()) {
+            if (!"joined".equals(invite.getStatus()) && !"generic".equals(invite.getStatus())) {
+                invite.setStatus("joined");
+                invitationRepository.save(invite);
+            }
+            return existing.get();
+        }
+
+        if ("joined".equals(invite.getStatus())) {
+            // Invite already consumed by someone else (email invites are single-use).
+            throw ApiException.validation(field, "Lời mời này đã được sử dụng.");
+        }
+
+        if ("generic".equals(invite.getStatus())) {
+            String userEmail = userRepository
+                    .findById(userId)
+                    .map(u -> u.getEmail() != null ? u.getEmail() : u.getPhone())
+                    .orElse("Unknown");
+            CollaborationInvitation pendingReq = new CollaborationInvitation(
+                    invite.getTreeId(),
+                    invite.getInviterUserId(),
+                    userEmail,
+                    generateRandomCode(),
+                    invite.getExpiresAt());
+            pendingReq.setStatus("pending");
+            return invitationRepository.save(pendingReq);
+        }
+
+        if (!"approved".equals(invite.getStatus())) {
+            throw ApiException.validation(field, "Lời mời này đã được sử dụng hoặc không hợp lệ.");
+        }
+
+        // Optional email binding: if invite has email, require match (case-insensitive).
+        if (invite.getEmail() != null && !invite.getEmail().isBlank()) {
+            String userEmail = userRepository
+                    .findById(userId)
+                    .map(u -> u.getEmail() == null ? "" : u.getEmail().trim().toLowerCase(Locale.ROOT))
+                    .orElse("");
+            if (!userEmail.equals(invite.getEmail().trim().toLowerCase(Locale.ROOT))) {
+                throw ApiException.validation(
+                        field, "Lời mời này dành cho email khác. Hãy đăng nhập đúng tài khoản được mời.");
+            }
+        }
+
+        TreeCollaborator saved = ensureCollaborator(invite.getTreeId(), userId);
+        invite.setStatus("joined");
+        invitationRepository.save(invite);
+        return saved;
+    }
+
+    private TreeCollaborator ensureCollaborator(UUID treeId, UUID userId) {
+        return collaboratorRepository
+                .findByTreeIdAndUserId(treeId, userId)
+                .orElseGet(() -> collaboratorRepository.save(
+                        new TreeCollaborator(treeId, userId, "contributor")));
+    }
+
+    private Optional<UUID> resolveUserIdForInviteEmail(String email) {
+        if (email == null || email.isBlank()) {
+            return Optional.empty();
+        }
+        return userRepository
+                .findByEmail(email.trim().toLowerCase(Locale.ROOT))
+                .map(u -> u.getId());
+    }
+
     private void requireTreeOwner(UUID treeId, UUID ownerId) {
-        boolean isOwner = treeRepository.findById(treeId)
+        boolean isOwner = treeRepository
+                .findById(treeId)
                 .map(t -> t.getOwnerUserId().equals(ownerId))
                 .orElse(false);
         if (!isOwner) {
@@ -246,16 +330,13 @@ public class TreeCollaborationService {
                 </div>
                 """.formatted(treeName, description, inviteUrl, buttonText, invite.getCode());
 
-        // Only send from BE when HTTPS provider (Resend) is available. SMTP is frequently blocked
-        // on PaaS; the frontend always attempts delivery after this response.
         if (!emailService.canDeliverServerSide()) {
             log.info(
                     "Invite {} for {} created; server-side email skipped (frontend will deliver).",
                     invite.getCode(),
                     invite.getEmail());
             return new EmailDelivery(
-                    false,
-                    "Lời mời đã tạo (mã " + invite.getCode() + "). Đang gửi email từ frontend…");
+                    false, "Lời mời đã tạo (mã " + invite.getCode() + "). Đang gửi email từ frontend…");
         }
         try {
             emailService.sendHtml(invite.getEmail(), subject, text, html);
@@ -271,51 +352,5 @@ public class TreeCollaborationService {
                     "Lời mời đã tạo (mã " + invite.getCode()
                             + "). Server không gửi được email — frontend sẽ thử lại.");
         }
-    }
-
-    @Transactional(readOnly = true)
-    public CollaborationInvitation getInvitation(UUID invitationId) {
-        return invitationRepository.findById(invitationId)
-                .orElseThrow(() -> ApiException.validation("invitationId", "Lời mời không tồn tại."));
-    }
-
-    @Transactional
-    public Object joinTreeWithLink(UUID invitationId, UUID userId) {
-        CollaborationInvitation invite = invitationRepository.findById(invitationId)
-                .orElseThrow(() -> ApiException.validation("invitationId", "Lời mời không tồn tại."));
-
-        if ("pending".equals(invite.getStatus())) {
-            throw ApiException.validation("invitationId", "Yêu cầu tham gia đang chờ chủ cây duyệt.");
-        }
-
-        if (!"approved".equals(invite.getStatus()) && !"generic".equals(invite.getStatus())) {
-            throw ApiException.validation("invitationId", "Lời mời này đã được sử dụng hoặc không hợp lệ.");
-        }
-
-        if (invite.isExpired()) {
-            invite.setStatus("expired");
-            invitationRepository.save(invite);
-            throw ApiException.validation("invitationId", "Liên kết mời đã hết hạn sử dụng.");
-        }
-
-        if ("generic".equals(invite.getStatus())) {
-            String userEmail = userRepository.findById(userId)
-                    .map(u -> u.getEmail() != null ? u.getEmail() : u.getPhone())
-                    .orElse("Unknown");
-            CollaborationInvitation pendingReq = new CollaborationInvitation(
-                    invite.getTreeId(), invite.getInviterUserId(), userEmail, generateRandomCode(), invite.getExpiresAt());
-            pendingReq.setStatus("pending");
-            return invitationRepository.save(pendingReq);
-        }
-
-        // Add user as a collaborator
-        TreeCollaborator collaborator = new TreeCollaborator(invite.getTreeId(), userId, "contributor");
-        TreeCollaborator saved = collaboratorRepository.save(collaborator);
-
-        // Update invite status
-        invite.setStatus("joined");
-        invitationRepository.save(invite);
-
-        return saved;
     }
 }

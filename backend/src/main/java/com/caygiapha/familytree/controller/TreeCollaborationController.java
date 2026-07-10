@@ -43,11 +43,16 @@ public class TreeCollaborationController {
     public record InvitationView(
             UUID id,
             UUID treeId,
+            String email,
             String status,
             java.time.Instant expiresAt) {
         static InvitationView from(CollaborationInvitation invite) {
             return new InvitationView(
-                    invite.getId(), invite.getTreeId(), invite.getStatus(), invite.getExpiresAt());
+                    invite.getId(),
+                    invite.getTreeId(),
+                    invite.getEmail(),
+                    invite.getStatus(),
+                    invite.getExpiresAt());
         }
     }
 

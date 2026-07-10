@@ -21,6 +21,7 @@ export async function GET(
       .select({
         id: collaborationInvitations.id,
         treeId: collaborationInvitations.treeId,
+        email: collaborationInvitations.email,
         status: collaborationInvitations.status,
         expiresAt: collaborationInvitations.expiresAt,
       })

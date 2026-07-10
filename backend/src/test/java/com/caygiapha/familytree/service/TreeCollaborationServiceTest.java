@@ -86,20 +86,25 @@ class TreeCollaborationServiceTest {
 
     @Test
     void ownerCanApprovePendingInvitation() {
+        UUID inviteId = UUID.randomUUID();
         CollaborationInvitation invite = new CollaborationInvitation(
-                treeId, contributorId, "test@test.com", "123456", Instant.now().plusSeconds(3600));
-        when(invitationRepository.findById(invite.getId())).thenReturn(Optional.of(invite));
+                treeId, contributorId, "unknown@test.com", "123456", Instant.now().plusSeconds(3600));
+        invite.setStatus("pending");
+        when(invitationRepository.findById(inviteId)).thenReturn(Optional.of(invite));
+        when(userRepository.findByEmail("unknown@test.com")).thenReturn(Optional.empty());
 
-        service.approveInvitation(treeId, invite.getId(), ownerId);
+        service.approveInvitation(treeId, inviteId, ownerId);
         assertThat(invite.getStatus()).isEqualTo("approved");
     }
 
     @Test
     void joinTreeWithValidCodeSuccess() {
+        // null email = open approved invite (no email binding)
         CollaborationInvitation invite = new CollaborationInvitation(
-                treeId, ownerId, "test@test.com", "123456", Instant.now().plusSeconds(3600));
+                treeId, ownerId, null, "123456", Instant.now().plusSeconds(3600));
         invite.setStatus("approved");
-        when(invitationRepository.findByCode("123456")).thenReturn(Optional.of(invite));
+        when(invitationRepository.findByCodeIgnoreCase("123456")).thenReturn(Optional.of(invite));
+        when(collaboratorRepository.findByTreeIdAndUserId(treeId, guestId)).thenReturn(Optional.empty());
         when(collaboratorRepository.save(any(TreeCollaborator.class)))
                 .thenAnswer(inv -> inv.getArgument(0));
 
@@ -111,11 +116,25 @@ class TreeCollaborationServiceTest {
     }
 
     @Test
+    void joinTreeIsIdempotentWhenAlreadyCollaborator() {
+        CollaborationInvitation invite = new CollaborationInvitation(
+                treeId, ownerId, null, "123456", Instant.now().plusSeconds(3600));
+        invite.setStatus("joined");
+        TreeCollaborator existing = new TreeCollaborator(treeId, guestId, "contributor");
+        when(invitationRepository.findByCodeIgnoreCase("123456")).thenReturn(Optional.of(invite));
+        when(collaboratorRepository.findByTreeIdAndUserId(treeId, guestId))
+                .thenReturn(Optional.of(existing));
+
+        TreeCollaborator collaborator = (TreeCollaborator) service.joinTree("123456", guestId);
+        assertThat(collaborator.getUserId()).isEqualTo(guestId);
+    }
+
+    @Test
     void joinTreeWithExpiredCodeThrowsException() {
         CollaborationInvitation invite = new CollaborationInvitation(
-                treeId, ownerId, "test@test.com", "123456", Instant.now().minusSeconds(3600));
+                treeId, ownerId, null, "123456", Instant.now().minusSeconds(3600));
         invite.setStatus("approved");
-        when(invitationRepository.findByCode("123456")).thenReturn(Optional.of(invite));
+        when(invitationRepository.findByCodeIgnoreCase("123456")).thenReturn(Optional.of(invite));
 
         assertThatThrownBy(() -> service.joinTree("123456", guestId))
                 .isInstanceOf(ApiException.class);
@@ -126,10 +145,26 @@ class TreeCollaborationServiceTest {
         CollaborationInvitation invite = new CollaborationInvitation(
                 treeId, contributorId, "test@test.com", "123456", Instant.now().plusSeconds(3600));
         invite.setStatus("pending");
-        when(invitationRepository.findByCode("123456")).thenReturn(Optional.of(invite));
+        when(invitationRepository.findByCodeIgnoreCase("123456")).thenReturn(Optional.of(invite));
 
         assertThatThrownBy(() -> service.joinTree("123456", guestId))
                 .isInstanceOf(ApiException.class)
                 .hasMessageContaining("đang chờ chủ cây duyệt");
     }
+
+    @Test
+    void joinTreeRejectsEmailMismatch() {
+        CollaborationInvitation invite = new CollaborationInvitation(
+                treeId, ownerId, "invitee@test.com", "123456", Instant.now().plusSeconds(3600));
+        invite.setStatus("approved");
+        when(invitationRepository.findByCodeIgnoreCase("123456")).thenReturn(Optional.of(invite));
+        when(collaboratorRepository.findByTreeIdAndUserId(treeId, guestId)).thenReturn(Optional.empty());
+        when(userRepository.findById(guestId))
+                .thenReturn(Optional.of(com.caygiapha.familytree.entity.User.withEmail("other@test.com")));
+
+        assertThatThrownBy(() -> service.joinTree("123456", guestId))
+                .isInstanceOf(ApiException.class)
+                .hasMessageContaining("email khác");
+    }
+
 }

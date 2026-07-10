@@ -37,10 +37,11 @@ export default function InvitationPage({ params }: InvitationPageProps) {
   const handleJoin = async () => {
     if (!invitation) return;
     setJoining(true);
+    setError(null);
     try {
       await joinTreeWithLink(inviteId);
-      // Redirect directly to the tree workspace page
-      router.push(`/tree?treeId=${invitation.treeId}`);
+      // Canonical workspace route is /tree/[id]
+      router.push(`/tree/${invitation.treeId}`);
     } catch (err: any) {
       setError(err.message || "Đã xảy ra lỗi khi tham gia cây.");
       setJoining(false);
@@ -85,10 +86,39 @@ export default function InvitationPage({ params }: InvitationPageProps) {
           invitation && (
             <div>
               <p style={{ fontSize: "1rem", lineHeight: "1.6", color: "var(--color-fg)", marginBottom: "1.5rem" }}>
-                Bạn đã nhận được lời mời tham gia cộng tác biên soạn sơ đồ dòng họ từ email <strong>{invitation.email}</strong>.
+                Bạn đã nhận được lời mời tham gia cộng tác biên soạn sơ đồ dòng họ
+                {invitation.email ? (
+                  <>
+                    {" "}
+                    gửi tới <strong>{invitation.email}</strong>
+                  </>
+                ) : null}
+                .
               </p>
 
-              {user ? (
+              {invitation.status === "joined" ? (
+                <div>
+                  <p style={{ fontSize: "0.95rem", color: "var(--color-muted)", marginBottom: "1.5rem" }}>
+                    Lời mời này đã được chấp nhận. Bạn có thể mở cây gia phả nếu đã là cộng tác viên.
+                  </p>
+                  <button
+                    type="button"
+                    className="btn btn-primary btn-terracotta"
+                    style={{ width: "100%", minHeight: "44px" }}
+                    onClick={() => router.push(`/tree/${invitation.treeId}`)}
+                  >
+                    Mở cây gia phả
+                  </button>
+                </div>
+              ) : invitation.status === "pending" ? (
+                <p style={{ fontSize: "0.95rem", color: "var(--color-muted)", marginBottom: "1.5rem" }}>
+                  Yêu cầu tham gia đang chờ chủ cây duyệt. Vui lòng quay lại sau.
+                </p>
+              ) : invitation.status === "rejected" || invitation.status === "expired" ? (
+                <p style={{ fontSize: "0.95rem", color: "var(--color-danger)", marginBottom: "1.5rem" }}>
+                  Lời mời không còn hiệu lực ({invitation.status}).
+                </p>
+              ) : user ? (
                 <div>
                   <p style={{ fontSize: "0.9rem", color: "var(--color-muted)", marginBottom: "2rem" }}>
                     Tài khoản hiện tại: <strong>{user.identifier}</strong>

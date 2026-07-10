@@ -2,7 +2,7 @@ import { handleApiRoute } from "@/lib/services/routeHelper";
 import { getAuthContext } from "@/lib/services/authorization";
 import { ApiException } from "@/lib/services/errors";
 import { db } from "@/lib/db";
-import { collaborationInvitations, treeCollaborators } from "@/lib/db/schema";
+import { collaborationInvitations, treeCollaborators, users } from "@/lib/db/schema";
 import { and, eq } from "drizzle-orm";
 import { randomUUID } from "crypto";
 
@@ -61,6 +61,26 @@ export async function POST(request: Request) {
           .where(eq(collaborationInvitations.id, invite.id));
       }
       return Response.json(existing);
+    }
+
+    if (invite.status === "joined") {
+      throw ApiException.validation("inviteId", "Lời mời này đã được sử dụng.");
+    }
+
+    // Bind email invites to the invited address when present.
+    if (invite.email) {
+      const me = await db
+        .select({ email: users.email })
+        .from(users)
+        .where(eq(users.id, auth.userId))
+        .then((rows) => rows[0]);
+      const myEmail = (me?.email || "").trim().toLowerCase();
+      if (myEmail !== invite.email.trim().toLowerCase()) {
+        throw ApiException.validation(
+          "inviteId",
+          "Lời mời này dành cho email khác. Hãy đăng nhập đúng tài khoản được mời.",
+        );
+      }
     }
 
     // Explicit id: DB column may lack DEFAULT gen_random_uuid() on older schemas.
