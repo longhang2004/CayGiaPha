@@ -4,6 +4,7 @@ import { ApiException } from "@/lib/services/errors";
 import { db } from "@/lib/db";
 import { collaborationInvitations, treeCollaborators, users } from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
+import { randomUUID } from "crypto";
 
 export async function POST(
   request: Request,
