@@ -8,6 +8,10 @@ user-story framing for the team to understand *why* it matters, plus enough scop
 technical discovery. Full acceptance criteria will be authored in separate requirement documents
 when work is scheduled.
 
+**Agent routing:** Read this document only for product discovery, prioritization, or roadmap
+planning. It is not an implementation specification and cannot override `requirements.md`,
+`design.md`, or `tasks.md`.
+
 **Source:** Market research across Vietnamese genealogy forums (J2TEAM, Facebook groups),
 Reddit (r/genealogy, r/vietnameseamerican), and global genealogy product trends 2024–2026.
 Cross-referenced with competitive analysis of: AKB Software, Phả Tuệ, Gia Phả Đại Việt,

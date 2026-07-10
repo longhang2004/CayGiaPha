@@ -5,16 +5,21 @@ const mocks = vi.hoisted(() => ({
   select: vi.fn(),
   from: vi.fn(),
   where: vi.fn(),
+  ensureUserDisplayNameSchema: vi.fn(),
 }));
 
 vi.mock("@/lib/services/authorization", () => ({ getAuthContext: mocks.auth }));
-vi.mock("@/lib/db", () => ({ db: { select: mocks.select } }));
+vi.mock("@/lib/db", () => ({
+  db: { select: mocks.select },
+  ensureUserDisplayNameSchema: mocks.ensureUserDisplayNameSchema,
+}));
 
 import { GET } from "./route";
 
 describe("GET /api/v1/auth/session", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mocks.ensureUserDisplayNameSchema.mockResolvedValue(undefined);
     mocks.select.mockReturnValue({ from: mocks.from });
     mocks.from.mockReturnValue({ where: mocks.where });
   });

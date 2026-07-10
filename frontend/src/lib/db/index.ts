@@ -69,6 +69,46 @@ async function ensureAdminAccount() {
   });
 }
 
+let userDisplayNameSchemaPromise: Promise<void> | null = null;
+
+/**
+ * Ensure account display_name column + normalization constraint exist.
+ * Awaited by profile/session paths so cold starts cannot race the background migrator.
+ */
+export async function ensureUserDisplayNameSchema(): Promise<void> {
+  if (!databaseUrl || isProductionBuild) {
+    return;
+  }
+  if (!userDisplayNameSchemaPromise) {
+    userDisplayNameSchemaPromise = (async () => {
+      await dbInstance.execute(sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS display_name TEXT;`);
+      await dbInstance.execute(sql`
+        DO $$
+        BEGIN
+          IF NOT EXISTS (
+            SELECT 1 FROM pg_constraint WHERE conname = 'ck_users_display_name_normalized'
+          ) THEN
+            ALTER TABLE users
+              ADD CONSTRAINT ck_users_display_name_normalized
+              CHECK (
+                display_name IS NULL
+                OR (
+                  char_length(display_name) BETWEEN 1 AND 100
+                  AND display_name !~ '[[:cntrl:]]'
+                  AND display_name = regexp_replace(btrim(display_name), '[[:space:]]+', ' ', 'g')
+                )
+              );
+          END IF;
+        END $$;
+      `);
+    })().catch((err) => {
+      userDisplayNameSchemaPromise = null;
+      throw err;
+    });
+  }
+  await userDisplayNameSchemaPromise;
+}
+
 // Run migration check in the background to self-heal schema discrepancies (like missing V14/V15 columns on production)
 if (databaseUrl && !isProductionBuild) {
   Promise.resolve().then(async () => {
@@ -93,26 +133,7 @@ if (databaseUrl && !isProductionBuild) {
         await dbInstance.execute(sql`ALTER TABLE trees ADD COLUMN IF NOT EXISTS name TEXT NOT NULL DEFAULT 'Cây Gia Phả';`);
       } catch (e) {}
       await dbInstance.execute(sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS role TEXT NOT NULL DEFAULT 'user';`);
-      await dbInstance.execute(sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS display_name TEXT;`);
-      await dbInstance.execute(sql`
-        DO $$
-        BEGIN
-          IF NOT EXISTS (
-            SELECT 1 FROM pg_constraint WHERE conname = 'ck_users_display_name_normalized'
-          ) THEN
-            ALTER TABLE users
-              ADD CONSTRAINT ck_users_display_name_normalized
-              CHECK (
-                display_name IS NULL
-                OR (
-                  char_length(display_name) BETWEEN 1 AND 100
-                  AND display_name !~ '[[:cntrl:]]'
-                  AND display_name = regexp_replace(btrim(display_name), '[[:space:]]+', ' ', 'g')
-                )
-              );
-          END IF;
-        END $$;
-      `);
+      await ensureUserDisplayNameSchema();
       await dbInstance.execute(sql`
         CREATE TABLE IF NOT EXISTS feedback_messages (
           id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

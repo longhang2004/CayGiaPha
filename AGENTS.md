@@ -9,18 +9,19 @@ Shared operating instructions for AI agents working in this repository. These ru
   PostgreSQL, Vitest, Testing Library, Playwright, and fast-check.
 - Reference backend: Java 21, Spring Boot 3.3.5, Flyway, JPA, jqwik, JUnit 5, and Testcontainers;
   disabled by default and not the production-priority request path.
-- Specs: `.kiro/specs/vietnamese-family-tree/requirements.md`, `design.md`, and `tasks.md` are the product source of truth.
+- Specs: `.kiro/specs/vietnamese-family-tree/requirements.md`, `design.md`, and `tasks.md` are the product source of truth. `roadmap.md` is planning-only and does not supply implementation acceptance criteria.
 
 ## Agent Workflow
 
-1. Start from the smallest useful context.
-2. Check the Kiro spec before changing behavior that affects product requirements, domain rules, privacy, auth, kinship logic, accessibility, or persistence.
-3. Prefer structural navigation over full-file scans. Use Codegraph or an equivalent symbol graph for definitions, callers, callees, impact, and flow tracing.
-4. Use literal search only for strings, comments, config keys, logs, or when a symbol graph is unavailable.
-5. Make surgical changes. Do not refactor adjacent code unless the requested change requires it.
-6. Add or update tests for behavior changes. Prefer property-based tests for kinship invariants and graph invariants.
-7. Run the narrowest verification that proves the change, then broader checks when risk is high.
-8. Record durable repo knowledge in `.agents/memory.md` when a discovery will help future agents avoid repeated exploration.
+1. Start from the smallest useful context. For non-trivial work, search `.agents/memory.md` for relevant terms and read only matching entries.
+2. Check the Kiro spec before changing behavior that affects product requirements, domain rules, privacy, auth, kinship logic, accessibility, or persistence. Use `requirements.md` for intent and acceptance, `design.md` for architecture/domain design, and `tasks.md` for committed scope. Read `roadmap.md` only for future-product planning or prioritization.
+3. For UI work, read `frontend/docs/ui/INDEX.md`. Read its `README.md` when changing visual design, accessibility, or shared styles; consult `AUDIT.md` only when its historical findings are relevant.
+4. Prefer structural navigation over full-file scans. Use Codegraph or an equivalent symbol graph for definitions, callers, callees, impact, and flow tracing.
+5. Use literal search only for strings, comments, config keys, logs, or when a symbol graph is unavailable.
+6. Make surgical changes. Do not refactor adjacent code unless the requested change requires it.
+7. Add or update tests for behavior changes. Prefer property-based tests for kinship invariants and graph invariants.
+8. Run the narrowest verification that proves the change, then broader checks when risk is high.
+9. Record durable repo knowledge in `.agents/memory.md` when a discovery will help future agents avoid repeated exploration.
 
 ## RTK Prompt Contract
 
@@ -72,6 +73,7 @@ If Codegraph is not initialized, ask before running initialization. Do not index
 
 Use `.agents/memory.md` as lightweight project memory inspired by claude-mem:
 
+- For non-trivial work, search it with task-specific keywords; do not load the whole file by default.
 - Add only durable, verified facts that future agents need.
 - Prefer decisions, traps, commands, invariants, and architecture notes.
 - Do not store secrets, credentials, tokens, personal data, or private family data.
