@@ -199,10 +199,10 @@ export function CollaborationModal({ isOpen, onClose, treeId, isOwner, adapter =
             {collaborators.map((c) => (
               <Card key={c.id} style={{ display: "flex", alignItems: "center", gap: "0.75rem", padding: "0.75rem" }}>
                 <div style={{ width: "32px", height: "32px", borderRadius: "50%", backgroundColor: "var(--color-surface-hover)", color: "var(--color-fg)", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: "bold", fontSize: "0.9rem" }}>
-                  {c.userId.substring(0, 1).toUpperCase()}
+                  {(c.displayName || c.userId).substring(0, 1).toUpperCase()}
                 </div>
                 <div>
-                  <div style={{ fontWeight: 600, fontSize: "0.95rem" }}>{c.userId}</div>
+                  <div style={{ fontWeight: 600, fontSize: "0.95rem" }}>{c.displayName || c.userId}</div>
                   <div style={{ fontSize: "0.8rem", color: "var(--color-muted)", display: "flex", gap: "0.5rem", marginTop: "0.2rem" }}>
                     {c.role === "owner" ? <Badge variant="brand">Chủ cây</Badge> : <Badge variant="neutral">Cộng tác viên</Badge>}
                   </div>

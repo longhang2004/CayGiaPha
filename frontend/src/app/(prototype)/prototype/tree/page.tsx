@@ -157,7 +157,7 @@ function PrototypeTreeContent() {
 
   const mockAdapter = useMemo<CollaborationAdapter>(() => {
     let mockCollaborators: TreeCollaborator[] = [
-      { id: "collab-1", treeId: PROTOTYPE_TREE_ID, userId: "contributor@example.com", role: "contributor", joinedAt: new Date().toISOString() }
+      { id: "collab-1", treeId: PROTOTYPE_TREE_ID, userId: "contributor@example.com", displayName: "Nguyễn Văn A", role: "contributor", joinedAt: new Date().toISOString() }
     ];
     let mockPendingInvites: CollaborationInvitation[] = [
       { id: "invite-1", treeId: PROTOTYPE_TREE_ID, inviterUserId: "system", email: "pending-contributor@example.com", code: "654321", status: "pending", expiresAt: new Date(Date.now() + 86400000).toISOString() }
@@ -293,6 +293,7 @@ function PrototypeTreeContent() {
 
             {/* Actions */}
             <div className="tree-page-header__actions">
+              <GraphLegend />
               <button
                 type="button"
                 className="btn btn-secondary"
@@ -364,7 +365,6 @@ function PrototypeTreeContent() {
               onFocusChange={setFocusId}
               showBirthYears={showBirthYears}
             />
-            <GraphLegend />
           </div>
         </div>
 

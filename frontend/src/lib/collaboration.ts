@@ -22,6 +22,7 @@ export interface TreeCollaborator {
   id: string;
   treeId: string;
   userId: string;
+  displayName?: string;
   role: "owner" | "contributor";
   joinedAt: string;
 }

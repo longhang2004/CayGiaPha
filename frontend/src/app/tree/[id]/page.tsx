@@ -368,6 +368,7 @@ function TreePageContent({ params, searchParams }: TreePageProps) {
 
             {/* Actions */}
             <div className="tree-page-header__actions">
+              <GraphLegend />
               {user && (
                 <button
                   type="button"
@@ -440,7 +441,6 @@ function TreePageContent({ params, searchParams }: TreePageProps) {
               onFocusChange={setFocusId}
               showBirthYears={showBirthYears}
             />
-            <GraphLegend />
           </div>
         </div>
 
