@@ -693,7 +693,7 @@ function PrototypeTreeContent() {
       </Modal>
 
       {/* Collaboration Modal (Cộng tác) */}
-      <Modal isOpen={isCollaborationOpen} onClose={handleCloseCollaboration} aria-label="Quản lý cộng tác viên">
+      <Modal className="collaboration-modal" isOpen={isCollaborationOpen} onClose={handleCloseCollaboration} aria-label="Quản lý cộng tác viên">
         <ModalHeader title="Quản lý cộng tác viên" onClose={handleCloseCollaboration} />
         <ModalBody>
           <section className="settings-section">

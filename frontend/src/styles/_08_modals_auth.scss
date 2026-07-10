@@ -455,6 +455,16 @@
   flex: 1;
 }
 
+// Keep long collaboration forms scrollable without showing a browser scrollbar.
+.collaboration-modal .settings-modal__body {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.collaboration-modal .settings-modal__body::-webkit-scrollbar {
+  display: none;
+}
+
 .settings-section h3 {
   margin-top: 0;
   margin-bottom: 1rem;

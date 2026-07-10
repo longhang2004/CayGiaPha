@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useState, type DragEvent, type FormEvent } from "react";
 import { useSession } from "@/app/providers";
 import { ApiError, api } from "@/lib/apiClient";
 import { MoneyIcon } from "@/components/ui/Icons";
@@ -76,17 +76,18 @@ export function FeedbackSection({
   const [category, setCategory] = useState("feature");
   const [message, setMessage] = useState("");
   const [attachments, setAttachments] = useState<File[]>([]);
+  const [isDraggingAttachments, setIsDraggingAttachments] = useState(false);
   const [status, setStatus] = useState<"idle" | "submitting" | "success" | "error">("idle");
   const [error, setError] = useState("");
 
-  function handleAttachmentChange(files: FileList | null) {
+  function handleAttachmentFiles(files: File[]) {
     setError("");
-    if (!files) {
+    if (files.length === 0) {
       setAttachments([]);
       return;
     }
 
-    const next = Array.from(files).slice(0, MAX_FEEDBACK_IMAGES);
+    const next = files.slice(0, MAX_FEEDBACK_IMAGES);
     const invalid = next.find((file) => !["image/jpeg", "image/png"].includes(file.type));
     if (invalid) {
       setAttachments([]);
@@ -105,6 +106,16 @@ export function FeedbackSection({
 
     setStatus("idle");
     setAttachments(next);
+  }
+
+  function handleAttachmentChange(files: FileList | null) {
+    handleAttachmentFiles(files ? Array.from(files) : []);
+  }
+
+  function handleAttachmentDrop(event: DragEvent<HTMLLabelElement>) {
+    event.preventDefault();
+    setIsDraggingAttachments(false);
+    handleAttachmentFiles(Array.from(event.dataTransfer.files));
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -142,8 +153,13 @@ export function FeedbackSection({
         <p className="support-feedback__eyebrow">Gửi góp ý</p>
         <h1 id="feedback-title">Feedback giúp sản phẩm tốt hơn</h1>
         <p>
-          Báo lỗi, đề xuất tính năng hoặc góp ý trải nghiệm. Nội dung sẽ được
-          gửi đến admin để theo dõi và xử lý.
+          Không có sản phẩm nào hoàn hảo ngay từ đầu. Mỗi phản hồi của bạn giúp
+          Cây Gia Phả nhận ra điều cần cải thiện và phục vụ mọi người tốt hơn.
+          Hiện tại dự án được một mình admin xây dựng và kiểm thử, nên đôi khi
+          vẫn có thể còn thiếu sót hoặc phát sinh lỗi trong quá trình sử dụng.
+          Những góp ý, báo lỗi và đề xuất của bạn sẽ giúp admin có thêm thông
+          tin để nâng cấp hệ thống. Xin chân thành cảm ơn bạn đã tin tưởng sử
+          dụng và dành thời gian phản hồi!
         </p>
       </div>
 
@@ -178,6 +194,7 @@ export function FeedbackSection({
         <div className="field">
           <label htmlFor="feedback-message">Nội dung</label>
           <textarea
+            className="support-feedback__message"
             id="feedback-message"
             value={message}
             onChange={(event) => setMessage(event.target.value)}
@@ -196,8 +213,29 @@ export function FeedbackSection({
             type="file"
             accept="image/png,image/jpeg"
             multiple
+            className="support-feedback__attachment-input"
             onChange={(event) => handleAttachmentChange(event.target.files)}
           />
+          <label
+            htmlFor="feedback-attachments"
+            className={`support-feedback__upload-zone${isDraggingAttachments ? " support-feedback__upload-zone--dragging" : ""}`}
+            onDragEnter={(event) => {
+              event.preventDefault();
+              setIsDraggingAttachments(true);
+            }}
+            onDragOver={(event) => {
+              event.preventDefault();
+              event.dataTransfer.dropEffect = "copy";
+            }}
+            onDragLeave={() => setIsDraggingAttachments(false)}
+            onDrop={handleAttachmentDrop}
+          >
+            <span className="support-feedback__upload-icon" aria-hidden="true">📤</span>
+            <span className="support-feedback__upload-title">
+              {attachments.length > 0 ? `${attachments.length} ảnh đã được chọn` : "Kéo thả ảnh vào đây"}
+            </span>
+            <span className="support-feedback__upload-subtitle">hoặc click để chọn ảnh PNG, JPEG</span>
+          </label>
           <p className="field-hint">Tối đa 3 ảnh, mỗi ảnh 2MB. Không bắt buộc.</p>
           {attachments.length > 0 ? (
             <ul className="support-feedback__attachment-list" aria-label="Ảnh feedback đã chọn">
