@@ -1,13 +1,15 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { sendEmail } from "@/lib/services/email";
+import { ApiException } from "@/lib/services/errors";
+import { rateLimiter } from "@/lib/services/rateLimiter";
 
 export const dynamic = "force-dynamic";
 
 /**
  * FE-only email delivery (outside /api/* so USE_BACKEND rewrites never proxy it).
  * Requires SESSION cookie; loads invite from Spring (source of truth) by inviteId only.
- * Client-supplied email/code/treeName are ignored for delivery content.
+ * Client-supplied recipient and tree name are ignored for delivery content.
  */
 export async function POST(request: Request) {
   try {
@@ -27,6 +29,10 @@ export async function POST(request: Request) {
         { status: 401 },
       );
     }
+
+    const clientIp = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+    await rateLimiter.check(`resend-collaboration-invite:${inviteId}`);
+    await rateLimiter.check(`resend-collaboration-invite-ip:${clientIp}`);
 
     const backend = (process.env.BACKEND_API_URL || "http://localhost:8080").replace(/\/$/, "");
     const origin =
@@ -69,12 +75,24 @@ export async function POST(request: Request) {
       treeId?: string;
       email?: string | null;
       status?: string;
+      expiresAt?: string;
       code?: string;
     };
 
-    // Prefer server fields; fall back to body only for code if BE view omits it.
+    const expiresAt = invite.expiresAt ? new Date(invite.expiresAt) : null;
+    if (invite.status !== "approved" || !expiresAt || expiresAt.getTime() <= Date.now()) {
+      return NextResponse.json(
+        {
+          emailSent: false,
+          emailMessage: "Lời mời không còn hiệu lực để gửi lại email.",
+        },
+        { status: 409 },
+      );
+    }
+
+    // Recipient is authoritative on the backend. The code is only present in the original invite response.
     // Owner who just created invite has code from create response — pass via body.code.
-    const email = (invite.email || String(body.email || "")).trim().toLowerCase();
+    const email = (invite.email || "").trim().toLowerCase();
     const code = String(body.code || invite.code || "").trim();
     if (!email || !email.includes("@")) {
       return NextResponse.json(
@@ -126,7 +144,7 @@ export async function POST(request: Request) {
     if (!mailEnabled) {
       return NextResponse.json({
         emailSent: false,
-        emailMessage: `EMAIL_ENABLED≠true trên Vercel — chưa gửi email. Mã: ${code}`,
+        emailMessage: "Email chưa được cấu hình để gửi từ frontend.",
       });
     }
 
@@ -155,13 +173,16 @@ export async function POST(request: Request) {
 
     return NextResponse.json({
       emailSent: true,
-      emailMessage: `Đã gửi email tới ${email}. Nhắc người nhận kiểm tra cả thư rác/spam. Mã: ${code}`,
+      emailMessage: `Đã gửi email tới ${email}. Nhắc người nhận kiểm tra cả thư rác/spam.`,
     });
-  } catch (err: any) {
-    console.error("[send-invite-email] failed:", err);
+  } catch (error) {
+    if (error instanceof ApiException) {
+      return error.toResponse();
+    }
+    console.error("[send-invite-email] failed");
     return NextResponse.json({
       emailSent: false,
-      emailMessage: `Gửi email từ Vercel thất bại: ${err?.message || "unknown"}. Mã vẫn dùng được để tham gia thủ công.`,
+      emailMessage: "Không thể gửi email lúc này. Lời mời vẫn hợp lệ và có thể thử lại sau.",
     });
   }
 }

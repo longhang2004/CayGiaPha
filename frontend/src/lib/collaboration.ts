@@ -27,10 +27,8 @@ export interface TreeCollaborator {
 }
 
 async function deliverInviteEmailFromFrontend(input: {
-  email: string;
   code: string;
   inviteId: string;
-  treeName?: string;
 }): Promise<{ emailSent: boolean; emailMessage: string }> {
   // Must NOT use a path under /api/* (proxied to Spring when USE_BACKEND=true).
   // Must NOT use a folder starting with "_" (Next.js private folder — not routable).
@@ -39,11 +37,8 @@ async function deliverInviteEmailFromFrontend(input: {
     credentials: "same-origin",
     headers: { "Content-Type": "application/json", Accept: "application/json" },
     body: JSON.stringify({
-      email: input.email,
       code: input.code,
       inviteId: input.inviteId,
-      treeName: input.treeName || "Cây Gia Phả",
-      registered: true,
     }),
   });
 
@@ -57,7 +52,7 @@ async function deliverInviteEmailFromFrontend(input: {
   if (!res.ok) {
     return {
       emailSent: false,
-      emailMessage: `Gửi email từ frontend thất bại (HTTP ${res.status}). Kiểm tra EMAIL_* trên Vercel. Mã: ${input.code}`,
+      emailMessage: "Không thể gửi email lúc này. Lời mời vẫn hợp lệ và có thể thử lại sau.",
     };
   }
 
@@ -66,8 +61,8 @@ async function deliverInviteEmailFromFrontend(input: {
     emailMessage:
       delivery.emailMessage ||
       (delivery.emailSent
-        ? `Đã gửi email tới ${input.email}. Mã: ${input.code}`
-        : `Không gửi được email từ frontend. Kiểm tra EMAIL_ENABLED/EMAIL_HOST/EMAIL_USER/EMAIL_PASS trên Vercel. Mã: ${input.code}`),
+        ? "Đã gửi email. Nhắc người nhận kiểm tra cả thư rác/spam."
+        : "Không thể gửi email lúc này. Lời mời vẫn hợp lệ và có thể thử lại sau."),
   };
 }
 
@@ -90,7 +85,6 @@ export async function inviteCollaborator(
     // Only inviteId is authoritative; code is included so the email body can show it
     // (GET invitation intentionally omits code). Endpoint re-validates session + ownership.
     const delivery = await deliverInviteEmailFromFrontend({
-      email: invite.email || email,
       code: invite.code,
       inviteId: invite.id,
     });
@@ -99,12 +93,11 @@ export async function inviteCollaborator(
       emailSent: delivery.emailSent,
       emailMessage: delivery.emailMessage,
     };
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : "unknown";
+  } catch {
     return {
       ...invite,
       emailSent: false,
-      emailMessage: `Lời mời đã tạo (mã ${invite.code}) nhưng frontend không gọi được /_internal/send-invite-email: ${msg}`,
+      emailMessage: "Lời mời đã tạo nhưng không thể gửi email lúc này. Vui lòng thử lại sau.",
     };
   }
 }

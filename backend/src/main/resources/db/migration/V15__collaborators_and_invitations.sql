@@ -1,5 +1,4 @@
 -- V15__collaborators_and_invitations.sql
--- Historical migration: do not add defaults here (see V22 for gen_random_uuid repair).
 CREATE TABLE tree_collaborators (
     id UUID NOT NULL,
     tree_id UUID NOT NULL,

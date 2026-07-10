@@ -1,10 +1,12 @@
 package com.caygiapha.familytree.repository;
 
 import com.caygiapha.familytree.entity.CollaborationInvitation;
+import jakarta.persistence.LockModeType;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.stereotype.Repository;
 
 @Repository
@@ -14,6 +16,8 @@ public interface CollaborationInvitationRepository extends JpaRepository<Collabo
     Optional<CollaborationInvitation> findByTreeIdAndCode(UUID treeId, String code);
     Optional<CollaborationInvitation> findByCode(String code);
 
+    /** Serializes generic-code joins so one requester cannot create duplicate pending requests. */
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
     Optional<CollaborationInvitation> findByCodeIgnoreCase(String code);
 
     Optional<CollaborationInvitation> findByTreeIdAndRequesterUserIdAndStatus(

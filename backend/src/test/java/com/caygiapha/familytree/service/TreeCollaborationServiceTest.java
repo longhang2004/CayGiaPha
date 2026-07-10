@@ -1,6 +1,7 @@
 package com.caygiapha.familytree.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
@@ -101,6 +102,30 @@ class TreeCollaborationServiceTest {
     }
 
     @Test
+    void invitationCreatorCanViewTheirInviteForFrontendEmailDelivery() {
+        CollaborationInvitation invite = new CollaborationInvitation(
+                treeId, contributorId, "invitee@test.com", "123456", Instant.now().plusSeconds(3600));
+
+        assertThatCode(() -> service.requireCanViewInvitation(invite, contributorId))
+                .doesNotThrowAnyException();
+    }
+
+    @Test
+    void expiredPendingInvitationCannotBeApproved() {
+        UUID inviteId = UUID.randomUUID();
+        CollaborationInvitation invite = new CollaborationInvitation(
+                treeId, contributorId, "invitee@test.com", "123456", Instant.now().minusSeconds(1));
+        invite.setStatus("pending");
+        invite.setRequesterUserId(guestId);
+        when(invitationRepository.findById(inviteId)).thenReturn(Optional.of(invite));
+
+        assertThatThrownBy(() -> service.approveInvitation(treeId, inviteId, ownerId))
+                .isInstanceOf(ApiException.class)
+                .hasMessageContaining("hết hạn");
+        assertThat(invite.getStatus()).isEqualTo("expired");
+    }
+
+    @Test
     void joinTreeWithValidCodeSuccess() {
         // null email = open approved invite (no email binding)
         CollaborationInvitation invite = new CollaborationInvitation(
@@ -168,6 +193,42 @@ class TreeCollaborationServiceTest {
         assertThatThrownBy(() -> service.joinTree("123456", guestId))
                 .isInstanceOf(ApiException.class)
                 .hasMessageContaining("email khác");
+    }
+
+    @Test
+    void existingCollaboratorCannotConsumeAnotherUsersEmailInvite() {
+        CollaborationInvitation invite = new CollaborationInvitation(
+                treeId, ownerId, "invitee@test.com", "123456", Instant.now().plusSeconds(3600));
+        invite.setStatus("approved");
+        when(invitationRepository.findByCodeIgnoreCase("123456")).thenReturn(Optional.of(invite));
+        when(collaboratorRepository.findByTreeIdAndUserId(treeId, guestId))
+                .thenReturn(Optional.of(new TreeCollaborator(treeId, guestId, "contributor")));
+        when(userRepository.findById(guestId))
+                .thenReturn(Optional.of(com.caygiapha.familytree.entity.User.withEmail("other@test.com")));
+
+        assertThatThrownBy(() -> service.joinTree("123456", guestId))
+                .isInstanceOf(ApiException.class)
+                .hasMessageContaining("email khác");
+        assertThat(invite.getStatus()).isEqualTo("approved");
+    }
+
+    @Test
+    void genericJoinReturnsExistingPendingRequestForSameRequester() {
+        CollaborationInvitation genericInvite = new CollaborationInvitation(
+                treeId, ownerId, null, "123456", Instant.now().plusSeconds(3600));
+        genericInvite.setStatus("generic");
+        CollaborationInvitation pendingInvite = new CollaborationInvitation(
+                treeId, ownerId, "guest@test.com", "654321", Instant.now().plusSeconds(3600));
+        pendingInvite.setStatus("pending");
+        pendingInvite.setRequesterUserId(guestId);
+        when(invitationRepository.findByCodeIgnoreCase("123456")).thenReturn(Optional.of(genericInvite));
+        when(collaboratorRepository.findByTreeIdAndUserId(treeId, guestId)).thenReturn(Optional.empty());
+        when(invitationRepository.findByTreeIdAndRequesterUserIdAndStatus(treeId, guestId, "pending"))
+                .thenReturn(Optional.of(pendingInvite));
+
+        Object result = service.joinTree("123456", guestId);
+
+        assertThat(result).isSameAs(pendingInvite);
     }
 
 }

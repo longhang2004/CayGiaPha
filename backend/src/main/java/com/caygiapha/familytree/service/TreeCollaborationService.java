@@ -194,8 +194,8 @@ public class TreeCollaborationService {
     }
 
     /**
-     * Owner of the tree, the invited email account, or the pending requester may view invite
-     * details. Other authenticated users get a uniform not-found style denial.
+     * The tree owner, invite creator, invited email account, or pending requester may view invite
+     * details. Other authenticated users are denied.
      */
     @Transactional(readOnly = true)
     public void requireCanViewInvitation(CollaborationInvitation invite, UUID userId) {
@@ -204,6 +204,9 @@ public class TreeCollaborationService {
                 .map(t -> t.getOwnerUserId().equals(userId))
                 .orElse(false);
         if (owner) {
+            return;
+        }
+        if (invite.getInviterUserId().equals(userId)) {
             return;
         }
         if (invite.getRequesterUserId() != null && invite.getRequesterUserId().equals(userId)) {
@@ -377,26 +380,21 @@ public class TreeCollaborationService {
                 """.formatted(treeName, description, inviteUrl, buttonText, invite.getCode());
 
         if (!emailService.canDeliverServerSide()) {
-            log.info(
-                    "Invite {} for {} created; server-side email skipped (frontend will deliver).",
-                    invite.getCode(),
-                    invite.getEmail());
+            log.info("Collaboration invite created; server-side email skipped (frontend will deliver).");
             return new EmailDelivery(
-                    false, "Lời mời đã tạo (mã " + invite.getCode() + "). Đang gửi email từ frontend…");
+                    false, "Lời mời đã tạo. Đang gửi email từ frontend…");
         }
         try {
             emailService.sendHtml(invite.getEmail(), subject, text, html);
             return new EmailDelivery(
                     true,
                     "Đã gửi email tới " + invite.getEmail()
-                            + ". Nhắc người nhận kiểm tra cả thư rác/spam. Mã: "
-                            + invite.getCode());
+                            + ". Nhắc người nhận kiểm tra cả thư rác/spam.");
         } catch (RuntimeException ex) {
-            log.warn("Invite email failed for {}: {}", invite.getEmail(), ex.getMessage());
+            log.warn("Collaboration invite email delivery failed.");
             return new EmailDelivery(
                     false,
-                    "Lời mời đã tạo (mã " + invite.getCode()
-                            + "). Server không gửi được email — frontend sẽ thử lại.");
+                    "Lời mời đã tạo. Server không gửi được email — frontend sẽ thử lại.");
         }
     }
 }
