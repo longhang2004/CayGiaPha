@@ -1,6 +1,6 @@
 # Maven / Java
 backend/target/
-backend/.jqwik-database/
+backend/.jqwik-database
 *.class
 
 # Node / Frontend
