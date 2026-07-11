@@ -253,10 +253,6 @@ html.dark .global-sidebar__brand img {
 
 /* Mobile responsive styles */
 @media (max-width: 900px) {
-  html, body {
-    overflow-x: hidden;
-  }
-
   .inapp-layout {
     overflow-x: hidden;
     width: 100%;
