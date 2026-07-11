@@ -2,12 +2,13 @@
 
 import { useEffect, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { api, ApiError } from "@/lib/apiClient";
+import { api } from "@/lib/apiClient";
 import { useSession } from "@/app/providers";
 import { useToast } from "@/components/ui/ToastProvider";
 import { useConfirm } from "@/components/ui/ConfirmProvider";
 import { GuidanceChecklist } from "@/components/guidance/GuidanceChecklist";
-import { recordChecklistCompletion } from "@/lib/guidance/storage";
+import { TreeEntryModal, type CreateTreeInput, type TreeEntryResult } from "@/components/tree/TreeEntryModal";
+import { joinTreeGroup } from "@/lib/collaboration";
 
 interface TreeItem {
   id: string;
@@ -28,10 +29,6 @@ function TreeListContent() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // New tree form fields
-  const [newTreeName, setNewTreeName] = useState("");
-  const [newTreeRegion, setNewTreeRegion] = useState<"Bac" | "Trung" | "Nam">("Bac");
-  const [creating, setCreating] = useState(false);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
   const fetchTrees = async () => {
@@ -56,23 +53,15 @@ function TreeListContent() {
     }
   }, [user, sessionLoading, router]);
 
-  const handleCreateTree = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newTreeName.trim()) return;
-    setCreating(true);
-    try {
-      const newTree = await api.post<TreeItem>("/trees", {
-        name: newTreeName.trim(),
-        region: newTreeRegion,
-      });
-      setNewTreeName("");
-      recordChecklistCompletion("core-tree-open", window.localStorage);
-      // Redirect to the newly created tree
-      router.push(`/tree/${newTree.id}`);
-    } catch (err: any) {
-      showToast(err.message || "Tạo cây gia phả thất bại.", "error");
-      setCreating(false);
-    }
+  const handleCreateTree = async (input: CreateTreeInput): Promise<TreeEntryResult> => {
+    const newTree = await api.post<TreeItem>("/trees", input);
+    return { kind: "ready", treeId: newTree.id };
+  };
+
+  const handleJoinTree = async (code: string): Promise<TreeEntryResult> => {
+    const result = await joinTreeGroup(code);
+    if ("status" in result && result.status === "pending") return { kind: "pending" };
+    return { kind: "ready", treeId: result.treeId };
   };
 
   const handleDeleteTree = async (treeId: string, treeName: string) => {
@@ -134,7 +123,7 @@ function TreeListContent() {
           className="btn btn-primary btn-terracotta"
           onClick={() => setIsCreateModalOpen(true)}
         >
-          + Tạo cây mới
+          + Thêm cây
         </button>
       </div>
 
@@ -152,7 +141,7 @@ function TreeListContent() {
               Bạn chưa sở hữu hoặc tham gia cộng tác bất kỳ cây gia phả nào.
             </p>
             <p>
-              Hãy tạo cây gia phả đầu tiên của dòng họ bằng nút phía trên.
+              Chọn Thêm cây để tạo cây mới hoặc tham gia cây của người thân bằng mã mời.
             </p>
           </div>
         ) : (
@@ -178,7 +167,7 @@ function TreeListContent() {
                 <button
                   type="button"
                   className="btn btn-primary btn-terracotta"
-                  onClick={() => { recordChecklistCompletion("core-tree-open", window.localStorage); router.push(`/tree/${tree.id}`); }}
+                  onClick={() => router.push(`/tree/${tree.id}`)}
                 >
                   Xem sơ đồ
                 </button>
@@ -197,111 +186,13 @@ function TreeListContent() {
         )}
       </div>
 
-      {/* Create New Tree Popup Modal */}
-      {isCreateModalOpen && (
-        <div
-          className="modal-backdrop"
-          onClick={() => setIsCreateModalOpen(false)}
-          style={{
-            position: "fixed",
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundColor: "rgba(0, 0, 0, 0.4)",
-            backdropFilter: "blur(4px)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            zIndex: 1000,
-          }}
-        >
-          <div
-            className="surface-card"
-            onClick={(e) => e.stopPropagation()}
-            style={{
-              width: "100%",
-              maxWidth: "500px",
-              padding: "2rem",
-              borderRadius: "16px",
-              boxShadow: "0 10px 30px rgba(0, 0, 0, 0.1)",
-              border: "1px solid var(--color-hairline)",
-              position: "relative",
-            }}
-          >
-            <button
-              type="button"
-              className="side-panel__close"
-              onClick={() => setIsCreateModalOpen(false)}
-              aria-label="Đóng"
-              title="Đóng"
-              style={{
-                position: "absolute",
-                top: "1.25rem",
-                right: "1.25rem",
-              }}
-            >
-              &times;
-            </button>
-            <h2 style={{ fontSize: "1.35rem", fontWeight: 700, color: "var(--color-fg)", marginBottom: "1.5rem" }}>
-              Tạo cây gia phả mới
-            </h2>
-            <form onSubmit={handleCreateTree} style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
-              <div>
-                <label htmlFor="tree-name" style={{ display: "block", fontWeight: 600, fontSize: "0.9rem", marginBottom: "0.5rem" }}>
-                  Tên cây gia phả:
-                </label>
-                <input
-                  id="tree-name"
-                  type="text"
-                  value={newTreeName}
-                  onChange={(e) => setNewTreeName(e.target.value)}
-                  placeholder="Ví dụ: Gia phả họ Nguyễn"
-                  required
-                  style={{
-                    width: "100%",
-                    padding: "0.75rem 1rem",
-                    borderRadius: "8px",
-                    border: "1px solid var(--color-hairline)",
-                    backgroundColor: "var(--color-surface)",
-                  }}
-                />
-              </div>
-
-              <div>
-                <label htmlFor="tree-region" style={{ display: "block", fontWeight: 600, fontSize: "0.9rem", marginBottom: "0.5rem" }}>
-                  Cách xưng hô hiển thị theo vùng miền:
-                </label>
-                <select
-                  id="tree-region"
-                  value={newTreeRegion}
-                  onChange={(e) => setNewTreeRegion(e.target.value as any)}
-                  style={{
-                    width: "100%",
-                    padding: "0.75rem 1rem",
-                    borderRadius: "8px",
-                    border: "1px solid var(--color-hairline)",
-                    backgroundColor: "var(--color-surface)",
-                  }}
-                >
-                  <option value="Bac">Miền Bắc — Bố, Mẹ</option>
-                  <option value="Trung">Miền Trung — Ba, Mạ</option>
-                  <option value="Nam">Miền Nam — Tía, Má</option>
-                </select>
-              </div>
-
-              <button
-                type="submit"
-                className="btn btn-primary btn-terracotta"
-                style={{ width: "100%", padding: "0.75rem", fontSize: "1rem", fontWeight: 600 }}
-                disabled={creating}
-              >
-                {creating ? "Đang tạo…" : "Tạo cây gia phả"}
-              </button>
-            </form>
-          </div>
-        </div>
-      )}
+      <TreeEntryModal
+        isOpen={isCreateModalOpen}
+        onClose={() => setIsCreateModalOpen(false)}
+        onCreate={handleCreateTree}
+        onJoin={handleJoinTree}
+        onTreeReady={(treeId) => router.push(`/tree/${treeId}`)}
+      />
     </main>
   );
 }

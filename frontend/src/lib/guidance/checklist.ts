@@ -5,7 +5,7 @@ export interface GuidanceProductState { treeOpened: boolean; personCount: number
 export interface ChecklistItemDefinition { id: ChecklistItemId; title: string; topicId: string; roles: GuidanceRole[]; eligible: (state: GuidanceProductState) => boolean; complete: (state: GuidanceProductState) => boolean; }
 const ALL: GuidanceRole[] = ["owner", "editor", "reader"];
 export const CORE_CHECKLIST: ChecklistItemDefinition[] = [
-  { id: "core-tree-open", title: "Tạo hoặc mở một cây", topicId: "tao-hoac-mo-cay", roles: ALL, eligible: () => true, complete: s => s.treeOpened },
+  { id: "core-tree-open", title: "Tạo, tham gia hoặc mở một cây", topicId: "tao-hoac-mo-cay", roles: ALL, eligible: () => true, complete: s => s.treeOpened },
   { id: "core-first-person", title: "Thêm người đầu tiên", topicId: "them-nguoi-dau-tien", roles: ["owner", "editor"], eligible: s => s.treeOpened && s.personCount === 0, complete: s => s.personCount > 0 },
   { id: "core-first-primitive", title: "Nối một quan hệ gần", topicId: "them-quan-he-ro-rang", roles: ["owner", "editor"], eligible: s => s.treeOpened && s.personCount > 0 && s.primitiveCount === 0, complete: s => s.primitiveCount > 0 },
   { id: "core-inspect-address", title: "Chọn một người để xem xưng hô", topicId: "xem-thong-tin-va-xung-ho", roles: ALL, eligible: s => s.treeOpened && s.personCount > 0, complete: s => s.addressInspected },

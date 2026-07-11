@@ -120,6 +120,58 @@ test.describe("Prototype Pages — smoke tests (no auth required)", () => {
     { name: "tablet", width: 768, height: 1024 },
     { name: "mobile", width: 375, height: 667 },
   ]) {
+    for (const entry of ["chooser", "create", "join", "pending", "error"] as const) {
+      test(`tree entry ${entry} stays usable on ${viewport.name}`, async ({ page }) => {
+        const treeRequests: string[] = [];
+        page.on("request", (request) => {
+          if (request.url().includes("/api/v1/trees")) treeRequests.push(request.url());
+        });
+        await page.setViewportSize({ width: viewport.width, height: viewport.height });
+        await page.goto(`/prototype/tree-list?entry=${entry}&trees=none`);
+        const modal = page.getByRole("dialog", { name: "Thêm cây gia phả" });
+        await expect(modal).toBeVisible();
+        if (entry === "chooser") {
+          await expect(page.getByRole("button", { name: /Tạo cây mới/ })).toBeVisible();
+          await expect(page.getByRole("button", { name: /Tham gia bằng mã mời/ })).toBeVisible();
+        } else if (entry === "create") {
+          await expect(page.getByLabel("Tên cây gia phả")).toBeVisible();
+        } else if (entry === "join") {
+          await expect(page.getByLabel("Mã mời 6 ký tự")).toBeVisible();
+        } else if (entry === "pending") {
+          await expect(page.getByRole("status")).toContainText("Đã gửi yêu cầu tham gia");
+        } else {
+          await expect(modal.getByRole("alert")).toContainText("Mã mời không đúng hoặc đã hết hạn");
+        }
+        const box = await modal.boundingBox();
+        expect(box).toBeTruthy();
+        expect(box!.x).toBeGreaterThanOrEqual(0);
+        expect(box!.y).toBeGreaterThanOrEqual(0);
+        expect(box!.x + box!.width).toBeLessThanOrEqual(viewport.width + 1);
+        expect(box!.y + box!.height).toBeLessThanOrEqual(viewport.height + 1);
+        expect(await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1)).toBe(false);
+        expect(treeRequests).toEqual([]);
+      });
+    }
+  }
+
+  test("tree entry modal restores focus and remains usable at mobile 200% text", async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 667 });
+    await page.goto("/prototype/tree-list?trees=none");
+    const trigger = page.getByRole("button", { name: "+ Thêm cây" });
+    await trigger.click();
+    await page.evaluate(() => document.documentElement.style.fontSize = "200%");
+    await expect(page.getByRole("button", { name: /Tạo cây mới/ })).toBeVisible();
+    await page.keyboard.press("Escape");
+    await expect(page.getByRole("dialog", { name: "Thêm cây gia phả" })).toHaveCount(0);
+    await expect(trigger).toBeFocused();
+    expect(await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1)).toBe(false);
+  });
+
+  for (const viewport of [
+    { name: "desktop", width: 1280, height: 800 },
+    { name: "tablet", width: 768, height: 1024 },
+    { name: "mobile", width: 375, height: 667 },
+  ]) {
     test(`graph guidance stays inside safe area on ${viewport.name}`, async ({ page }) => {
       await page.setViewportSize({ width: viewport.width, height: viewport.height });
       await page.goto("/prototype/tree");

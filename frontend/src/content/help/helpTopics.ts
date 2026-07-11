@@ -27,13 +27,13 @@ const ALL_ROLES: GuidanceRole[] = ["owner", "editor", "reader"];
 export const HELP_TOPICS: HelpTopic[] = [
   {
     id: "tao-hoac-mo-cay", version: 1, status: "active", roles: ALL_ROLES,
-    title: "Tạo hoặc mở một cây", summary: "Chọn cây gia phả bạn muốn xem hoặc bắt đầu một cây mới.",
+    title: "Tạo, tham gia hoặc mở một cây", summary: "Tạo cây mới, tham gia bằng mã mời hoặc mở cây bạn đã có quyền xem.",
     purpose: "Đi vào không gian gia đình để bắt đầu ghi lại và xem các mối quan hệ.",
     prerequisites: ["Bạn đã đăng nhập."],
-    steps: ["Mở mục Cây gia phả.", "Chọn một cây có sẵn, hoặc chọn Tạo cây mới nếu bạn chưa có cây."],
+    steps: ["Mở mục Cây gia phả.", "Chọn một cây có sẵn, hoặc chọn Thêm cây.", "Chọn Tạo cây mới hoặc Tham gia bằng mã mời rồi làm theo hướng dẫn."],
     success: "Tên cây và danh sách thành viên được hiển thị.",
     recovery: "Nếu cây không mở được, chọn Thử lại. Chỉ những cây bạn được phép xem mới xuất hiện.",
-    excerpts: { overview: "Bắt đầu với một cây, thêm người thân rồi nối những quan hệ gần nhất.", checklist: "Chọn nơi bạn muốn bắt đầu ghi lại gia đình." },
+    excerpts: { overview: "Tạo cây mới, tham gia cây của người thân hoặc mở cây bạn đã có.", checklist: "Tạo, tham gia hoặc mở nơi bạn muốn bắt đầu ghi lại gia đình." },
     relatedTopicIds: ["them-nguoi-dau-tien"], reviewedAt: "2026-07-11",
   },
   {
