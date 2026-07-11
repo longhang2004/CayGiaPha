@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="900" viewBox="0 0 1000 900">
+  <rect width="1000" height="900" fill="#f3eee6"/>
+  <rect x="90" y="55" width="375" height="790" rx="36" fill="#e9ecee" stroke="#242424" stroke-width="5"/>
+  <rect x="105" y="72" width="345" height="54" fill="#fff"/>
+  <text x="126" y="105" font-family="Arial" font-size="22" fill="#333">☰</text>
+  <text x="365" y="104" font-family="Arial" font-size="14" fill="#333">8 người</text>
+  <g stroke="#9ba1a3" stroke-width="2" fill="none">
+    <path d="M280 240V290H205V340 M280 290H355V340"/>
+  </g>
+  <rect x="225" y="185" width="110" height="55" rx="12" fill="#fff" stroke="#7190ac"/>
+  <text x="280" y="218" text-anchor="middle" font-family="Arial" font-size="13" fill="#222">Nguyễn Minh</text>
+  <rect x="150" y="340" width="110" height="55" rx="12" fill="#fff" stroke="#c17f92"/>
+  <text x="205" y="373" text-anchor="middle" font-family="Arial" font-size="13" fill="#222">Trần Hoa</text>
+  <rect x="300" y="340" width="110" height="55" rx="12" fill="#fff" stroke="#7190ac"/>
+  <text x="355" y="373" text-anchor="middle" font-family="Arial" font-size="13" fill="#222">Nguyễn Bình</text>
+  <rect x="116" y="744" width="323" height="82" rx="24" fill="#fff" stroke="#d5d0c8"/>
+  <circle cx="150" cy="785" r="23" fill="#fff" stroke="#b8b1a8"/>
+  <text x="143" y="792" font-family="Arial" font-size="20" fill="#555">?</text>
+  <text x="184" y="791" font-family="Arial" font-size="14" fill="#555">Tìm kiếm</text>
+  <circle cx="405" cy="785" r="24" fill="#b94b34"/>
+  <text x="398" y="793" font-family="Arial" font-size="24" fill="#fff">+</text>
+
+  <rect x="105" y="434" width="345" height="392" rx="26" fill="#fff" stroke="#d4ccc1"/>
+  <rect x="240" y="448" width="74" height="5" rx="3" fill="#cfc8bf"/>
+  <text x="132" y="492" font-family="Arial" font-size="12" font-weight="700" fill="#b94b34">BƯỚC BẮT ĐẦU</text>
+  <text x="132" y="530" font-family="Arial" font-size="24" font-weight="700" fill="#222">Tiếp tục xây dựng cây</text>
+  <text x="132" y="560" font-family="Arial" font-size="14" fill="#666">2 trong 4 bước đã xong</text>
+  <line x1="132" y1="585" x2="423" y2="585" stroke="#ebe4da"/>
+  <text x="132" y="623" font-family="Arial" font-size="17" font-weight="700" fill="#222">Nối một quan hệ gần</text>
+  <text x="132" y="651" font-family="Arial" font-size="14" fill="#666">Thêm cha, mẹ, vợ/chồng hoặc con để</text>
+  <text x="132" y="673" font-family="Arial" font-size="14" fill="#666">hệ thống hiểu đường quan hệ.</text>
+  <text x="132" y="712" font-family="Arial" font-size="15" fill="#777">Để sau</text>
+  <rect x="276" y="686" width="147" height="50" rx="25" fill="#b94b34"/>
+  <text x="309" y="717" font-family="Arial" font-size="15" font-weight="700" fill="#fff">Thêm quan hệ</text>
+  <text x="132" y="770" font-family="Arial" font-size="14" fill="#b94b34">Tìm hiểu thêm</text>
+
+  <circle cx="545" cy="190" r="16" fill="#b94b34"/><text x="539" y="197" font-family="Arial" font-size="15" font-weight="700" fill="#fff">1</text>
+  <text x="580" y="183" font-family="Arial" font-size="16" font-weight="700" fill="#222">Không spotlight trên mobile</text>
+  <text x="580" y="209" font-family="Arial" font-size="14" fill="#666">Dùng bottom sheet/inline; canvas vẫn giữ ngữ cảnh.</text>
+  <circle cx="545" cy="350" r="16" fill="#b94b34"/><text x="539" y="357" font-family="Arial" font-size="15" font-weight="700" fill="#fff">2</text>
+  <text x="580" y="343" font-family="Arial" font-size="16" font-weight="700" fill="#222">Action không bị che</text>
+  <text x="580" y="369" font-family="Arial" font-size="14" fill="#666">Sheet có scroll riêng; footer tối đa hai nút chính.</text>
+  <circle cx="545" cy="510" r="16" fill="#b94b34"/><text x="539" y="517" font-family="Arial" font-size="15" font-weight="700" fill="#fff">3</text>
+  <text x="580" y="503" font-family="Arial" font-size="16" font-weight="700" fill="#222">200% text scaling</text>
+  <text x="580" y="529" font-family="Arial" font-size="14" fill="#666">Chiều cao theo nội dung; action xếp dọc khi cần.</text>
+  <circle cx="545" cy="670" r="16" fill="#b94b34"/><text x="539" y="677" font-family="Arial" font-size="15" font-weight="700" fill="#fff">4</text>
+  <text x="580" y="663" font-family="Arial" font-size="16" font-weight="700" fill="#222">48px preferred touch target</text>
+  <text x="580" y="689" font-family="Arial" font-size="14" fill="#666">Không dựa vào hover, swipe hoặc màu duy nhất.</text>
+</svg>

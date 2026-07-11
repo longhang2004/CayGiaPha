@@ -117,6 +117,8 @@ not automatically page-overflow bugs.
 - Destructive actions require confirmation and explicit wording.
 - Relationship types must remain distinguishable by line style and color.
 - `prefers-reduced-motion` must disable non-essential motion.
+- Help topics under `src/content/help/` are the canonical guidance source. Overview, checklist and contextual notes reference topic IDs and excerpt keys; do not duplicate explanatory copy in components.
+- Guidance content is reviewed with each relevant feature release and quarterly for runtime accuracy.
 
 ## Non-negotiable editing rules
 

@@ -15,7 +15,7 @@ For historical findings, read [AUDIT.md](./AUDIT.md) only when relevant.
 | `/` | Marketing | `/prototype/home` |
 | `/signin`, `/signup`, `/forgot-password` | Focused | matching prototype route |
 | `/login` | Bare/focused legacy placeholder | none |
-| `/tree` | In-app | none |
+| `/tree` | In-app | `/prototype/tree-list` |
 | `/tree/[id]` | In-app/full canvas | `/prototype/tree`, `/prototype/tree/empty`, `?panel=settings` |
 | `/person` | In-app harness | none |
 | `/invitation/[id]` | Bare/focused | `/prototype/invitation/[id]` |

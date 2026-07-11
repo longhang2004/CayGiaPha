@@ -1,0 +1,59 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="1000" viewBox="0 0 1440 1000">
+  <rect width="1440" height="1000" fill="#f7f3ed"/>
+  <rect x="0" y="0" width="1440" height="70" fill="#fff" stroke="#e0d9d0"/>
+  <text x="54" y="44" font-family="Arial" font-size="18" font-weight="700" fill="#222">Cây Gia Phả</text>
+  <text x="1190" y="44" font-family="Arial" font-size="15" fill="#b94b34">Xem sơ đồ</text>
+  <text x="1300" y="44" font-family="Arial" font-size="15" fill="#555">Trợ giúp</text>
+
+  <text x="150" y="140" font-family="Arial" font-size="14" fill="#b94b34">← Quay lại việc đang làm</text>
+  <text x="150" y="203" font-family="Arial" font-size="44" font-weight="700" fill="#b94b34">Hướng dẫn sử dụng</text>
+  <text x="150" y="240" font-family="Arial" font-size="17" fill="#666">Chọn việc bạn muốn làm. Mỗi mục có điều kiện, từng bước và cách xử lý khi gặp lỗi.</text>
+
+  <rect x="150" y="290" width="330" height="610" rx="18" fill="#fff" stroke="#ddd5ca"/>
+  <text x="178" y="330" font-family="Arial" font-size="13" font-weight="700" letter-spacing="1" fill="#777">MỤC LỤC</text>
+  <rect x="170" y="354" width="290" height="70" rx="12" fill="#fff0eb"/>
+  <text x="190" y="382" font-family="Arial" font-size="16" font-weight="700" fill="#b94b34">Thêm một quan hệ gần</text>
+  <text x="190" y="405" font-family="Arial" font-size="13" fill="#666">Cha, mẹ, vợ/chồng hoặc con</text>
+  <text x="190" y="470" font-family="Arial" font-size="16" fill="#333">Xem thông tin và xưng hô</text>
+  <text x="190" y="520" font-family="Arial" font-size="16" fill="#333">Đổi điểm nhìn</text>
+  <text x="190" y="570" font-family="Arial" font-size="16" fill="#333">Di chuyển trên sơ đồ</text>
+  <text x="190" y="620" font-family="Arial" font-size="16" fill="#333">Tìm người trong cây</text>
+  <text x="190" y="670" font-family="Arial" font-size="16" fill="#333">Quyền riêng tư</text>
+  <text x="190" y="720" font-family="Arial" font-size="16" fill="#333">Cộng tác</text>
+  <text x="190" y="770" font-family="Arial" font-size="16" fill="#333">Cỡ chữ và giao diện</text>
+
+  <rect x="520" y="290" width="770" height="650" rx="18" fill="#fff" stroke="#ddd5ca"/>
+  <text x="560" y="335" font-family="Arial" font-size="12" font-weight="700" letter-spacing="1" fill="#b94b34">THÊM NGƯỜI VÀ QUAN HỆ</text>
+  <text x="560" y="382" font-family="Arial" font-size="32" font-weight="700" fill="#222">Thêm cha, mẹ, vợ/chồng hoặc con</text>
+  <text x="560" y="419" font-family="Arial" font-size="17" fill="#666">Dùng khi bạn biết rõ người này nối với ai trong cây.</text>
+  <line x1="560" y1="448" x2="1250" y2="448" stroke="#e8e1d8"/>
+
+  <text x="560" y="492" font-family="Arial" font-size="18" font-weight="700" fill="#222">Ai có thể làm?</text>
+  <text x="560" y="520" font-family="Arial" font-size="15" fill="#666">Chủ cây hoặc cộng tác viên có quyền chỉnh sửa.</text>
+
+  <text x="560" y="565" font-family="Arial" font-size="18" font-weight="700" fill="#222">Trước khi bắt đầu</text>
+  <text x="560" y="593" font-family="Arial" font-size="15" fill="#666">Cây cần có ít nhất một người. Chọn người bạn muốn nối quan hệ.</text>
+
+  <text x="560" y="638" font-family="Arial" font-size="18" font-weight="700" fill="#222">Các bước</text>
+  <circle cx="578" cy="676" r="14" fill="#b94b34"/><text x="574" y="681" font-family="Arial" font-size="13" fill="#fff">1</text>
+  <text x="610" y="681" font-family="Arial" font-size="15" fill="#444">Chọn một người trên sơ đồ, rồi chọn “Thêm quan hệ”.</text>
+  <circle cx="578" cy="722" r="14" fill="#b94b34"/><text x="574" y="727" font-family="Arial" font-size="13" fill="#fff">2</text>
+  <text x="610" y="727" font-family="Arial" font-size="15" fill="#444">Chọn quan hệ cha, mẹ, vợ/chồng hoặc con.</text>
+  <circle cx="578" cy="768" r="14" fill="#b94b34"/><text x="574" y="773" font-family="Arial" font-size="13" fill="#fff">3</text>
+  <text x="610" y="773" font-family="Arial" font-size="15" fill="#444">Kiểm tra hai người và lưu.</text>
+
+  <rect x="560" y="810" width="690" height="92" rx="12" fill="#f4f1ec"/>
+  <text x="584" y="842" font-family="Arial" font-size="16" font-weight="700" fill="#222">Nếu chưa thể lưu</text>
+  <text x="584" y="870" font-family="Arial" font-size="14" fill="#666">Đọc lỗi ngay dưới trường cần sửa. Không có thay đổi nào được tính là hoàn thành</text>
+  <text x="584" y="892" font-family="Arial" font-size="14" fill="#666">cho tới khi cây tải lại quan hệ mới thành công.</text>
+
+  <circle cx="1330" cy="355" r="15" fill="#b94b34"/><text x="1325" y="361" font-family="Arial" font-size="14" font-weight="700" fill="#fff">1</text>
+  <text x="1310" y="405" font-family="Arial" font-size="13" fill="#555" text-anchor="middle">Stable topic ID</text>
+  <text x="1310" y="426" font-family="Arial" font-size="13" fill="#555" text-anchor="middle">drives deep link</text>
+  <circle cx="1330" cy="580" r="15" fill="#b94b34"/><text x="1325" y="586" font-family="Arial" font-size="14" font-weight="700" fill="#fff">2</text>
+  <text x="1310" y="630" font-family="Arial" font-size="13" fill="#555" text-anchor="middle">Role + prerequisite</text>
+  <text x="1310" y="651" font-family="Arial" font-size="13" fill="#555" text-anchor="middle">prevent bad guidance</text>
+  <circle cx="1330" cy="800" r="15" fill="#b94b34"/><text x="1325" y="806" font-family="Arial" font-size="14" font-weight="700" fill="#fff">3</text>
+  <text x="1310" y="850" font-family="Arial" font-size="13" fill="#555" text-anchor="middle">Recovery is part</text>
+  <text x="1310" y="871" font-family="Arial" font-size="13" fill="#555" text-anchor="middle">of every topic</text>
+</svg>

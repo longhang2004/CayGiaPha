@@ -1,0 +1,67 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="900" viewBox="0 0 1440 900">
+  <rect width="1440" height="900" fill="#e9edf0"/>
+  <rect x="0" y="0" width="92" height="900" fill="#fff" stroke="#d7d8d8"/>
+  <text x="32" y="54" font-family="Arial" font-size="20" fill="#222">♧</text>
+  <rect x="18" y="112" width="56" height="56" rx="12" fill="#e6efe8"/>
+  <text x="37" y="147" font-family="Arial" font-size="20" fill="#345">‹</text>
+
+  <rect x="118" y="48" width="1268" height="74" rx="20" fill="#fff" stroke="#d6d2cc"/>
+  <text x="150" y="80" font-family="Arial" font-size="18" font-weight="700" fill="#222">Gia phả dòng họ</text>
+  <text x="150" y="102" font-family="Arial" font-size="12" fill="#666">8 thành viên</text>
+  <rect x="365" y="65" width="350" height="42" rx="21" fill="#f4f2ef" stroke="#d8d2ca"/>
+  <text x="389" y="91" font-family="Arial" font-size="14" fill="#777">Tìm theo tên hoặc cách xưng hô…</text>
+  <rect x="752" y="65" width="218" height="42" rx="12" fill="#fff" stroke="#d8d2ca"/>
+  <text x="770" y="91" font-family="Arial" font-size="14" fill="#555">Điểm nhìn: Nguyễn An</text>
+  <rect x="995" y="65" width="112" height="42" rx="21" fill="#fff" stroke="#d8d2ca"/>
+  <text x="1022" y="91" font-family="Arial" font-size="14" fill="#555">Chú giải</text>
+  <rect x="1123" y="65" width="116" height="42" rx="21" fill="#fff" stroke="#d8d2ca"/>
+  <text x="1150" y="91" font-family="Arial" font-size="14" fill="#555">Cộng tác</text>
+  <rect x="1255" y="65" width="110" height="42" rx="21" fill="#b94b34"/>
+  <text x="1273" y="91" font-family="Arial" font-size="14" font-weight="700" fill="#fff">+ Thành viên</text>
+
+  <g stroke="#9aa0a2" stroke-width="2" fill="none">
+    <path d="M480 280V340H350V400 M480 340H610V400"/>
+    <path d="M350 470V530H285V590 M350 530H430V590"/>
+  </g>
+  <g font-family="Arial" text-anchor="middle">
+    <rect x="410" y="220" width="140" height="62" rx="14" fill="#fff" stroke="#7190ac"/>
+    <text x="480" y="247" font-size="15" font-weight="700" fill="#222">Nguyễn Văn Minh</text><text x="480" y="267" font-size="12" fill="#666">Ông</text>
+    <rect x="280" y="400" width="140" height="70" rx="14" fill="#fff" stroke="#c17f92"/>
+    <text x="350" y="429" font-size="15" font-weight="700" fill="#222">Trần Thị Hoa</text><text x="350" y="452" font-size="12" fill="#666">Mẹ</text>
+    <rect x="540" y="400" width="140" height="70" rx="14" fill="#fff" stroke="#7190ac"/>
+    <text x="610" y="429" font-size="15" font-weight="700" fill="#222">Nguyễn Văn Bình</text><text x="610" y="452" font-size="12" fill="#666">Cậu</text>
+    <rect x="215" y="590" width="140" height="70" rx="14" fill="#fff" stroke="#7190ac"/>
+    <text x="285" y="619" font-size="15" font-weight="700" fill="#222">Nguyễn An</text><text x="285" y="642" font-size="12" fill="#666">Điểm nhìn</text>
+    <rect x="360" y="590" width="140" height="70" rx="14" fill="#fff" stroke="#c17f92"/>
+    <text x="430" y="619" font-size="15" font-weight="700" fill="#222">Nguyễn Mai</text><text x="430" y="642" font-size="12" fill="#666">Chị</text>
+  </g>
+
+  <rect x="1000" y="160" width="360" height="445" rx="20" fill="#fff" stroke="#d9d1c6"/>
+  <text x="1032" y="198" font-family="Arial" font-size="12" font-weight="700" letter-spacing="1" fill="#b94b34">BƯỚC BẮT ĐẦU</text>
+  <text x="1032" y="235" font-family="Arial" font-size="24" font-weight="700" fill="#222">Tiếp tục xây dựng cây</text>
+  <text x="1032" y="265" font-family="Arial" font-size="14" fill="#666">2 trong 4 bước đã xong</text>
+  <line x1="1032" y1="291" x2="1328" y2="291" stroke="#ebe4da"/>
+  <text x="1032" y="329" font-family="Arial" font-size="16" fill="#555">✓ Mở sơ đồ</text>
+  <text x="1032" y="371" font-family="Arial" font-size="16" fill="#555">✓ Thêm người đầu tiên</text>
+  <text x="1032" y="415" font-family="Arial" font-size="16" font-weight="700" fill="#222">3. Nối một quan hệ gần</text>
+  <text x="1032" y="443" font-family="Arial" font-size="14" fill="#666">Thêm cha, mẹ, vợ/chồng hoặc con.</text>
+  <rect x="1032" y="472" width="183" height="48" rx="24" fill="#b94b34"/>
+  <text x="1076" y="502" font-family="Arial" font-size="15" font-weight="700" fill="#fff">Thêm quan hệ</text>
+  <text x="1240" y="501" font-family="Arial" font-size="14" fill="#b94b34">Tìm hiểu thêm</text>
+  <text x="1032" y="566" font-family="Arial" font-size="14" fill="#777">Thu gọn</text>
+
+  <rect x="650" y="560" width="320" height="178" rx="18" fill="#fff" stroke="#b94b34" stroke-width="2"/>
+  <text x="674" y="593" font-family="Arial" font-size="12" font-weight="700" fill="#b94b34">MẸO NHỎ · 1/1</text>
+  <text x="674" y="628" font-family="Arial" font-size="20" font-weight="700" fill="#222">Chọn một người trên sơ đồ</text>
+  <text x="674" y="660" font-family="Arial" font-size="14" fill="#666">Bạn sẽ thấy thông tin và cách xưng hô</text>
+  <text x="674" y="681" font-family="Arial" font-size="14" fill="#666">trong bảng bên phải.</text>
+  <text x="674" y="716" font-family="Arial" font-size="14" fill="#777">Đóng</text>
+  <text x="853" y="716" font-family="Arial" font-size="14" fill="#b94b34">Tìm hiểu thêm</text>
+  <path d="M650 650L520 625" stroke="#b94b34" stroke-width="2" stroke-dasharray="5 5"/>
+
+  <circle cx="1338" cy="640" r="14" fill="#b94b34"/><text x="1333" y="646" font-family="Arial" font-size="14" font-weight="700" fill="#fff">1</text>
+  <text x="1010" y="660" font-family="Arial" font-size="13" fill="#555">Checklist chỉ dùng idle rail;</text>
+  <text x="1010" y="681" font-family="Arial" font-size="13" fill="#555">chọn người sẽ trả rail cho thông tin.</text>
+  <circle cx="956" cy="760" r="14" fill="#b94b34"/><text x="951" y="766" font-family="Arial" font-size="14" font-weight="700" fill="#fff">2</text>
+  <text x="990" y="756" font-family="Arial" font-size="13" fill="#555">Một tip mỗi lượt; target lỗi → inline fallback, không tooltip trôi.</text>
+</svg>
