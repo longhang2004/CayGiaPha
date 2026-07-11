@@ -18,4 +18,10 @@ describe("guidance eligibility and persistence", () => {
     expect(values.get(GUIDANCE_STORAGE_KEY)).not.toContain("secret");
   });
   it("falls back safely when storage is unavailable", () => { expect(readGuidanceState({ getItem: () => { throw new Error("blocked"); } })).toEqual(DEFAULT_GUIDANCE_STATE); });
+  it("migrates v1 completion without hidden, skipped, or private fields", () => {
+    const values = new Map<string, string>([["cgp_guidance_v1", JSON.stringify({ schemaVersion: 1, hidden: true, skipped: true, completed: ["core-tree-open"], privateUrl: "/tree/private" })]]);
+    const storage = { getItem: (key: string) => values.get(key) ?? null, removeItem: (key: string) => { values.delete(key); } };
+    expect(readGuidanceState(storage)).toEqual({ ...DEFAULT_GUIDANCE_STATE, completed: ["core-tree-open"] });
+    expect(JSON.stringify(readGuidanceState(storage))).not.toContain("private");
+  });
 });

@@ -84,7 +84,7 @@ test.describe("Prototype Pages — smoke tests (no auth required)", () => {
     page,
   }) => {
     await page.goto("/prototype/tree");
-    await expect(page.locator("h1")).toContainText("Gia phả dòng họ");
+    await expect(page.locator("h1")).toContainText("Cây Gia Phả Mẫu");
     await expect(page.locator(".tree-graph__canvas")).toBeVisible();
     // Mock persons appear as nodes
     await expect(
@@ -107,11 +107,70 @@ test.describe("Prototype Pages — smoke tests (no auth required)", () => {
   });
 
   test("guidance prototype states are deterministic", async ({ page }) => {
-    await page.goto("/prototype/tree-list?state=skipped");
+    await page.goto("/prototype/tree-list?state=collapsed");
     await expect(page.getByText(/Bước tiếp theo/)).toBeVisible();
+    await page.goto("/prototype/tree-list?state=deferred");
+    await expect(page.getByRole("heading", { name: "Bắt đầu từng bước" })).toHaveCount(0);
     await page.goto("/prototype/tree-list?state=completed");
-    await expect(page.getByText("Bạn đã hoàn tất các bước bắt đầu")).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Bắt đầu từng bước" })).toHaveCount(0);
   });
+
+  for (const viewport of [
+    { name: "desktop", width: 1280, height: 800 },
+    { name: "tablet", width: 768, height: 1024 },
+    { name: "mobile", width: 375, height: 667 },
+  ]) {
+    test(`graph guidance stays inside safe area on ${viewport.name}`, async ({ page }) => {
+      await page.setViewportSize({ width: viewport.width, height: viewport.height });
+      await page.goto("/prototype/tree");
+      const layer = page.getByTestId("graph-overlay-layer");
+      const card = page.locator(".guidance-card").first();
+      await expect(layer).toBeVisible();
+      await expect(card).toBeVisible();
+      const [layerBox, cardBox, toolbarBox, navBox] = await Promise.all([
+        layer.boundingBox(), card.boundingBox(), page.locator(".tree-page-header").boundingBox(), page.locator(".tree-graph__nav-controls").boundingBox(),
+      ]);
+      expect(layerBox && cardBox && toolbarBox && navBox).toBeTruthy();
+      expect(cardBox!.x).toBeGreaterThanOrEqual(layerBox!.x - 1);
+      expect(cardBox!.y).toBeGreaterThanOrEqual(layerBox!.y - 1);
+      expect(cardBox!.x + cardBox!.width).toBeLessThanOrEqual(layerBox!.x + layerBox!.width + 1);
+      expect(cardBox!.y + cardBox!.height).toBeLessThanOrEqual(layerBox!.y + layerBox!.height + 1);
+      expect(layerBox!.y + layerBox!.height).toBeLessThanOrEqual(toolbarBox!.y + 1);
+      expect(layerBox!.x + layerBox!.width).toBeLessThanOrEqual(navBox!.x + 1);
+    });
+  }
+
+  test("manual tour uses a safe fallback when its anchor is missing", async ({ page }) => {
+    await page.setViewportSize({ width: 768, height: 1024 });
+    await page.goto("/prototype/tree?guide=tour-missing");
+    const tour = page.locator(".guidance-tour");
+    await expect(tour).toBeVisible();
+    await expect(tour).toHaveAttribute("data-fallback", "true");
+    await page.keyboard.press("Escape");
+    await expect(tour).toHaveCount(0);
+  });
+
+  for (const viewport of [
+    { name: "tablet", width: 768, height: 1024 },
+    { name: "mobile", width: 375, height: 667 },
+  ]) {
+    test(`manual tour stays inside safe area on ${viewport.name}`, async ({ page }) => {
+      await page.setViewportSize({ width: viewport.width, height: viewport.height });
+      await page.goto("/prototype/tree?guide=tour");
+      const layer = page.getByTestId("graph-overlay-layer");
+      const tour = page.locator(".guidance-tour");
+      await expect(tour).toBeVisible();
+      const [layerBox, tourBox, toolbarBox] = await Promise.all([
+        layer.boundingBox(), tour.boundingBox(), page.locator(".tree-page-header").boundingBox(),
+      ]);
+      expect(layerBox && tourBox && toolbarBox).toBeTruthy();
+      expect(tourBox!.x).toBeGreaterThanOrEqual(layerBox!.x - 1);
+      expect(tourBox!.y).toBeGreaterThanOrEqual(layerBox!.y - 1);
+      expect(tourBox!.x + tourBox!.width).toBeLessThanOrEqual(layerBox!.x + layerBox!.width + 1);
+      expect(tourBox!.y + tourBox!.height).toBeLessThanOrEqual(layerBox!.y + layerBox!.height + 1);
+      expect(tourBox!.y + tourBox!.height).toBeLessThanOrEqual(toolbarBox!.y + 1);
+    });
+  }
 
   test("tree prototype — selecting a node shows info panel", async ({
     page,

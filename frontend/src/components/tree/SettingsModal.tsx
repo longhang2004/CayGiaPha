@@ -8,6 +8,7 @@ import { TextSizeControl } from "@/components/a11y/TextSizeControl";
 import { SignOutButton } from "@/components/auth/SignOutButton";
 import { api, ApiError } from "@/lib/apiClient";
 import type { Region } from "@/lib/region";
+import { GUIDANCE_REOPEN_EVENT, GUIDANCE_RESET_EVENT, resetGuidanceState } from "@/lib/guidance/storage";
 
 export interface SettingsModalProps {
   isOpen: boolean;
@@ -296,21 +297,33 @@ export function SettingsModal({
             </label>
           </div>
 
-          {onShowTutorial && (
-            <div style={{ marginTop: "1rem" }}>
+          <div style={{ marginTop: "1rem", display: "grid", gap: ".75rem" }}>
               <button
                 type="button"
                 className="btn btn-secondary"
                 style={{ width: "100%", justifyContent: "center" }}
                 onClick={() => {
-                  onShowTutorial();
+                  if (onShowTutorial) onShowTutorial();
+                  else window.dispatchEvent(new Event(GUIDANCE_REOPEN_EVENT));
                   onClose();
                 }}
               >
-                📖 Xem lại hướng dẫn sử dụng
+                Xem lại hướng dẫn sử dụng
               </button>
-            </div>
-          )}
+              <button
+                type="button"
+                className="btn btn-secondary"
+                style={{ width: "100%", justifyContent: "center" }}
+                onClick={() => {
+                  resetGuidanceState(window.localStorage);
+                  window.dispatchEvent(new Event(GUIDANCE_RESET_EVENT));
+                  showToast("Đã đặt lại hướng dẫn trên thiết bị này.", "success");
+                  onClose();
+                }}
+              >
+                Đặt lại hướng dẫn
+              </button>
+          </div>
         </section>
 
         <section className="settings-section" style={{ borderTop: "1px solid var(--color-hairline-soft)", paddingTop: "1.5rem", marginTop: "1.5rem" }}>

@@ -123,6 +123,7 @@ describe("SettingsPage profile editor", () => {
     sessionState.user.displayName = "Đã có tên";
     render(<SettingsPage />);
 
+    await userEvent.click(screen.getByRole("button", { name: /Sửa tên/i }));
     const input = screen.getByLabelText(/Tên hiển thị/i);
     await userEvent.clear(input);
     await userEvent.click(screen.getByRole("button", { name: /Lưu tên/i }));

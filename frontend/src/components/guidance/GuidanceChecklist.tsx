@@ -1,43 +1,166 @@
 "use client";
-import { useEffect, useMemo, useState } from "react";
+
+import { useEffect, useMemo, useRef, useState } from "react";
 import { getHelpExcerpt, type GuidanceRole } from "@/content/help/helpTopics";
 import { getEligibleChecklist, type GuidanceProductState } from "@/lib/guidance/checklist";
-import { DEFAULT_GUIDANCE_STATE, readGuidanceState, writeGuidanceState, type GuidanceState } from "@/lib/guidance/storage";
+import {
+  GUIDANCE_REOPEN_EVENT,
+  GUIDANCE_RESET_EVENT,
+  readGuidanceState,
+  resetGuidanceState,
+  writeGuidanceState,
+  type GuidanceState,
+} from "@/lib/guidance/storage";
 
-interface Props { role: GuidanceRole; productState: GuidanceProductState; mode?: "overview" | "compact"; storage?: Storage; }
-export function GuidanceChecklist({ role, productState, mode = "overview", storage }: Props) {
-  const [state, setState] = useState<GuidanceState>(DEFAULT_GUIDANCE_STATE);
+let deferredForCurrentVisit = false;
+export function resetDeferredGuidanceForVisit() { deferredForCurrentVisit = false; }
+
+interface Props {
+  role: GuidanceRole;
+  productState: GuidanceProductState;
+  mode?: "overview" | "compact";
+  storage?: Storage;
+  onShowTour?: (topicId: string) => void;
+  onVisibilityChange?: (visible: boolean) => void;
+  initialPresentation?: "expanded" | "collapsed" | "deferred";
+}
+
+export function GuidanceChecklist({
+  role,
+  productState,
+  mode = "overview",
+  storage,
+  onShowTour,
+  onVisibilityChange,
+  initialPresentation = "expanded",
+}: Props) {
+  const [state, setState] = useState<GuidanceState>(() => ({ schemaVersion: 2, completed: [], dismissedTopicVersions: {} }));
   const [ready, setReady] = useState(false);
-  const [page, setPage] = useState(0);
-  useEffect(() => { setState(readGuidanceState(storage ?? window.localStorage)); setReady(true); }, [storage]);
+  const [collapsed, setCollapsed] = useState(initialPresentation === "collapsed");
+  const [deferred, setDeferred] = useState(initialPresentation === "deferred" || deferredForCurrentVisit);
+  const [showCompletion, setShowCompletion] = useState(false);
+  const [manualReview, setManualReview] = useState(false);
+  const previouslyComplete = useRef<boolean | null>(null);
+
+  const resolvedStorage = storage ?? (typeof window !== "undefined" ? window.localStorage : undefined);
+  useEffect(() => {
+    setState(readGuidanceState(resolvedStorage));
+    setReady(true);
+  }, [resolvedStorage]);
+
   const items = useMemo(() => getEligibleChecklist(role, productState), [role, productState]);
-  const productCompleted = useMemo(() => items.filter(i => i.complete(productState)).map(i => i.id), [items, productState]);
+  const productCompleted = useMemo(
+    () => items.filter((item) => item.complete(productState)).map((item) => item.id),
+    [items, productState],
+  );
+  const completed = useMemo(
+    () => new Set([...state.completed, ...productCompleted]),
+    [state.completed, productCompleted],
+  );
+  const allComplete = items.length > 0 && items.every((item) => completed.has(item.id));
   const completionKey = productCompleted.join("|");
-  const completed = new Set([...state.completed, ...productCompleted]);
+
   useEffect(() => {
     if (!ready) return;
-    setState(current => {
-      if (productCompleted.every(id => current.completed.includes(id))) return current;
+    setState((current) => {
+      if (productCompleted.every((id) => current.completed.includes(id))) return current;
       const next = { ...current, completed: Array.from(new Set([...current.completed, ...productCompleted])) };
-      writeGuidanceState(next, storage ?? window.localStorage);
+      writeGuidanceState(next, resolvedStorage);
       return next;
     });
-  }, [ready, completionKey, productCompleted, storage]);
-  const update = (patch: Partial<GuidanceState>) => { const next = { ...state, ...patch }; setState(next); writeGuidanceState(next, storage ?? window.localStorage); };
-  if (!ready || state.hidden) return <button type="button" className="guidance-reopen" onClick={() => update({ hidden: false, skipped: false, collapsed: false })}>Xem hướng dẫn bắt đầu</button>;
-  const nextItem = items.find(i => !completed.has(i.id));
-  if (state.collapsed || state.skipped) return <section className="guidance-card guidance-card--collapsed" aria-label="Hướng dẫn bắt đầu"><span>{nextItem ? `Bước tiếp theo: ${nextItem.title}` : "Bạn đã hoàn tất các bước bắt đầu"}</span><button type="button" className="btn btn-secondary" onClick={() => update({ collapsed: false, skipped: false })}>Mở hướng dẫn</button></section>;
-  return <section className={`guidance-card guidance-card--${mode}`} aria-labelledby="guidance-title">
-    <div className="guidance-card__header"><div><h2 id="guidance-title">Bắt đầu từng bước</h2><p>{getHelpExcerpt("tao-hoac-mo-cay", "overview", role)}</p></div><button type="button" className="guidance-card__close" aria-label="Thu gọn hướng dẫn" onClick={() => update({ collapsed: true })}>×</button></div>
-    <p className="sr-only" aria-live="polite">{productCompleted.length ? `Đã hoàn tất ${productCompleted.length} bước.` : ""}</p>
-    <ol className="guidance-checklist">{items.slice(page * 2, (page + 1) * 2).map(item => <li key={item.id} className={completed.has(item.id) ? "is-complete" : ""}><span aria-hidden="true">{completed.has(item.id) ? "✓" : "○"}</span><div><strong>{item.title}</strong><p>{getHelpExcerpt(item.topicId, "checklist", role)}</p><a href={`/help#${item.topicId}`}>Xem cách làm</a></div></li>)}</ol>
-    {items.length > 2 && (
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
-        <button type="button" className="btn btn-secondary" style={{ padding: "0.4rem 1rem", minHeight: "auto", height: "auto" }} disabled={page === 0} onClick={() => setPage(p => p - 1)}>Trước</button>
-        <span style={{ fontSize: "0.8rem", color: "var(--color-muted)" }}>Trang {page + 1} / {Math.ceil(items.length / 2)}</span>
-        <button type="button" className="btn btn-secondary" style={{ padding: "0.4rem 1rem", minHeight: "auto", height: "auto" }} disabled={page === Math.ceil(items.length / 2) - 1} onClick={() => setPage(p => p + 1)}>Tiếp</button>
+  }, [ready, completionKey, productCompleted, resolvedStorage]);
+
+  useEffect(() => {
+    if (!ready) return;
+    if (previouslyComplete.current === false && allComplete) {
+      setShowCompletion(true);
+      const timer = window.setTimeout(() => setShowCompletion(false), 1800);
+      return () => window.clearTimeout(timer);
+    }
+    previouslyComplete.current = allComplete;
+  }, [allComplete, ready]);
+
+  useEffect(() => {
+    const reopen = () => {
+      deferredForCurrentVisit = false;
+      setDeferred(false);
+      setCollapsed(false);
+      setShowCompletion(false);
+      setManualReview(true);
+    };
+    const reset = () => {
+      resetGuidanceState(resolvedStorage);
+      setState({ schemaVersion: 2, completed: [], dismissedTopicVersions: {} });
+      reopen();
+    };
+    window.addEventListener(GUIDANCE_REOPEN_EVENT, reopen);
+    window.addEventListener(GUIDANCE_RESET_EVENT, reset);
+    return () => {
+      window.removeEventListener(GUIDANCE_REOPEN_EVENT, reopen);
+      window.removeEventListener(GUIDANCE_RESET_EVENT, reset);
+    };
+  }, [resolvedStorage]);
+
+  const visible = ready && !deferred && (!allComplete || showCompletion || manualReview);
+  useEffect(() => onVisibilityChange?.(visible), [onVisibilityChange, visible]);
+
+  if (!ready || deferred || (allComplete && !showCompletion && !manualReview)) return null;
+  if (showCompletion) {
+    return (
+      <section className="guidance-card guidance-card--completed" role="status" aria-live="polite">
+        <strong>Bạn đã hoàn thành các bước bắt đầu.</strong>
+      </section>
+    );
+  }
+
+  const nextItem = items.find((item) => !completed.has(item.id));
+  if (collapsed) {
+    return (
+      <section className="guidance-card guidance-card--collapsed" aria-label="Hướng dẫn bắt đầu">
+        <span>{nextItem ? `Bước tiếp theo: ${nextItem.title}` : "Hướng dẫn bắt đầu"}</span>
+        <button type="button" className="btn btn-secondary" onClick={() => setCollapsed(false)}>Mở hướng dẫn</button>
+      </section>
+    );
+  }
+
+  return (
+    <section className={`guidance-card guidance-card--${mode}`} aria-labelledby="guidance-title">
+      <div className="guidance-card__header">
+        <div>
+          <h2 id="guidance-title">Bắt đầu từng bước</h2>
+          <p>{getHelpExcerpt("tao-hoac-mo-cay", "overview", role)}</p>
+        </div>
+        <button type="button" className="guidance-card__close" aria-label="Thu gọn hướng dẫn" onClick={() => setCollapsed(true)}>×</button>
       </div>
-    )}
-    <div className="guidance-card__actions"><button type="button" className="btn btn-secondary" onClick={() => update({ skipped: true, collapsed: true })}>Để sau</button><button type="button" className="btn btn-secondary" onClick={() => update({ hidden: true })}>Ẩn hướng dẫn bắt đầu</button></div>
-  </section>;
+      <ol className="guidance-checklist">
+        {items.map((item) => (
+          <li key={item.id} className={completed.has(item.id) ? "is-complete" : ""}>
+            <span aria-hidden="true">{completed.has(item.id) ? "✓" : "○"}</span>
+            <div>
+              <strong>{item.title}</strong>
+              <p>{getHelpExcerpt(item.topicId, "checklist", role)}</p>
+              <div className="guidance-checklist__links">
+                {!completed.has(item.id) && onShowTour ? (
+                  <button type="button" onClick={() => onShowTour(item.topicId)}>Chỉ tôi</button>
+                ) : null}
+                <a href={`/help#${item.topicId}`}>Xem cách làm</a>
+              </div>
+            </div>
+          </li>
+        ))}
+      </ol>
+      <div className="guidance-card__actions">
+        <button
+          type="button"
+          className="btn btn-secondary"
+          onClick={() => {
+            deferredForCurrentVisit = true;
+            setDeferred(true);
+          }}
+        >
+          Để sau
+        </button>
+      </div>
+    </section>
+  );
 }

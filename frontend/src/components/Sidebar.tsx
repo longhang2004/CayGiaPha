@@ -62,6 +62,7 @@ export function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse }: Side
       <aside
         className={`global-sidebar ${isOpen ? "global-sidebar--open" : ""} ${isCollapsed ? "global-sidebar--collapsed" : ""}`}
         aria-label="Menu ứng dụng"
+        data-graph-safe-external="left"
       >
         <div className="global-sidebar__top">
           <div className="global-sidebar__brand-container">

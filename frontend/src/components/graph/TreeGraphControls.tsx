@@ -121,7 +121,7 @@ export function TreeGraphNavControls({
   activeSelectedId,
 }: TreeGraphNavControlsProps) {
   return (
-      <div className="tree-graph__nav-controls">
+      <div className="tree-graph__nav-controls" data-graph-safe-exclude="right" data-guidance-anchor="graph-navigation">
         <button
           type="button"
           onClick={onZoomIn}

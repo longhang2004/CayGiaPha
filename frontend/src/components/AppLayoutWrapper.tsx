@@ -113,7 +113,7 @@ export function AppLayoutWrapper({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="inapp-layout">
-      <div className="mobile-top-bar">
+      <div className="mobile-top-bar" data-graph-safe-external="top">
         <button
           type="button"
           className="hamburger-btn"

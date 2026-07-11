@@ -47,6 +47,7 @@ export const TreeGraphNode = memo(function TreeGraphNode({
           className="tree-graph__node-button"
           aria-pressed={isSelected}
           onClick={() => onSelect(person.id)}
+          data-guidance-anchor="graph-person-node"
         >
           {/* Avatar tròn với chữ cái đầu */}
           <div className="tree-graph__node-avatar" aria-hidden="true">
