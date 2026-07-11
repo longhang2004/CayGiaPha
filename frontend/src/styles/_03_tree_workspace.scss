@@ -911,6 +911,22 @@ html.dark .double-bezel-card {
     justify-content: center;
   }
 
+  .onboarding-strip--guidance {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.5rem;
+  }
+
+  .onboarding-strip--guidance > [aria-hidden="true"] {
+    display: none;
+  }
+
+  .onboarding-strip--guidance span {
+    min-width: 0;
+    padding-inline: 0.4rem;
+    text-align: center;
+    line-height: 1.2;
+  }
+
   .center-state {
     margin-block: var(--space-xl);
   }
@@ -995,7 +1011,9 @@ textarea {
   pointer-events: none;
   overflow: visible;
 }
-.graph-overlay-layer > * { pointer-events: auto; }
+.guidance-orchestrator__checklist .guidance-card,
+.graph-overlay-layer > .context-note,
+.graph-overlay-layer > .guidance-tour { pointer-events: auto; }
 .guidance-orchestrator__checklist {
   position: absolute;
   top: 0;

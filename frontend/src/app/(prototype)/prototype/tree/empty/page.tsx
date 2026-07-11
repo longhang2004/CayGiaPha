@@ -32,14 +32,15 @@ function PrototypeEmptyTreeContent() {
           để bắt đầu.
         </p>
       </div>
-      <ContextNote topicId="them-nguoi-dau-tien" role="owner" manual />
-      <div className="onboarding-strip" aria-label="Các bước gợi ý" style={{ display: "flex", justifyContent: "center", gap: "1rem", marginBottom: "2rem", fontSize: "0.9rem", fontWeight: 600, color: "var(--color-brand)" }}>
-        <span>1. Nhập tên</span>
-        <span style={{ color: "var(--color-hairline)" }}>—</span>
-        <span>2. Chọn giới tính</span>
-        <span style={{ color: "var(--color-hairline)" }}>—</span>
-        <span>3. Bấm lưu</span>
-      </div>
+      <ContextNote topicId="them-nguoi-dau-tien" role="owner" manual>
+        <div className="onboarding-strip onboarding-strip--guidance" aria-label="Các bước gợi ý">
+          <span>1. Nhập tên</span>
+          <span aria-hidden="true">—</span>
+          <span>2. Chọn giới tính</span>
+          <span aria-hidden="true">—</span>
+          <span>3. Bấm lưu</span>
+        </div>
+      </ContextNote>
       <Card className="empty-tree__form" style={{ padding: "2rem", textAlign: "left" }}>
         <PersonForm
           mode="create"

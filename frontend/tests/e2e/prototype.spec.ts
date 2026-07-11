@@ -140,6 +140,56 @@ test.describe("Prototype Pages — smoke tests (no auth required)", () => {
     });
   }
 
+  for (const viewport of [
+    { name: "tablet", width: 768, height: 1024 },
+    { name: "mobile", width: 375, height: 667 },
+  ]) {
+    test(`transparent guidance wrapper remains click-through on ${viewport.name}`, async ({ page }) => {
+      await page.setViewportSize({ width: viewport.width, height: viewport.height });
+      await page.goto("/prototype/tree");
+      const wrapper = page.locator(".guidance-orchestrator__checklist");
+      const card = wrapper.locator(".guidance-card");
+      await expect(wrapper).toBeVisible();
+      await expect(card).toBeVisible();
+      expect(await wrapper.evaluate((element) => getComputedStyle(element).pointerEvents)).toBe("none");
+      expect(await card.evaluate((element) => getComputedStyle(element).pointerEvents)).toBe("auto");
+    });
+  }
+
+  for (const viewport of [
+    { name: "desktop", width: 1280, height: 800 },
+    { name: "tablet", width: 768, height: 1024 },
+    { name: "mobile", width: 375, height: 667 },
+  ]) {
+    test(`empty-tree progress stays inside its guidance container on ${viewport.name}`, async ({ page }) => {
+      await page.setViewportSize({ width: viewport.width, height: viewport.height });
+      await page.goto("/prototype/tree/empty");
+      const note = page.locator(".context-note");
+      const progress = page.getByLabel("Các bước gợi ý");
+      await expect(note).toBeVisible();
+      await expect(progress).toBeVisible();
+      await expect(progress).toContainText("1. Nhập tên");
+      await expect(progress).toContainText("2. Chọn giới tính");
+      await expect(progress).toContainText("3. Bấm lưu");
+      expect(await progress.evaluate((element) => element.closest(".context-note") !== null)).toBe(true);
+      const [noteBox, progressBox] = await Promise.all([note.boundingBox(), progress.boundingBox()]);
+      expect(noteBox && progressBox).toBeTruthy();
+      expect(progressBox!.x).toBeGreaterThanOrEqual(noteBox!.x - 1);
+      expect(progressBox!.y).toBeGreaterThanOrEqual(noteBox!.y - 1);
+      expect(progressBox!.x + progressBox!.width).toBeLessThanOrEqual(noteBox!.x + noteBox!.width + 1);
+      expect(progressBox!.y + progressBox!.height).toBeLessThanOrEqual(noteBox!.y + noteBox!.height + 1);
+      if (viewport.name === "mobile") {
+        const stepBoxes = await Promise.all([
+          progress.getByText("1. Nhập tên", { exact: true }).boundingBox(),
+          progress.getByText("2. Chọn giới tính", { exact: true }).boundingBox(),
+          progress.getByText("3. Bấm lưu", { exact: true }).boundingBox(),
+        ]);
+        expect(stepBoxes.every(Boolean)).toBe(true);
+        expect(Math.max(...stepBoxes.map((box) => box!.y)) - Math.min(...stepBoxes.map((box) => box!.y))).toBeLessThan(4);
+      }
+    });
+  }
+
   test("manual tour uses a safe fallback when its anchor is missing", async ({ page }) => {
     await page.setViewportSize({ width: 768, height: 1024 });
     await page.goto("/prototype/tree?guide=tour-missing");
