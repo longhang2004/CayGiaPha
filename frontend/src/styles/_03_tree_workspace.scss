@@ -990,14 +990,14 @@ textarea {
 .guidance-card--collapsed { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
 .guidance-reopen { min-height: var(--min-touch-target); margin: 0 auto 1rem; padding: .65rem 1rem; border: 1px solid var(--color-hairline); border-radius: 999px; background: var(--color-surface-card); color: var(--color-brand); font-weight: 700; cursor: pointer; }
 .tree-workspace__guidance { position: absolute; z-index: 15; top: 7rem; right: 1rem; width: min(360px, calc(100% - 2rem)); }
-.tree-workspace__guidance .guidance-card { max-height: min(54dvh, 470px); overflow: auto; }
+.tree-workspace__guidance .guidance-card { max-height: calc(100vh - 10rem); overflow: auto; }
 .context-note { position: relative; padding: 1rem; }
 .context-note__close { position: absolute; top: .25rem; right: .25rem; }
 .context-note h2 { padding-right: 2.5rem; }
 .context-note__actions { margin-top: 1rem; }
 
 @media (max-width: 768px) {
-  .tree-workspace__guidance { position: fixed; z-index: 70; top: auto; left: 1rem; right: 1rem; bottom: 1rem; width: auto; max-height: 70dvh; overflow: auto; }
+  .tree-workspace__guidance { position: fixed; z-index: 70; top: auto; left: 1rem; right: 1rem; bottom: 11rem; width: auto; max-height: 60dvh; overflow: auto; }
   .tree-workspace__guidance .guidance-card { display: none; }
   .guidance-card--collapsed { align-items: stretch; flex-direction: column; }
   .guidance-card__actions, .context-note__actions { flex-direction: column; }

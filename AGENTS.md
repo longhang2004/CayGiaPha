@@ -176,3 +176,10 @@ Each prototype file contains a `BEGIN/END mirror` comment block that marks the s
 - Never connect prototype pages to real database queries or session tokens.
 - Mock data lives in `src/lib/prototype/mockData.ts`. Update it if the `Person` or `Relationship` type shapes change.
 - `SessionContext` is exported from `src/app/providers.tsx` specifically to support `MockSessionProvider`. Do not remove that export.
+
+## Responsive UI & Modal Positioning Rule
+
+**CRITICAL:**
+- Any newly added components, tooltips, or modals MUST be carefully checked across all responsive views (desktop, tablet, mobile).
+- Ensure that floating elements (like modals, popovers, or guidance cards) NEVER overlap or obscure navigation buttons and toolbars (e.g., the `.tree-page-header`).
+- On mobile and tablet, modals should generally be placed *above* the toolbar, or positioned dynamically so they do not conflict with core navigational elements.
