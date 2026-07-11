@@ -6,8 +6,8 @@ import { api, ApiError } from "@/lib/apiClient";
 import { useSession } from "@/app/providers";
 import { useToast } from "@/components/ui/ToastProvider";
 import { useConfirm } from "@/components/ui/ConfirmProvider";
-import { OnboardingModal } from "@/components/onboarding/OnboardingModal";
-import { getCookie, setCookie } from "@/lib/cookies";
+import { GuidanceChecklist } from "@/components/guidance/GuidanceChecklist";
+import { recordChecklistCompletion } from "@/lib/guidance/storage";
 
 interface TreeItem {
   id: string;
@@ -33,7 +33,6 @@ function TreeListContent() {
   const [newTreeRegion, setNewTreeRegion] = useState<"Bac" | "Trung" | "Nam">("Bac");
   const [creating, setCreating] = useState(false);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-  const [showTutorial, setShowTutorial] = useState(false);
 
   const fetchTrees = async () => {
     setLoading(true);
@@ -53,18 +52,9 @@ function TreeListContent() {
         router.push("/signin?redirect=/tree");
       } else {
         fetchTrees();
-        const dismissed = getCookie("tutorial_dismissed");
-        if (!dismissed) {
-          setShowTutorial(true);
-        }
       }
     }
   }, [user, sessionLoading, router]);
-
-  const handleDismissTutorial = () => {
-    setCookie("tutorial_dismissed", "true", 365);
-    setShowTutorial(false);
-  };
 
   const handleCreateTree = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -76,6 +66,7 @@ function TreeListContent() {
         region: newTreeRegion,
       });
       setNewTreeName("");
+      recordChecklistCompletion("core-tree-open", window.localStorage);
       // Redirect to the newly created tree
       router.push(`/tree/${newTree.id}`);
     } catch (err: any) {
@@ -127,7 +118,7 @@ function TreeListContent() {
 
   return (
     <main className="tree-list-page">
-      <OnboardingModal isOpen={showTutorial} onClose={handleDismissTutorial} />
+      <GuidanceChecklist role="owner" productState={{ treeOpened: false, personCount: 0, primitiveCount: 0, addressInspected: false, viewpointChanged: false }} />
       <div className="tree-list-page__header">
         <div>
           <p className="eyebrow tree-list-page__eyebrow">Không gian gia đình</p>
@@ -187,7 +178,7 @@ function TreeListContent() {
                 <button
                   type="button"
                   className="btn btn-primary btn-terracotta"
-                  onClick={() => router.push(`/tree/${tree.id}`)}
+                  onClick={() => { recordChecklistCompletion("core-tree-open", window.localStorage); router.push(`/tree/${tree.id}`); }}
                 >
                   Xem sơ đồ
                 </button>

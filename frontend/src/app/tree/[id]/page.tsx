@@ -24,11 +24,11 @@ import { ViewpointSelector } from "@/components/graph/ViewpointSelector";
 import { TreeGraphSkeleton } from "@/components/graph/TreeGraphSkeleton";
 import { UpcomingEventsWidget } from "@/components/graph/UpcomingEventsWidget";
 import { Button } from "@/components/Button";
-import { TreeWorkspaceTour } from "@/components/onboarding/TreeWorkspaceTour";
+import { GuidanceChecklist } from "@/components/guidance/GuidanceChecklist";
+import { ContextNote } from "@/components/guidance/ContextNote";
 import { api, ApiError } from "@/lib/apiClient";
 import type { Person, Relationship, Address } from "@/lib/graph";
 import type { Region } from "@/lib/region";
-import { getCookie, setCookie } from "@/lib/cookies";
 import { getCollaborators, type TreeCollaborator } from "@/lib/collaboration";
 import { CollaborationModal } from "@/components/collaboration/CollaborationModal";
 import { SettingsModal } from "@/components/tree/SettingsModal";
@@ -260,6 +260,7 @@ function TreePageContent({ params, searchParams }: TreePageProps) {
             để bắt đầu.
           </p>
         </div>
+        <ContextNote topicId="them-nguoi-dau-tien" role="owner" />
         <div className="onboarding-strip" aria-label="Các bước gợi ý" style={{ display: "flex", justifyContent: "center", gap: "1rem", marginBottom: "2rem", fontSize: "0.9rem", fontWeight: 600, color: "var(--color-brand)" }}>
           <span>1. Nhập tên</span>
           <span style={{ color: "var(--color-hairline)" }}>—</span>
@@ -292,6 +293,15 @@ function TreePageContent({ params, searchParams }: TreePageProps) {
   const isOwner = user?.treeId === activeTreeId;
   const isCollaborator = collaborators.some((collaborator) => collaborator.userId === user?.userId);
   const canEdit = isOwner || isCollaborator;
+  const guidanceRole = isOwner ? "owner" : canEdit ? "editor" : "reader";
+  const primitiveCount = relationships.filter((relationship) => relationship.type === "bloodline_father" || relationship.type === "bloodline_mother" || relationship.type === "marriage").length;
+  const guidanceProductState = {
+    treeOpened: true,
+    personCount: persons.length,
+    primitiveCount,
+    addressInspected: Boolean(selectedId && addressesReady && (selectedAddress || addresses.has(selectedId))),
+    viewpointChanged: Boolean(egoId && egoId !== persons[0]?.id && addressesReady),
+  };
 
   // Map person option for relation dropdown selection
   const personOptions = persons.map((p) => ({ id: p.id, displayName: p.displayName, gender: p.gender }));
@@ -326,7 +336,10 @@ function TreePageContent({ params, searchParams }: TreePageProps) {
     <section className="tree-workspace" style={showLoadingOverlay ? { visibility: "hidden" } : undefined}>
 
       <div className="tree-workspace__layout">
-        <TreeWorkspaceTour />
+        <div className="tree-workspace__guidance">
+          <GuidanceChecklist role={guidanceRole} productState={guidanceProductState} mode="compact" />
+          <ContextNote topicId={selectedId ? "doi-diem-nhin" : "dieu-huong-so-do"} role={guidanceRole} />
+        </div>
 
         {/* Floating Island Header/Toolbar */}
         <div className="tree-page-header">

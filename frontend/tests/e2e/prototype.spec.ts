@@ -5,6 +5,7 @@ const PROTOTYPE_PAGES = [
   { href: "/prototype/signin", label: "Đăng nhập" },
   { href: "/prototype/signup", label: "Đăng ký" },
   { href: "/prototype/forgot-password", label: "Quên mật khẩu" },
+  { href: "/prototype/tree-list", label: "Danh sách cây" },
   { href: "/prototype/tree", label: "Cây gia phả" },
   { href: "/prototype/tree?panel=settings", label: "Cây gia phả - Cài đặt" },
   { href: "/prototype/tree/empty", label: "Cây gia phả rỗng" },
@@ -92,6 +93,24 @@ test.describe("Prototype Pages — smoke tests (no auth required)", () => {
     await expect(
       page.locator(".tree-graph__node-name").filter({ hasText: "Lê Thị My" }),
     ).toBeVisible();
+  });
+
+  test("guidance prototypes remain usable at mobile 200% text and reduced motion", async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 667 });
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    await page.goto("/prototype/tree-list?trees=none");
+    await page.evaluate(() => document.documentElement.style.fontSize = "200%");
+    await expect(page.getByRole("heading", { name: "Bắt đầu từng bước" })).toBeVisible();
+    const overflow = await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth);
+    expect(overflow).toBe(false);
+    await expect(page.getByRole("button", { name: "Để sau" })).toBeVisible();
+  });
+
+  test("guidance prototype states are deterministic", async ({ page }) => {
+    await page.goto("/prototype/tree-list?state=skipped");
+    await expect(page.getByText(/Bước tiếp theo/)).toBeVisible();
+    await page.goto("/prototype/tree-list?state=completed");
+    await expect(page.getByText("Bạn đã hoàn tất các bước bắt đầu")).toBeVisible();
   });
 
   test("tree prototype — selecting a node shows info panel", async ({

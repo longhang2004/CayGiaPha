@@ -19,6 +19,7 @@ import { PersonForm } from "@/components/person/PersonForm";
 import { MockSessionProvider } from "@/lib/prototype/mockSession";
 import { PROTOTYPE_TREE_ID } from "@/lib/prototype/mockData";
 import { Card } from "@/components/ui/Card";
+import { ContextNote } from "@/components/guidance/ContextNote";
 
 function PrototypeEmptyTreeContent() {
   return (
@@ -31,6 +32,7 @@ function PrototypeEmptyTreeContent() {
           để bắt đầu.
         </p>
       </div>
+      <ContextNote topicId="them-nguoi-dau-tien" role="owner" manual />
       <div className="onboarding-strip" aria-label="Các bước gợi ý" style={{ display: "flex", justifyContent: "center", gap: "1rem", marginBottom: "2rem", fontSize: "0.9rem", fontWeight: 600, color: "var(--color-brand)" }}>
         <span>1. Nhập tên</span>
         <span style={{ color: "var(--color-hairline)" }}>—</span>

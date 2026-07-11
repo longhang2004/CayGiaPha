@@ -38,7 +38,6 @@ import { PersonPhotos } from "@/components/photos/PersonPhotos";
 import { TextSizeControl } from "@/components/a11y/TextSizeControl";
 import { PersonInfoPanel } from "@/components/graph/PersonInfoPanel";
 import { ViewpointSelector } from "@/components/graph/ViewpointSelector";
-import { UpcomingEventsWidget } from "@/components/graph/UpcomingEventsWidget";
 import type { Person, Relationship, Address, ViewpointAddresses } from "@/lib/graph";
 import type { Region } from "@/lib/region";
 import type { TreeCollaborator, CollaborationInvitation } from "@/lib/collaboration";
@@ -53,8 +52,8 @@ import "@/components/graph/graph.css";
 import { CollaborationIcon, PlusIcon, CloseIcon } from "@/components/ui/Icons";
 import { CollaborationModal, type CollaborationAdapter } from "@/components/collaboration/CollaborationModal";
 import { SettingsModal } from "@/components/tree/SettingsModal";
-import { OnboardingModal } from "@/components/onboarding/OnboardingModal";
-import { TreeWorkspaceTour } from "@/components/onboarding/TreeWorkspaceTour";
+import { GuidanceChecklist } from "@/components/guidance/GuidanceChecklist";
+import { ContextNote } from "@/components/guidance/ContextNote";
 
 /** Stub fetchAddresses that resolves immediately with no addresses. */
 async function mockFetchAddresses(
@@ -138,8 +137,6 @@ function PrototypeTreeContent() {
   const [addressLoading] = useState(false);
   const [addressRefreshKey, setAddressRefreshKey] = useState(0);
   const [focusId, setFocusId] = useState<string | null>(null);
-  const [showTutorial, setShowTutorial] = useState(false);
-  const handleDismissTutorial = () => setShowTutorial(false);
 
   const [isSettingsOpen, setIsSettingsOpen] = useState(
     () => nextSearchParams.get("panel") === "settings",
@@ -249,10 +246,11 @@ function PrototypeTreeContent() {
   return (
     /* ===== BEGIN: mirror of src/app/tree/page.tsx (populated branch) ===== */
     <section className="tree-workspace">
-      <OnboardingModal isOpen={showTutorial} onClose={handleDismissTutorial} />
-
       <div className="tree-workspace__layout">
-        <TreeWorkspaceTour storageKey="prototype_tree_workspace_tour_seen_v1" />
+        <div className="tree-workspace__guidance">
+          <GuidanceChecklist role="owner" productState={{ treeOpened: true, personCount: persons.length, primitiveCount: relationships.length, addressInspected: Boolean(selectedId), viewpointChanged: egoId !== "ego" }} mode="compact" />
+          <ContextNote topicId={selectedId ? "doi-diem-nhin" : "dieu-huong-so-do"} role="owner" />
+        </div>
 
         {/* Floating Island Header/Toolbar */}
         <div className="tree-page-header">
@@ -556,7 +554,7 @@ function PrototypeTreeContent() {
                   Chọn một người để xem thông tin và cách xưng hô.
                 </p>
               </div>
-              <UpcomingEventsWidget treeId={PROTOTYPE_TREE_ID} />
+              <ContextNote topicId="xem-thong-tin-va-xung-ho" role="owner" />
             </div>
           )}
         </div>
@@ -585,7 +583,6 @@ function PrototypeTreeContent() {
           setShareToken(token);
         }}
         onShowBirthYearsChange={setShowBirthYears}
-        onShowTutorial={() => setShowTutorial(true)}
         isPrototype={true}
       />
 

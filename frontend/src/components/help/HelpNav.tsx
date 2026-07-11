@@ -1,4 +1,4 @@
-import { HELP_TOPICS } from "@/content/help/helpTopics";
+import { getActiveHelpTopics } from "@/content/help/helpTopics";
 
 /**
  * In-page navigation for the Help_System (Requirement 17.4, 17.5).
@@ -11,7 +11,7 @@ export function HelpNav() {
   return (
     <nav aria-label="Mục lục hướng dẫn" data-testid="help-nav">
       <ul className="help-nav__list">
-        {HELP_TOPICS.map((topic, index) => (
+        {getActiveHelpTopics().map((topic, index) => (
           <li key={topic.id} className="help-nav__item">
             <span className="help-nav__num">
               {(index + 1).toString().padStart(2, '0')}.

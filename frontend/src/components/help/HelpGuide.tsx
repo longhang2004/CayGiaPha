@@ -1,6 +1,9 @@
+"use client";
+
 import { HelpNav } from "./HelpNav";
 import { HelpSection } from "./HelpSection";
-import { HELP_TOPICS } from "@/content/help/helpTopics";
+import { useEffect } from "react";
+import { getActiveHelpTopics, getHelpTopic } from "@/content/help/helpTopics";
 import { Card } from "@/components/ui/Card";
 
 /**
@@ -13,6 +16,20 @@ import { Card } from "@/components/ui/Card";
  * point (17.4, 17.5).
  */
 export function HelpGuide() {
+  const topics = getActiveHelpTopics();
+  useEffect(() => {
+    const requested = decodeURIComponent(window.location.hash.slice(1));
+    if (!requested) return;
+    const topic = getHelpTopic(requested);
+    const heading = topic ? document.getElementById(`${topic.id}-heading`) : null;
+    if (topic && requested !== topic.id) window.history.replaceState(null, "", `#${topic.id}`);
+    window.requestAnimationFrame(() => heading?.focus());
+  }, []);
+
+  const returnToTask = () => {
+    if (window.history.length > 1 && document.referrer.startsWith(window.location.origin)) window.history.back();
+    else window.location.assign("/tree");
+  };
   return (
     <main className="help-guide" aria-labelledby="help-guide-heading">
       <div className="help-guide__header">
@@ -23,6 +40,7 @@ export function HelpGuide() {
           Hướng dẫn này giải thích các khái niệm và thao tác cốt lõi của ứng dụng
           Cây Gia Phả. Chọn một mục bên dưới để chuyển tới phần tương ứng.
         </p>
+        <button type="button" className="btn btn-secondary help-guide__return" onClick={returnToTask}>Quay lại việc đang làm</button>
       </div>
 
       <Card className="help-guide__nav-card">
@@ -33,7 +51,7 @@ export function HelpGuide() {
       </Card>
 
       <div className="help-guide__content">
-        {HELP_TOPICS.map((topic) => (
+        {topics.map((topic) => (
           <HelpSection key={topic.id} topic={topic} />
         ))}
       </div>

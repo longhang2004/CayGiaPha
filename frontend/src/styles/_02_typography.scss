@@ -524,3 +524,8 @@ main {
   color: var(--color-muted);
   line-height: 1.5;
 }
+.help-guide__return { margin-top: 1rem; }
+.help-topic__body { display: flex; flex-direction: column; gap: 1rem; color: var(--color-muted); font-size: 1.05rem; line-height: 1.7; }
+.help-topic__body p, .help-topic__body ul, .help-topic__body ol { margin: 0; }
+.help-topic__body h3 { margin: .5rem 0 0; color: var(--color-fg); font-size: 1.05rem; }
+.help-topic__success { padding: 1rem; border-left: 4px solid var(--color-brand); background: var(--color-surface-card); }

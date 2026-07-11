@@ -26,6 +26,11 @@ export const PROTOTYPE_PAGES: PrototypePage[] = [
     description: "Password recovery flow",
   },
   {
+    href: "/prototype/tree-list",
+    label: "🌿 Danh sách cây — hướng dẫn",
+    description: "Tree list first-value checklist states",
+  },
+  {
     href: "/prototype/tree",
     label: "🌳 Cây gia phả (Tree — populated)",
     description: "Full tree workspace with mock persons and relationships",
