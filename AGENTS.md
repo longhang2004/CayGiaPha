@@ -39,21 +39,32 @@ For implementation tasks, convert vague requests into verifiable goals before ed
 
 ## Multi-Model Planning and Delegation
 
-When the user asks for planning, task breakdown, delegation, or prompts for multiple models, read and follow `.agents/multi-model-playbook.md` before producing the plan.
+For non-trivial implementation work, use Plan mode and follow `.agents/execution-routing-harness.md`. Apply Superpowers selectively through `.agents/superpowers-lite.md`; repo rules override any plugin workflow that would add unnecessary ceremony.
 
-When Plan mode is used for implementation work, also follow `.agents/execution-routing-harness.md`. The default route is **Plan mode → lead/heavy self-implementation**. Escalate to PO/BA, Designer, or Medium/Light Workers only when the routing gates show a concrete quality or time benefit.
+Default delivery path:
 
-For product-delivery work that involves PO/BA, UI/UX Designer, Orchestrator, and Worker roles, also follow `.agents/product-delivery-workflow.md`. In this repository, `PA/BO` in user discussions is treated as an alias/typo for `PO/BA` unless the user defines it differently.
+```text
+Plan mode → clarify only material unknowns → approve plan
+→ Antigravity implements bounded Medium/Light work when attached and cost-effective
+→ Codex reviews actual diffs and independently verifies
+→ COMMIT-READY → commit only when authorized
+```
 
-- The planning agent is the default lead, architect, and final integrator; use a heavy-capability model for this role when model selection is available.
-- Planning and implementation may stay in the same lead/heavy session; do not create handoffs merely because multiple roles or model tiers exist.
-- Delegate only workstreams with clear boundaries, inputs, outputs, file ownership, and verification.
-- Assign work to heavy, medium, or light models according to complexity, risk, context breadth, and verification needs rather than provider names.
-- Keep tightly coupled, cross-layer, privacy-sensitive, architectural, or integration-heavy changes with the lead/heavy model unless parallelism has a clear benefit.
-- Every delegated task must include the repository context, allowed scope, dependencies, acceptance criteria, required tests, prohibited changes, and handoff format.
-- Cross-model communication must use explicit prompt handoffs: the lead/heavy model writes the execution prompt, and each medium/light model returns a self-contained review prompt for the heavy model. The execution prompt must explicitly require this return prompt.
-- Product and design handoffs are also prompt-based: PO/BA requests design work, Designer returns a design-review prompt, PO/BA approves or requests revision, then PO/BA produces the approved task document and orchestration prompt.
-- The final plan must include integration order, review ownership, and end-to-end verification; delegated output is never accepted without lead review.
+- Codex/Heavy owns technical discovery, architecture, planning, high-risk implementation, integration, review, verification, and commit readiness.
+- Prefer attached Antigravity for implementation-ready Medium/Light tasks because the user has more Antigravity usage, but only when scope, contracts, file ownership, and verification are clear.
+- Codex/Heavy implements directly when work is tightly coupled, ambiguous, cross-layer, privacy/auth/security-sensitive, migration-related, kinship-critical, or cheaper to implement than delegate and review.
+- PO/BA and UI/UX Designer are optional specialists, not default gates. Use PO/BA for product strategy, market research, roadmap, or genuinely unresolved product intent. Use Designer for major flows, redesigns, information architecture, or unresolved interaction direction.
+- For ordinary tasks, Plan mode handles product/design clarity with a compact checklist and asks the user only about material decisions.
+- Every delegated task uses an Execution Prompt and must return a Review Prompt. Codex verifies the repository rather than trusting worker claims.
+- Do not create extra sessions, micro-plans, design documents, worktrees, subagents, or commits merely because a plugin supports them.
+
+Read `.agents/multi-model-playbook.md` only when delegation is selected. Read `.agents/product-delivery-workflow.md` only when the user explicitly requests PO/BA or Designer involvement.
+
+## UI Verification Routing
+
+- Use targeted Playwright tests and screenshots for the affected route/viewports on ordinary UI changes.
+- Use `.agents/skills/prototype-ui-audit/SKILL.md` for broad redesigns, shared shell/navigation/style changes, major responsive or modal-positioning changes, cross-page UI work, release audits, or when targeted checks reveal systemic drift.
+- Do not run the full prototype UI audit for isolated copy, token, spacing, or single-component changes unless their blast radius is uncertain.
 
 ## Codegraph Workflow
 

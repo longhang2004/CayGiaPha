@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1100" height="1000" viewBox="0 0 1100 1000">
+  <rect width="1100" height="1000" fill="#f5f0e8"/>
+  <text x="50" y="62" font-family="Arial" font-size="14" font-weight="700" letter-spacing="1.5" fill="#b94b34">MOBILE · 375×667</text>
+  <text x="50" y="105" font-family="Arial" font-size="31" font-weight="700" fill="#25221f">Safe launcher, modeless sheet, keyboard-aware fallback</text>
+
+  <rect x="70" y="145" width="375" height="790" rx="34" fill="#e9edef" stroke="#292929" stroke-width="5"/>
+  <rect x="86" y="165" width="343" height="56" fill="#fff"/>
+  <text x="108" y="201" font-family="Arial" font-size="22" fill="#333">☰</text><text x="360" y="198" font-family="Arial" font-size="14" fill="#555">8 người</text>
+  <g stroke="#8c9891" stroke-width="2" fill="none"><path d="M258 340V392H178V440 M258 392H338V440"/></g>
+  <rect x="203" y="286" width="110" height="55" rx="12" fill="#fff" stroke="#6f91b4"/><text x="258" y="319" text-anchor="middle" font-family="Arial" font-size="13" fill="#25221f">Nguyễn Minh</text>
+  <rect x="123" y="440" width="110" height="55" rx="12" fill="#fff" stroke="#c27e91"/><text x="178" y="473" text-anchor="middle" font-family="Arial" font-size="13" fill="#25221f">Trần Hoa</text>
+  <rect x="283" y="440" width="110" height="55" rx="12" fill="#fff" stroke="#6f91b4"/><text x="338" y="473" text-anchor="middle" font-family="Arial" font-size="13" fill="#25221f">Nguyễn Bình</text>
+
+  <circle cx="392" cy="610" r="28" fill="#fff" stroke="#b94b34" stroke-width="2"/>
+  <text x="384" y="617" font-family="Arial" font-size="22" font-weight="700" fill="#b94b34">?</text>
+  <text x="238" y="616" font-family="Arial" font-size="12" font-weight="700" fill="#b94b34">Bước tiếp theo</text>
+
+  <rect x="87" y="655" width="341" height="110" rx="25" fill="#f3c9c2" stroke="#b94b34"/>
+  <text x="157" y="716" font-family="Arial" font-size="13" font-weight="700" fill="#8f3524">BOTTOM COMMAND TOOLBAR</text>
+  <rect x="87" y="786" width="341" height="133" rx="20" fill="#ddd6cc" stroke="#887f74" stroke-dasharray="6 5"/>
+  <text x="188" y="854" font-family="Arial" font-size="13" font-weight="700" fill="#625c55">KEYBOARD / IME INSET</text>
+
+  <rect x="505" y="165" width="535" height="420" rx="28" fill="#fff" stroke="#d8d0c6"/>
+  <text x="540" y="209" font-family="Arial" font-size="12" font-weight="700" fill="#b94b34">MODELESS TOUR SHEET · BƯỚC 1/1</text>
+  <text x="540" y="252" font-family="Arial" font-size="25" font-weight="700" fill="#25221f">Đổi điểm nhìn ở đây</text>
+  <text x="540" y="288" font-family="Arial" font-size="15" fill="#666058">Target được outline trên canvas; sheet nằm trên actual toolbar.</text>
+  <text x="540" y="313" font-family="Arial" font-size="15" fill="#666058">Không scrim, không focus trap, không che control.</text>
+  <line x1="540" y1="340" x2="1000" y2="340" stroke="#e7e0d7"/>
+  <text x="540" y="381" font-family="Arial" font-size="14" font-weight="700" fill="#25221f">Nếu keyboard/200% làm safe area quá nhỏ:</text>
+  <text x="540" y="410" font-family="Arial" font-size="14" fill="#666058">1. Bỏ connector/target overlay.</text>
+  <text x="540" y="436" font-family="Arial" font-size="14" fill="#666058">2. Dùng normal-flow task/Help fallback.</text>
+  <text x="540" y="462" font-family="Arial" font-size="14" fill="#666058">3. Không thu nhỏ chữ hoặc che toolbar để cố giữ tour.</text>
+  <text x="540" y="523" font-family="Arial" font-size="14" fill="#777068">Dừng hướng dẫn</text>
+  <rect x="884" y="493" width="116" height="50" rx="25" fill="#b94b34"/><text x="923" y="524" font-family="Arial" font-size="14" font-weight="700" fill="#fff">Xong</text>
+
+  <circle cx="528" cy="670" r="16" fill="#b94b34"/><text x="522" y="677" font-family="Arial" font-size="15" font-weight="700" fill="#fff">1</text>
+  <text x="560" y="663" font-family="Arial" font-size="17" font-weight="700" fill="#25221f">48×48 launcher remains reachable</text>
+  <text x="560" y="690" font-family="Arial" font-size="14" fill="#666058">Position derives from toolbar + graph-control bounds, never `display:none`.</text>
+  <circle cx="528" cy="755" r="16" fill="#b94b34"/><text x="522" y="762" font-family="Arial" font-size="15" font-weight="700" fill="#fff">2</text>
+  <text x="560" y="748" font-family="Arial" font-size="17" font-weight="700" fill="#25221f">Visual viewport is authoritative</text>
+  <text x="560" y="775" font-family="Arial" font-size="14" fill="#666058">Sheet moves above keyboard/IME inset or falls back to normal flow.</text>
+  <circle cx="528" cy="840" r="16" fill="#b94b34"/><text x="522" y="847" font-family="Arial" font-size="15" font-weight="700" fill="#fff">3</text>
+  <text x="560" y="833" font-family="Arial" font-size="17" font-weight="700" fill="#25221f">200% text has priority over floating placement</text>
+  <text x="560" y="860" font-family="Arial" font-size="14" fill="#666058">No clipping, fixed card height, or hidden action is allowed.</text>
+</svg>

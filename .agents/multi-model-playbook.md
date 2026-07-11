@@ -1,10 +1,10 @@
 # Multi-Model Planning Playbook
 
-This document defines the default collaboration model when the user asks an agent to plan work, split tasks, or write prompts for multiple models in this repository. Models are identified by capability tier—heavy, medium, or light—not by vendor or product name.
+This document applies only after `.agents/execution-routing-harness.md` selects delegation or the user explicitly requests multiple models. It is not the default workflow for ordinary tasks. Models are identified by capability tier—heavy, medium, or light—not by vendor or product name.
 
 When work originates from the product workflow, the Orchestrator must also read `.agents/product-delivery-workflow.md` and treat the PO/BA-approved task document, design package, and orchestration prompt as its input contract.
 
-For implementation planning, apply `.agents/execution-routing-harness.md` before creating Worker prompts. Self-implementation by the lead/heavy model is the default; delegation must pass the harness's independence and net-benefit gates.
+For implementation planning, apply `.agents/execution-routing-harness.md` before creating Worker prompts. Prefer attached Antigravity for implementation-ready Medium/Light work; direct Heavy implementation remains the safe route for ambiguous, coupled, high-risk, or delegation-negative work.
 
 ## Operating Model
 

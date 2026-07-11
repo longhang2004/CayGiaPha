@@ -7,17 +7,18 @@ Use this harness in Plan mode to choose the cheapest safe delivery route. It pre
 The default is:
 
 ```text
-Lead/Heavy Plan mode → user approval when needed → same Lead/Heavy implements
-→ same Lead/Heavy tests and reviews → COMMIT-READY
+Codex/Heavy Plan mode → user approval when needed
+→ attached Antigravity implements safely bounded Medium/Light work when beneficial
+→ Codex/Heavy reviews and independently verifies → COMMIT-READY
 ```
 
-Planning is not automatically a handoff. The planning agent may remain the primary implementer and integrator.
+Planning is not automatically a specialist handoff. PO/BA and Designer are optional. Codex remains the primary technical owner and may implement directly whenever delegation is unsafe or inefficient.
 
-Only add PO/BA, Designer, or Workers when a gate below requires or clearly benefits from it.
+Only add PO/BA or Designer when a material authority gap exists. Prefer Antigravity as the Worker for implementation-ready Medium/Light work when it is attached and its quota advantage makes delegation cost-effective.
 
 ## Gate 1: Is Product Authority Missing?
 
-Route to **PO/BA** when one or more material questions remain about:
+Route to an optional **PO/BA session** only when one or more material questions remain about:
 
 - Which user or problem should be prioritized.
 - Whether a feature should exist.
@@ -32,7 +33,7 @@ If PO/BA is needed, stop technical implementation at the affected decision bound
 
 ## Gate 2: Is Design Authority Missing?
 
-Route through **PO/BA → UI/UX Designer → PO/BA approval** when unresolved decisions materially change:
+Route to an optional **UI/UX Designer session** when unresolved decisions materially change:
 
 - User journey, navigation, or information hierarchy.
 - A new screen, component pattern, or interaction model.
@@ -43,9 +44,9 @@ Route through **PO/BA → UI/UX Designer → PO/BA approval** when unresolved de
 
 Keep the task with Heavy when the expected UI is already approved or the change is a mechanical correction, small copy/style fix, or implementation bug with an unambiguous target.
 
-The Orchestrator must not substitute its own product design for a missing approval. It may make local implementation choices inside an approved design.
+For ordinary UI work, Plan mode may resolve local choices using existing design patterns and ask the user directly about material tradeoffs. It must not invent a major product or visual direction silently.
 
-## Gate 3: Can Heavy Safely Implement Alone?
+## Gate 3: Should Codex Implement Directly?
 
 Prefer **same-session Heavy self-implementation** when most of these are true:
 
@@ -58,7 +59,7 @@ Prefer **same-session Heavy self-implementation** when most of these are true:
 - End-to-end context is more valuable than parallel throughput.
 - The task can be completed and verified within one working session.
 
-Self-implementation is not a fallback or lower-quality route. It is the preferred route when coordination would add more cost or risk than it removes.
+Direct implementation is preferred for high-risk or context-coupled work. For stable Medium/Light implementation, the user's larger Antigravity quota is a valid delegation benefit even when total cross-platform token usage is higher.
 
 ## Gate 4: Does Worker Delegation Have Positive Net Benefit?
 
@@ -168,7 +169,8 @@ Heavy → Product Clarification Prompt → PO/BA task approval
 Use when product intent is approved but material experience decisions are unresolved.
 
 ```text
-PO/BA → Designer → Design Review Prompt → PO/BA approval
+Plan mode → focused Design Prompt → optional Designer session
+→ user approval (or PO/BA approval when that specialist workflow was requested)
 → Heavy Plan mode → route again
 ```
 

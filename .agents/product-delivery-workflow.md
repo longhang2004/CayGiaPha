@@ -1,6 +1,8 @@
 # Product Delivery Workflow
 
-This workflow governs product work across four roles:
+This is an optional specialist workflow. Do not invoke it for ordinary features, bugs, or UI changes that Plan mode can clarify directly. Use it only when the user explicitly requests PO/BA or Designer work, or when a material product/design authority gap cannot be resolved efficiently in the current session.
+
+It governs product work across four roles:
 
 - **PO/BA:** product owner and business analyst; owns problem discovery, market evidence, prioritization, scope, acceptance criteria, and product approval.
 - **UI/UX Designer:** owns user-flow and interface design, interaction states, accessibility intent, responsive behavior, prototype/design artifacts, and design rationale.
