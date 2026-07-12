@@ -55,6 +55,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
           <Card
             key={toast.id}
             role="alert"
+            className="toast-card"
             style={{
               pointerEvents: "auto",
               display: "flex",
@@ -104,6 +105,9 @@ export function ToastProvider({ children }: { children: ReactNode }) {
         @keyframes slideIn {
           from { transform: translateX(100%); opacity: 0; }
           to { transform: translateX(0); opacity: 1; }
+        }
+        .toast-card {
+          color: var(--color-fg) !important;
         }
       `}} />
     </ToastContext.Provider>
