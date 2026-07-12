@@ -9,6 +9,7 @@ import {
   uniqueIndex,
   index,
   primaryKey,
+  type AnyPgColumn,
 } from "drizzle-orm/pg-core";
 import { eq, sql } from "drizzle-orm";
 
@@ -401,9 +402,18 @@ export const collaborationInvitations = pgTable(
     requesterUserId: uuid("requester_user_id").references(() => users.id, {
       onDelete: "set null",
     }),
+    sourceInvitationId: uuid("source_invitation_id").references(
+      (): AnyPgColumn => collaborationInvitations.id,
+      { onDelete: "cascade" },
+    ),
     code: text("code").notNull(),
     status: text("status").notNull().default("pending"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
-  }
+  },
+  (table) => ({
+    sourceRequesterUniqueIdx: uniqueIndex("ux_collaboration_source_requester")
+      .on(table.sourceInvitationId, table.requesterUserId)
+      .where(sql`${table.sourceInvitationId} IS NOT NULL AND ${table.requesterUserId} IS NOT NULL`),
+  }),
 );

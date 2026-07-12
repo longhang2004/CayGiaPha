@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { SearchPanel } from "./SearchPanel";
 
@@ -35,8 +35,7 @@ describe("SearchPanel", () => {
 
     render(<SearchPanel treeId="t1" viewpointId="v1" />);
 
-    await userEvent.type(screen.getByLabelText("Tên"), "anh");
-    await userEvent.click(screen.getByRole("button", { name: "Tìm kiếm" }));
+    await userEvent.type(screen.getByLabelText("Tên"), "anh{Enter}");
 
     const [url, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
     expect(url).toBe("/api/v1/trees/t1/search");
@@ -66,8 +65,9 @@ describe("SearchPanel", () => {
     await userEvent.selectOptions(screen.getByLabelText("Tình trạng mất"), "false");
     await userEvent.selectOptions(screen.getByLabelText("Trạng thái xác nhận"), "unclaimed");
     await userEvent.selectOptions(screen.getByLabelText("Loại quan hệ"), "bloodline");
-    await userEvent.click(screen.getByRole("button", { name: "Tìm kiếm" }));
+    fireEvent.submit(screen.getByRole("form", { name: "Tìm kiếm" }));
 
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
     const [, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
     expect(JSON.parse(init.body as string)).toEqual({
       viewpointId: "v1",
@@ -87,8 +87,7 @@ describe("SearchPanel", () => {
     mockFetch({ ok: true, status: 200, body: { results: [], noMatches: true } });
 
     render(<SearchPanel treeId="t1" />);
-    await userEvent.type(screen.getByLabelText("Tên"), "zzz");
-    await userEvent.click(screen.getByRole("button", { name: "Tìm kiếm" }));
+    await userEvent.type(screen.getByLabelText("Tên"), "zzz{Enter}");
 
     expect(await screen.findByTestId("no-matches")).toBeInTheDocument();
   });
@@ -106,7 +105,7 @@ describe("SearchPanel", () => {
     await userEvent.click(screen.getByRole("button", { name: /Lọc/i }));
     await userEvent.type(screen.getByLabelText("Năm sinh từ"), "2000");
     await userEvent.type(screen.getByLabelText("đến"), "1990");
-    await userEvent.click(screen.getByRole("button", { name: "Tìm kiếm" }));
+    fireEvent.submit(screen.getByRole("form", { name: "Tìm kiếm" }));
 
     expect(await screen.findByText("Khoảng năm không hợp lệ")).toBeInTheDocument();
     expect(screen.getByLabelText("Năm sinh từ")).toHaveAttribute("aria-invalid", "true");
@@ -135,7 +134,6 @@ describe("SearchPanel", () => {
 
     // Search for "ba"
     await userEvent.type(screen.getByLabelText("Tên"), "ba");
-    await userEvent.click(screen.getByRole("button", { name: "Tìm kiếm" }));
 
     // Hàng Hữu Phương should appear as his address matches "ba"
     const resultItem = await screen.findByText("Hàng Hữu Phương");

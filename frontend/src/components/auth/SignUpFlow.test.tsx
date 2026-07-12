@@ -49,6 +49,19 @@ async function fillRequiredFields(options?: { displayName?: string; skipDisplayN
 }
 
 describe("SignUpFlow", () => {
+  it("links back to sign in while preserving invitation context", () => {
+    render(
+      <SignUpFlow
+        redirectTo="/invitation/inv-1"
+        reason="invitation"
+      />,
+    );
+
+    expect(screen.getByRole("link", { name: "Đã có tài khoản?" })).toHaveAttribute(
+      "href",
+      "/signin?redirect=%2Finvitation%2Finv-1&reason=invitation",
+    );
+  });
   it("requires display name with autocomplete=name and hint", () => {
     render(
       <GoogleOAuthProvider clientId="test">

@@ -1091,3 +1091,44 @@ html.dark .full-screen-loader__spinner {
   background-color: var(--color-brand) !important;
   transform: scale(1.3) !important;
 }
+.invitation-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background: var(--color-bg);
+}
+
+.invitation-page__card {
+  width: min(100%, 30rem);
+  padding: clamp(1.5rem, 5vw, 2.5rem);
+  text-align: center;
+}
+
+.invitation-account {
+  margin: 1.5rem 0;
+}
+
+.invitation-page__actions {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 640px) {
+  .invitation-page {
+    align-items: flex-start;
+    padding-top: max(1rem, env(safe-area-inset-top));
+  }
+
+  .invitation-page__actions {
+    flex-direction: column;
+  }
+
+  .invitation-page__actions .btn {
+    width: 100%;
+    min-height: 44px;
+  }
+}

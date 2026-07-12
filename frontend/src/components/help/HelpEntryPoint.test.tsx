@@ -11,7 +11,7 @@ import { HelpEntryPoint } from "./HelpEntryPoint";
 describe("HelpEntryPoint", () => {
   it("renders an accessible link to the help route (17.1)", () => {
     render(<HelpEntryPoint />);
-    const link = screen.getByRole("link", { name: "Trợ giúp" });
+    const link = screen.getByRole("link", { name: "Hướng dẫn sử dụng" });
     expect(link).toHaveAttribute("href", "/help");
   });
 

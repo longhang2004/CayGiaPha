@@ -522,6 +522,14 @@ against the active Next.js code and current tests.
   - [ ] 23.3 Present account identities and protect the collaboration roster
     - Update settings, invitation, tree settings, roster UI/prototypes; return owner plus contributors only to active tree members and never use UUID labels.
 
+- [x] 24. Reusable collaboration invitation links (CGP-COLLAB-001)
+  - [x] 24.1 Add source-invitation persistence and idempotent generic requests
+    - Add forward migration V26 and Drizzle mapping for `source_invitation_id`; enforce one request per source invitation and requester.
+  - [x] 24.2 Unify code/link acceptance and bind email invitations
+    - Share validation and acceptance logic, use requester IDs for approval, return safe invitation views, apply uniform invalid-link errors, and rate-limit joins.
+  - [x] 24.3 Add invitation/auth/copy-link UI and synchronized prototypes
+    - Preserve internal return paths across sign-in/sign-up, show invitation reason toast, add request/cancel/pending states, and expose copy controls for both code and link.
+
 ## Notes
 
 - Tasks marked with `*` are optional test sub-tasks and can be skipped for a faster MVP; core
@@ -532,7 +540,7 @@ against the active Next.js code and current tests.
 - jqwik covers the Java reference domain layer; fast-check covers active/shared TypeScript logic.
   Google identity, recovery/claim delivery providers, and persistence are mocked/in-memory where
   relevant for property tests.
-- Every requirement (1–25) and every correctness property (1–31) is referenced by at least one task.
+- Every requirement (1–26) and every correctness property (1–31) is referenced by at least one task.
 - Checkpoints (tasks 8, 14, and 22) provide incremental validation points.
 - Tasks 15–22 (Requirements 19–25) extend the original plan with tree-level read authorization,
   living-person protection, extended field visibility, data-subject rights, consent capture, abuse

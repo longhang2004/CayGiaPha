@@ -1020,3 +1020,10 @@ limit; a stored image contains no EXIF/geolocation metadata, and at most one pho
 marked primary.
 
 **Validates: Requirements 24.1, 24.2, 24.3, 24.4**
+
+### Collaboration invitation links (Requirement 26)
+
+- A generic invitation is the seven-day source for both its six-character code and `/invitation/{id}` link. Each requester creates a child `pending` invitation identified by `(source_invitation_id, requester_user_id)`; a partial unique index makes request submission idempotent.
+- Invitation details return only `id`, `treeId`, `status`, `expiresAt`, and `invitationType`. Direct email invitations are visible and acceptable only to the normalized matching account; all invalid or mismatched link cases use the same public error.
+- Code and link acceptance share one TypeScript service. Generic sources create pending requests; approved email invitations add a contributor immediately; Owner approval resolves the stored requester ID and adds the contributor idempotently.
+- Anonymous links redirect through sign-in with a validated internal return path. The invitation reason is preserved between sign-in and sign-up and produces the required informational toast.

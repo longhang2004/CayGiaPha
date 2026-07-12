@@ -16,17 +16,17 @@ describe("GuidanceChecklist", () => {
 
   it("collapses without deferring", async () => {
     render(<GuidanceChecklist role="owner" productState={base} />);
-    fireEvent.click(await screen.findByRole("button", { name: "Thu gọn hướng dẫn" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Thu gọn" }));
     expect(screen.getByText(/Bước tiếp theo/)).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Mở hướng dẫn" }));
     expect(screen.getByText("Bắt đầu từng bước")).toBeInTheDocument();
   });
 
-  it("defers only in session memory and manual reopen restores it", async () => {
+  it("persists an explicit skip and manual reopen restores it", async () => {
     render(<GuidanceChecklist role="owner" productState={base} />);
-    fireEvent.click(await screen.findByRole("button", { name: "Để sau" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Bỏ qua hướng dẫn" }));
     expect(screen.queryByText("Bắt đầu từng bước")).not.toBeInTheDocument();
-    expect(localStorage.getItem(GUIDANCE_STORAGE_KEY) ?? "").not.toContain("deferred");
+    expect(localStorage.getItem(GUIDANCE_STORAGE_KEY) ?? "").toContain('"onboardingSkipped":true');
     act(() => window.dispatchEvent(new Event(GUIDANCE_REOPEN_EVENT)));
     expect(await screen.findByText("Bắt đầu từng bước")).toBeInTheDocument();
   });

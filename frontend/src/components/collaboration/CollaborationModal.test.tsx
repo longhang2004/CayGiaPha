@@ -50,6 +50,20 @@ describe("CollaborationModal", () => {
     await waitFor(() => expect(mockAdapter.getPendingInvitations).toHaveBeenCalled());
   });
 
+  it("creates and copies a shareable invitation link alongside the code", async () => {
+    vi.mocked(mockAdapter.createInviteLink).mockResolvedValue({ id: "invite-1", code: "abc123" } as any);
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, "clipboard", { configurable: true, value: { writeText } });
+
+    renderModal();
+    fireEvent.click(screen.getByRole("button", { name: "Tạo mã mời" }));
+
+    expect(await screen.findByDisplayValue("abc123")).toBeInTheDocument();
+    expect(screen.getByDisplayValue(`${window.location.origin}/invitation/invite-1`)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Sao chép liên kết" }));
+    expect(writeText).toHaveBeenCalledWith(`${window.location.origin}/invitation/invite-1`);
+  });
+
   it("hides owner-only sections when isOwner is false", async () => {
     renderModal({ isOwner: false });
     expect(screen.queryByText("Thêm cộng tác viên mới")).not.toBeInTheDocument();

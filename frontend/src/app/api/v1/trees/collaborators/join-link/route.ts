@@ -1,120 +1,19 @@
 import { handleApiRoute } from "@/lib/services/routeHelper";
 import { getAuthContext } from "@/lib/services/authorization";
 import { ApiException } from "@/lib/services/errors";
-import { db } from "@/lib/db";
-import { collaborationInvitations, treeCollaborators, users } from "@/lib/db/schema";
-import { and, eq } from "drizzle-orm";
-import { randomUUID } from "crypto";
+import { acceptInvitation } from "@/lib/services/collaborationInvitation";
+import { rateLimiter } from "@/lib/services/rateLimiter";
 
 export async function POST(request: Request) {
   return handleApiRoute(async () => {
     const auth = await getAuthContext();
-    if (!auth.userId) {
-      throw ApiException.notAuthorized("Vui lòng đăng nhập để tham gia cây.");
-    }
-
-    const { searchParams } = new URL(request.url);
-    const inviteId = searchParams.get("inviteId");
-
-    if (!inviteId) {
-      throw ApiException.validation("inviteId", "Mã lời mời inviteId là bắt buộc.");
-    }
-
-    const invite = await db
-      .select()
-      .from(collaborationInvitations)
-      .where(eq(collaborationInvitations.id, inviteId))
-      .then((rows) => rows[0]);
-
-    if (!invite) {
-      throw ApiException.validation("inviteId", "Lời mời không tồn tại hoặc đã hết hạn.");
-    }
-
-    if (invite.status === "pending") {
-      throw ApiException.validation("inviteId", "Yêu cầu tham gia đang chờ chủ cây duyệt.");
-    }
-
-    if (invite.status !== "approved" && invite.status !== "joined") {
-      throw ApiException.validation("inviteId", "Lời mời này đã được sử dụng hoặc từ chối.");
-    }
-
-    if (invite.expiresAt && new Date(invite.expiresAt).getTime() < Date.now()) {
-      throw ApiException.validation("inviteId", "Lời mời đã hết hạn sử dụng.");
-    }
-
-    // Already a collaborator? Treat as success (idempotent accept).
-    const existing = await db
-      .select()
-      .from(treeCollaborators)
-      .where(
-        and(
-          eq(treeCollaborators.treeId, invite.treeId),
-          eq(treeCollaborators.userId, auth.userId),
-        ),
-      )
-      .then((rows) => rows[0]);
-    if (existing) {
-      if (invite.status !== "joined") {
-        await db
-          .update(collaborationInvitations)
-          .set({ status: "joined" })
-          .where(eq(collaborationInvitations.id, invite.id));
-      }
-      return Response.json(existing);
-    }
-
-    if (invite.status === "joined") {
-      throw ApiException.validation("inviteId", "Lời mời này đã được sử dụng.");
-    }
-
-    // Bind email invites to the invited address when present.
-    if (invite.email) {
-      const me = await db
-        .select({ email: users.email })
-        .from(users)
-        .where(eq(users.id, auth.userId))
-        .then((rows) => rows[0]);
-      const myEmail = (me?.email || "").trim().toLowerCase();
-      if (myEmail !== invite.email.trim().toLowerCase()) {
-        throw ApiException.validation(
-          "inviteId",
-          "Lời mời này dành cho email khác. Hãy đăng nhập đúng tài khoản được mời.",
-        );
-      }
-    }
-
-    // Explicit id: DB column may lack DEFAULT gen_random_uuid() on older schemas.
-    const [collab] = await db
-      .insert(treeCollaborators)
-      .values({
-        id: randomUUID(),
-        treeId: invite.treeId,
-        userId: auth.userId,
-        role: "contributor",
-      })
-      .onConflictDoNothing()
-      .returning();
-
-    await db
-      .update(collaborationInvitations)
-      .set({ status: "joined" })
-      .where(eq(collaborationInvitations.id, invite.id));
-
-    if (collab) {
-      return Response.json(collab);
-    }
-
-    const afterConflict = await db
-      .select()
-      .from(treeCollaborators)
-      .where(
-        and(
-          eq(treeCollaborators.treeId, invite.treeId),
-          eq(treeCollaborators.userId, auth.userId),
-        ),
-      )
-      .then((rows) => rows[0]);
-
-    return Response.json(afterConflict || { success: true, treeId: invite.treeId });
+    if (!auth.userId) throw ApiException.notAuthorized("Vui lòng đăng nhập để tham gia cây.");
+    const clientIp = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+    await rateLimiter.check(`collaboration-join:${auth.userId}`);
+    await rateLimiter.check(`collaboration-join-ip:${clientIp}`);
+    const inviteId = new URL(request.url).searchParams.get("inviteId");
+    if (!inviteId) throw ApiException.validation("inviteId", "Lời mời không hợp lệ");
+    const result = await acceptInvitation(inviteId, auth.userId);
+    return Response.json(result.value, { status: result.kind === "pending" ? 202 : 200 });
   });
 }

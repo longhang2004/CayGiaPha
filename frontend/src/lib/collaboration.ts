@@ -18,6 +18,14 @@ export interface CollaborationInvitation {
   emailMessage?: string;
 }
 
+export interface InvitationView {
+  id: string;
+  treeId: string;
+  status: CollaborationInvitation["status"];
+  expiresAt: string;
+  invitationType: "generic" | "email";
+}
+
 export interface TreeCollaborator {
   id: string;
   treeId: string;
@@ -160,8 +168,8 @@ export function getCollaborators(
 
 export function getInvitationDetails(
   inviteId: string
-): Promise<CollaborationInvitation> {
-  return api.get<CollaborationInvitation>(
+): Promise<InvitationView> {
+  return api.get<InvitationView>(
     `/trees/collaborators/invitations/${encodeURIComponent(inviteId)}`
   );
 }

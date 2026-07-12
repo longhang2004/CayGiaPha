@@ -151,6 +151,9 @@ export default function PrototypeSignUpPage() {
             </svg>
             Đăng ký bằng Google
           </button>
+          <a href="/prototype/signin?redirect=%2Finvitation%2Fexample&reason=invitation" style={{ textAlign: "center" }}>
+            Đã có tài khoản?
+          </a>
         </div>
         </form>
       </div>

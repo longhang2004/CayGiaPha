@@ -23,7 +23,7 @@ export interface CollaborationAdapter {
   getCollaborators: (treeId: string) => Promise<TreeCollaborator[]>;
   getPendingInvitations: (treeId: string) => Promise<CollaborationInvitation[]>;
   inviteCollaborator: (treeId: string, email: string) => Promise<{ status: string, code?: string, emailSent?: boolean, emailMessage?: string }>;
-  createInviteLink: (treeId: string) => Promise<{ code: string }>;
+  createInviteLink: (treeId: string) => Promise<{ id: string; code: string }>;
   approveInvitation: (treeId: string, inviteId: string) => Promise<void>;
   rejectInvitation: (treeId: string, inviteId: string) => Promise<void>;
   joinTreeGroup: (code: string) => Promise<TreeCollaborator | CollaborationInvitation>;
@@ -58,6 +58,7 @@ export function CollaborationModal({ isOpen, onClose, treeId, isOwner, adapter =
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteCode, setInviteCode] = useState("");
   const [generatedInviteCode, setGeneratedInviteCode] = useState("");
+  const [generatedInviteId, setGeneratedInviteId] = useState("");
   const [loadingCollaborators, setLoadingCollaborators] = useState(false);
   const [collaborationAction, setCollaborationAction] = useState<string | null>(null);
 
@@ -120,6 +121,7 @@ export function CollaborationModal({ isOpen, onClose, treeId, isOwner, adapter =
     try {
       const result = await adapter.createInviteLink(treeId);
       setGeneratedInviteCode(result.code);
+      setGeneratedInviteId(result.id);
       showToast(`Đã tạo mã mời: ${result.code}`, "success");
       fetchCollaborationData();
     } catch (err) {
@@ -262,14 +264,24 @@ export function CollaborationModal({ isOpen, onClose, treeId, isOwner, adapter =
                 Tạo mã mời chung để những người khác có thể tự tham gia (cần được bạn duyệt).
               </p>
               {generatedInviteCode ? (
-                <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
-                  <Input value={generatedInviteCode} readOnly style={{ flex: 1, fontWeight: "bold", letterSpacing: "1px" }} />
-                  <button type="button" className="btn" onClick={() => {
-                    navigator.clipboard.writeText(generatedInviteCode);
-                    showToast("Đã sao chép mã mời!", "success");
-                  }}>
-                    Copy
-                  </button>
+                <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: "0.5rem", alignItems: "center" }}>
+                    <Input value={generatedInviteCode} readOnly aria-label="Mã mời" style={{ flex: "1 1 12rem", fontWeight: "bold", letterSpacing: "1px" }} />
+                    <button type="button" className="btn" onClick={() => {
+                      void navigator.clipboard.writeText(generatedInviteCode);
+                      showToast("Đã sao chép mã mời!", "success");
+                    }}>Sao chép mã</button>
+                  </div>
+                  {generatedInviteId ? (
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: "0.5rem", alignItems: "center" }}>
+                      <Input value={`${window.location.origin}/invitation/${generatedInviteId}`} readOnly aria-label="Liên kết mời" style={{ flex: "1 1 12rem" }} />
+                      <button type="button" className="btn btn-secondary" onClick={() => {
+                        const link = `${window.location.origin}/invitation/${generatedInviteId}`;
+                        void navigator.clipboard.writeText(link);
+                        showToast("Đã sao chép liên kết mời!", "success");
+                      }}>Sao chép liên kết</button>
+                    </div>
+                  ) : null}
                 </div>
               ) : (
                 <button type="button" className="btn btn-secondary" onClick={handleCreateGenericInvite} disabled={collaborationAction !== null} aria-busy={collaborationAction === "generate" || undefined} style={{ alignSelf: "flex-start" }}>

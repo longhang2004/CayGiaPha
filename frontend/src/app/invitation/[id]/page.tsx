@@ -2,216 +2,88 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { getInvitationDetails, joinTreeWithLink, type CollaborationInvitation } from "@/lib/collaboration";
 import { useSession } from "@/app/providers";
+import { useToast } from "@/components/ui/ToastProvider";
+import { getInvitationDetails, joinTreeWithLink, type InvitationView } from "@/lib/collaboration";
+import { buildAuthHref } from "@/lib/authRedirect";
 
-interface InvitationPageProps {
-  params: {
-    id: string;
-  };
-}
-
-export default function InvitationPage({ params }: InvitationPageProps) {
+export default function InvitationPage({ params }: { params: { id: string } }) {
   const router = useRouter();
-  const inviteId = params.id;
-
   const { user, loading: sessionLoading } = useSession();
-  const [invitation, setInvitation] = useState<CollaborationInvitation | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [joining, setJoining] = useState(false);
+  const { showToast } = useToast();
+  const [invitation, setInvitation] = useState<InvitationView | null>(null);
   const [loading, setLoading] = useState(true);
+  const [joining, setJoining] = useState(false);
+  const [requestSent, setRequestSent] = useState(false);
+  const [invalid, setInvalid] = useState(false);
 
   useEffect(() => {
-    // Wait for session resolution so anonymous users see sign-in CTA instead of a hard error.
     if (sessionLoading) return;
     if (!user) {
-      setLoading(false);
-      setInvitation(null);
-      setError(null);
+      router.push(buildAuthHref("/signin", `/invitation/${params.id}`, "invitation"));
       return;
     }
     setLoading(true);
-    getInvitationDetails(inviteId)
+    getInvitationDetails(params.id)
       .then((details) => {
         setInvitation(details);
-        setError(null);
-        setLoading(false);
+        setRequestSent(details.status === "pending");
       })
-      .catch((err) => {
-        setError(err.message || "Lời mời không tồn tại hoặc bạn không có quyền xem.");
-        setLoading(false);
-      });
-  }, [inviteId, sessionLoading, user]);
+      .catch(() => {
+        setInvalid(true);
+        showToast("Lời mời không hợp lệ", "error");
+      })
+      .finally(() => setLoading(false));
+    // router and showToast are stable application contexts; excluding their wrapper
+    // objects avoids re-fetching when test/router adapters recreate those wrappers.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [params.id, sessionLoading, user]);
 
-  const handleJoin = async () => {
-    if (!invitation) return;
+  async function handleJoin() {
     setJoining(true);
-    setError(null);
     try {
-      await joinTreeWithLink(inviteId);
-      // Canonical workspace route is /tree/[id]
-      router.push(`/tree/${invitation.treeId}`);
-    } catch (err: any) {
-      setError(err.message || "Đã xảy ra lỗi khi tham gia cây.");
+      const result = await joinTreeWithLink(params.id);
+      if ("status" in result && result.status === "pending") setRequestSent(true);
+      else if (invitation) router.push(`/tree/${invitation.treeId}`);
+    } catch {
+      setInvalid(true);
+      showToast("Lời mời không hợp lệ", "error");
+    } finally {
       setJoining(false);
     }
-  };
+  }
 
-  const handleSignInRedirect = () => {
-    router.push(`/signin?redirect=/invitation/${inviteId}`);
-  };
-
-  if (loading || sessionLoading) {
-    return (
-      <section className="center-state" aria-live="polite">
-        <div className="center-state__card">
-          <span className="center-state__spinner" aria-hidden="true" />
-          <p>Đang xác thực thông tin lời mời…</p>
-        </div>
-      </section>
-    );
+  if (sessionLoading || loading || !user) {
+    return <section className="center-state" aria-live="polite"><div className="center-state__card"><span className="center-state__spinner" aria-hidden="true" /><p>Đang xác thực thông tin lời mời…</p></div></section>;
   }
 
   return (
-    <main className="center-layout" style={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: "100vh", backgroundColor: "var(--color-bg)" }}>
-      <div className="surface-card" style={{ maxWidth: "480px", width: "100%", padding: "2.5rem", borderRadius: "16px", boxShadow: "0 10px 30px rgba(0, 0, 0, 0.05)", border: "1px solid var(--color-hairline)", textAlign: "center" }}>
-        <h2 style={{ fontSize: "1.5rem", fontWeight: 700, color: "var(--color-brand)", marginBottom: "1rem" }}>
-          👥 Cộng tác xây dựng Cây Gia Phả
-        </h2>
-
-        {!user && !sessionLoading ? (
-          <div>
-            <p style={{ fontSize: "1rem", lineHeight: "1.6", color: "var(--color-fg)", marginBottom: "1.5rem" }}>
-              Bạn đã nhận được lời mời cộng tác xây dựng cây gia phả. Vui lòng đăng nhập hoặc đăng ký
-              để xem chi tiết và chấp nhận.
-            </p>
-            <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
-              <button
-                type="button"
-                className="btn btn-primary btn-terracotta"
-                style={{ width: "100%", minHeight: "44px" }}
-                onClick={handleSignInRedirect}
-              >
-                Đăng nhập để tham gia
-              </button>
-              <button
-                type="button"
-                className="btn btn-secondary"
-                style={{ width: "100%", minHeight: "44px" }}
-                onClick={() => router.push(`/signup?redirect=/invitation/${inviteId}`)}
-              >
-                Đăng ký tài khoản mới
-              </button>
-            </div>
-          </div>
-        ) : error ? (
-          <div style={{ margin: "1.5rem 0" }}>
-            <p style={{ color: "red", fontSize: "0.95rem", marginBottom: "1.5rem" }}>{error}</p>
-            <button
-              type="button"
-              className="btn btn-secondary"
-              style={{ width: "100%" }}
-              onClick={() => router.push("/")}
-            >
-              Về trang chủ
-            </button>
-          </div>
+    <main className="center-layout invitation-page">
+      <section className="surface-card invitation-page__card" aria-labelledby="invitation-title">
+        <h1 id="invitation-title">Bạn được mời tham gia xây dựng cây gia phả</h1>
+        {invalid ? (
+          <><p>Lời mời không hợp lệ</p><button className="btn btn-secondary" onClick={() => router.push("/tree")}>Quay về danh sách</button></>
+        ) : requestSent ? (
+          <><p>Yêu cầu của bạn đã được gửi cho chủ cây để chờ duyệt</p><button className="btn btn-primary" onClick={() => router.push("/tree")}>Quay về danh sách</button></>
+        ) : invitation?.status === "joined" ? (
+          <><p>Bạn đã là cộng tác viên của cây này.</p><button className="btn btn-primary" onClick={() => router.push(`/tree/${invitation.treeId}`)}>Mở cây gia phả</button></>
+        ) : invitation?.status === "rejected" || invitation?.status === "expired" ? (
+          <><p>Lời mời không hợp lệ</p><button className="btn btn-secondary" onClick={() => router.push("/tree")}>Quay về danh sách</button></>
         ) : (
-          invitation && (
-            <div>
-              <p style={{ fontSize: "1rem", lineHeight: "1.6", color: "var(--color-fg)", marginBottom: "1.5rem" }}>
-                Bạn đã nhận được lời mời tham gia cộng tác biên soạn sơ đồ dòng họ
-                {invitation.email ? (
-                  <>
-                    {" "}
-                    gửi tới <strong>{invitation.email}</strong>
-                  </>
-                ) : null}
-                .
-              </p>
-
-              {invitation.status === "joined" ? (
-                <div>
-                  <p style={{ fontSize: "0.95rem", color: "var(--color-muted)", marginBottom: "1.5rem" }}>
-                    Lời mời này đã được chấp nhận. Bạn có thể mở cây gia phả nếu đã là cộng tác viên.
-                  </p>
-                  <button
-                    type="button"
-                    className="btn btn-primary btn-terracotta"
-                    style={{ width: "100%", minHeight: "44px" }}
-                    onClick={() => router.push(`/tree/${invitation.treeId}`)}
-                  >
-                    Mở cây gia phả
-                  </button>
-                </div>
-              ) : invitation.status === "pending" ? (
-                <p style={{ fontSize: "0.95rem", color: "var(--color-muted)", marginBottom: "1.5rem" }}>
-                  Yêu cầu tham gia đang chờ chủ cây duyệt. Vui lòng quay lại sau.
-                </p>
-              ) : invitation.status === "rejected" || invitation.status === "expired" ? (
-                <p style={{ fontSize: "0.95rem", color: "var(--color-danger)", marginBottom: "1.5rem" }}>
-                  Lời mời không còn hiệu lực ({invitation.status}).
-                </p>
-              ) : user ? (
-                <div>
-                  {(() => {
-                    const primaryLabel =
-                      user.displayName?.trim() || user.identifier || "Người dùng";
-                    return (
-                      <div className="account-identity invitation-account" style={{ marginBottom: "2rem" }}>
-                        <p style={{ fontSize: "0.85rem", color: "var(--color-muted)", margin: "0 0 0.35rem" }}>
-                          Tài khoản hiện tại
-                        </p>
-                        <p className="account-identity__primary" style={{ fontSize: "1rem", margin: 0, wordBreak: "break-word" }}>
-                          <strong>{primaryLabel}</strong>
-                        </p>
-                        {user.displayName?.trim() ? (
-                          <p className="account-identity__secondary" style={{ fontSize: "0.85rem", color: "var(--color-muted)", margin: "0.25rem 0 0", wordBreak: "break-word" }}>
-                            {user.identifier}
-                          </p>
-                        ) : null}
-                      </div>
-                    );
-                  })()}
-                  <button
-                    type="button"
-                    className="btn btn-primary btn-terracotta"
-                    style={{ width: "100%", minHeight: "44px" }}
-                    onClick={handleJoin}
-                    disabled={joining}
-                  >
-                    {joining ? "Đang tham gia…" : "Chấp nhận lời mời & Đồng ý tham gia"}
-                  </button>
-                </div>
-              ) : (
-                <div>
-                  <p style={{ fontSize: "0.9rem", color: "var(--color-muted)", marginBottom: "2rem" }}>
-                    Vui lòng đăng nhập hoặc đăng ký tài khoản mới để chấp nhận lời mời cộng tác này.
-                  </p>
-                  <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
-                    <button
-                      type="button"
-                      className="btn btn-primary btn-terracotta"
-                      style={{ width: "100%", minHeight: "44px" }}
-                      onClick={handleSignInRedirect}
-                    >
-                      Đăng nhập để tham gia
-                    </button>
-                    <button
-                      type="button"
-                      className="btn btn-secondary"
-                      style={{ width: "100%", minHeight: "44px" }}
-                      onClick={() => router.push(`/signup?redirect=/invitation/${inviteId}`)}
-                    >
-                      Đăng ký tài khoản mới
-                    </button>
-                  </div>
-                </div>
-              )}
+          <>
+            <p>Hãy xác nhận nếu bạn muốn cùng gia đình xây dựng và cập nhật cây gia phả này.</p>
+            <div className="account-identity invitation-account">
+              <p>Tài khoản hiện tại</p>
+              <p className="account-identity__primary"><strong>{user.displayName?.trim() || user.identifier}</strong></p>
+              {user.displayName?.trim() ? <p className="account-identity__secondary">{user.identifier}</p> : null}
             </div>
-          )
+            <div className="invitation-page__actions">
+              <button className="btn btn-primary" onClick={handleJoin} disabled={joining}>{joining ? "Đang gửi…" : invitation?.invitationType === "generic" ? "Yêu cầu tham gia" : "Chấp nhận lời mời"}</button>
+              <button className="btn btn-secondary" onClick={() => router.push("/tree")} disabled={joining}>Huỷ bỏ</button>
+            </div>
+          </>
         )}
-      </div>
+      </section>
     </main>
   );
 }

@@ -164,7 +164,7 @@ function PrototypeTreeContent() {
         await wait();
         return { status: "approved", code: "111222", emailMessage: `Đã gửi lời mời tới ${email}` };
       },
-      createInviteLink: async (treeId: string) => { await wait(); return { code: "999888" }; },
+      createInviteLink: async (treeId: string) => { await wait(); return { id: "prototype-share-invite", code: "999888" }; },
       approveInvitation: async (treeId: string, inviteId: string) => {
         await wait();
         const invite = mockPendingInvites.find(i => i.id === inviteId);

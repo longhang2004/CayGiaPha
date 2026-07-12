@@ -157,6 +157,9 @@ if (databaseUrl && !isProductionBuild) {
       await dbInstance.execute(sql`ALTER TABLE person_photos ADD COLUMN IF NOT EXISTS description TEXT;`);
       // V20/V21: high-entropy invite codes + hashed session tokens
       await dbInstance.execute(sql`ALTER TABLE collaboration_invitations ALTER COLUMN code TYPE VARCHAR(64);`);
+      await dbInstance.execute(sql`ALTER TABLE collaboration_invitations ADD COLUMN IF NOT EXISTS source_invitation_id UUID REFERENCES collaboration_invitations(id) ON DELETE CASCADE;`);
+      await dbInstance.execute(sql`DROP INDEX IF EXISTS ux_collaboration_pending_requester;`);
+      await dbInstance.execute(sql`CREATE UNIQUE INDEX IF NOT EXISTS ux_collaboration_source_requester ON collaboration_invitations(source_invitation_id, requester_user_id) WHERE source_invitation_id IS NOT NULL AND requester_user_id IS NOT NULL;`);
       await dbInstance.execute(sql`ALTER TABLE sessions ADD COLUMN IF NOT EXISTS token_hash TEXT;`);
       await dbInstance.execute(sql`
         UPDATE sessions

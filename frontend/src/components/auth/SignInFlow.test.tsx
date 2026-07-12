@@ -27,6 +27,14 @@ afterEach(() => {
 });
 
 describe("SignInFlow", () => {
+  it("links to sign up while preserving invitation context", () => {
+    render(<GoogleOAuthProvider clientId="test"><SignInFlow redirectTo="/invitation/inv-1" reason="invitation" /></GoogleOAuthProvider>);
+
+    expect(screen.getByRole("link", { name: "Chưa có tài khoản?" })).toHaveAttribute(
+      "href",
+      "/signup?redirect=%2Finvitation%2Finv-1&reason=invitation",
+    );
+  });
   it("submits the identifier and password, refreshes the session, and routes into the app", async () => {
     vi.mocked(signIn).mockResolvedValue(undefined);
 

@@ -9,10 +9,12 @@ import { REGION_OPTIONS, type Region } from "@/lib/region";
 import { Button } from "@/components/Button";
 import { FormControl, Input, Select } from "@/components/ui/FormControls";
 import { toAuthErrorState, fieldErrorFor, type AuthErrorState } from "./authErrors";
+import { buildAuthHref } from "@/lib/authRedirect";
 
 interface SignUpFlowProps {
   /** Where to navigate after a verified sign-up. Defaults to the app home. */
   redirectTo?: string;
+  reason?: string;
 }
 
 /**
@@ -20,7 +22,7 @@ interface SignUpFlowProps {
  */
 const EMPTY_DISPLAY_NAME_ERROR = "Vui lòng nhập tên hiển thị.";
 
-export function SignUpFlow({ redirectTo = "/" }: SignUpFlowProps) {
+export function SignUpFlow({ redirectTo = "/", reason }: SignUpFlowProps) {
   const router = useRouter();
   const { refresh } = useSession();
   const [displayName, setDisplayName] = useState("");
@@ -266,6 +268,9 @@ export function SignUpFlow({ redirectTo = "/" }: SignUpFlowProps) {
             </div>
           )}
         </div>
+        <a href={buildAuthHref("/signin", redirectTo, reason)} style={{ textAlign: "center" }}>
+          Đã có tài khoản?
+        </a>
       </div>
       </form>
         </div>

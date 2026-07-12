@@ -379,4 +379,18 @@ In v1 each User owns their own tree. A User invites relatives via phone number o
 3. THE Family_Tree_System SHALL NOT record verification codes, session tokens, or share tokens in plaintext in the audit log.
 4. WHEN read access to a tree is denied under Requirement 19, THE Family_Tree_System SHALL return a uniform authorization-failure response that does not reveal whether the tree exists.
 
-> Compliance note: Requirements 19–25 establish the product and technical mechanisms for protecting personal data (access control, living-person protection, data-subject rights, consent capture, photo handling, and abuse/audit controls). The wording of the Terms of Service and Privacy Policy documents (Requirement 23) and the determination of the applicable legal basis are legal matters that require review by qualified counsel; these requirements specify the system behavior, not the legal text. They are informed by Vietnam's Law on Personal Data Protection (2025), which supersedes Decree 13/2023/ND-CP.
+### Requirement 26: Collaboration Invitation Links
+
+**User Story:** As a tree owner, I want to share a reusable invitation link, so that relatives can request collaboration without manually entering a code.
+
+#### Acceptance Criteria
+
+1. WHEN a tree Owner creates a generic collaboration invitation, THE Family_Tree_System SHALL issue both a six-character code and a copyable link referencing the same invitation, valid for seven days and reusable by multiple Users.
+2. WHEN an authenticated User confirms a valid generic invitation link or code, THE Family_Tree_System SHALL create exactly one pending request for that User and source invitation and SHALL require Owner approval before granting collaboration access.
+3. WHEN the Owner approves a pending request, THE Family_Tree_System SHALL add the requesting User as a contributor exactly once and mark the request joined; repeated submission or approval SHALL NOT create duplicates.
+4. IF an unauthenticated requester opens an invitation link, THE Family_Tree_System SHALL redirect to sign-in, preserve the invitation return path across sign-in and sign-up, and return to the invitation after successful authentication.
+5. WHEN an authenticated User opens a direct email invitation, THE Family_Tree_System SHALL permit viewing and acceptance only when the normalized account email matches the invited email.
+6. IF an invitation is missing, expired, inactive, or belongs to another email account, THE Family_Tree_System SHALL disclose no invited email or tree data and SHALL return the uniform public message "Lời mời không hợp lệ".
+7. THE Family_Tree_System SHALL rate-limit collaboration join attempts by authenticated User and source address and SHALL NOT expose a raw invitation code from the invitation-detail endpoint.
+
+> Compliance note: Requirements 19–26 establish the product and technical mechanisms for protecting personal data (access control, living-person protection, data-subject rights, consent capture, photo handling, collaboration invitations, and abuse/audit controls). The wording of the Terms of Service and Privacy Policy documents (Requirement 23) and the determination of the applicable legal basis are legal matters that require review by qualified counsel; these requirements specify the system behavior, not the legal text. They are informed by Vietnam's Law on Personal Data Protection (2025), which supersedes Decree 13/2023/ND-CP.

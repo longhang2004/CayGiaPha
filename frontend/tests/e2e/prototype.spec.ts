@@ -80,6 +80,26 @@ test.describe("Prototype Pages — smoke tests (no auth required)", () => {
     await expect(page.locator('button[type="submit"]')).toBeEnabled();
   });
 
+  for (const viewport of [
+    { name: "desktop", width: 1280, height: 800 },
+    { name: "tablet", width: 768, height: 1024 },
+    { name: "mobile", width: 375, height: 667 },
+  ]) {
+    test(`invitation confirmation remains usable on ${viewport.name}`, async ({ page }) => {
+      await page.setViewportSize({ width: viewport.width, height: viewport.height });
+      await page.goto("/prototype/invitation/test-invite-123");
+      const card = page.locator(".invitation-page__card");
+      await expect(card).toBeVisible();
+      await expect(page.getByRole("button", { name: "Yêu cầu tham gia" })).toBeVisible();
+      await expect(page.getByRole("button", { name: "Huỷ bỏ" })).toBeVisible();
+      const box = await card.boundingBox();
+      expect(box).toBeTruthy();
+      expect(box!.x).toBeGreaterThanOrEqual(0);
+      expect(box!.x + box!.width).toBeLessThanOrEqual(viewport.width + 1);
+      expect(await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1)).toBe(false);
+    });
+  }
+
   test("tree prototype — populated tree renders graph canvas and sidebar", async ({
     page,
   }) => {

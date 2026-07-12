@@ -5,6 +5,7 @@ import userEvent from "@testing-library/user-event";
 const push = vi.fn();
 const getInvitationDetails = vi.fn();
 const joinTreeWithLink = vi.fn();
+const showToast = vi.fn();
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push }),
@@ -32,6 +33,10 @@ vi.mock("@/app/providers", () => ({
   useSession: () => sessionState,
 }));
 
+vi.mock("@/components/ui/ToastProvider", () => ({
+  useToast: () => ({ showToast }),
+}));
+
 import InvitationPage from "./page";
 
 afterEach(() => {
@@ -48,6 +53,19 @@ afterEach(() => {
 });
 
 describe("InvitationPage account identity", () => {
+  it("redirects anonymous visitors to sign in with the invitation return path", async () => {
+    sessionState.user = null as any;
+
+    render(<InvitationPage params={{ id: "inv-1" }} />);
+
+    await waitFor(() => {
+      expect(push).toHaveBeenCalledWith(
+        "/signin?redirect=%2Finvitation%2Finv-1&reason=invitation",
+      );
+    });
+    expect(getInvitationDetails).not.toHaveBeenCalled();
+  });
+
   it("shows displayName primary and identifier secondary for approved invite", async () => {
     getInvitationDetails.mockResolvedValue({
       id: "inv-1",
@@ -114,5 +132,39 @@ describe("InvitationPage account identity", () => {
       expect(joinTreeWithLink).toHaveBeenCalledWith("inv-1");
       expect(push).toHaveBeenCalledWith("/tree/tree-1");
     });
+  });
+
+  it("shows the pending confirmation and returns to the tree list for a generic invite", async () => {
+    getInvitationDetails.mockResolvedValue({
+      id: "inv-1",
+      treeId: "tree-1",
+      status: "generic",
+      invitationType: "generic",
+      expiresAt: new Date(Date.now() + 86400000).toISOString(),
+    });
+    joinTreeWithLink.mockResolvedValue({ id: "request-1", status: "pending" });
+
+    render(<InvitationPage params={{ id: "inv-1" }} />);
+
+    await userEvent.click(await screen.findByRole("button", { name: "Yêu cầu tham gia" }));
+    expect(await screen.findByText("Yêu cầu của bạn đã được gửi cho chủ cây để chờ duyệt")).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "Quay về danh sách" }));
+    expect(push).toHaveBeenCalledWith("/tree");
+  });
+
+  it("cancels without submitting a join request", async () => {
+    getInvitationDetails.mockResolvedValue({
+      id: "inv-1",
+      treeId: "tree-1",
+      status: "generic",
+      invitationType: "generic",
+      expiresAt: new Date(Date.now() + 86400000).toISOString(),
+    });
+
+    render(<InvitationPage params={{ id: "inv-1" }} />);
+
+    await userEvent.click(await screen.findByRole("button", { name: "Huỷ bỏ" }));
+    expect(joinTreeWithLink).not.toHaveBeenCalled();
+    expect(push).toHaveBeenCalledWith("/tree");
   });
 });

@@ -8,16 +8,18 @@ import { Button } from "@/components/Button";
 import { GoogleLogin, type CredentialResponse } from "@react-oauth/google";
 import { FormControl, Input } from "@/components/ui/FormControls";
 import { toAuthErrorState, fieldErrorFor, type AuthErrorState } from "./authErrors";
+import { buildAuthHref } from "@/lib/authRedirect";
 
 interface SignInFlowProps {
   /** Where to navigate after a successful sign-in. Defaults to the app home. */
   redirectTo?: string;
+  reason?: string;
 }
 
 /**
   * Sign-in flow: collect identifier and password in a single form. (Requirements 2.1, 2.3)
   */
-export function SignInFlow({ redirectTo = "/" }: SignInFlowProps) {
+export function SignInFlow({ redirectTo = "/", reason }: SignInFlowProps) {
   const router = useRouter();
   const { refresh } = useSession();
   const [identifier, setIdentifier] = useState("");
@@ -147,6 +149,9 @@ export function SignInFlow({ redirectTo = "/" }: SignInFlowProps) {
             shape="rectangular"
           />
         </div>
+        <a href={buildAuthHref("/signup", redirectTo, reason)} style={{ textAlign: "center" }}>
+          Chưa có tài khoản?
+        </a>
       </div>
       </form>
         </div>
