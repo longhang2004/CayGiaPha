@@ -60,9 +60,9 @@ React Aria types.
 Dialog, toast, menu, and drawer implementations still require their separately
 approved migration phases. Existing form consumers remain on their legacy
 controls until a bounded migration task is approved. The first
-bounded field migration covers sign-in, sign-up, password recovery, and their
-synchronized prototypes; region selection remains on the legacy Select until
-its bounded consumer-migration task.
+bounded auth migration covers sign-in, sign-up, password recovery, and their
+synchronized prototypes. Sign-up region selection and legal-consent controls
+now use the CGP Select and Checkbox primitives.
 
 The installed `react-aria-components@1.19.0` Toast exports are still prefixed
 `UNSTABLE_`. CGP therefore keeps a library-independent toast contract until a

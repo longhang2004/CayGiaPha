@@ -15,8 +15,12 @@
 import { useState, useId } from "react";
 import { REGION_OPTIONS, type Region } from "@/lib/region";
 import { Button } from "@/components/Button";
-import { CGPPasswordField, CGPTextField } from "@/components/cgp";
-import { FormControl, Select } from "@/components/ui/FormControls";
+import {
+  CGPCheckbox,
+  CGPPasswordField,
+  CGPSelect,
+  CGPTextField,
+} from "@/components/cgp";
 
 export default function PrototypeSignUpPage() {
   const [displayName, setDisplayName] = useState("");
@@ -80,42 +84,22 @@ export default function PrototypeSignUpPage() {
           isRequired
         />
 
-        <FormControl id="signup-region" label="Vùng miền (cách xưng hô)">
-          <Select
-            id="signup-region"
-            value={region}
-            onChange={(e) => setRegion(e.target.value as Region)}
-          >
-            {REGION_OPTIONS.map((o) => (
-              <option key={o.value} value={o.value}>
-                {o.label}
-              </option>
-            ))}
-          </Select>
-          <p className="field-hint" style={{ marginTop: "0.5rem" }}>
-            Chọn vùng miền của bạn — điều này quyết định cách xưng hô (ví dụ bố/ba, mẹ/má).
-          </p>
-        </FormControl>
+        <CGPSelect
+          id="signup-region"
+          label="Vùng miền (cách xưng hô)"
+          description="Chọn vùng miền của bạn — điều này quyết định cách xưng hô (ví dụ bố/ba, mẹ/má)."
+          items={REGION_OPTIONS}
+          selectedKey={region}
+          onSelectionChange={(key) => setRegion(String(key) as Region)}
+        />
 
-        <div className="field" style={{ marginBottom: "1rem", display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-          <label style={{ display: "flex", alignItems: "center", gap: "0.5rem", margin: 0, cursor: "pointer", fontWeight: "normal", color: "var(--color-muted)" }}>
-            <input
-              type="checkbox"
-              checked={acceptedTos}
-              onChange={(e) => setAcceptedTos(e.target.checked)}
-              style={{ margin: 0 }}
-            />
-            <span>Tôi đồng ý với <a href="/legal/tos" onClick={(e) => e.stopPropagation()}>Điều khoản dịch vụ</a>.</span>
-          </label>
-          <label style={{ display: "flex", alignItems: "center", gap: "0.5rem", margin: 0, cursor: "pointer", fontWeight: "normal", color: "var(--color-muted)" }}>
-            <input
-              type="checkbox"
-              checked={acceptedPrivacy}
-              onChange={(e) => setAcceptedPrivacy(e.target.checked)}
-              style={{ margin: 0 }}
-            />
-            <span>Tôi đồng ý với <a href="/legal/privacy" onClick={(e) => e.stopPropagation()}>Chính sách bảo mật</a>.</span>
-          </label>
+        <div className="auth-consents">
+          <CGPCheckbox isSelected={acceptedTos} onChange={setAcceptedTos}>
+            Tôi đồng ý với <a href="/legal/tos" onClick={(e) => e.stopPropagation()}>Điều khoản dịch vụ</a>.
+          </CGPCheckbox>
+          <CGPCheckbox isSelected={acceptedPrivacy} onChange={setAcceptedPrivacy}>
+            Tôi đồng ý với <a href="/legal/privacy" onClick={(e) => e.stopPropagation()}>Chính sách bảo mật</a>.
+          </CGPCheckbox>
         </div>
 
         <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>

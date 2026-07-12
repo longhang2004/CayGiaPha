@@ -1135,3 +1135,20 @@ html.dark .full-screen-loader__spinner {
 .auth-wrapper .cgp-field {
   margin-bottom: 1rem;
 }
+
+.auth-wrapper .cgp-select,
+.auth-card .cgp-select {
+  margin-bottom: 1rem;
+}
+
+.auth-consents {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.auth-consents .cgp-checkbox {
+  color: var(--color-muted);
+  font-weight: normal;
+}

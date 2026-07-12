@@ -49,7 +49,7 @@ async function fillRequiredFields(options?: { displayName?: string; skipDisplayN
 }
 
 describe("SignUpFlow", () => {
-  it("renders account text and password inputs through CGP-owned fields", () => {
+  it("renders signup controls through CGP-owned fields", () => {
     render(
       <GoogleOAuthProvider clientId="test">
         <SignUpFlow />
@@ -62,6 +62,11 @@ describe("SignUpFlow", () => {
       .toBeInTheDocument();
     expect(screen.getByLabelText(/^Mật khẩu/i).closest(".cgp-password-field"))
       .toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Vùng miền/i }).closest(".cgp-select"))
+      .toBeInTheDocument();
+    for (const checkbox of screen.getAllByRole("checkbox")) {
+      expect(checkbox.closest(".cgp-checkbox")).toBeInTheDocument();
+    }
   });
 
   it("links back to sign in while preserving invitation context", () => {
@@ -149,10 +154,8 @@ describe("SignUpFlow", () => {
       </GoogleOAuthProvider>
     );
 
-    await userEvent.selectOptions(
-      screen.getByLabelText(/Vùng miền/i),
-      "Nam",
-    );
+    await userEvent.click(screen.getByRole("button", { name: /Vùng miền/i }));
+    await userEvent.click(screen.getByRole("option", { name: /Miền Nam/i }));
     await fillRequiredFields({ displayName: "Trần Thị B" });
     await userEvent.click(screen.getByRole("button", { name: "Đăng ký" }));
 
