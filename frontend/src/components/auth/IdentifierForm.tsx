@@ -2,6 +2,7 @@
 
 import { useId, useState, type FormEvent } from "react";
 import { Button } from "@/components/Button";
+import { CGPTextField } from "@/components/cgp";
 import {
   fieldErrorFor,
   toAuthErrorState,
@@ -38,7 +39,6 @@ export function IdentifierForm({
   disabled = false,
 }: IdentifierFormProps) {
   const inputId = useId();
-  const errorId = `${inputId}-error`;
   const formErrorId = `${inputId}-form-error`;
 
   const [identifier, setIdentifier] = useState("");
@@ -71,27 +71,19 @@ export function IdentifierForm({
         </p>
       ) : null}
 
-      <div className="field">
-        <label htmlFor={inputId}>Số điện thoại hoặc email</label>
-        <input
-          id={inputId}
-          name="identifier"
-          type="text"
-          inputMode="email"
-          autoComplete="username"
-          value={identifier}
-          onChange={(event) => setIdentifier(event.target.value)}
-          aria-invalid={identifierError ? true : undefined}
-          aria-describedby={identifierError ? errorId : undefined}
-          disabled={submitting}
-          required
-        />
-        {identifierError ? (
-          <p id={errorId} role="alert" className="field-error">
-            {identifierError}
-          </p>
-        ) : null}
-      </div>
+      <CGPTextField
+        id={inputId}
+        label="Số điện thoại hoặc email"
+        name="identifier"
+        inputMode="email"
+        autoComplete="username"
+        value={identifier}
+        onChange={setIdentifier}
+        errorMessage={identifierError}
+        isInvalid={Boolean(identifierError)}
+        isDisabled={submitting}
+        isRequired
+      />
 
       <Button type="submit" disabled={disabled} loading={submitting} loadingLabel="Đang gửi…">
         {submitLabel}

@@ -49,6 +49,21 @@ async function fillRequiredFields(options?: { displayName?: string; skipDisplayN
 }
 
 describe("SignUpFlow", () => {
+  it("renders account text and password inputs through CGP-owned fields", () => {
+    render(
+      <GoogleOAuthProvider clientId="test">
+        <SignUpFlow />
+      </GoogleOAuthProvider>,
+    );
+
+    expect(screen.getByRole("textbox", { name: /Tên hiển thị/i }).closest(".cgp-field"))
+      .toBeInTheDocument();
+    expect(screen.getByRole("textbox", { name: /Số điện thoại hoặc email/i }).closest(".cgp-field"))
+      .toBeInTheDocument();
+    expect(screen.getByLabelText(/^Mật khẩu/i).closest(".cgp-password-field"))
+      .toBeInTheDocument();
+  });
+
   it("links back to sign in while preserving invitation context", () => {
     render(
       <SignUpFlow

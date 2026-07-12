@@ -32,6 +32,9 @@ describe("CGPTextField", () => {
     expect(screen.getByText("Vui lòng nhập tên.")).toHaveClass(
       "cgp-field__error",
     );
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "Vui lòng nhập tên.",
+    );
   });
 
   it("supports controlled values", async () => {

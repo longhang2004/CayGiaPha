@@ -6,7 +6,7 @@ import { useSession } from "@/app/providers";
 import { signIn, signInWithGoogle } from "@/lib/auth";
 import { Button } from "@/components/Button";
 import { GoogleLogin, type CredentialResponse } from "@react-oauth/google";
-import { FormControl, Input } from "@/components/ui/FormControls";
+import { CGPPasswordField, CGPTextField } from "@/components/cgp";
 import { toAuthErrorState, fieldErrorFor, type AuthErrorState } from "./authErrors";
 import { buildAuthHref } from "@/lib/authRedirect";
 
@@ -29,8 +29,6 @@ export function SignInFlow({ redirectTo = "/", reason }: SignInFlowProps) {
 
   const inputId = useId();
   const passwordId = `${inputId}-password`;
-  const errorId = `${inputId}-error`;
-  const passwordErrorId = `${passwordId}-error`;
   const formErrorId = `${inputId}-form-error`;
 
   const identifierError = fieldErrorFor(error, "identifier");
@@ -89,34 +87,32 @@ export function SignInFlow({ redirectTo = "/", reason }: SignInFlowProps) {
         </p>
       ) : null}
 
-      <FormControl id={inputId} label="Số điện thoại hoặc email" error={identifierError} required>
-        <Input
-          id={inputId}
-          name="identifier"
-          type="text"
-          inputMode="email"
-          autoComplete="username"
-          value={identifier}
-          onChange={(event) => setIdentifier(event.target.value)}
-          error={identifierError}
-          disabled={submitting}
-          required
-        />
-      </FormControl>
+      <CGPTextField
+        id={inputId}
+        label="Số điện thoại hoặc email"
+        name="identifier"
+        inputMode="email"
+        autoComplete="username"
+        value={identifier}
+        onChange={setIdentifier}
+        errorMessage={identifierError}
+        isInvalid={Boolean(identifierError)}
+        isDisabled={submitting}
+        isRequired
+      />
 
-      <FormControl id={passwordId} label="Mật khẩu" error={passwordError} required>
-        <Input
-          id={passwordId}
-          name="password"
-          type="password"
-          autoComplete="current-password"
-          value={password}
-          onChange={(event) => setPassword(event.target.value)}
-          error={passwordError}
-          disabled={submitting}
-          required
-        />
-      </FormControl>
+      <CGPPasswordField
+        id={passwordId}
+        label="Mật khẩu"
+        name="password"
+        autoComplete="current-password"
+        value={password}
+        onChange={setPassword}
+        errorMessage={passwordError}
+        isInvalid={Boolean(passwordError)}
+        isDisabled={submitting}
+        isRequired
+      />
 
       <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "0.25rem" }}>
         <a href="/forgot-password" style={{ fontSize: "0.875rem", color: "var(--color-primary)", textDecoration: "none", fontWeight: 500 }}>

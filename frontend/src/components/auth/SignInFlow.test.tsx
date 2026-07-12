@@ -27,6 +27,26 @@ afterEach(() => {
 });
 
 describe("SignInFlow", () => {
+  it("renders identifier and password through CGP-owned field boundaries", () => {
+    render(
+      <GoogleOAuthProvider clientId="test">
+        <SignInFlow />
+      </GoogleOAuthProvider>,
+    );
+
+    expect(
+      screen.getByRole("textbox", { name: /Số điện thoại hoặc email/i })
+        .closest(".cgp-field"),
+    ).toBeInTheDocument();
+    expect(screen.getByLabelText(/^Mật khẩu/i)).toHaveAttribute(
+      "type",
+      "password",
+    );
+    expect(
+      screen.getByLabelText(/^Mật khẩu/i).closest(".cgp-password-field"),
+    ).toBeInTheDocument();
+  });
+
   it("links to sign up while preserving invitation context", () => {
     render(<GoogleOAuthProvider clientId="test"><SignInFlow redirectTo="/invitation/inv-1" reason="invitation" /></GoogleOAuthProvider>);
 

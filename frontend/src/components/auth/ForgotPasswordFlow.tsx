@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { requestPasswordReset, confirmPasswordReset } from "@/lib/auth";
 import { useSession } from "@/app/providers";
 import { Button } from "@/components/Button";
-import { FormControl, Input } from "@/components/ui/FormControls";
+import { CGPPasswordField, CGPTextField } from "@/components/cgp";
 import { IdentifierForm } from "./IdentifierForm";
 import { toAuthErrorState, fieldErrorFor, type AuthErrorState } from "./authErrors";
 
@@ -97,33 +97,32 @@ export function ForgotPasswordFlow() {
               </p>
             ) : null}
 
-            <FormControl id={codeId} label="Mã xác nhận (6 chữ số)" error={codeError} required>
-              <Input
-                id={codeId}
-                name="code"
-                type="text"
-                inputMode="numeric"
-                maxLength={6}
-                value={code}
-                onChange={(e) => setCode(e.target.value)}
-                error={codeError}
-                disabled={submitting}
-                required
-              />
-            </FormControl>
+            <CGPTextField
+              id={codeId}
+              label="Mã xác nhận (6 chữ số)"
+              name="code"
+              inputMode="numeric"
+              maxLength={6}
+              value={code}
+              onChange={setCode}
+              errorMessage={codeError}
+              isInvalid={Boolean(codeError)}
+              isDisabled={submitting}
+              isRequired
+            />
 
-            <FormControl id={passwordId} label="Mật khẩu mới (ít nhất 8 ký tự)" error={passwordError} required>
-              <Input
-                id={passwordId}
-                name="password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                error={passwordError}
-                disabled={submitting}
-                required
-              />
-            </FormControl>
+            <CGPPasswordField
+              id={passwordId}
+              label="Mật khẩu mới (ít nhất 8 ký tự)"
+              name="password"
+              autoComplete="new-password"
+              value={password}
+              onChange={setPassword}
+              errorMessage={passwordError}
+              isInvalid={Boolean(passwordError)}
+              isDisabled={submitting}
+              isRequired
+            />
 
             <div style={{ marginTop: "1.5rem", display: "flex", flexDirection: "column", gap: "0.75rem" }}>
               <Button type="submit" loading={submitting} loadingLabel="Đang xử lý…" style={{ width: "100%" }}>

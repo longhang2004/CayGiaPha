@@ -7,7 +7,8 @@ import { signUp, signInWithGoogle } from "@/lib/auth";
 import { GoogleLogin, type CredentialResponse } from "@react-oauth/google";
 import { REGION_OPTIONS, type Region } from "@/lib/region";
 import { Button } from "@/components/Button";
-import { FormControl, Input, Select } from "@/components/ui/FormControls";
+import { FormControl, Select } from "@/components/ui/FormControls";
+import { CGPPasswordField, CGPTextField } from "@/components/cgp";
 import { toAuthErrorState, fieldErrorFor, type AuthErrorState } from "./authErrors";
 import { buildAuthHref } from "@/lib/authRedirect";
 
@@ -137,52 +138,47 @@ export function SignUpFlow({ redirectTo = "/", reason }: SignUpFlowProps) {
         </p>
       ) : null}
 
-      <FormControl id={displayNameId} label="Tên hiển thị" error={displayNameError} required>
-        <Input
-          id={displayNameId}
-          name="displayName"
-          type="text"
-          autoComplete="name"
-          value={displayName}
-          onChange={(event) => setDisplayName(event.target.value)}
-          error={displayNameError}
-          disabled={submitting}
-          required
-          maxLength={100}
-        />
-        <p className="field-hint" style={{ marginTop: "0.5rem" }}>
-          Tên này sẽ được dùng để người thân nhận ra bạn khi cộng tác.
-        </p>
-      </FormControl>
+      <CGPTextField
+        id={displayNameId}
+        label="Tên hiển thị"
+        description="Tên này sẽ được dùng để người thân nhận ra bạn khi cộng tác."
+        name="displayName"
+        autoComplete="name"
+        value={displayName}
+        onChange={setDisplayName}
+        errorMessage={displayNameError}
+        isInvalid={Boolean(displayNameError)}
+        isDisabled={submitting}
+        isRequired
+        maxLength={100}
+      />
 
-      <FormControl id={inputId} label="Số điện thoại hoặc email" error={identifierError} required>
-        <Input
-          id={inputId}
-          name="identifier"
-          type="text"
-          inputMode="email"
-          autoComplete="username"
-          value={identifier}
-          onChange={(event) => setIdentifier(event.target.value)}
-          error={identifierError}
-          disabled={submitting}
-          required
-        />
-      </FormControl>
+      <CGPTextField
+        id={inputId}
+        label="Số điện thoại hoặc email"
+        name="identifier"
+        inputMode="email"
+        autoComplete="username"
+        value={identifier}
+        onChange={setIdentifier}
+        errorMessage={identifierError}
+        isInvalid={Boolean(identifierError)}
+        isDisabled={submitting}
+        isRequired
+      />
 
-      <FormControl id={passwordId} label="Mật khẩu" error={passwordError} required>
-        <Input
-          id={passwordId}
-          name="password"
-          type="password"
-          autoComplete="new-password"
-          value={password}
-          onChange={(event) => setPassword(event.target.value)}
-          error={passwordError}
-          disabled={submitting}
-          required
-        />
-      </FormControl>
+      <CGPPasswordField
+        id={passwordId}
+        label="Mật khẩu"
+        name="password"
+        autoComplete="new-password"
+        value={password}
+        onChange={setPassword}
+        errorMessage={passwordError}
+        isInvalid={Boolean(passwordError)}
+        isDisabled={submitting}
+        isRequired
+      />
 
       <FormControl id="signup-region" label="Vùng miền (cách xưng hô)">
         <Select

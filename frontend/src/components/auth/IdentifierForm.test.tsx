@@ -16,6 +16,15 @@ function renderForm(onSubmit: (identifier: string) => Promise<void>) {
 }
 
 describe("IdentifierForm", () => {
+  it("renders the identifier through the CGP-owned field boundary", () => {
+    renderForm(vi.fn().mockResolvedValue(undefined));
+
+    expect(
+      screen.getByRole("textbox", { name: "Số điện thoại hoặc email" })
+        .closest(".cgp-field"),
+    ).toBeInTheDocument();
+  });
+
   it("submits the trimmed identifier", async () => {
     const onSubmit = vi.fn().mockResolvedValue(undefined);
     renderForm(onSubmit);
@@ -48,7 +57,11 @@ describe("IdentifierForm", () => {
     expect(alert).toHaveTextContent("Số điện thoại không hợp lệ.");
     // The error is programmatically associated with the input.
     expect(input).toHaveAttribute("aria-invalid", "true");
-    expect(input).toHaveAttribute("aria-describedby", alert.id);
+    const describedBy = input.getAttribute("aria-describedby");
+    expect(describedBy).toBeTruthy();
+    expect(document.getElementById(describedBy!)).toHaveTextContent(
+      "Số điện thoại không hợp lệ.",
+    );
   });
 
   it("renders a form-level error when the envelope names no field", async () => {

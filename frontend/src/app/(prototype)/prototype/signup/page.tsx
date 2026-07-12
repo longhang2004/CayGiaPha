@@ -15,7 +15,8 @@
 import { useState, useId } from "react";
 import { REGION_OPTIONS, type Region } from "@/lib/region";
 import { Button } from "@/components/Button";
-import { FormControl, Input, Select } from "@/components/ui/FormControls";
+import { CGPPasswordField, CGPTextField } from "@/components/cgp";
+import { FormControl, Select } from "@/components/ui/FormControls";
 
 export default function PrototypeSignUpPage() {
   const [displayName, setDisplayName] = useState("");
@@ -44,44 +45,40 @@ export default function PrototypeSignUpPage() {
           <h1 id={`${inputId}-heading`}>Đăng ký</h1>
           <p>Tạo tài khoản cây gia phả mới của bạn.</p>
 
-        <FormControl id={displayNameId} label="Tên hiển thị" required>
-          <Input
-            id={displayNameId}
-            name="displayName"
-            type="text"
-            autoComplete="name"
-            value={displayName}
-            onChange={(event) => setDisplayName(event.target.value)}
-            required
-            maxLength={100}
-          />
-          <p className="field-hint" style={{ marginTop: "0.5rem" }}>
-            Tên này sẽ được dùng để người thân nhận ra bạn khi cộng tác.
-          </p>
-        </FormControl>
+        <CGPTextField
+          id={displayNameId}
+          label="Tên hiển thị"
+          description="Tên này sẽ được dùng để người thân nhận ra bạn khi cộng tác."
+          name="displayName"
+          type="text"
+          autoComplete="name"
+          value={displayName}
+          onChange={setDisplayName}
+          isRequired
+          maxLength={100}
+        />
 
-        <FormControl id={inputId} label="Số điện thoại hoặc email" required>
-          <Input
-            id={inputId}
-            name="identifier"
-            type="text"
-            inputMode="email"
-            value={identifier}
-            onChange={(event) => setIdentifier(event.target.value)}
-            required
-          />
-        </FormControl>
+        <CGPTextField
+          id={inputId}
+          label="Số điện thoại hoặc email"
+          name="identifier"
+          type="text"
+          inputMode="email"
+          autoComplete="username"
+          value={identifier}
+          onChange={setIdentifier}
+          isRequired
+        />
 
-        <FormControl id={passwordId} label="Mật khẩu" required>
-          <Input
-            id={passwordId}
-            name="password"
-            type="password"
-            value={password}
-            onChange={(event) => setPassword(event.target.value)}
-            required
-          />
-        </FormControl>
+        <CGPPasswordField
+          id={passwordId}
+          label="Mật khẩu"
+          name="password"
+          autoComplete="new-password"
+          value={password}
+          onChange={setPassword}
+          isRequired
+        />
 
         <FormControl id="signup-region" label="Vùng miền (cách xưng hô)">
           <Select

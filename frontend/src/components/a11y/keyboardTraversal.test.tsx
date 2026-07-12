@@ -51,7 +51,7 @@ async function tabThrough(
 describe("keyboard reachability (18.6, WCAG 2.1.1)", () => {
   it("Tab reaches every control of IdentifierForm in document order", async () => {
     const user = userEvent.setup();
-    const { container, getByLabelText, getByRole } = render(
+    const { container, getByRole } = render(
       <IdentifierForm
         heading="Đăng nhập"
         description="Nhập số điện thoại hoặc email."
@@ -60,7 +60,9 @@ describe("keyboard reachability (18.6, WCAG 2.1.1)", () => {
       />,
     );
 
-    const input = getByLabelText("Số điện thoại hoặc email");
+    const input = getByRole("textbox", {
+      name: "Số điện thoại hoặc email",
+    });
     const submit = getByRole("button", { name: "Gửi mã" });
 
     const visited = await tabThrough(user, 2);
@@ -94,7 +96,7 @@ describe("keyboard reachability (18.6, WCAG 2.1.1)", () => {
 
   it("focuses controls one-by-one starting from the document body", async () => {
     const user = userEvent.setup();
-    const { getByLabelText } = render(
+    const { getByRole } = render(
       <IdentifierForm
         heading="Đăng nhập"
         description="Nhập số điện thoại hoặc email."
@@ -105,7 +107,7 @@ describe("keyboard reachability (18.6, WCAG 2.1.1)", () => {
 
     expect(document.body).toBe(document.activeElement);
     await user.tab();
-    expect(getByLabelText("Số điện thoại hoặc email")).toBe(
+    expect(getByRole("textbox", { name: "Số điện thoại hoặc email" })).toBe(
       document.activeElement,
     );
   });

@@ -2,7 +2,7 @@
 
 import { useState, useId } from "react";
 import { Button } from "@/components/Button";
-import { FormControl, Input } from "@/components/ui/FormControls";
+import { CGPPasswordField, CGPTextField } from "@/components/cgp";
 
 export default function PrototypeForgotPasswordPage() {
   const [identifier, setIdentifier] = useState("");
@@ -28,17 +28,17 @@ export default function PrototypeForgotPasswordPage() {
               <h1 id={`${inputId}-heading`}>Quên mật khẩu</h1>
               <p>Nhập số điện thoại hoặc email của bạn để nhận mã xác thực.</p>
 
-              <FormControl id={inputId} label="Số điện thoại hoặc email" required>
-                <Input
-                  id={inputId}
-                  name="identifier"
-                  type="text"
-                  inputMode="email"
-                  value={identifier}
-                  onChange={(event) => setIdentifier(event.target.value)}
-                  required
-                />
-              </FormControl>
+              <CGPTextField
+                id={inputId}
+                label="Số điện thoại hoặc email"
+                name="identifier"
+                type="text"
+                inputMode="email"
+                autoComplete="username"
+                value={identifier}
+                onChange={setIdentifier}
+                isRequired
+              />
 
               <div style={{ marginTop: "1.5rem", display: "flex", flexDirection: "column", gap: "0.75rem" }}>
                 <Button type="submit" style={{ width: "100%" }}>
@@ -56,29 +56,27 @@ export default function PrototypeForgotPasswordPage() {
               <h1 id={`${inputId}-heading`}>Tạo mật khẩu mới</h1>
               <p>Mã xác thực đã được gửi đến {identifier}.</p>
 
-              <FormControl id={codeId} label="Mã xác nhận (6 chữ số)" required>
-                <Input
-                  id={codeId}
-                  name="code"
-                  type="text"
-                  inputMode="numeric"
-                  maxLength={6}
-                  value={code}
-                  onChange={(e) => setCode(e.target.value)}
-                  required
-                />
-              </FormControl>
+              <CGPTextField
+                id={codeId}
+                label="Mã xác nhận (6 chữ số)"
+                name="code"
+                type="text"
+                inputMode="numeric"
+                maxLength={6}
+                value={code}
+                onChange={setCode}
+                isRequired
+              />
 
-              <FormControl id={passwordId} label="Mật khẩu mới (ít nhất 8 ký tự)" required>
-                <Input
-                  id={passwordId}
-                  name="password"
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                />
-              </FormControl>
+              <CGPPasswordField
+                id={passwordId}
+                label="Mật khẩu mới (ít nhất 8 ký tự)"
+                name="password"
+                autoComplete="new-password"
+                value={password}
+                onChange={setPassword}
+                isRequired
+              />
 
               <div style={{ marginTop: "1.5rem", display: "flex", flexDirection: "column", gap: "0.75rem" }}>
                 <Button type="submit" style={{ width: "100%" }}>

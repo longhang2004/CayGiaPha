@@ -102,7 +102,9 @@ describe("no content/functionality loss when scaled to 200% (18.1, 18.2)", () =>
     expect(document.documentElement.style.fontSize).toBe("200%");
 
     // No content lost: the screen's controls are all still in the DOM.
-    const identifierInput = screen.getByLabelText("Số điện thoại hoặc email");
+    const identifierInput = screen.getByRole("textbox", {
+      name: "Số điện thoại hoặc email",
+    });
     const submit = screen.getByRole("button", { name: "Gửi mã" });
     expect(identifierInput).toBeInTheDocument();
     expect(submit).toBeInTheDocument();

@@ -14,7 +14,7 @@
 
 import { useState, useId } from "react";
 import { Button } from "@/components/Button";
-import { FormControl, Input } from "@/components/ui/FormControls";
+import { CGPPasswordField, CGPTextField } from "@/components/cgp";
 
 export default function PrototypeSignInPage() {
   const [identifier, setIdentifier] = useState("");
@@ -37,28 +37,27 @@ export default function PrototypeSignInPage() {
           <h1 id={`${inputId}-heading`}>Đăng nhập</h1>
           <p>Đăng nhập bằng số điện thoại/email và mật khẩu của bạn.</p>
 
-        <FormControl id={inputId} label="Số điện thoại hoặc email" required>
-          <Input
-            id={inputId}
-            name="identifier"
-            type="text"
-            inputMode="email"
-            value={identifier}
-            onChange={(event) => setIdentifier(event.target.value)}
-            required
-          />
-        </FormControl>
+        <CGPTextField
+          id={inputId}
+          label="Số điện thoại hoặc email"
+          name="identifier"
+          type="text"
+          inputMode="email"
+          autoComplete="username"
+          value={identifier}
+          onChange={setIdentifier}
+          isRequired
+        />
 
-        <FormControl id={passwordId} label="Mật khẩu" required>
-          <Input
-            id={passwordId}
-            name="password"
-            type="password"
-            value={password}
-            onChange={(event) => setPassword(event.target.value)}
-            required
-          />
-        </FormControl>
+        <CGPPasswordField
+          id={passwordId}
+          label="Mật khẩu"
+          name="password"
+          autoComplete="current-password"
+          value={password}
+          onChange={setPassword}
+          isRequired
+        />
 
         <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "0.25rem" }}>
           <a href="/prototype/forgot-password" style={{ fontSize: "0.875rem", color: "var(--color-primary)", textDecoration: "none", fontWeight: 500 }}>

@@ -105,7 +105,9 @@ function FieldBody({
         </Text>
       ) : null}
       {errorMessage ? (
-        <FieldError className="cgp-field__error">{errorMessage}</FieldError>
+        <span role="alert">
+          <FieldError className="cgp-field__error">{errorMessage}</FieldError>
+        </span>
       ) : null}
     </ReactAriaTextField>
   );
