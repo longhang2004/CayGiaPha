@@ -15,7 +15,6 @@ const mockAdapter: CollaborationAdapter = {
   createInviteLink: vi.fn(),
   approveInvitation: vi.fn(),
   rejectInvitation: vi.fn(),
-  joinTreeGroup: vi.fn(),
 };
 
 describe("CollaborationModal", () => {
@@ -71,29 +70,7 @@ describe("CollaborationModal", () => {
     await waitFor(() => expect(mockAdapter.getCollaborators).toHaveBeenCalled());
   });
 
-  it("prevents reload on join when isPrototype is true", async () => {
-    const originalLocation = window.location;
-    delete (window as any).location;
-    window.location = { ...originalLocation, reload: vi.fn() } as any;
 
-    const mockJoin = vi.fn().mockResolvedValue({ status: "success" });
-
-    renderModal({ isPrototype: true, adapter: { ...mockAdapter, joinTreeGroup: mockJoin } });
-
-    const input = screen.getByPlaceholderText("Nhập mã 6 chữ số");
-    fireEvent.change(input, { target: { value: "123456" } });
-
-    const joinBtn = screen.getByRole("button", { name: "Tham gia" });
-    fireEvent.click(joinBtn);
-
-    await waitFor(() => {
-      expect(mockJoin).toHaveBeenCalledWith("123456");
-      expect(window.location.reload).not.toHaveBeenCalled();
-    });
-
-    // @ts-ignore Restore location
-    window.location = originalLocation;
-  });
 
   it("does not render a generic owner card", async () => {
     vi.mocked(mockAdapter.getCollaborators).mockResolvedValue([

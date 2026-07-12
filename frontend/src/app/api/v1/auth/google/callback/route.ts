@@ -63,6 +63,7 @@ export async function GET(request: Request) {
 
     const profile = await userinfoResponse.json();
     const email = profile.email;
+    const name = profile.name || profile.given_name || email.split("@")[0];
 
     if (!email) {
       console.error("Google user profile does not contain a verified email.");
@@ -84,6 +85,7 @@ export async function GET(request: Request) {
         .values({
           email,
           phone: null,
+          displayName: name,
           verified: true, // OAuth emails are pre-verified by Google
         })
         .returning();

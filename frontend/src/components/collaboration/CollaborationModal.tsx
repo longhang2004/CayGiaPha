@@ -13,7 +13,6 @@ import {
   getPendingInvitations,
   approveInvitation,
   rejectInvitation,
-  joinTreeGroup,
   getCollaborators,
   type CollaborationInvitation,
   type TreeCollaborator
@@ -26,7 +25,6 @@ export interface CollaborationAdapter {
   createInviteLink: (treeId: string) => Promise<{ id: string; code: string }>;
   approveInvitation: (treeId: string, inviteId: string) => Promise<void>;
   rejectInvitation: (treeId: string, inviteId: string) => Promise<void>;
-  joinTreeGroup: (code: string) => Promise<TreeCollaborator | CollaborationInvitation>;
 }
 
 const defaultAdapter: CollaborationAdapter = {
@@ -36,7 +34,6 @@ const defaultAdapter: CollaborationAdapter = {
   createInviteLink,
   approveInvitation,
   rejectInvitation,
-  joinTreeGroup,
 };
 
 export interface CollaborationModalProps {
@@ -56,7 +53,6 @@ export function CollaborationModal({ isOpen, onClose, treeId, isOwner, adapter =
   const [collaborators, setCollaborators] = useState<TreeCollaborator[]>([]);
   const [pendingInvites, setPendingInvites] = useState<CollaborationInvitation[]>([]);
   const [inviteEmail, setInviteEmail] = useState("");
-  const [inviteCode, setInviteCode] = useState("");
   const [generatedInviteCode, setGeneratedInviteCode] = useState("");
   const [generatedInviteId, setGeneratedInviteId] = useState("");
   const [loadingCollaborators, setLoadingCollaborators] = useState(false);
@@ -159,28 +155,7 @@ export function CollaborationModal({ isOpen, onClose, treeId, isOwner, adapter =
     }
   }
 
-  async function handleJoinTree(e: React.FormEvent) {
-    e.preventDefault();
-    if (!inviteCode.trim()) return;
-    setCollaborationAction("join");
-    try {
-      const result = await adapter.joinTreeGroup(inviteCode.trim());
-      if ("status" in result && result.status === "pending") {
-        showToast("Yêu cầu của bạn đã được gửi. Vui lòng chờ chủ cây duyệt.", "info");
-      } else {
-        showToast("Bạn đã tham gia nhóm cộng tác xây dựng cây thành công!", "success");
-      }
-      setInviteCode("");
-      if (!isPrototype) {
-        router.refresh();
-        window.location.reload();
-      }
-    } catch (err) {
-      showToast(err instanceof ApiError ? err.message : "Mã mời không hợp lệ.", "error");
-    } finally {
-      setCollaborationAction(null);
-    }
-  }
+
 
   return (
     <Modal className="collaboration-modal" isOpen={isOpen} onClose={onClose} aria-label="Quản lý cộng tác viên">
@@ -312,26 +287,7 @@ export function CollaborationModal({ isOpen, onClose, treeId, isOwner, adapter =
             </div>
           )}
 
-          {user && (
-            <form onSubmit={handleJoinTree} style={{ display: "flex", flexDirection: "column", gap: "0.5rem", borderTop: "1px dashed var(--color-hairline-soft)", paddingTop: "1.5rem" }}>
-              <label htmlFor="invite-code" style={{ fontWeight: "bold" }}>Tham gia gia phả bằng mã mời</label>
-              <div style={{ display: "flex", gap: "0.5rem" }}>
-                <Input
-                  id="invite-code"
-                  type="text"
-                  value={inviteCode}
-                  onChange={(e) => setInviteCode(e.target.value)}
-                  placeholder="Nhập mã 6 chữ số"
-                  maxLength={6}
-                  required
-                  style={{ flex: 1 }}
-                />
-                <button type="submit" className="btn btn-secondary" disabled={collaborationAction !== null} aria-busy={collaborationAction === "join" || undefined}>
-                  {collaborationAction === "join" ? <><span className="btn__spinner" aria-hidden="true" />Đang tham gia…</> : "Tham gia"}
-                </button>
-              </div>
-            </form>
-          )}
+
         </section>
       </ModalBody>
       <ModalFooter>
