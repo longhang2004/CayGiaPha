@@ -6,15 +6,17 @@ export const GUIDANCE_REOPEN_EVENT = "cgp:guidance-reopen";
 export const GUIDANCE_RESET_EVENT = "cgp:guidance-reset";
 
 export interface GuidanceState {
-  schemaVersion: 2;
+  schemaVersion: 2 | 3;
   completed: ChecklistItemId[];
   dismissedTopicVersions: Record<string, number>;
+  onboardingSkipped?: boolean;
 }
 
 export const DEFAULT_GUIDANCE_STATE: GuidanceState = {
-  schemaVersion: 2,
+  schemaVersion: 3,
   completed: [],
   dismissedTopicVersions: {},
+  onboardingSkipped: false,
 };
 
 const ALLOWED_IDS: ChecklistItemId[] = [
@@ -28,8 +30,9 @@ const ALLOWED_IDS: ChecklistItemId[] = [
 function sanitize(value: unknown): GuidanceState {
   if (!value || typeof value !== "object") return { ...DEFAULT_GUIDANCE_STATE };
   const candidate = value as Partial<GuidanceState>;
+  const isSkipped = candidate.schemaVersion === 3 ? Boolean(candidate.onboardingSkipped) : false;
   return {
-    schemaVersion: 2,
+    schemaVersion: 3,
     completed: Array.isArray(candidate.completed)
       ? candidate.completed.filter((id): id is ChecklistItemId => ALLOWED_IDS.includes(id as ChecklistItemId))
       : [],
@@ -41,6 +44,7 @@ function sanitize(value: unknown): GuidanceState {
             ),
           )
         : {},
+    onboardingSkipped: isSkipped,
   };
 }
 
@@ -79,5 +83,12 @@ export function recordChecklistCompletion(id: ChecklistItemId, storage?: Storage
   const state = readGuidanceState(storage);
   if (!state.completed.includes(id)) {
     writeGuidanceState({ ...state, completed: [...state.completed, id] }, storage);
+  }
+}
+
+export function skipGuidance(storage?: Storage) {
+  const state = readGuidanceState(storage);
+  if (!state.onboardingSkipped) {
+    writeGuidanceState({ ...state, onboardingSkipped: true }, storage);
   }
 }

@@ -9,6 +9,7 @@ import {
   readGuidanceState,
   resetGuidanceState,
   writeGuidanceState,
+  skipGuidance,
   type GuidanceState,
 } from "@/lib/guidance/storage";
 
@@ -22,7 +23,7 @@ interface Props {
   storage?: Storage;
   onShowTour?: (topicId: string) => void;
   onVisibilityChange?: (visible: boolean) => void;
-  initialPresentation?: "expanded" | "collapsed" | "deferred";
+  initialPresentation?: "expanded" | "collapsed" | "deferred" | "skipped";
 }
 
 export function GuidanceChecklist({
@@ -34,12 +35,13 @@ export function GuidanceChecklist({
   onVisibilityChange,
   initialPresentation = "expanded",
 }: Props) {
-  const [state, setState] = useState<GuidanceState>(() => ({ schemaVersion: 2, completed: [], dismissedTopicVersions: {} }));
+  const [state, setState] = useState<GuidanceState>(() => ({ schemaVersion: 3, completed: [], dismissedTopicVersions: {}, onboardingSkipped: false }));
   const [ready, setReady] = useState(false);
   const [collapsed, setCollapsed] = useState(initialPresentation === "collapsed");
   const [deferred, setDeferred] = useState(initialPresentation === "deferred" || deferredForCurrentVisit);
   const [showCompletion, setShowCompletion] = useState(false);
   const [manualReview, setManualReview] = useState(false);
+  const [currentPage, setCurrentPage] = useState(-1);
   const previouslyComplete = useRef<boolean | null>(null);
 
   const resolvedStorage = storage ?? (typeof window !== "undefined" ? window.localStorage : undefined);
@@ -81,16 +83,24 @@ export function GuidanceChecklist({
   }, [allComplete, ready]);
 
   useEffect(() => {
+    if (ready && items.length > 0 && currentPage === -1) {
+      const firstIncomplete = items.findIndex((item) => !completed.has(item.id));
+      setCurrentPage(firstIncomplete === -1 ? 0 : firstIncomplete);
+    }
+  }, [ready, items, completed, currentPage]);
+
+  useEffect(() => {
     const reopen = () => {
       deferredForCurrentVisit = false;
       setDeferred(false);
       setCollapsed(false);
       setShowCompletion(false);
       setManualReview(true);
+      setCurrentPage(-1);
     };
     const reset = () => {
       resetGuidanceState(resolvedStorage);
-      setState({ schemaVersion: 2, completed: [], dismissedTopicVersions: {} });
+      setState({ schemaVersion: 3, completed: [], dismissedTopicVersions: {}, onboardingSkipped: false });
       reopen();
     };
     window.addEventListener(GUIDANCE_REOPEN_EVENT, reopen);
@@ -101,10 +111,12 @@ export function GuidanceChecklist({
     };
   }, [resolvedStorage]);
 
-  const visible = ready && !deferred && (!allComplete || showCompletion || manualReview);
+  const skipped = state.onboardingSkipped && !manualReview;
+  const visible = ready && !deferred && !skipped && (!allComplete || showCompletion || manualReview);
+  
   useEffect(() => onVisibilityChange?.(visible), [onVisibilityChange, visible]);
 
-  if (!ready || deferred || (allComplete && !showCompletion && !manualReview)) return null;
+  if (!ready || deferred || skipped || (allComplete && !showCompletion && !manualReview)) return null;
   if (showCompletion) {
     return (
       <section className="guidance-card guidance-card--completed" role="status" aria-live="polite">
@@ -123,43 +135,59 @@ export function GuidanceChecklist({
     );
   }
 
+  const safePage = Math.max(0, Math.min(currentPage, items.length - 1));
+  const currentItem = items[safePage];
+  if (!currentItem) return null;
+
+  const isLastPage = safePage === items.length - 1;
+  const isFirstPage = safePage === 0;
+
+  const handleSkip = () => {
+    skipGuidance(resolvedStorage);
+    setState(s => ({ ...s, onboardingSkipped: true }));
+  };
+
   return (
     <section className={`guidance-card guidance-card--${mode}`} aria-labelledby="guidance-title">
       <div className="guidance-card__header">
         <div>
           <h2 id="guidance-title">Bắt đầu từng bước</h2>
-          <p>{getHelpExcerpt("tao-hoac-mo-cay", "overview", role)}</p>
+          <p className="guidance-card__progress">Bước {safePage + 1} / {items.length}</p>
         </div>
         <button type="button" className="guidance-card__close" aria-label="Thu gọn hướng dẫn" onClick={() => setCollapsed(true)}>×</button>
       </div>
-      <ol className="guidance-checklist">
-        {items.map((item) => (
-          <li key={item.id} className={completed.has(item.id) ? "is-complete" : ""}>
-            <span aria-hidden="true">{completed.has(item.id) ? "✓" : "○"}</span>
-            <div>
-              <strong>{item.title}</strong>
-              <p>{getHelpExcerpt(item.topicId, "checklist", role)}</p>
-              <div className="guidance-checklist__links">
-                {!completed.has(item.id) && onShowTour ? (
-                  <button type="button" onClick={() => onShowTour(item.topicId)}>Chỉ tôi</button>
-                ) : null}
-                <a href={`/help#${item.topicId}`}>Xem cách làm</a>
-              </div>
+      
+      <div className="guidance-checklist-page">
+        <div className={`guidance-checklist-item ${completed.has(currentItem.id) ? "is-complete" : ""}`}>
+          <span className="guidance-checklist-item__status" aria-hidden="true">{completed.has(currentItem.id) ? "✓" : "○"}</span>
+          <div className="guidance-checklist-item__content">
+            <strong>{currentItem.title}</strong>
+            <p>{getHelpExcerpt(currentItem.topicId, "checklist", role)}</p>
+            <div className="guidance-checklist__links">
+              {!completed.has(currentItem.id) && onShowTour ? (
+                <button type="button" onClick={() => onShowTour(currentItem.topicId)}>Chỉ tôi</button>
+              ) : null}
+              <a href={`/help#${currentItem.topicId}`}>Xem cách làm</a>
             </div>
-          </li>
-        ))}
-      </ol>
-      <div className="guidance-card__actions">
-        <button
-          type="button"
-          className="btn btn-secondary"
-          onClick={() => {
-            deferredForCurrentVisit = true;
-            setDeferred(true);
-          }}
-        >
-          Để sau
-        </button>
+          </div>
+        </div>
+      </div>
+
+      <div className="guidance-card__footer">
+        <div className="guidance-card__footer-nav">
+          {!isFirstPage && (
+            <button type="button" className="btn btn-secondary" onClick={() => setCurrentPage(p => p - 1)}>Quay lại</button>
+          )}
+          {!isLastPage ? (
+            <button type="button" className="btn btn-primary btn-terracotta" onClick={() => setCurrentPage(p => p + 1)}>Tiếp theo</button>
+          ) : (
+            <button type="button" className="btn btn-primary btn-terracotta" onClick={() => setCollapsed(true)}>Xong</button>
+          )}
+        </div>
+        <div className="guidance-card__actions">
+          <button type="button" className="btn btn-secondary btn-defer" onClick={() => { deferredForCurrentVisit = true; setDeferred(true); }}>Để sau</button>
+          <button type="button" className="btn btn-secondary btn-skip" onClick={handleSkip}>Tôi đã nắm rõ cách sử dụng</button>
+        </div>
       </div>
     </section>
   );
