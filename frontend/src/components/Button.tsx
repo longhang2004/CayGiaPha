@@ -8,14 +8,9 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 /**
- * Minimal accessible button used across the app. Renders a semantic
- * `<button>` so its name (from children), role, and state (e.g. `disabled`,
- * `aria-pressed`) are programmatically determinable (Requirement 18.5) and it
- * is keyboard-operable by default (18.6). The ≥44×44 CSS-px touch target and
- * focus styles are enforced app-wide in globals.css (18.4, 18.6).
- *
- * Any `className` is merged after the base `btn` class so callers can extend
- * styling without losing the accessible defaults.
+ * Legacy compatibility boundary. Existing consumers keep the native DOM event
+ * and style contract until their bounded migration task moves them to
+ * CGPButton. New product code should use CGPButton directly.
  */
 export function Button({
   children,
@@ -29,7 +24,13 @@ export function Button({
 }: ButtonProps) {
   const classes = className ? `btn ${className}` : "btn";
   return (
-    <button type={type} className={classes} disabled={disabled || loading} aria-busy={loading || undefined} {...rest}>
+    <button
+      type={type}
+      className={classes}
+      disabled={disabled || loading}
+      aria-busy={loading || undefined}
+      {...rest}
+    >
       {loading ? <span className="btn__spinner" aria-hidden="true" /> : null}
       {loading ? (loadingLabel ?? children) : children}
       {icon && (

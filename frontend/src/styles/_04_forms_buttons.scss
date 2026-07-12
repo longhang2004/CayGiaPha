@@ -64,6 +64,200 @@ a.button:disabled {
   }
 }
 
+/* CGP-owned button contract. Legacy `.btn` rules remain during migration. */
+.cgp-button {
+  min-width: var(--min-touch-target);
+  min-height: var(--min-touch-target);
+  padding: 0.75rem 1.5rem;
+  border-radius: 9999px;
+}
+
+.cgp-button--primary {
+  background-color: var(--color-brand);
+  color: var(--color-on-brand);
+}
+
+.cgp-button--secondary {
+  background-color: transparent;
+  color: var(--color-fg);
+  border-color: var(--color-hairline-strong);
+  box-shadow: none;
+}
+
+.cgp-button--danger {
+  background-color: var(--color-danger);
+  color: var(--color-on-danger);
+}
+
+.cgp-button--quiet,
+.cgp-button--link {
+  background-color: transparent;
+  color: var(--color-brand);
+  border-color: transparent;
+  box-shadow: none;
+}
+
+.cgp-button--link {
+  min-width: auto;
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
+.cgp-button--sm {
+  padding: 0.5rem 0.75rem;
+  font-size: 0.8125rem;
+}
+
+.cgp-button--lg {
+  padding: 0.875rem 1.25rem;
+  font-size: 1rem;
+}
+
+.cgp-button--hovered:not(.cgp-button--disabled),
+.cgp-button--focus-visible:not(.cgp-button--disabled) {
+  box-shadow: var(--shadow-ambient-lg);
+}
+
+.cgp-button--primary.cgp-button--hovered:not(.cgp-button--disabled) {
+  background-color: var(--color-brand-active);
+}
+
+.cgp-button--secondary.cgp-button--hovered:not(.cgp-button--disabled),
+.cgp-button--quiet.cgp-button--hovered:not(.cgp-button--disabled) {
+  background-color: var(--color-surface-hover);
+}
+
+.cgp-button--pressed:not(.cgp-button--disabled) {
+  transform: scale(0.95);
+  box-shadow: none;
+}
+
+.cgp-button--focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+.cgp-button--disabled,
+.cgp-button--pending {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.cgp-button--pending {
+  cursor: progress;
+}
+
+.cgp-icon-button {
+  width: var(--min-touch-target);
+  min-width: var(--min-touch-target);
+  padding: 0;
+  border-radius: 999px;
+}
+
+.cgp-button__spinner {
+  flex: 0 0 auto;
+}
+
+/* CGP-owned field contract. Legacy form controls remain during migration. */
+.cgp-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  color: var(--color-fg);
+}
+
+.cgp-field__label {
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.cgp-field__required,
+.cgp-field__error {
+  color: var(--color-danger);
+}
+
+.cgp-field__required {
+  margin-left: 0.2em;
+}
+
+.cgp-field__control {
+  position: relative;
+  display: flex;
+  align-items: center;
+  padding: 4px;
+  border: 1px solid var(--color-hairline-strong);
+  border-radius: 16px;
+  background-color: var(--color-surface-card);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.cgp-field__input {
+  width: 100%;
+  min-height: var(--min-touch-target);
+  padding: 0.75rem 1rem;
+  border: 0 !important;
+  border-radius: 10px;
+  background: transparent !important;
+  color: var(--color-fg);
+  box-shadow: var(--shadow-inner);
+  outline: none;
+}
+
+.cgp-field__control:has(.cgp-field__input--focus-visible) {
+  border-color: var(--color-focus);
+  box-shadow: 0 0 0 3px rgba(245, 78, 0, 0.15);
+}
+
+.cgp-field--invalid .cgp-field__control {
+  border-color: var(--color-danger);
+  background-color: color-mix(in srgb, var(--color-danger) 5%, var(--color-surface-card));
+}
+
+.cgp-field--invalid .cgp-field__control:has(.cgp-field__input--focus-visible) {
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-danger) 20%, transparent);
+}
+
+.cgp-field--disabled {
+  opacity: 0.6;
+}
+
+.cgp-field--disabled .cgp-field__control,
+.cgp-field--disabled .cgp-field__input {
+  cursor: not-allowed;
+}
+
+.cgp-field__description,
+.cgp-field__error {
+  font-size: 0.8125rem;
+  line-height: 1.4;
+}
+
+.cgp-field__description {
+  color: var(--color-muted);
+}
+
+.cgp-password-field__input,
+.cgp-password-field .cgp-field__input {
+  padding-right: calc(var(--min-touch-target) + 0.75rem);
+}
+
+.cgp-password-field__toggle {
+  position: absolute;
+  right: 4px;
+  width: var(--min-touch-target);
+  min-width: var(--min-touch-target);
+  min-height: var(--min-touch-target);
+  padding: 0;
+  color: var(--color-muted);
+  background: transparent;
+  box-shadow: none;
+}
+
+.cgp-password-field__icon {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
 /* Secondary Button utility */
 .btn-secondary {
   background-color: transparent !important;

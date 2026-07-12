@@ -15,4 +15,23 @@ describe("Button", () => {
     await userEvent.click(screen.getByRole("button", { name: "Lưu" }));
     expect(onClick).toHaveBeenCalledTimes(1);
   });
+
+  it("preserves legacy classes, native disabled, loading, and trailing-icon hooks", () => {
+    render(
+      <Button
+        className="btn-secondary auth-submit"
+        loading
+        loadingLabel="Đang lưu"
+        icon={<span>Tiếp</span>}
+      >
+        Lưu
+      </Button>,
+    );
+
+    const button = screen.getByRole("button", { name: "Đang lưu Tiếp" });
+    expect(button).toBeDisabled();
+    expect(button).toHaveClass("btn", "btn-secondary", "auth-submit");
+    expect(button.querySelector(".btn__spinner")).toBeInTheDocument();
+    expect(button.querySelector(".btn-trailing-icon")).toBeInTheDocument();
+  });
 });

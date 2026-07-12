@@ -26,6 +26,7 @@
   /* Brand colors */
   --color-brand: #b94b34; /* Terracotta Orange */
   --color-brand-active: #963b27; /* Active Terracotta */
+  --color-on-brand: #ffffff; /* 5.1:1 on light-theme brand */
   --color-hairline: #e2dcd3; /* light divider line */
   --color-hairline-soft: #ede8df;
   --color-hairline-strong: #c5beb3;
@@ -33,6 +34,7 @@
   --color-surface-strong: #ebe6dd; /* Be trầm */
   --color-surface-hover: rgba(0, 0, 0, 0.04);
   --color-danger: #ef4444; /* Standard danger red */
+  --color-on-danger: #141412; /* 4.9:1 on light-theme danger */
   --color-primary: var(--color-brand);
   --color-background: var(--color-bg);
   --color-surface: var(--color-surface-card);
@@ -88,6 +90,7 @@
 
   --color-brand: #e06c53;
   --color-brand-active: #f38f7a;
+  --color-on-brand: #141412; /* 5.7:1 on dark-theme brand */
   --color-hairline: #2d2b27;
   --color-hairline-soft: #23221e;
   --color-hairline-strong: #44423c;
@@ -95,6 +98,7 @@
   --color-surface-strong: #2a2824;
   --color-surface-hover: rgba(255, 255, 255, 0.05);
   --color-danger: #f87171; /* Dark-mode danger */
+  --color-on-danger: #141412; /* 6.7:1 on dark-theme danger */
   --color-primary: var(--color-brand);
   --color-background: var(--color-bg);
   --color-surface: var(--color-surface-card);

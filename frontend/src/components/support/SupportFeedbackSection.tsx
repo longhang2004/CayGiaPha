@@ -4,7 +4,7 @@ import { useState, type DragEvent, type FormEvent } from "react";
 import { useSession } from "@/app/providers";
 import { ApiError, api } from "@/lib/apiClient";
 import { MoneyIcon } from "@/components/ui/Icons";
-import { Button } from "@/components/Button";
+import { CGPButton } from "@/components/cgp";
 
 interface SupportFeedbackSectionProps {
   prototype?: boolean;
@@ -270,9 +270,13 @@ export function FeedbackSection({
           </p>
         )}
 
-        <Button type="submit" loading={status === "submitting"} loadingLabel="Đang gửi feedback…">
+        <CGPButton
+          type="submit"
+          loading={status === "submitting"}
+          loadingLabel="Đang gửi feedback…"
+        >
           Gửi feedback
-        </Button>
+        </CGPButton>
       </form>
     </div>
   );

@@ -3,7 +3,7 @@
 import { useState, type FormEvent } from "react";
 import { ApiError } from "@/lib/apiClient";
 import { invite, verifyClaim } from "@/lib/claim";
-import { Button } from "@/components/Button";
+import { CGPButton } from "@/components/cgp";
 
 /**
  * Node invite + claim-by-code UI (task 10.4, Requirements 11.1, 11.2).
@@ -123,9 +123,9 @@ export function ClaimFlow({ personId, treeId, onInvited, onClaimed }: ClaimFlowP
             </span>
           ) : null}
         </p>
-        <Button type="submit" disabled={inviting}>
+        <CGPButton type="submit" isDisabled={inviting}>
           Gửi lời mời
-        </Button>
+        </CGPButton>
       </form>
 
       <form onSubmit={handleClaim} aria-label="Xác nhận bằng mã">
@@ -181,9 +181,9 @@ export function ClaimFlow({ personId, treeId, onInvited, onClaimed }: ClaimFlowP
             </span>
           ) : null}
         </p>
-        <Button type="submit" disabled={claiming}>
+        <CGPButton type="submit" isDisabled={claiming}>
           Xác nhận
-        </Button>
+        </CGPButton>
       </form>
     </section>
   );

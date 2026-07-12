@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useMemo } from "react";
-import { Button } from "@/components/Button";
+import { CGPButton } from "@/components/cgp";
 import { ApiError } from "@/lib/apiClient";
 import {
   deletePhoto,
@@ -205,25 +205,26 @@ export function PersonPhotos({ treeId, personId, canEdit = false }: PersonPhotos
             </div>
 
             <div style={{ display: "flex", gap: "0.5rem", justifyContent: "flex-end" }}>
-              <Button
+              <CGPButton
                 type="button"
+                variant="secondary"
                 className="btn-secondary"
-                onClick={() => {
+                onPress={() => {
                   setSelectedFile(null);
                   if (fileInput.current) fileInput.current.value = "";
                 }}
-                disabled={busy}
+                isDisabled={busy}
               >
                 Hủy
-              </Button>
-              <Button
+              </CGPButton>
+              <CGPButton
                 type="button"
-                onClick={() => void handleConfirmUpload()}
+                onPress={() => void handleConfirmUpload()}
                 loading={busy}
                 loadingLabel="Đang tải lên…"
               >
                 Lưu ảnh
-              </Button>
+              </CGPButton>
             </div>
           </div>
         ) : (

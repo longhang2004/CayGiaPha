@@ -82,3 +82,9 @@ Durable project knowledge for future AI agents. Keep entries short, verified, an
 ## 2026-07-11
 
 - **Runtime-route verification gate**: Do not infer the deployed request path solely from `USE_BACKEND=false` or the documented “active runtime.” For every new or changed API contract, trace the UI request through rewrites/proxies/environment routing, inventory every backend implementation that can receive it (Next.js and Spring where applicable), and test the endpoint through the actual deployed routing mode. Schema/entity parity alone is insufficient; missing route parity can surface as production HTTP 500 errors.
+
+## 2026-07-12
+
+- **CGP component-system boundary**: `frontend/src/components/cgp/` owns the public component contracts and is the only production UI layer allowed to import `react-aria-components`. Version `1.19.0` is pinned for React 18. Its Toast exports remain `UNSTABLE_*`, so CGP keeps a library-independent toast contract until a separately approved phase validates a stable kernel API. `GraphOverlayBoundary` remains a separate local portal/safe-rectangle system.
+- **CGP button migration**: `CGPButton`/`CGPIconButton` are the first runtime wrappers. RAC 1.19 filters `aria-busy`, so `CGPButton` restores it after mount while retaining `isPending`. The legacy `components/Button.tsx` remains native because its full React DOM event/style contract is not type-compatible with RAC; migrate consumers in bounded groups. Initial CGP padding/pill radius intentionally matches the legacy global button shape to prevent visual drift.
+- **CGP field foundation**: `CGPTextField`/`CGPPasswordField` keep controlled and uncontrolled values on the React Aria `TextField` root, while the wrapper owns label/description/error association, semantic state classes, and an accessible password reveal toggle. Consumer migration remains a separately approved bounded task.
