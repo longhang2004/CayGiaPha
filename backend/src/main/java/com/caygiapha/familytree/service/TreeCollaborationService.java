@@ -182,6 +182,30 @@ public class TreeCollaborationService {
         return collaboratorRepository.findByTreeId(treeId);
     }
 
+    public record CollaboratorView(
+            UUID id,
+            UUID treeId,
+            UUID userId,
+            String displayName,
+            String email,
+            String role,
+            java.time.Instant joinedAt) {}
+
+    @Transactional(readOnly = true)
+    public List<CollaboratorView> getCollaboratorViews(UUID treeId) {
+        return collaboratorRepository.findByTreeId(treeId).stream().map(c -> {
+            var user = userRepository.findById(c.getUserId()).orElse(null);
+            return new CollaboratorView(
+                    c.getId(),
+                    c.getTreeId(),
+                    c.getUserId(),
+                    user != null ? user.getDisplayName() : null,
+                    user != null ? user.getEmail() : null,
+                    c.getRole(),
+                    c.getJoinedAt());
+        }).toList();
+    }
+
     public boolean hasContributorAccess(UUID treeId, UUID userId) {
         return collaboratorRepository.existsByTreeIdAndUserId(treeId, userId);
     }

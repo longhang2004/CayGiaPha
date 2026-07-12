@@ -156,12 +156,12 @@ public class TreeCollaborationController {
     }
 
     @GetMapping("/{treeId}/collaborators")
-    public List<TreeCollaborator> getCollaborators(
+    public List<TreeCollaborationService.CollaboratorView> getCollaborators(
             @PathVariable("treeId") UUID treeId,
             @org.springframework.web.bind.annotation.RequestHeader(
                             value = "X-Share-Token", required = false)
                     String shareToken) {
         authorizationService.requireReadAccess(treeId, shareToken);
-        return collaborationService.getCollaborators(treeId);
+        return collaborationService.getCollaboratorViews(treeId);
     }
 }

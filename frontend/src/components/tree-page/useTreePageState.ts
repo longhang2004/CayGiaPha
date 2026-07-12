@@ -27,6 +27,7 @@ export function useTreePageState(
   const [loadingData, setLoadingData] = useState(true);
   const [addressesReady, setAddressesReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [authError, setAuthError] = useState(false);
 
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [selectedAddress, setSelectedAddress] = useState<Address | undefined>(undefined);
@@ -108,8 +109,12 @@ export function useTreePageState(
       setTreeName(data.name || "Cây Gia Phả");
     } catch (err) {
       if (err instanceof ApiError) {
+        if (err.status === 401 || err.status === 403) {
+          setAuthError(true);
+        }
         if (err.status === 401) {
-          router.push("/");
+          // Sometimes 401 can immediately redirect
+          router.push(`/signin?redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`);
           return;
         }
         setError(err.message);
@@ -139,6 +144,13 @@ export function useTreePageState(
       setLoadingData(false);
     }
   }, [activeTreeId, shareToken, sessionLoading, loadTree]);
+
+  useEffect(() => {
+    if (authError && !sessionLoading && !user) {
+      const redirectPath = encodeURIComponent(window.location.pathname + window.location.search);
+      router.push(`/signin?redirect=${redirectPath}`);
+    }
+  }, [authError, sessionLoading, user, router]);
 
   const refreshTree = useCallback(() => {
     if (activeTreeId) {

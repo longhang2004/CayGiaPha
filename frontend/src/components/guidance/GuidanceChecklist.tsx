@@ -146,6 +146,8 @@ export function GuidanceChecklist({
   const handleSkip = () => {
     skipGuidance(resolvedStorage);
     setState(s => ({ ...s, onboardingSkipped: true }));
+    setManualReview(false);
+    setDeferred(true);
   };
 
   return (
@@ -153,10 +155,10 @@ export function GuidanceChecklist({
       <div className="guidance-card__header">
         <h2 id="guidance-title">Bắt đầu từng bước</h2>
         <div className="guidance-card__controls">
-          <button type="button" className="guidance-card__icon-btn" aria-label="Để sau" title="Để sau" onClick={() => { deferredForCurrentVisit = true; setDeferred(true); }}>
+          <button type="button" className="guidance-card__icon-btn" aria-label="Thu gọn" title="Thu gọn" onClick={() => setCollapsed(true)}>
             <MinusIcon size={18} />
           </button>
-          <button type="button" className="guidance-card__icon-btn" aria-label="Tôi đã nắm rõ cách sử dụng" title="Tôi đã nắm rõ cách sử dụng" onClick={handleSkip}>
+          <button type="button" className="guidance-card__icon-btn" aria-label="Bỏ qua hướng dẫn" title="Bỏ qua hướng dẫn" onClick={handleSkip}>
             <CloseIcon size={18} />
           </button>
         </div>

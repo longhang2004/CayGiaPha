@@ -61,11 +61,10 @@ export function ToastProvider({ children }: { children: ReactNode }) {
               alignItems: "center",
               gap: "0.75rem",
               padding: "1rem",
-              border: `1px solid ${
-                toast.type === "error" ? "var(--color-danger)" :
-                toast.type === "success" ? "#10b981" : "var(--color-hairline)"
-              }`,
-              boxShadow: "0 4px 12px rgba(0, 0, 0, 0.15)",
+              backgroundColor: "var(--color-surface-card)",
+              border: "1px solid var(--color-hairline)",
+              borderRadius: "12px",
+              boxShadow: "0 12px 32px rgba(0, 0, 0, 0.12)",
               color: "var(--color-fg)",
               minWidth: "250px",
               maxWidth: "400px",

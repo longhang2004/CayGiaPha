@@ -2,33 +2,63 @@
 
 import { useEffect, useState, useRef } from "react";
 import { getReminders, markReminderAsRead, deleteReminder, type InAppReminder } from "@/lib/persons";
+import { getPendingInvitations, type CollaborationInvitation } from "@/lib/collaboration";
+import { useSession } from "@/app/providers";
 import { BellIcon, TrashIcon } from "@/components/ui/Icons";
+import { useRouter } from "next/navigation";
+
+export type ExtendedNotification = Partial<InAppReminder> & {
+  id: string;
+  title: string;
+  content: string;
+  isRead: boolean;
+  isInvite?: boolean;
+};
 
 export function NotificationBell({ align = "right" }: { align?: "left" | "right" }) {
-  const [reminders, setReminders] = useState<InAppReminder[]>([]);
+  const { user } = useSession();
+  const router = useRouter();
+  const [reminders, setReminders] = useState<ExtendedNotification[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  const fetchReminders = () => {
+  const fetchReminders = async () => {
     setLoading(true);
-    getReminders()
-      .then((data) => {
-        setReminders(data);
-        setLoading(false);
-      })
-      .catch((err) => {
-        console.error("Failed to load reminders:", err);
-        setLoading(false);
-      });
+    try {
+      const data = await getReminders();
+      let extended: ExtendedNotification[] = [...data];
+
+      if (user?.treeId) {
+        try {
+          const pending = await getPendingInvitations(user.treeId);
+          const inviteNotifications: ExtendedNotification[] = pending.map((inv) => ({
+            id: `invite-${inv.id}`,
+            title: "Yêu cầu tham gia cây",
+            content: `${inv.email || "Một người dùng"} đang xin vào cây gia phả của bạn.`,
+            isRead: false,
+            isInvite: true,
+          }));
+          extended = [...inviteNotifications, ...extended];
+        } catch (e) {
+          // ignore 403 if not owner
+        }
+      }
+      setReminders(extended);
+    } catch (err) {
+      console.error("Failed to load reminders:", err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
-    fetchReminders();
-    // Poll every 60 seconds
-    const interval = setInterval(fetchReminders, 60000);
-    return () => clearInterval(interval);
-  }, []);
+    if (user) {
+      fetchReminders();
+      const interval = setInterval(fetchReminders, 60000);
+      return () => clearInterval(interval);
+    }
+  }, [user]);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -45,7 +75,9 @@ export function NotificationBell({ align = "right" }: { align?: "left" | "right"
   const handleMarkAsRead = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
     try {
-      await markReminderAsRead(id);
+      if (!id.startsWith("invite-")) {
+        await markReminderAsRead(id);
+      }
       setReminders((prev) =>
         prev.map((r) => (r.id === id ? { ...r, isRead: true } : r))
       );
@@ -57,10 +89,20 @@ export function NotificationBell({ align = "right" }: { align?: "left" | "right"
   const handleDelete = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
     try {
-      await deleteReminder(id);
+      if (!id.startsWith("invite-")) {
+        await deleteReminder(id);
+      }
       setReminders((prev) => prev.filter((r) => r.id !== id));
     } catch (err) {
       console.error("Failed to delete reminder:", err);
+    }
+  };
+
+  const handleAction = (reminder: ExtendedNotification, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (reminder.isInvite) {
+      setIsOpen(false);
+      router.push("/tree?panel=settings");
     }
   };
 
@@ -207,7 +249,7 @@ export function NotificationBell({ align = "right" }: { align?: "left" | "right"
                     {reminder.content}
                   </p>
                   
-                  {!reminder.isRead && (
+                  {!reminder.isRead && !reminder.isInvite && (
                     <button
                       type="button"
                       onClick={(e) => handleMarkAsRead(reminder.id, e)}
@@ -224,6 +266,25 @@ export function NotificationBell({ align = "right" }: { align?: "left" | "right"
                       }}
                     >
                       Đánh dấu đã đọc
+                    </button>
+                  )}
+                  {reminder.isInvite && (
+                    <button
+                      type="button"
+                      onClick={(e) => handleAction(reminder, e)}
+                      style={{
+                        background: "transparent",
+                        border: "none",
+                        color: "var(--color-brand)",
+                        fontSize: "0.75rem",
+                        fontWeight: "600",
+                        padding: 0,
+                        cursor: "pointer",
+                        marginTop: "0.25rem",
+                        alignSelf: "flex-start"
+                      }}
+                    >
+                      Mở quản lý cộng tác
                     </button>
                   )}
                 </div>

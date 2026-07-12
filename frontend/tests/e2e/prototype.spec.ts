@@ -103,7 +103,7 @@ test.describe("Prototype Pages — smoke tests (no auth required)", () => {
     await expect(page.getByRole("heading", { name: "Bắt đầu từng bước" })).toBeVisible();
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth);
     expect(overflow).toBe(false);
-    await expect(page.getByRole("button", { name: "Để sau" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Thu gọn" })).toBeVisible();
   });
 
   test("guidance prototype states are deterministic", async ({ page }) => {

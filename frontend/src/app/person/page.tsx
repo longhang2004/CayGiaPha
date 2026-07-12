@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { useSession } from "@/app/providers";
 import { PersonForm } from "@/components/person/PersonForm";
 import {
@@ -16,8 +17,15 @@ import {
  * relationship endpoints in the add-relative form.
  */
 export default function PersonPage() {
+  const router = useRouter();
   const { user, loading } = useSession();
   const [created, setCreated] = useState<PersonOption[]>([]);
+
+  useEffect(() => {
+    if (!loading && !user) {
+      router.push("/signin?redirect=/person");
+    }
+  }, [user, loading, router]);
 
   if (loading) {
     return (
@@ -32,7 +40,7 @@ export default function PersonPage() {
     return (
       <section>
         <h1>Quản lý người</h1>
-        <p>Bạn cần đăng nhập và có cây gia phả để quản lý người.</p>
+        <p>Bạn cần tham gia một cây gia phả để quản lý người.</p>
       </section>
     );
   }
