@@ -429,10 +429,7 @@ export function SearchPanel({
                 {hasActiveFilters() ? <span aria-hidden="true">●</span> : null}
               </button>
 
-              <button type="submit" className="btn search-submit-btn" disabled={submitting} aria-label="Tìm kiếm" title="Tìm kiếm">
-                <SearchIcon size={18} className="search-submit-btn__icon" />
-                <span className="search-panel-toolbar__button-label">Tìm kiếm</span>
-              </button>
+              {/* Removed submit button as per user request (reactive search is sufficient) */}
             </div>
 
             {viewpointSelector && (

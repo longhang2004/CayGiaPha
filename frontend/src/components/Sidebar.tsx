@@ -127,10 +127,10 @@ export function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse }: Side
               href="/help"
               className={`global-sidebar__link ${isHelpActive ? "global-sidebar__link--active" : ""}`}
               onClick={onClose}
-              title={isCollapsed ? "Trợ giúp" : undefined}
+              title={isCollapsed ? "Hướng dẫn sử dụng" : undefined}
             >
               <span className="global-sidebar__link-icon" aria-hidden="true"><InfoIcon size={18} /></span>
-              <span className="global-sidebar__link-text">Trợ giúp</span>
+              <span className="global-sidebar__link-text">Hướng dẫn sử dụng</span>
             </Link>
             <Link
               href="/support"

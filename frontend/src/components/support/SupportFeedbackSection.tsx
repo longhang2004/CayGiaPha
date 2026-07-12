@@ -75,6 +75,7 @@ export function FeedbackSection({
   const { user } = useSession();
   const [email, setEmail] = useState(mockEmail || (user?.identifier.includes("@") ? user.identifier : ""));
   const [category, setCategory] = useState("feature");
+  const [device, setDevice] = useState("");
   const [message, setMessage] = useState("");
   const [attachments, setAttachments] = useState<File[]>([]);
   const [isDraggingAttachments, setIsDraggingAttachments] = useState(false);
@@ -138,7 +139,7 @@ export function FeedbackSection({
           dataUrl: await readFileAsDataUrl(file),
         })),
       );
-      await api.post("/feedback", { email, category, message, attachments: encodedAttachments });
+      await api.post("/feedback", { email, category, device, message, attachments: encodedAttachments });
       setMessage("");
       setAttachments([]);
       setStatus("success");
@@ -190,6 +191,17 @@ export function FeedbackSection({
               </option>
             ))}
           </select>
+        </div>
+
+        <div className="field">
+          <label htmlFor="feedback-device">Thiết bị đang dùng</label>
+          <input
+            id="feedback-device"
+            type="text"
+            value={device}
+            onChange={(event) => setDevice(event.target.value)}
+            placeholder="Ví dụ: Điện thoại, Máy tính, v.v."
+          />
         </div>
 
         <div className="field">
