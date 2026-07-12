@@ -46,19 +46,22 @@ be routed through the generic CGP overlay root.
 
 ## Migration status
 
-Phase 0 defined the contracts and verified the kernel. The first approved
+Phase 0 defined the contracts and verified the kernel. The approved
 runtime layer now exports `CGPButton`, `CGPIconButton`, `CGPTextField`,
-`CGPPasswordField`, `CGPSelect`, and `CGPCheckbox`. Fields own their label,
+`CGPPasswordField`, `CGPSelect`, `CGPCheckbox`, and `CGPDialog`. Fields own their label,
 description, error association, state classes, and password-reveal behavior.
 Select owns its trigger/listbox/popover and Checkbox owns its checked indicator
-plus description/error association. The legacy
+plus description/error association. Dialog delegates modal semantics, focus
+containment/restoration, outside interaction handling, Escape handling, and
+scroll locking to React Aria while CGP owns dismissal policy and responsive
+classes. The legacy
 `components/Button.tsx` remains a native-button compatibility boundary until
 its consumers are migrated in bounded tasks; this preserves its React DOM event
 and inline-style contract rather than casting those props into incompatible
 React Aria types.
 
-Dialog, toast, menu, and drawer implementations still require their separately
-approved migration phases. Existing form consumers remain on their legacy
+Dialog consumer migration and toast, menu, and drawer implementations still
+require their separately approved migration phases. Existing form consumers remain on their legacy
 controls until a bounded migration task is approved. The first
 bounded auth migration covers sign-in, sign-up, password recovery, and their
 synchronized prototypes. Sign-up region selection and legal-consent controls
