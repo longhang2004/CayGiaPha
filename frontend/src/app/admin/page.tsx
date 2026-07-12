@@ -63,14 +63,7 @@ export default async function AdminPage() {
   }
 
   if (auth.role !== "admin") {
-    return (
-      <section className="center-state">
-        <div className="center-state__card">
-          <h1>Không có quyền truy cập</h1>
-          <p>Trang này chỉ dành cho tài khoản admin.</p>
-        </div>
-      </section>
-    );
+    redirect("/");
   }
 
   const [
