@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { getHelpExcerpt, type GuidanceRole } from "@/content/help/helpTopics";
 import { getEligibleChecklist, type GuidanceProductState } from "@/lib/guidance/checklist";
+import { ArrowLeftIcon, ArrowRightIcon, MinusIcon, CloseIcon } from "@/components/ui/Icons";
 import {
   GUIDANCE_REOPEN_EVENT,
   GUIDANCE_RESET_EVENT,
@@ -150,11 +151,15 @@ export function GuidanceChecklist({
   return (
     <section className={`guidance-card guidance-card--${mode}`} aria-labelledby="guidance-title">
       <div className="guidance-card__header">
-        <div>
-          <h2 id="guidance-title">Bắt đầu từng bước</h2>
-          <p className="guidance-card__progress">Bước {safePage + 1} / {items.length}</p>
+        <h2 id="guidance-title">Bắt đầu từng bước</h2>
+        <div className="guidance-card__controls">
+          <button type="button" className="guidance-card__icon-btn" aria-label="Để sau" title="Để sau" onClick={() => { deferredForCurrentVisit = true; setDeferred(true); }}>
+            <MinusIcon size={18} />
+          </button>
+          <button type="button" className="guidance-card__icon-btn" aria-label="Tôi đã nắm rõ cách sử dụng" title="Tôi đã nắm rõ cách sử dụng" onClick={handleSkip}>
+            <CloseIcon size={18} />
+          </button>
         </div>
-        <button type="button" className="guidance-card__close" aria-label="Thu gọn hướng dẫn" onClick={() => setCollapsed(true)}>×</button>
       </div>
       
       <div className="guidance-checklist-page">
@@ -174,19 +179,26 @@ export function GuidanceChecklist({
       </div>
 
       <div className="guidance-card__footer">
-        <div className="guidance-card__footer-nav">
-          {!isFirstPage && (
-            <button type="button" className="btn btn-secondary" onClick={() => setCurrentPage(p => p - 1)}>Quay lại</button>
-          )}
-          {!isLastPage ? (
-            <button type="button" className="btn btn-primary btn-terracotta" onClick={() => setCurrentPage(p => p + 1)}>Tiếp theo</button>
-          ) : (
-            <button type="button" className="btn btn-primary btn-terracotta" onClick={() => setCollapsed(true)}>Xong</button>
-          )}
-        </div>
-        <div className="guidance-card__actions">
-          <button type="button" className="btn btn-secondary btn-defer" onClick={() => { deferredForCurrentVisit = true; setDeferred(true); }}>Để sau</button>
-          <button type="button" className="btn btn-secondary btn-skip" onClick={handleSkip}>Tôi đã nắm rõ cách sử dụng</button>
+        <div className="guidance-card__pagination">
+          <button 
+            type="button" 
+            className="guidance-card__icon-btn guidance-card__icon-btn--filled" 
+            disabled={isFirstPage} 
+            onClick={() => setCurrentPage(p => p - 1)} 
+            aria-label="Quay lại"
+          >
+            <ArrowLeftIcon size={20} />
+          </button>
+          <span className="guidance-card__page-indicator">{safePage + 1} / {items.length}</span>
+          <button 
+            type="button" 
+            className="guidance-card__icon-btn guidance-card__icon-btn--filled" 
+            disabled={isLastPage} 
+            onClick={() => setCurrentPage(p => p + 1)} 
+            aria-label="Tiếp theo"
+          >
+            <ArrowRightIcon size={20} />
+          </button>
         </div>
       </div>
     </section>
