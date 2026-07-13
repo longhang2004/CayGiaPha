@@ -8,6 +8,7 @@ import { TextSizeProvider } from "@/components/a11y/TextSizeProvider";
 import { Plus_Jakarta_Sans } from "next/font/google";
 import { AppLayoutWrapper } from "@/components/AppLayoutWrapper";
 import { Analytics } from "@vercel/analytics/react";
+import { ConsentReacceptanceDialog } from "@/components/legal/ConsentReacceptanceDialog";
 
 const plusJakarta = Plus_Jakarta_Sans({
   subsets: ["latin", "vietnamese"],
@@ -116,6 +117,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
                   Bỏ qua tới nội dung chính
                 </a>
                 <AppLayoutWrapper>{children}</AppLayoutWrapper>
+                <ConsentReacceptanceDialog />
                 <Analytics />
               </SessionProvider>
             </TextSizeProvider>

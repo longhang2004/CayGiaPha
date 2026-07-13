@@ -6,6 +6,7 @@ import { kinshipAddressService } from "./kinship/address";
 import { claimService } from "./claim";
 import { containsNormalized } from "../nameNormalize";
 import { authorizationService } from "./authorization";
+import { projectPerson, REDACTED_PERSON_NAME } from "./privacy";
 
 export interface SearchFilters {
   gender?: string | null;
@@ -155,22 +156,17 @@ export class SearchService {
         treeId,
         result.personId
       );
-      const privileged = role === "OWNER" || role === "CONTRIBUTOR" || role === "LINKED";
-
-      const redactName =
-        !privileged &&
-        ((livingRedaction && this.isLiving(person)) || person.visName === "private");
-
-      if (redactName) {
+      const projected = projectPerson(person, { role, livingRedaction });
+      if (projected.displayName === REDACTED_PERSON_NAME) {
         if (nameSearchUsed) {
           continue; // Hidden name must not be discoverable by name search
         }
         out.push({
           personId: result.personId,
-          displayName: "(đã ẩn)",
+          displayName: REDACTED_PERSON_NAME,
         });
       } else {
-        out.push(result);
+        out.push({ personId: result.personId, displayName: projected.displayName });
       }
     }
 
@@ -340,16 +336,6 @@ export class SearchService {
     }
   }
 
-  private isLiving(person: typeof persons.$inferSelect): boolean {
-    if (person.deathStatus) {
-      return false;
-    }
-    if (person.birthYear === null) {
-      return true; // protect by default
-    }
-    const currentYear = new Date().getUTCFullYear();
-    return person.birthYear > currentYear - 100;
-  }
 }
 
 export const searchService = new SearchService();

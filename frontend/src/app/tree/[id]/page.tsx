@@ -108,6 +108,30 @@ function TreePageContent({ params, searchParams }: TreePageProps) {
     }
   }, [capabilities.manageCollaboration, nextSearchParams, setIsCollaborationOpen]);
 
+  useEffect(() => {
+    const requestedPersonId = nextSearchParams.get("person");
+    if (!requestedPersonId) return;
+    const requestedPerson = persons.find((person) => person.id === requestedPersonId);
+    if (!requestedPerson) return;
+
+    setSelectedId(requestedPersonId);
+    setFocusId(requestedPersonId);
+    setAddRelativeMode(false);
+    setCreateMode(false);
+    setEditMode(
+      nextSearchParams.get("edit") === "true" &&
+      requestedPerson.capabilities?.editContent === true,
+    );
+  }, [
+    nextSearchParams,
+    persons,
+    setAddRelativeMode,
+    setCreateMode,
+    setEditMode,
+    setFocusId,
+    setSelectedId,
+  ]);
+
   const handleCloseSettings = () => {
     setIsSettingsOpen(false);
     const paramsUrl = new URLSearchParams(nextSearchParams.toString());

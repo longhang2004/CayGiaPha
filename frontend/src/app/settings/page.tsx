@@ -7,6 +7,7 @@ import { Button } from "@/components/Button";
 import { FormControl, Input } from "@/components/ui/FormControls";
 import { ApiError } from "@/lib/apiClient";
 import { updateMyProfile } from "@/lib/profile";
+import { DataRightsPanel } from "@/components/settings/DataRightsPanel";
 
 const SUCCESS_MESSAGE = "Đã cập nhật tên hiển thị.";
 const LEGACY_PROMPT =
@@ -246,6 +247,10 @@ export default function SettingsPage() {
               </p>
             ) : null}
           </section>
+      </div>
+
+      <div className="surface-card settings-data-rights-card">
+        <DataRightsPanel />
       </div>
     </main>
   );

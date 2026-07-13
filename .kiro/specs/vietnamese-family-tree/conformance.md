@@ -28,17 +28,17 @@ Reference only: `backend/` Spring Boot. A historical checked task is not proof o
 | 11 | `claim.ts`; authenticated claim route/page; `ClaimFlow`; claim service/route/page tests; `/prototype/claim/[personId]` | CONFORMANT | Owner invitation and recipient verification are separate; verification accepts only `{code}` and binds the node to signed-in verified identity. |
 | 12 | non-bloodline service/renderer | PARTIAL | Add Contributor capability and relationship update/delete coverage. |
 | 13 | `authorization.ts`; `GET /trees`; tree-detail capabilities; authorization/tree route tests | PARTIAL | `ownedTreeId` is removed and owned/contributed/linked trees are explicit; add cross-tree isolation property coverage and finish capability gating on every UI surface. |
-| 14 | tree/person response filtering | GAP | Use one privacy projector; Contributor trusted read; hide visibility metadata from projected readers. |
-| 15 | deletion service/dialog/tests | PARTIAL | Contributor capability, linked own-node strategy UI, transaction and photo cleanup. |
+| 14 | `privacy.ts`; tree/person/search/photo/upcoming projections; privacy unit + 100-run property tests | CONFORMANT | One projector classifies the exact living boundary, treats Contributor as trusted, classifies Linked per node, and omits visibility metadata from projected readers. |
+| 15 | transactional `PersonDeletionService`; `DeletionDialog`; `DataRightsPanel`; deletion tests | PARTIAL | Cascade/preserve are relationally atomic and clean photo objects; re-run graph properties after relationship-service remediation. |
 | 16 | search service/client | GAP | Align `bloodline`, `noMatches`, privacy projection, and 1,000-node performance evidence. |
 | 17 | HelpGuide/help topics/onboarding | PARTIAL | Add reachable node-linking topic only after production flow is mounted. |
 | 18 | CGP primitives/a11y tests/prototypes | PARTIAL / EXTERNAL | Verify new flows at 200%, keyboard/dark mode; screen-reader/expert review remains external. |
-| 19 | authorization/tree/person/photo/search routes; role classification tests | PARTIAL | Contributor/Linked/Reader classifications and explicit target-tree checks exist; central privacy projection and read-surface property evidence remain. |
-| 20 | duplicated living-person checks | GAP | Centralize exact 100-year boundary and public-field exception. |
-| 21 | visibility route/person responses | GAP | Central projector; Owner/linked-subject mutation only; Contributor trusted read. |
-| 22 | data-rights services/routes | GAP | Add discoverable UI/listing; full anonymization; all-owned-tree account deletion and cleanup. |
-| 23 | consent/legal services/pages | GAP / EXTERNAL | Publish canonical v2, re-acceptance path and notice; legal counsel review remains external. |
-| 24 | photo service/gallery | GAP | Apply projection to list/serve; Contributor/Linked capability; upload compensation and primary transaction. |
+| 19 | `authorization.ts`; `privacy.ts`; tree/person/photo/search/upcoming routes; authorization/privacy tests | CONFORMANT | Explicit tree access precedes one role-aware projection on every active person-data read surface. |
+| 20 | `isLivingPerson`; `projectPerson`; privacy boundary/property tests | CONFORMANT | A person born exactly 100 years ago remains living; public-field exceptions and private-field redaction are centralized. |
+| 21 | visibility route; `projectPerson`; authorization/privacy tests | CONFORMANT | Owner/linked subject change visibility, Contributor receives trusted read, and projected viewers receive no visibility metadata. |
+| 22 | `DataRightsService`; `/me/nodes*`; `/me/account`; `DataRightsPanel`; service/route/component tests | CONFORMANT | Linked nodes are discoverable/exportable/correctable/erasable; anonymization clears identifiers/dates/photos/claim, and account deletion handles every owned tree while preserving contributed trees. |
+| 23 | canonical legal v2 content/pages/migration; consent endpoint/dialog; lawful-basis notice; tests | CONFORMANT / EXTERNAL | Runtime versioning, reacceptance and notice are implemented; qualified legal review of the wording remains external. |
+| 24 | photo projector/list/serve and transactional person/account cleanup | PARTIAL | Privacy and deletion conform; add upload compensation and transactional primary selection in task 25.4. |
 | 25 | hashed auth/reset/claim limiter keys; fail-closed limiter test; generic route-error test | PARTIAL | Sensitive auth/code routes fail closed and unexpected 500 responses are generic; email HTML escaping and remaining audit/PII review remain. |
 | 26 | invitation service/routes/UI | PARTIAL | User+IP join limits, hash new codes with expiring legacy fallback, remove production prototype branches. |
 

@@ -6,16 +6,7 @@ import { persons, relationships, trees, claims, treeCollaborators, collaboration
 import { eq, and, inArray } from "drizzle-orm";
 import { sendEmail } from "@/lib/services/email";
 import { rateLimiter } from "@/lib/services/rateLimiter";
-
-const REDACTED_NAME_PLACEHOLDER = "Người thân còn sống";
-
-function isLiving(person: any) {
-  if (person.deathStatus) return false;
-  const birthYear = person.birthYear;
-  if (birthYear === null || birthYear === undefined) return true;
-  const currentYear = new Date().getUTCFullYear();
-  return birthYear > currentYear - 100;
-}
+import { canViewMaritalStatus, projectPerson } from "@/lib/services/privacy";
 
 export async function GET(
   request: Request,
@@ -63,37 +54,21 @@ export async function GET(
       .from(relationships)
       .where(eq(relationships.treeId, treeId));
 
-    const visible = (priv: boolean, visibility: string) => priv || visibility === "public";
-
     const projectedPersons = [];
+    const roleByPersonId = new Map<string, Awaited<ReturnType<typeof authorizationService.classify>>>();
+    const personById = new Map(dbPersons.map((person) => [person.id, person]));
     for (const person of dbPersons) {
       const role = await authorizationService.classify(auth.userId, treeId, person.id);
-      const privileged = role === "OWNER" || role === "CONTRIBUTOR" || role === "LINKED";
-      const redactLiving = !privileged && (tree.livingRedaction !== false) && isLiving(person);
-
-      const nameHidden = redactLiving || (!privileged && person.visName === "private");
-      const birthYearHidden = redactLiving || (!privileged && person.visBirthYear === "private");
+      roleByPersonId.set(person.id, role);
+      const projected = projectPerson(person, {
+        role,
+        livingRedaction: tree.livingRedaction !== false,
+      });
+      const { deathStatus, ...rest } = projected;
 
       projectedPersons.push({
-        id: person.id,
-        displayName: nameHidden ? REDACTED_NAME_PLACEHOLDER : person.displayName,
-        gender: person.gender,
-        birthOrder: redactLiving ? null : person.birthOrder,
-        birthYear: birthYearHidden ? null : person.birthYear,
-        phone: privileged && !redactLiving ? person.phone : undefined,
-        email: privileged && !redactLiving ? person.email : undefined,
-        deceased: visible(privileged, person.visDeath) ? person.deathStatus : undefined,
-        deathDay: visible(privileged, person.visDeath) ? person.deathDay : undefined,
-        deathMonth: visible(privileged, person.visDeath) ? person.deathMonth : undefined,
-        deathYear: visible(privileged, person.visDeath) ? person.deathYear : undefined,
-        deathCalendar: visible(privileged, person.visDeath) ? person.deathCalendar : undefined,
-        deathLunarLeap: visible(privileged, person.visDeath) ? person.deathLunarLeap : undefined,
-        visName: privileged ? person.visName : undefined,
-        visBirthYear: privileged ? person.visBirthYear : undefined,
-        visPhoto: privileged ? person.visPhoto : undefined,
-        visDeath: privileged ? person.visDeath : undefined,
-        visMarital: privileged ? person.visMarital : undefined,
-        visAdoption: privileged ? person.visAdoption : undefined,
+        ...rest,
+        deceased: deathStatus,
         claimed: claimedPersonIds.has(person.id),
         capabilities: capabilitiesFor(role, { personScoped: true }),
       });
@@ -108,16 +83,28 @@ export async function GET(
       sharing: tree.sharing,
       livingRedaction: tree.livingRedaction,
       persons: projectedPersons,
-      relationships: dbRelationships.map((rel) => ({
-        id: rel.id,
-        type: rel.type,
-        sourceId: rel.sourceId,
-        targetId: rel.targetId,
-        maritalStatus: rel.maritalStatus,
-        derivationState: rel.derivationState,
-        assertedLabel: rel.assertedLabel,
-        socialType: rel.socialType,
-      })),
+      relationships: dbRelationships.map((rel) => {
+        const source = personById.get(rel.sourceId);
+        const target = personById.get(rel.targetId);
+        const maritalVisible = source && target
+          ? canViewMaritalStatus(
+              source,
+              roleByPersonId.get(source.id) ?? "NONE",
+              target,
+              roleByPersonId.get(target.id) ?? "NONE",
+            )
+          : false;
+        return {
+          id: rel.id,
+          type: rel.type,
+          sourceId: rel.sourceId,
+          targetId: rel.targetId,
+          maritalStatus: maritalVisible ? rel.maritalStatus : undefined,
+          derivationState: rel.derivationState,
+          assertedLabel: rel.assertedLabel,
+          socialType: rel.socialType,
+        };
+      }),
     });
   });
 }

@@ -30,6 +30,15 @@ afterEach(() => {
 });
 
 describe("PersonForm (create)", () => {
+  it("explains the responsibility for another person's data", () => {
+    render(<PersonForm mode="create" treeId="t1" />);
+    expect(screen.getByRole("note")).toHaveTextContent(/cơ sở phù hợp/i);
+    expect(screen.getByRole("link", { name: "Chính sách quyền riêng tư" })).toHaveAttribute(
+      "href",
+      "/legal/privacy",
+    );
+  });
+
   it("posts the right body to /persons on submit", async () => {
     const fetchMock = mockFetchQueue([{ ok: true, status: 201, body: { id: "p1" } }]);
     const onSuccess = vi.fn();

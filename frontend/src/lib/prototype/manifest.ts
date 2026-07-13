@@ -65,4 +65,9 @@ export const PROTOTYPE_PAGES: PrototypePage[] = [
     label: "❓ Hướng dẫn (Help)",
     description: "In-app help guide",
   },
+  {
+    href: "/prototype/settings",
+    label: "⚙️ Cài đặt và quyền dữ liệu",
+    description: "Profile, linked-node data rights, and account deletion",
+  },
 ];

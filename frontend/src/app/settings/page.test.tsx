@@ -6,6 +6,9 @@ import { ApiError } from "@/lib/apiClient";
 const push = vi.fn();
 const refresh = vi.fn().mockResolvedValue(undefined);
 const patch = vi.fn();
+const get = vi.fn().mockResolvedValue([]);
+const post = vi.fn();
+const del = vi.fn();
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push }),
@@ -18,6 +21,9 @@ vi.mock("@/lib/apiClient", async () => {
     api: {
       ...actual.api,
       patch: (...args: unknown[]) => patch(...args),
+      get: (...args: unknown[]) => get(...args),
+      post: (...args: unknown[]) => post(...args),
+      del: (...args: unknown[]) => del(...args),
     },
   };
 });
@@ -38,6 +44,9 @@ const sessionState = {
 vi.mock("@/app/providers", () => ({
   useSession: () => sessionState,
 }));
+vi.mock("@/components/settings/DataRightsPanel", () => ({
+  DataRightsPanel: () => <section aria-label="Quyền dữ liệu của bạn" />,
+}));
 
 import SettingsPage from "./page";
 
@@ -52,6 +61,7 @@ afterEach(() => {
     role: "user",
   };
   sessionState.loading = false;
+  get.mockResolvedValue([]);
 });
 
 describe("SettingsPage profile editor", () => {

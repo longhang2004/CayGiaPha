@@ -31,6 +31,11 @@ afterEach(() => {
 });
 
 describe("AddRelativeForm", () => {
+  it("explains the responsibility for another person's data", () => {
+    render(<AddRelativeForm treeId="t1" persons={PERSONS} />);
+    expect(screen.getByRole("note")).toHaveTextContent(/quyền riêng tư/i);
+  });
+
   it("sends a derived bloodline edge in derived mode", async () => {
     const fetchMock = mockFetch({
       ok: true,

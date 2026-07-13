@@ -2,6 +2,7 @@ import { createContext, useContext } from "react";
 import type { Person, Relationship, Address, Capabilities, TreeAccessRole } from "@/lib/graph";
 import type { Region } from "@/lib/region";
 import type { TreeCollaborator } from "@/lib/collaboration";
+import type { UpcomingEvent } from "@/lib/persons";
 
 export interface TreeContextType {
   activeTreeId: string;
@@ -64,6 +65,7 @@ export interface TreeContextType {
   handleAddressesLoaded: (loaded: Map<string, Address>) => void;
   refreshTree: () => void;
   claimInviteAction?: (destination: string) => Promise<void>;
+  upcomingEventsLoader?: (treeId: string) => Promise<UpcomingEvent[]>;
 
   // Settings Actions
   setTreeName: (name: string) => void;

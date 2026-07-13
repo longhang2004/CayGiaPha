@@ -101,7 +101,9 @@ Durable project knowledge for future AI agents. Keep entries short, verified, an
 ## 2026-07-13
 
 - **Early-access welcome cookie**: The tree-list welcome dialog acknowledges per browser with `cgp_early_access_welcome_v1=acknowledged`, path `/`, `SameSite=Lax`, and a 365-day expiry. Cookie failure must never prevent the dialog from closing for the current page visit.
-- **Help/ClaimFlow boundary**: Runtime Help and onboarding document only currently reachable UI. Person-node ClaimFlow remains an existing Kiro Requirement 17 gap and must not be described as available or reported as fully compliant until it is mounted in the active application flow.
+- **Help/ClaimFlow boundary**: Person-node ClaimFlow is mounted at `/claim/[personId]`, requires an
+  authenticated matching account identity, and has a mock-only prototype. Help may describe this
+  recipient flow, but must keep it distinct from Owner invitations and collaboration invitations.
 - **Business model authority (2026-07-13)**: New accounts register with email/password or Google;
   existing phone-only accounts retain sign-in/SMS-recovery compatibility. Sign-up creates one
   initial tree and Users may explicitly create more. Tree operations never fall back to the first
@@ -114,3 +116,13 @@ Durable project knowledge for future AI agents. Keep entries short, verified, an
 - **Conformance source (2026-07-13)**: `.kiro/specs/vietnamese-family-tree/conformance.md` maps
   Requirements 1–26 to active Next.js routes/services/UI/tests. Checked historical tasks are not
   readiness evidence; update the matrix after each remediation batch.
+- **Privacy projection contract (2026-07-13)**: `frontend/src/lib/services/privacy.ts` is the only
+  living-person/per-field projector for tree, person, search, photo, and upcoming-event reads. A
+  person born exactly 100 years before the current UTC year is still living. Contributor is a
+  trusted reader; Linked is trusted only when authorization classifies the requested node itself
+  as `LINKED`; projected readers never receive visibility metadata.
+- **Legal and data-rights v2 (2026-07-13)**: Legal v2 content is canonical in
+  `frontend/src/content/legal/legalContent.ts` and persisted by Java migration V27; wording remains
+  subject to external legal review. `/settings` lists claimed nodes and supports JSON export,
+  correction navigation, anonymize/delete, and account deletion. Relational deletion is
+  transactional; photo objects are cleaned after commit with sanitized count-only error logging.

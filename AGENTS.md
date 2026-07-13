@@ -170,7 +170,6 @@ Prototype pages render each main functional page with mock data — no login req
 | `/prototype/signup` | `src/app/signup/page.tsx` / `SignUpFlow` |
 | `/prototype/forgot-password` | `src/app/forgot-password/page.tsx` / `ForgotPasswordFlow` |
 | `/prototype/invitation/[id]` | `src/app/invitation/[id]/page.tsx` |
-| `/prototype/claim/[personId]` | `src/app/claim/[personId]/page.tsx` |
 | `/prototype/tree` | `src/app/tree/[id]/page.tsx` — populated workspace |
 | `/prototype/tree?panel=settings` | `src/app/tree/[id]/page.tsx` — settings modal open |
 | `/prototype/tree/empty` | `src/app/tree/[id]/page.tsx` — empty/onboarding state |

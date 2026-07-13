@@ -5,6 +5,7 @@ import { db } from "@/lib/db";
 import { persons } from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
 import { convertLunar2Solar } from "@/lib/vietCalendar";
+import { projectPerson } from "@/lib/services/privacy";
 
 function isLeapYear(year: number): boolean {
   return (year % 4 === 0 && year % 100 !== 0) || year % 400 === 0;
@@ -80,34 +81,6 @@ export async function GET(
     const auth = await getAuthContext();
     const treeId = params.treeId;
 
-    if (treeId === "prototype-tree-id-0001") {
-      const getRelativeISODate = (daysOffset: number) => {
-        const d = new Date();
-        d.setDate(d.getDate() + daysOffset);
-        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-      };
-      return Response.json([
-        {
-          personId: "p-ong-to",
-          displayName: "Ông Tổ",
-          relationship: "Ông cố",
-          eventType: "death_anniversary",
-          eventDate: getRelativeISODate(0),
-          originalDate: "Ngày 10 tháng 03 Âm lịch",
-          daysRemaining: 0,
-        },
-        {
-          personId: "p-ba-to",
-          displayName: "Bà Tổ",
-          relationship: "Bà cố",
-          eventType: "death_anniversary",
-          eventDate: getRelativeISODate(1),
-          originalDate: "Ngày 15 tháng 08 Âm lịch",
-          daysRemaining: 1,
-        },
-      ]);
-    }
-
     const { searchParams } = new URL(request.url);
     const shareToken = request.headers.get("x-share-token") || searchParams.get("shareToken");
 
@@ -124,8 +97,8 @@ export async function GET(
     for (const person of deceased) {
       // Check privacy of death status
       const role = await authorizationService.classify(auth.userId, treeId, person.id);
-      const privileged = role === "OWNER" || role === "CONTRIBUTOR" || role === "LINKED";
-      if (!privileged && person.visDeath === "private") {
+      const projected = projectPerson(person, { role, livingRedaction: true });
+      if (projected.deathStatus !== true) {
         continue; // Privacy gate: skip private death info for public/link viewers
       }
 
@@ -158,7 +131,7 @@ export async function GET(
 
         events.push({
           personId: person.id,
-          displayName: person.displayName,
+          displayName: projected.displayName,
           relationship: "",
           eventType: "death_anniversary",
           eventDate: formatISO(nextAnniversary),

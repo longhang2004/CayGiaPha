@@ -537,11 +537,11 @@ against the active Next.js code and current tests.
     - Remove first-owned-tree fallback state; return tree `accessRole` and per-person capabilities;
       enforce Owner/Contributor/Linked/Reader permissions on every active Route Handler.
     - _Requirements: 3, 11, 13, 14, 19, 20, 21, 24_
-  - [ ] 25.2 Complete password recovery and authenticated node linking
+  - [x] 25.2 Complete password recovery and authenticated node linking
     - Implement hashed, single-use, attempt-limited reset codes; revoke old sessions and create one
       fresh session. Mount “Xác nhận đây là tôi” and bind verification to session identity.
     - _Requirements: 2, 11, 17, 25_
-  - [ ] 25.3 Centralize privacy projection, consent v2, and data rights
+  - [x] 25.3 Centralize privacy projection, consent v2, and data rights
     - Reuse one Living_Person/privacy projector across every read surface; add legal v2
       re-acceptance and lawful-basis notice; implement own-node export/erase and all-owned-tree
       account deletion with photo cleanup.

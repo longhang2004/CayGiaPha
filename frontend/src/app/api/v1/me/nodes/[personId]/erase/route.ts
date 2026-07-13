@@ -14,7 +14,7 @@ export async function POST(
       throw ApiException.notAuthorized("User is not authenticated.");
     }
 
-    const { strategy } = await request.json();
+    const { strategy, deletionStrategy } = await request.json();
     if (!strategy) {
       throw ApiException.validation("strategy", "Strategy is required (delete or anonymize).");
     }
@@ -24,8 +24,23 @@ export async function POST(
       throw ApiException.validation("strategy", "Strategy must be 'delete' or 'anonymize'.");
     }
 
+    const cleanDeletionStrategy = typeof deletionStrategy === "string"
+      ? deletionStrategy.toLowerCase()
+      : "preserve";
+    if (cleanStrategy === "delete" && cleanDeletionStrategy !== "cascade" && cleanDeletionStrategy !== "preserve") {
+      throw ApiException.validation(
+        "deletionStrategy",
+        "Deletion strategy must be 'cascade' or 'preserve'.",
+      );
+    }
+
     const personId = params.personId;
-    await dataRightsService.eraseNode(personId, cleanStrategy as "delete" | "anonymize", auth.userId);
+    await dataRightsService.eraseNode(
+      personId,
+      cleanStrategy as "delete" | "anonymize",
+      auth.userId,
+      cleanDeletionStrategy as "cascade" | "preserve",
+    );
 
     await auditService.record(
       auth.userId,

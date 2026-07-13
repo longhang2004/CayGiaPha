@@ -5,10 +5,11 @@ import path from "path";
 import sharp from "sharp";
 import { v2 as cloudinary } from "cloudinary";
 import { db } from "../db";
-import { personPhotos, persons, trees } from "../db/schema";
+import { personPhotos, persons } from "../db/schema";
 import { eq, and, desc } from "drizzle-orm";
 import { ApiException } from "./errors";
 import { authorizationService } from "./authorization";
+import { canViewPrimaryPhoto } from "./privacy";
 
 // ------------------------------------------
 // IMAGE PROCESSOR
@@ -195,6 +196,26 @@ const storageType = process.env.APP_STORAGE_TYPE || "filesystem";
 export const storageService: StorageService =
   storageType === "cloudinary" ? new CloudinaryStorageService() : new FilesystemStorageService();
 
+export async function deleteStoredPhotoObjects(
+  objectKeys: string[],
+  operation: string,
+): Promise<void> {
+  let failedCount = 0;
+  for (const objectKey of objectKeys) {
+    try {
+      await storageService.delete(objectKey);
+    } catch {
+      failedCount += 1;
+    }
+  }
+  if (failedCount > 0) {
+    console.error("[photo-cleanup] Some objects could not be removed.", {
+      operation,
+      failedCount,
+    });
+  }
+}
+
 // ------------------------------------------
 // PHOTO SERVICE
 // ------------------------------------------
@@ -286,7 +307,10 @@ export class PhotoService {
     shareToken?: string | null
   ): Promise<(typeof personPhotos.$inferSelect)[]> {
     await authorizationService.requireReadAccess(currentUserId, treeId, shareToken);
-    await this.requirePerson(treeId, personId);
+    const person = await this.requirePerson(treeId, personId);
+    if (!(await this.photoVisible(currentUserId, treeId, person))) {
+      return [];
+    }
 
     return db
       .select()
@@ -372,31 +396,7 @@ export class PhotoService {
     if (role === "OWNER" || role === "CONTRIBUTOR" || role === "LINKED") {
       return true;
     }
-    if (person.visPhoto !== "public") {
-      return false;
-    }
-
-    const tree = await db
-      .select()
-      .from(trees)
-      .where(eq(trees.id, treeId))
-      .then((rows) => rows[0]);
-
-    const isLivingRedaction = tree ? tree.livingRedaction : true;
-    const isLiving = this.isLiving(person);
-
-    return !(isLivingRedaction && isLiving);
-  }
-
-  private isLiving(person: typeof persons.$inferSelect): boolean {
-    if (person.deathStatus) {
-      return false;
-    }
-    if (person.birthYear === null) {
-      return true; // protect by default
-    }
-    const currentYear = new Date().getUTCFullYear();
-    return person.birthYear > currentYear - 100;
+    return canViewPrimaryPhoto(person, role);
   }
 
   private async requirePerson(treeId: string, personId: string) {

@@ -16,6 +16,7 @@ import { uploadPhoto } from "@/lib/photos";
 import { Button } from "@/components/Button";
 import { FormControl, Input, Select } from "@/components/ui/FormControls";
 import { ConflictWarning } from "./ConflictWarning";
+import { LawfulBasisNotice } from "./LawfulBasisNotice";
 
 /**
  * Add-relative UI offering two modes (Requirements 5.1, 5.2, 6.1):
@@ -328,6 +329,8 @@ export function AddRelativeForm({ treeId, persons, preselectedPersonId, onCreate
           {formError}
         </p>
       ) : null}
+
+      <LawfulBasisNotice />
 
       <fieldset>
         <legend>Kiểu kết nối</legend>

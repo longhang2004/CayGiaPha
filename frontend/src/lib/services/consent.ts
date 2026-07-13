@@ -2,6 +2,12 @@ import { db } from "../db";
 import { legalDocuments, userConsents } from "../db/schema";
 import { eq, and, desc } from "drizzle-orm";
 import { ApiException } from "./errors";
+import {
+  CURRENT_LEGAL_VERSION,
+  LEGAL_DOCUMENTS,
+  LEGAL_V2_PUBLISHED_AT,
+  canonicalLegalBody,
+} from "@/content/legal/legalContent";
 
 export class ConsentService {
   async currentDocument(docType: "tos" | "privacy") {
@@ -12,20 +18,14 @@ export class ConsentService {
       .orderBy(desc(legalDocuments.version))
       .then((rows) => rows[0]);
 
-    if (!doc) {
-      const defaultBodies = {
-        tos: "Điều khoản dịch vụ (bản nháp — cần luật sư rà soát). Terms of Service (placeholder, pending legal review).",
-        privacy: "Chính sách bảo mật (bản nháp — cần luật sư rà soát). Privacy Policy (placeholder, pending legal review). Categories of personal data stored, purposes of processing, data-subject rights (export/correction/erasure), and a data-protection contact point are described here."
+    if (!doc || doc.version < CURRENT_LEGAL_VERSION) {
+      return {
+        id: `canonical-${docType}-v${CURRENT_LEGAL_VERSION}`,
+        docType,
+        version: LEGAL_DOCUMENTS[docType].version,
+        body: canonicalLegalBody(docType),
+        publishedAt: LEGAL_V2_PUBLISHED_AT,
       };
-      const [newDoc] = await db
-        .insert(legalDocuments)
-        .values({
-          docType,
-          version: 1,
-          body: defaultBodies[docType],
-        })
-        .returning();
-      doc = newDoc;
     }
     return doc;
   }

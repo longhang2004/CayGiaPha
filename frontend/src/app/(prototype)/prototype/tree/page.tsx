@@ -216,6 +216,20 @@ function PrototypeTreeContent() {
       manageCollaboration: true,
     },
     claimInviteAction: async () => {},
+    upcomingEventsLoader: async () => {
+      const today = new Date();
+      const eventDate = new Date(today);
+      eventDate.setDate(today.getDate() + 2);
+      return [{
+        personId: "ong-noi",
+        displayName: "Hàng Hữu Thiền",
+        relationship: "Ông nội",
+        eventType: "death_anniversary",
+        eventDate: eventDate.toISOString().slice(0, 10),
+        originalDate: "Ngày 12 tháng 3 Âm lịch",
+        daysRemaining: 2,
+      }];
+    },
     persons,
     relationships,
     addresses,

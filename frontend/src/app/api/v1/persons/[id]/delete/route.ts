@@ -2,7 +2,6 @@ import { handleApiRoute } from "@/lib/services/routeHelper";
 import { getAuthContext, authorizationService } from "@/lib/services/authorization";
 import { ApiException } from "@/lib/services/errors";
 import { personDeletionService } from "@/lib/services/personDeletion";
-import { photoService } from "@/lib/services/photo";
 import { auditService, AuditActions } from "@/lib/services/audit";
 
 export async function POST(
@@ -26,7 +25,6 @@ export async function POST(
     }
 
     // Phase 2 Deletion execution
-    await photoService.deleteAllForPerson(personId);
     await personDeletionService.execute(treeId, personId, strategy);
 
     await auditService.record(

@@ -6,9 +6,13 @@ import { Skeleton } from "@/components/ui/Skeleton";
 
 interface UpcomingEventsWidgetProps {
   treeId?: string;
+  loadEvents?: (treeId: string) => Promise<UpcomingEvent[]>;
 }
 
-export function UpcomingEventsWidget({ treeId }: UpcomingEventsWidgetProps) {
+export function UpcomingEventsWidget({
+  treeId,
+  loadEvents = getUpcomingEvents,
+}: UpcomingEventsWidgetProps) {
   const [events, setEvents] = useState<UpcomingEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -23,7 +27,7 @@ export function UpcomingEventsWidget({ treeId }: UpcomingEventsWidgetProps) {
     setLoading(true);
     setError(null);
 
-    getUpcomingEvents(treeId)
+    loadEvents(treeId)
       .then((data) => {
         if (active) {
           setEvents(data);
@@ -41,7 +45,7 @@ export function UpcomingEventsWidget({ treeId }: UpcomingEventsWidgetProps) {
     return () => {
       active = false;
     };
-  }, [treeId]);
+  }, [loadEvents, treeId]);
 
   if (loading) {
     return (

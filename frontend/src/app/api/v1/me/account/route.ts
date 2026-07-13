@@ -5,15 +5,26 @@ import { dataRightsService } from "@/lib/services/dataRights";
 import { auditService, AuditActions } from "@/lib/services/audit";
 import { cookies } from "next/headers";
 
-export async function DELETE() {
+export async function DELETE(request: Request) {
   return handleApiRoute(async () => {
     const auth = await getAuthContext();
     if (!auth.isAuthenticated || !auth.userId) {
       throw ApiException.notAuthorized("User is not authenticated.");
     }
 
+    const body = await request.json().catch(() => ({})) as { linkedNodeStrategy?: unknown };
+    const linkedNodeStrategy = typeof body.linkedNodeStrategy === "string"
+      ? body.linkedNodeStrategy.toLowerCase()
+      : "anonymize";
+    if (linkedNodeStrategy !== "anonymize" && linkedNodeStrategy !== "delete") {
+      throw ApiException.validation(
+        "linkedNodeStrategy",
+        "Linked-node strategy must be 'delete' or 'anonymize'.",
+      );
+    }
+
     const userId = auth.userId;
-    await dataRightsService.deleteAccount(userId);
+    await dataRightsService.deleteAccount(userId, linkedNodeStrategy);
 
     await auditService.record(
       userId,

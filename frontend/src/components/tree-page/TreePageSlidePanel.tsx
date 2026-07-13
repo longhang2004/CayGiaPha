@@ -30,6 +30,7 @@ export function TreePageSlidePanel() {
     setEgoId,
     refreshTree,
     claimInviteAction,
+    upcomingEventsLoader,
   } = useTreeContext();
 
   const selectedPerson = selectedId ? persons.find((p) => p.id === selectedId) : null;
@@ -242,7 +243,7 @@ export function TreePageSlidePanel() {
               Chọn một người để xem thông tin và cách xưng hô.
             </p>
           </div>
-          <UpcomingEventsWidget treeId={activeTreeId} />
+          <UpcomingEventsWidget treeId={activeTreeId} loadEvents={upcomingEventsLoader} />
         </div>
       )}
     </div>

@@ -17,6 +17,7 @@ import { type PersonOption } from "./AddRelativeForm";
 import { Button } from "@/components/Button";
 import { uploadPhoto } from "@/lib/photos";
 import { FormControl, Input, Select } from "@/components/ui/FormControls";
+import { LawfulBasisNotice } from "./LawfulBasisNotice";
 
 /**
  * Create/edit form for a Person node (Requirements 3.1, 3.3) with per-field
@@ -316,6 +317,8 @@ export function PersonForm({
           {formError}
         </p>
       ) : null}
+
+      <LawfulBasisNotice />
 
       <FormControl id="displayName" label="Họ và tên" error={fieldErrors.displayName} required>
         <Input
