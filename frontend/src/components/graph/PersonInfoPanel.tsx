@@ -1,6 +1,5 @@
-import { useState } from "react";
 import { addressLabel, capitalize, isUnresolved, type Address, type Person } from "@/lib/graph";
-import { Skeleton } from "@/components/ui/Skeleton";
+import { CGPTabs } from "@/components/cgp";
 
 export interface PersonInfoPanelProps {
   person: Person | null;
@@ -16,8 +15,6 @@ const GENDER_LABEL: Record<string, string> = {
 };
 
 export function PersonInfoPanel({ person, ego, address, loading, hideHeading = false }: PersonInfoPanelProps) {
-  const [activeTab, setActiveTab] = useState<"info" | "bio">("info");
-
   if (loading) {
     return (
       <aside className="person-info" aria-live="polite" aria-busy="true" style={{ display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", minHeight: "180px", gap: "0.75rem" }}>
@@ -54,48 +51,11 @@ export function PersonInfoPanel({ person, ego, address, loading, hideHeading = f
     });
   }
 
-  return (
-    <aside className="person-info" aria-live="polite" data-person-id={person.id}>
-      {/* Hidden/accessible heading to keep tests and screen-readers happy */}
-      <h2 className={hideHeading ? "sr-only" : ""}>{person.displayName}</h2>
-
-      {/* Visual Header Card */}
-      <div className="person-info__avatar-container">
-        <div className={`person-info__avatar person-info__avatar--${person.gender ?? "unknown"}`}>
-          {initialLetter}
-        </div>
-        <div className="person-info__header-text">
-          <span className="person-info__header-name">{person.displayName}</span>
-          <span className="person-info__header-subtitle">
-            {person.deceased ? "Thành viên (đã qua đời)" : "Thành viên (Còn sống)"}
-          </span>
-        </div>
-      </div>
-
-      {/* Tab bar */}
-      <div className="person-info__tabs" role="tablist" aria-label="Thông tin chi tiết">
-        <button
-          type="button"
-          role="tab"
-          aria-selected={activeTab === "info"}
-          className={`person-info__tab-btn ${activeTab === "info" ? "person-info__tab-btn--active" : ""}`}
-          onClick={() => setActiveTab("info")}
-        >
-          Chi tiết
-        </button>
-        <button
-          type="button"
-          role="tab"
-          aria-selected={activeTab === "bio"}
-          className={`person-info__tab-btn ${activeTab === "bio" ? "person-info__tab-btn--active" : ""}`}
-          onClick={() => setActiveTab("bio")}
-        >
-          Tiểu sử & Sự kiện
-        </button>
-      </div>
-
-      {/* Tab content panel */}
-      {activeTab === "info" ? (
+  const tabItems = [
+    {
+      id: "info",
+      label: "Chi tiết",
+      content: (
         <dl>
           {person.gender ? (
             <div>
@@ -128,7 +88,12 @@ export function PersonInfoPanel({ person, ego, address, loading, hideHeading = f
             </dd>
           </div>
         </dl>
-      ) : (
+      ),
+    },
+    {
+      id: "bio",
+      label: "Tiểu sử & Sự kiện",
+      content: (
         <div className="person-info__bio-panel">
           {timelineEvents.length > 0 ? (
             <div className="person-info__timeline" aria-label="Dòng thời gian sự kiện">
@@ -146,7 +111,34 @@ export function PersonInfoPanel({ person, ego, address, loading, hideHeading = f
             </p>
           )}
         </div>
-      )}
+      ),
+    },
+  ];
+
+  return (
+    <aside className="person-info" aria-live="polite" data-person-id={person.id}>
+      {/* Hidden/accessible heading to keep tests and screen-readers happy */}
+      <h2 className={hideHeading ? "sr-only" : ""}>{person.displayName}</h2>
+
+      {/* Visual Header Card */}
+      <div className="person-info__avatar-container">
+        <div className={`person-info__avatar person-info__avatar--${person.gender ?? "unknown"}`}>
+          {initialLetter}
+        </div>
+        <div className="person-info__header-text">
+          <span className="person-info__header-name">{person.displayName}</span>
+          <span className="person-info__header-subtitle">
+            {person.deceased ? "Thành viên (đã qua đời)" : "Thành viên (Còn sống)"}
+          </span>
+        </div>
+      </div>
+
+      <CGPTabs
+        ariaLabel="Thông tin chi tiết"
+        className="person-info__tabs"
+        defaultSelectedKey="info"
+        items={tabItems}
+      />
     </aside>
   );
 }

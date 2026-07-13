@@ -26,6 +26,58 @@ afterEach(() => {
 });
 
 describe("SearchPanel", () => {
+  it("opens the filters in the CGP popover dialog", async () => {
+    render(<SearchPanel treeId="t1" />);
+
+    const trigger = screen.getByRole("button", { name: "Bộ lọc" });
+    await userEvent.click(trigger);
+
+    const dialog = screen.getByRole("dialog", { name: "Bộ lọc" });
+    expect(dialog).toBeInTheDocument();
+    expect(dialog.closest(".cgp-popover")).toHaveClass(
+      "search-filter-cgp-popover",
+      "cgp-popover--md",
+    );
+    expect(trigger).toHaveAttribute("aria-expanded", "true");
+  });
+
+  it("closes the filter popover with Escape and restores the trigger state", async () => {
+    render(<SearchPanel treeId="t1" />);
+
+    const trigger = screen.getByRole("button", { name: "Bộ lọc" });
+    await userEvent.click(trigger);
+    expect(screen.getByRole("dialog", { name: "Bộ lọc" })).toBeInTheDocument();
+
+    await userEvent.keyboard("{Escape}");
+
+    await waitFor(() => {
+      expect(screen.queryByRole("dialog", { name: "Bộ lọc" })).not.toBeInTheDocument();
+      expect(trigger).toHaveAttribute("aria-expanded", "false");
+    });
+  });
+
+  it("preserves the results dropdown outside-press behavior around the portaled filters", async () => {
+    render(
+      <SearchPanel
+        treeId="t1"
+        persons={[
+          { id: "p1", displayName: "Anh A", gender: "male", birthYear: 1960 },
+          { id: "p2", displayName: "Chị B", gender: "female", birthYear: 1965 },
+        ]}
+      />,
+    );
+
+    await userEvent.type(screen.getByLabelText("Tên"), "Anh");
+    expect(await screen.findByText("Anh A")).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("button", { name: "Bộ lọc" }));
+    fireEvent.mouseDown(screen.getByLabelText("Giới tính"));
+    expect(screen.getByText("Anh A")).toBeInTheDocument();
+
+    fireEvent.mouseDown(document.body);
+    await waitFor(() => expect(screen.queryByText("Anh A")).not.toBeInTheDocument());
+  });
+
   it("posts the name query and viewpoint, then renders results", async () => {
     const fetchMock = mockFetch({
       ok: true,
@@ -65,6 +117,7 @@ describe("SearchPanel", () => {
     await userEvent.selectOptions(screen.getByLabelText("Tình trạng mất"), "false");
     await userEvent.selectOptions(screen.getByLabelText("Trạng thái xác nhận"), "unclaimed");
     await userEvent.selectOptions(screen.getByLabelText("Loại quan hệ"), "bloodline");
+    await userEvent.click(screen.getByRole("button", { name: "Áp dụng" }));
     fireEvent.submit(screen.getByRole("form", { name: "Tìm kiếm" }));
 
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
@@ -105,6 +158,7 @@ describe("SearchPanel", () => {
     await userEvent.click(screen.getByRole("button", { name: /Lọc/i }));
     await userEvent.type(screen.getByLabelText("Năm sinh từ"), "2000");
     await userEvent.type(screen.getByLabelText("đến"), "1990");
+    await userEvent.click(screen.getByRole("button", { name: "Áp dụng" }));
     fireEvent.submit(screen.getByRole("form", { name: "Tìm kiếm" }));
 
     expect(await screen.findByText("Khoảng năm không hợp lệ")).toBeInTheDocument();

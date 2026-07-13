@@ -5,7 +5,7 @@ import userEvent from "@testing-library/user-event";
 const push = vi.fn();
 const getInvitationDetails = vi.fn();
 const joinTreeWithLink = vi.fn();
-const showToast = vi.fn();
+const show = vi.fn();
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push }),
@@ -33,8 +33,8 @@ vi.mock("@/app/providers", () => ({
   useSession: () => sessionState,
 }));
 
-vi.mock("@/components/ui/ToastProvider", () => ({
-  useToast: () => ({ showToast }),
+vi.mock("@/components/cgp", () => ({
+  useCGPToast: () => ({ show }),
 }));
 
 import InvitationPage from "./page";

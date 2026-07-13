@@ -91,28 +91,11 @@
   overflow-y: auto;
 }
 
-/* Floating Filter Popover to avoid layout shift */
-.search-filter-popover {
-  position: absolute;
-  top: 100%;
-  right: 0;
-  width: 320px;
-  background-color: var(--color-surface-card);
-  border: 1px solid var(--color-hairline);
-  border-radius: 12px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.18);
-  padding: 1.25rem;
-  z-index: 110;
-  margin-top: 0.5rem;
-  animation: fade-in 0.2s ease;
-}
-
-.tree-page-header .search-filter-popover {
-  top: auto;
-  bottom: calc(100% + 0.75rem);
-  margin-top: 0;
+.search-filter-cgp-content {
   max-height: min(24rem, 48vh);
+  padding: 1.25rem;
   overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 .tree-page-header .search-results-dropdown {
@@ -375,86 +358,6 @@
   }
 }
 
-/* Settings Modal Overlay & Popups */
-.settings-modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  background-color: rgba(0, 0, 0, 0.4);
-  backdrop-filter: blur(4px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 300;
-  padding: 1rem;
-}
-
-.settings-modal {
-  background-color: var(--color-surface-card);
-  border: 1px solid var(--color-hairline);
-  border-radius: 16px;
-  width: 100%;
-  max-width: 520px;
-  max-height: 90vh;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
-  display: flex;
-  flex-direction: column;
-  animation: rise-in 0.2s ease both;
-  overflow: hidden;
-}
-
-.settings-modal__header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 1.25rem 1.5rem;
-  border-bottom: 1px solid var(--color-hairline-soft);
-}
-
-.settings-modal__header h2 {
-  margin: 0;
-  font-size: 1.25rem;
-  font-weight: 600;
-}
-
-.settings-modal__footer {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  padding: 1rem 1.5rem;
-  border-top: 1px solid var(--color-hairline-soft);
-  background-color: var(--color-surface-card);
-  border-bottom-left-radius: 16px;
-  border-bottom-right-radius: 16px;
-}
-
-.settings-modal__close {
-  background: transparent !important;
-  border: none !important;
-  font-size: 1.75rem;
-  cursor: pointer;
-  color: var(--color-muted) !important;
-  line-height: 1;
-  padding: 0.25rem !important;
-  min-width: auto !important;
-  min-height: auto !important;
-  box-shadow: none !important;
-  display: inline-block !important;
-}
-.settings-modal__close:hover {
-  color: var(--color-fg) !important;
-  background: transparent !important;
-  box-shadow: none !important;
-}
-
-.settings-modal__body {
-  padding: 1.5rem;
-  overflow-y: auto;
-  flex: 1;
-}
-
 /* CGP Dialog */
 .cgp-dialog-overlay {
   position: fixed;
@@ -604,16 +507,6 @@
   .cgp-dialog {
     animation: none;
   }
-}
-
-// Keep long collaboration forms scrollable without showing a browser scrollbar.
-.collaboration-modal .settings-modal__body {
-  scrollbar-width: none;
-  -ms-overflow-style: none;
-}
-
-.collaboration-modal .settings-modal__body::-webkit-scrollbar {
-  display: none;
 }
 
 .settings-section h3 {

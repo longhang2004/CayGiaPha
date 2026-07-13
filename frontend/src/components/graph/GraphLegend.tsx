@@ -1,36 +1,27 @@
-import { useState, useRef, useEffect } from "react";
+import { useState } from "react";
+import { CGPPopover } from "@/components/cgp";
 import { InfoIcon, CloseIcon } from "@/components/ui/Icons";
 
 export function GraphLegend() {
   const [isOpen, setIsOpen] = useState(false);
-  const wrapperRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (wrapperRef.current && !wrapperRef.current.contains(event.target as Node)) {
-        setIsOpen(false);
-      }
-    }
-    if (isOpen) {
-      document.addEventListener("mousedown", handleClickOutside);
-    }
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [isOpen]);
 
   return (
-    <div className="graph-legend-wrapper" ref={wrapperRef} style={{ position: "relative", display: "inline-block" }}>
-      <button
-        type="button"
-        className={`btn btn-secondary ${isOpen ? "active" : ""}`}
-        onClick={() => setIsOpen(!isOpen)}
-        title="Chú giải sơ đồ"
-        aria-label="Hiện chú giải sơ đồ"
-      >
+    <CGPPopover
+      isOpen={isOpen}
+      onOpenChange={setIsOpen}
+      trigger={
+        <>
         <InfoIcon size={18} />
         <span className="hide-on-tablet hide-on-mobile">Chú giải</span>
-      </button>
-
-      {isOpen && (
+        </>
+      }
+      triggerAriaLabel="Hiện chú giải sơ đồ"
+      triggerClassName={`btn btn-secondary ${isOpen ? "active" : ""}`}
+      ariaLabel="Chú giải sơ đồ"
+      placement="top end"
+      size="sm"
+      className="graph-legend-popover"
+    >
         <div className="graph-legend surface-card">
           <div className="graph-legend__header">
             <h3 className="graph-legend__title">Chú giải sơ đồ</h3>
@@ -66,7 +57,6 @@ export function GraphLegend() {
             </div>
           </div>
         </div>
-      )}
-    </div>
+    </CGPPopover>
   );
 }

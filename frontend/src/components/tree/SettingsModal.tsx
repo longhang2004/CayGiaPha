@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { useSession } from "@/app/providers";
-import { CGPDialog } from "@/components/cgp";
-import { useToast } from "@/components/ui/ToastProvider";
+import { CGPDialog, useCGPToast } from "@/components/cgp";
 import { Input } from "@/components/ui/FormControls";
 import { RegionSelector } from "@/components/region/RegionSelector";
 import { TextSizeControl } from "@/components/a11y/TextSizeControl";
@@ -55,7 +54,7 @@ export function SettingsModal({
   isPrototype = false
 }: SettingsModalProps) {
   const { user, loading: sessionLoading } = useSession();
-  const { showToast } = useToast();
+  const { show } = useCGPToast();
 
   const [treeNameInput, setTreeNameInput] = useState(treeName);
   const [updatingTreeName, setUpdatingTreeName] = useState(false);
@@ -77,7 +76,7 @@ export function SettingsModal({
       if (isPrototype) {
         await new Promise(resolve => setTimeout(resolve, 300));
         onTreeNameChange(treeNameInput.trim());
-        showToast("Đã cập nhật tên cây gia phả.", "success");
+        show("Đã cập nhật tên cây gia phả.", { tone: "success" });
         return;
       }
 
@@ -87,9 +86,9 @@ export function SettingsModal({
       );
       onTreeNameChange(result.name);
       setTreeNameInput(result.name);
-      showToast("Đã cập nhật tên cây gia phả.", "success");
+      show("Đã cập nhật tên cây gia phả.", { tone: "success" });
     } catch (err) {
-      showToast(err instanceof ApiError ? err.message : "Không thể đổi tên cây.", "error");
+      show(err instanceof ApiError ? err.message : "Không thể đổi tên cây.", { tone: "error" });
     } finally {
       setUpdatingTreeName(false);
     }
@@ -159,13 +158,13 @@ export function SettingsModal({
       if (isPrototype) {
         await new Promise(resolve => setTimeout(resolve, 300));
         onSharingChange(sharing, null);
-        showToast("Đã hủy bỏ tất cả liên kết chia sẻ trước đó.", "success");
+        show("Đã hủy bỏ tất cả liên kết chia sẻ trước đó.", { tone: "success" });
         return;
       }
 
       await api.del(`/trees/${treeId}/share-token`);
       onSharingChange(sharing, null);
-      showToast("Đã hủy bỏ tất cả liên kết chia sẻ trước đó.", "success");
+      show("Đã hủy bỏ tất cả liên kết chia sẻ trước đó.", { tone: "success" });
     } catch (err) {
       console.warn(err instanceof ApiError ? err.message : "Không thể hủy bỏ liên kết chia sẻ.");
     } finally {
@@ -261,7 +260,7 @@ export function SettingsModal({
                         onClick={() => {
                           const url = `${window.location.origin}/tree/${treeId}#shareToken=${encodeURIComponent(shareToken)}`;
                           navigator.clipboard.writeText(url);
-                          showToast("Đã sao chép liên kết vào bộ nhớ tạm!", "success");
+                          show("Đã sao chép liên kết vào bộ nhớ tạm!", { tone: "success" });
                         }}
                       >
                         Sao chép
@@ -328,7 +327,7 @@ export function SettingsModal({
                 onClick={() => {
                   resetGuidanceState(window.localStorage);
                   window.dispatchEvent(new Event(GUIDANCE_RESET_EVENT));
-                  showToast("Đã đặt lại hướng dẫn trên thiết bị này.", "success");
+                  show("Đã đặt lại hướng dẫn trên thiết bị này.", { tone: "success" });
                   onClose();
                 }}
               >
@@ -363,7 +362,7 @@ export function SettingsModal({
                   type="button"
                   className="btn btn-secondary"
                   onClick={() => {
-                    showToast("Đã đăng xuất (Mock).", "success");
+                    show("Đã đăng xuất (Mock).", { tone: "success" });
                     onClose();
                   }}
                 >

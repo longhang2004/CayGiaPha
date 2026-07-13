@@ -110,6 +110,10 @@ not automatically page-overflow bugs.
 
 ## Interaction and state language
 
+- `src/components/cgp/` is the production interaction-component boundary.
+  Product components use its button, field, choice, dialog, drawer, popover,
+  tabs, and toast contracts instead of importing `react-aria-components`
+  directly.
 - Primary actions use `.btn`; secondary actions use `.btn-secondary`.
 - Forms use `FormControl`, `Input`, and `Select` where practical.
 - Long operations use button spinners, skeletons, or named loading states.

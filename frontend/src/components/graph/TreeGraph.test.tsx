@@ -408,6 +408,40 @@ describe("TreeGraph renderer", () => {
     expect(screen.getAllByText("†").length).toBeGreaterThan(0);
   });
 
+  it("links PersonInfoPanel tabs to their panels and supports arrow-key navigation", async () => {
+    const user = userEvent.setup();
+    render(
+      <PersonInfoPanel
+        person={{
+          id: "p1",
+          displayName: "Bố",
+          gender: "male",
+          birthYear: 1965,
+        }}
+        ego={null}
+        address={undefined}
+      />,
+    );
+
+    const infoTab = screen.getByRole("tab", { name: "Chi tiết" });
+    const infoPanel = screen.getByRole("tabpanel", { name: "Chi tiết" });
+    const bioTab = screen.getByRole("tab", { name: "Tiểu sử & Sự kiện" });
+
+    expect(infoTab).toHaveAttribute("aria-selected", "true");
+    expect(infoTab).toHaveAttribute("aria-controls", infoPanel.id);
+    expect(infoPanel).toHaveAttribute("aria-labelledby", infoTab.id);
+
+    await user.tab();
+    expect(infoTab).toHaveFocus();
+    await user.keyboard("{ArrowRight}");
+
+    expect(bioTab).toHaveFocus();
+    expect(bioTab).toHaveAttribute("aria-selected", "true");
+    expect(
+      screen.getByRole("tabpanel", { name: "Tiểu sử & Sự kiện" }),
+    ).toHaveTextContent("Sinh năm 1965.");
+  });
+
   it("filters the tree view when branch focus view is toggled", async () => {
     const fetchAddresses = vi.fn(async () => ({ egoId: "p1", addresses: [] }));
     const mockPersons: Person[] = [

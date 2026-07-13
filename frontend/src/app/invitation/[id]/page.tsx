@@ -3,14 +3,14 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "@/app/providers";
-import { useToast } from "@/components/ui/ToastProvider";
+import { useCGPToast } from "@/components/cgp";
 import { getInvitationDetails, joinTreeWithLink, type InvitationView } from "@/lib/collaboration";
 import { buildAuthHref } from "@/lib/authRedirect";
 
 export default function InvitationPage({ params }: { params: { id: string } }) {
   const router = useRouter();
   const { user, loading: sessionLoading } = useSession();
-  const { showToast } = useToast();
+  const { show } = useCGPToast();
   const [invitation, setInvitation] = useState<InvitationView | null>(null);
   const [loading, setLoading] = useState(true);
   const [joining, setJoining] = useState(false);
@@ -31,10 +31,10 @@ export default function InvitationPage({ params }: { params: { id: string } }) {
       })
       .catch(() => {
         setInvalid(true);
-        showToast("Lời mời không hợp lệ", "error");
+        show("Lời mời không hợp lệ", { tone: "error" });
       })
       .finally(() => setLoading(false));
-    // router and showToast are stable application contexts; excluding their wrapper
+    // router and show are stable application contexts; excluding their wrapper
     // objects avoids re-fetching when test/router adapters recreate those wrappers.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [params.id, sessionLoading, user]);
@@ -47,7 +47,7 @@ export default function InvitationPage({ params }: { params: { id: string } }) {
       else if (invitation) router.push(`/tree/${invitation.treeId}`);
     } catch {
       setInvalid(true);
-      showToast("Lời mời không hợp lệ", "error");
+      show("Lời mời không hợp lệ", { tone: "error" });
     } finally {
       setJoining(false);
     }

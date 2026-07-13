@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import "../styles/globals.scss";
 import { SessionProvider } from "./providers";
-import { ToastProvider } from "@/components/ui/ToastProvider";
+import { CGPToastProvider } from "@/components/cgp";
 import { ConfirmProvider } from "@/components/ui/ConfirmProvider";
 import { TextSizeProvider } from "@/components/a11y/TextSizeProvider";
 import { Plus_Jakarta_Sans } from "next/font/google";
@@ -108,7 +108,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         />
       </head>
       <body>
-        <ToastProvider>
+        <CGPToastProvider>
           <ConfirmProvider>
             <TextSizeProvider>
               <SessionProvider>
@@ -120,7 +120,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
               </SessionProvider>
             </TextSizeProvider>
           </ConfirmProvider>
-        </ToastProvider>
+        </CGPToastProvider>
       </body>
     </html>
   );

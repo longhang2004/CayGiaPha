@@ -1,7 +1,7 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Header } from "./Header";
 import { Sidebar } from "./Sidebar";
 import { useSession } from "@/app/providers";
@@ -78,6 +78,8 @@ export function AppLayoutWrapper({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { user } = useSession();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isMobileSidebar, setIsMobileSidebar] = useState(false);
+  const sidebarTriggerRef = useRef<HTMLButtonElement>(null);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(() => {
     if (typeof window !== "undefined") {
       return localStorage.getItem("sidebar_collapsed") === "true";
@@ -92,6 +94,18 @@ export function AppLayoutWrapper({ children }: { children: React.ReactNode }) {
       localStorage.setItem("sidebar_collapsed", String(nextState));
     }
   };
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia("(max-width: 900px)");
+    const updatePresentation = () => {
+      setIsMobileSidebar(mediaQuery.matches);
+      if (!mediaQuery.matches) setIsSidebarOpen(false);
+    };
+
+    updatePresentation();
+    mediaQuery.addEventListener("change", updatePresentation);
+    return () => mediaQuery.removeEventListener("change", updatePresentation);
+  }, []);
 
   const mode = layoutMode(pathname);
 
@@ -115,10 +129,13 @@ export function AppLayoutWrapper({ children }: { children: React.ReactNode }) {
     <div className="inapp-layout">
       <div className="mobile-top-bar" data-graph-safe-external="top">
         <button
+          ref={sidebarTriggerRef}
           type="button"
           className="hamburger-btn"
-          onClick={() => setIsSidebarOpen((prev) => !prev)}
+          onClick={() => setIsSidebarOpen(true)}
           aria-label="Mở menu ứng dụng"
+          aria-expanded={isSidebarOpen}
+          aria-controls="app-sidebar"
         >
           <MenuIcon size={20} />
         </button>
@@ -128,10 +145,12 @@ export function AppLayoutWrapper({ children }: { children: React.ReactNode }) {
       </div>
 
       <Sidebar
+        presentation={isMobileSidebar ? "modal" : "persistent"}
         isOpen={isSidebarOpen}
         onClose={() => setIsSidebarOpen(false)}
         isCollapsed={isSidebarCollapsed}
         onToggleCollapse={handleToggleCollapse}
+        returnFocusRef={sidebarTriggerRef}
       />
 
       <div

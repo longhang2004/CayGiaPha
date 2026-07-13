@@ -36,9 +36,12 @@ components should not add selectors for React Aria's default class names.
 
 ## Overlay ownership
 
-The future application overlay provider owns one root named
-`cgp-overlay-root`. Dialog, confirm, menu, popover, tooltip, and toast wrappers
-will use that root unless a later approved contract says otherwise.
+`cgp-overlay-root` is reserved for a future explicit application portal owner;
+the current React Aria overlays use their default body portal. `CGPDialog`,
+`CGPDrawer`, `CGPPopover`, and `CGPToastProvider` expose the public overlay
+contracts. Consumers retain workflow state and content; CGP owns modal
+semantics, dismissal policy, focus behavior, placement, responsive bounds, and
+the semantic styling hooks.
 
 `GraphOverlayBoundary` remains a separate product-owned local portal system. Its
 safe-rectangle measurement and `data-graph-safe-*` exclusion contracts must not
@@ -46,28 +49,22 @@ be routed through the generic CGP overlay root.
 
 ## Migration status
 
-Phase 0 defined the contracts and verified the kernel. The approved
-runtime layer now exports `CGPButton`, `CGPIconButton`, `CGPTextField`,
-`CGPPasswordField`, `CGPSelect`, `CGPCheckbox`, and `CGPDialog`. Fields own their label,
-description, error association, state classes, and password-reveal behavior.
-Select owns its trigger/listbox/popover and Checkbox owns its checked indicator
-plus description/error association. Dialog delegates modal semantics, focus
-containment/restoration, outside interaction handling, Escape handling, and
-scroll locking to React Aria while CGP owns dismissal policy and responsive
-classes. The legacy
-`components/Button.tsx` remains a native-button compatibility boundary until
-its consumers are migrated in bounded tasks; this preserves its React DOM event
-and inline-style contract rather than casting those props into incompatible
-React Aria types.
+The approved runtime layer now exports `CGPButton`, `CGPIconButton`,
+`CGPTextField`, `CGPPasswordField`, `CGPSelect`, `CGPCheckbox`, `CGPDialog`,
+`CGPDrawer`, `CGPPopover`, `CGPTabs`, and `CGPToastProvider`. The bounded
+migration phases cover auth fields and choices, application dialogs, the
+responsive sidebar drawer, hamburger/notification/filter/legend popovers,
+person-information tabs, and application toasts. Their tests cover semantic
+roles and relationships, keyboard interaction, focus restoration, dismissal,
+and controlled state.
 
-Remaining dialog consumer migration and toast, menu, and drawer implementations
-still require their separately approved migration phases. `TreeEntryModal` is
-the first bounded dialog consumer on `CGPDialog`. Existing form consumers remain on their legacy
-controls until a bounded migration task is approved. The first
-bounded auth migration covers sign-in, sign-up, password recovery, and their
-synchronized prototypes. Sign-up region selection and legal-consent controls
-now use the CGP Select and Checkbox primitives.
+The legacy `components/Button.tsx` remains a native-button compatibility
+boundary because its full React DOM event/style contract is not type-compatible
+with React Aria. Existing form consumers that have not been selected for a
+bounded migration also retain their native controls. The search results surface
+remains a product-owned composite rather than a generic popover, and
+`GraphOverlayBoundary` remains graph-owned as described above.
 
 The installed `react-aria-components@1.19.0` Toast exports are still prefixed
-`UNSTABLE_`. CGP therefore keeps a library-independent toast contract until a
-later phase validates a stable API or implements the queue internally.
+`UNSTABLE_`. `CGPToastProvider` therefore keeps a library-independent queue and
+public API until a later explicit migration validates a stable kernel API.

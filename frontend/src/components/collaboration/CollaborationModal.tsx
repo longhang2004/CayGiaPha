@@ -1,8 +1,7 @@
 import { useState, useCallback, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "@/app/providers";
-import { CGPDialog } from "@/components/cgp";
-import { useToast } from "@/components/ui/ToastProvider";
+import { CGPDialog, useCGPToast } from "@/components/cgp";
 import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { Input } from "@/components/ui/FormControls";
@@ -48,7 +47,7 @@ export interface CollaborationModalProps {
 export function CollaborationModal({ isOpen, onClose, treeId, isOwner, adapter = defaultAdapter, isPrototype }: CollaborationModalProps) {
   const { user } = useSession();
   const router = useRouter();
-  const { showToast } = useToast();
+  const { show } = useCGPToast();
 
   const [collaborators, setCollaborators] = useState<TreeCollaborator[]>([]);
   const [pendingInvites, setPendingInvites] = useState<CollaborationInvitation[]>([]);
@@ -93,19 +92,19 @@ export function CollaborationModal({ isOpen, onClose, treeId, isOwner, adapter =
     try {
       const result = await adapter.inviteCollaborator(treeId, inviteEmail.trim());
       if (result.emailMessage) {
-        showToast(result.emailMessage, result.emailSent ? "success" : "error");
+        show(result.emailMessage, { tone: result.emailSent ? "success" : "error" });
       } else if (result.status === "approved") {
-        showToast(
+        show(
           `Đã tạo lời mời (mã ${result.code}). Nếu email không tới, kiểm tra cấu hình EMAIL_* trên server và hộp thư rác.`,
-          "info",
+          { tone: "info" },
         );
       } else {
-        showToast("Đã gửi yêu cầu tham gia. Đang chờ chủ cây duyệt.", "info");
+        show("Đã gửi yêu cầu tham gia. Đang chờ chủ cây duyệt.", { tone: "info" });
       }
       setInviteEmail("");
       fetchCollaborationData();
     } catch (err) {
-      showToast(err instanceof ApiError ? err.message : "Không thể gửi lời mời.", "error");
+      show(err instanceof ApiError ? err.message : "Không thể gửi lời mời.", { tone: "error" });
     } finally {
       setCollaborationAction(null);
     }
@@ -118,10 +117,10 @@ export function CollaborationModal({ isOpen, onClose, treeId, isOwner, adapter =
       const result = await adapter.createInviteLink(treeId);
       setGeneratedInviteCode(result.code);
       setGeneratedInviteId(result.id);
-      showToast(`Đã tạo mã mời: ${result.code}`, "success");
+      show(`Đã tạo mã mời: ${result.code}`, { tone: "success" });
       fetchCollaborationData();
     } catch (err) {
-      showToast(err instanceof ApiError ? err.message : "Không thể tạo mã mời.", "error");
+      show(err instanceof ApiError ? err.message : "Không thể tạo mã mời.", { tone: "error" });
     } finally {
       setCollaborationAction(null);
     }
@@ -132,10 +131,10 @@ export function CollaborationModal({ isOpen, onClose, treeId, isOwner, adapter =
     setCollaborationAction(`approve:${inviteId}`);
     try {
       await adapter.approveInvitation(treeId, inviteId);
-      showToast("Đã duyệt lời mời cộng tác thành công!", "success");
+      show("Đã duyệt lời mời cộng tác thành công!", { tone: "success" });
       fetchCollaborationData();
     } catch (err) {
-      showToast(err instanceof ApiError ? err.message : "Thao tác thất bại.", "error");
+      show(err instanceof ApiError ? err.message : "Thao tác thất bại.", { tone: "error" });
     } finally {
       setCollaborationAction(null);
     }
@@ -146,10 +145,10 @@ export function CollaborationModal({ isOpen, onClose, treeId, isOwner, adapter =
     setCollaborationAction(`reject:${inviteId}`);
     try {
       await adapter.rejectInvitation(treeId, inviteId);
-      showToast("Đã từ chối/hủy lời mời cộng tác!", "success");
+      show("Đã từ chối/hủy lời mời cộng tác!", { tone: "success" });
       fetchCollaborationData();
     } catch (err) {
-      showToast(err instanceof ApiError ? err.message : "Thao tác thất bại.", "error");
+      show(err instanceof ApiError ? err.message : "Thao tác thất bại.", { tone: "error" });
     } finally {
       setCollaborationAction(null);
     }
@@ -255,7 +254,7 @@ export function CollaborationModal({ isOpen, onClose, treeId, isOwner, adapter =
                     <Input value={generatedInviteCode} readOnly aria-label="Mã mời" style={{ flex: "1 1 12rem", fontWeight: "bold", letterSpacing: "1px" }} />
                     <button type="button" className="btn" onClick={() => {
                       void navigator.clipboard.writeText(generatedInviteCode);
-                      showToast("Đã sao chép mã mời!", "success");
+                      show("Đã sao chép mã mời!", { tone: "success" });
                     }}>Sao chép mã</button>
                   </div>
                   {generatedInviteId ? (
@@ -264,7 +263,7 @@ export function CollaborationModal({ isOpen, onClose, treeId, isOwner, adapter =
                       <button type="button" className="btn btn-secondary" onClick={() => {
                         const link = `${window.location.origin}/invitation/${generatedInviteId}`;
                         void navigator.clipboard.writeText(link);
-                        showToast("Đã sao chép liên kết mời!", "success");
+                        show("Đã sao chép liên kết mời!", { tone: "success" });
                       }}>Sao chép liên kết</button>
                     </div>
                   ) : null}

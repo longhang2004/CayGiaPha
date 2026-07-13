@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { CollaborationModal, CollaborationAdapter } from "./CollaborationModal";
 import { MockSessionProvider } from "@/lib/prototype/mockSession";
-import { ToastProvider } from "@/components/ui/ToastProvider";
+import { CGPToastProvider } from "@/components/cgp";
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ refresh: vi.fn(), push: vi.fn(), replace: vi.fn() })
@@ -29,9 +29,9 @@ describe("CollaborationModal", () => {
   const renderModal = (props = {}, sessionProps = {}) => {
     return render(
       <MockSessionProvider user={{ userId: "u1", identifier: "test@example.com", treeId: "test-tree", displayName: "Owner Name", ...sessionProps } as any}>
-        <ToastProvider>
+        <CGPToastProvider>
           <CollaborationModal {...defaultProps} {...props} />
-        </ToastProvider>
+        </CGPToastProvider>
       </MockSessionProvider>
     );
   };

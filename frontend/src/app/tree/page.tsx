@@ -4,7 +4,7 @@ import { useEffect, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { api } from "@/lib/apiClient";
 import { useSession } from "@/app/providers";
-import { useToast } from "@/components/ui/ToastProvider";
+import { useCGPToast } from "@/components/cgp";
 import { useConfirm } from "@/components/ui/ConfirmProvider";
 import { GuidanceChecklist } from "@/components/guidance/GuidanceChecklist";
 import { TreeEntryModal, type CreateTreeInput, type TreeEntryResult } from "@/components/tree/TreeEntryModal";
@@ -22,7 +22,7 @@ interface TreeItem {
 function TreeListContent() {
   const router = useRouter();
   const { user, loading: sessionLoading } = useSession();
-  const { showToast } = useToast();
+  const { show } = useCGPToast();
   const { requestConfirm } = useConfirm();
 
   const [treesList, setTreesList] = useState<TreeItem[]>([]);
@@ -75,10 +75,10 @@ function TreeListContent() {
 
     try {
       await api.del(`/trees/${treeId}`);
-      showToast("Đã xóa cây gia phả thành công.", "success");
+      show("Đã xóa cây gia phả thành công.", { tone: "success" });
       fetchTrees();
     } catch (err: any) {
-      showToast(err.message || "Xóa cây gia phả thất bại.", "error");
+      show(err.message || "Xóa cây gia phả thất bại.", { tone: "error" });
     }
   };
 

@@ -2,7 +2,7 @@ import { describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { SettingsModal } from "./SettingsModal";
 import { MockSessionProvider } from "@/lib/prototype/mockSession";
-import { ToastProvider } from "@/components/ui/ToastProvider";
+import { CGPToastProvider } from "@/components/cgp";
 import { TextSizeProvider } from "@/components/a11y/TextSizeProvider";
 
 vi.mock("@/components/region/RegionSelector", () => ({
@@ -51,11 +51,11 @@ describe("SettingsModal", () => {
           ...userOverrides,
         } as any}
       >
-        <ToastProvider>
+        <CGPToastProvider>
           <TextSizeProvider>
             <SettingsModal {...defaultProps} {...props} />
           </TextSizeProvider>
-        </ToastProvider>
+        </CGPToastProvider>
       </MockSessionProvider>
     );
   };

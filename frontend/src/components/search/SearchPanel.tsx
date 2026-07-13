@@ -9,6 +9,7 @@ import {
   type SearchResult,
 } from "@/lib/search";
 import { type Person, type Address, addressLabel } from "@/lib/graph";
+import { CGPPopover } from "@/components/cgp";
 import { FilterIcon, PlusIcon, SearchIcon } from "@/components/ui/Icons";
 
 /**
@@ -129,13 +130,19 @@ export function SearchPanel({
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
-      if (toolbarRef.current && !toolbarRef.current.contains(event.target as Node)) {
+      const target = event.target as Node;
+      const isInsideToolbar = toolbarRef.current?.contains(target) ?? false;
+      const isInsideFilterPopover = document
+        .querySelector(".search-filter-cgp-popover")
+        ?.contains(target) ?? false;
+
+      if (!isInsideToolbar && !isInsideFilterPopover) {
         setShowDropdown(false);
       }
     }
-    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("mousedown", handleClickOutside, true);
     return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("mousedown", handleClickOutside, true);
     };
   }, []);
 
@@ -331,6 +338,9 @@ export function SearchPanel({
       setNoMatches(false);
       if (error instanceof ApiError && error.field) {
         setFieldErrors({ [error.field]: error.message });
+        if (error.field !== "nameQuery") {
+          setIsFilterDropdownOpen(true);
+        }
       } else if (error instanceof ApiError) {
         setFormError(error.message);
       } else {
@@ -415,19 +425,142 @@ export function SearchPanel({
                 )}
               </button>
 
-              <button
-                type="button"
-                className={`btn btn-secondary filter-toggle-btn ${hasActiveFilters() ? "filter-toggle-btn--active" : ""}`}
-                onClick={() => setIsFilterDropdownOpen(!isFilterDropdownOpen)}
-                aria-expanded={isFilterDropdownOpen}
-                aria-label="Bộ lọc"
-                title="Bộ lọc"
-                style={{ display: "flex", alignItems: "center", gap: "0.25rem" }}
+              <CGPPopover
+                isOpen={isFilterDropdownOpen}
+                onOpenChange={setIsFilterDropdownOpen}
+                trigger={
+                  <>
+                    <FilterIcon size={18} className="filter-toggle-btn__icon" />
+                    <span className="search-panel-toolbar__button-label">Bộ lọc</span>
+                    {hasActiveFilters() ? <span aria-hidden="true">●</span> : null}
+                  </>
+                }
+                triggerAriaLabel="Bộ lọc"
+                triggerClassName={`btn btn-secondary filter-toggle-btn ${hasActiveFilters() ? "filter-toggle-btn--active" : ""}`}
+                ariaLabel="Bộ lọc"
+                placement="top end"
+                size="md"
+                className="search-filter-cgp-popover"
               >
-                <FilterIcon size={18} className="filter-toggle-btn__icon" />
-                <span className="search-panel-toolbar__button-label">Bộ lọc</span>
-                {hasActiveFilters() ? <span aria-hidden="true">●</span> : null}
-              </button>
+                <div className="search-filter-cgp-content">
+                  <div className="field" style={{ marginBottom: "1rem" }}>
+                    <label htmlFor="filter-gender" style={{ display: "block", marginBottom: "0.5rem", fontWeight: 600 }}>Giới tính</label>
+                    <select
+                      id="filter-gender"
+                      value={gender}
+                      onChange={(e) => setGender(e.target.value)}
+                      style={{ width: "100%" }}
+                    >
+                      <option value="">Tất cả</option>
+                      <option value="male">Nam</option>
+                      <option value="female">Nữ</option>
+                    </select>
+                  </div>
+
+                  <div className="field" style={{ marginBottom: "1.25rem" }}>
+                    <label style={{ display: "block", marginBottom: "0.5rem", fontWeight: 600 }}>Năm sinh</label>
+                    <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                      <input
+                        id="filter-birthYearMin"
+                        type="number"
+                        placeholder="Từ"
+                        aria-label="Năm sinh từ"
+                        value={birthYearMin}
+                        aria-invalid={fieldErrors.birthYearMin ? true : undefined}
+                        aria-describedby={describedBy("birthYearMin")}
+                        onChange={(e) => setBirthYearMin(e.target.value)}
+                        style={{ flex: 1, minWidth: 0, margin: 0 }}
+                      />
+                      <span style={{ fontSize: "0.875rem", color: "var(--color-muted)" }}>đến</span>
+                      <input
+                        id="filter-birthYearMax"
+                        type="number"
+                        placeholder="Đến"
+                        aria-label="đến"
+                        value={birthYearMax}
+                        aria-invalid={fieldErrors.birthYearMax ? true : undefined}
+                        aria-describedby={describedBy("birthYearMax")}
+                        onChange={(e) => setBirthYearMax(e.target.value)}
+                        style={{ flex: 1, minWidth: 0, margin: 0 }}
+                      />
+                    </div>
+                    {fieldErrors.birthYearMin ? (
+                      <span id="birthYearMin-error" role="alert" className="field-error" style={{ display: "block", marginTop: "0.25rem" }}>
+                        {fieldErrors.birthYearMin}
+                      </span>
+                    ) : null}
+                    {fieldErrors.birthYearMax ? (
+                      <span id="birthYearMax-error" role="alert" className="field-error" style={{ display: "block", marginTop: "0.25rem" }}>
+                        {fieldErrors.birthYearMax}
+                      </span>
+                    ) : null}
+                  </div>
+
+                  {/* Hidden fields to satisfy automated testing expectations for advanced filters */}
+                  <div style={{ display: "none" }} aria-hidden="true">
+                    <label htmlFor="filter-side">Bên</label>
+                    <select id="filter-side" value={side} onChange={(e) => setSide(e.target.value)}>
+                      <option value="">Tất cả</option>
+                      <option value="paternal">Nội</option>
+                      <option value="maternal">Ngoại</option>
+                    </select>
+
+                    <label htmlFor="filter-deathStatus">Tình trạng mất</label>
+                    <select
+                      id="filter-deathStatus"
+                      value={deathStatus}
+                      onChange={(e) => setDeathStatus(e.target.value)}
+                    >
+                      <option value="">Tất cả</option>
+                      <option value="true">Đã qua đời</option>
+                      <option value="false">Còn sống</option>
+                    </select>
+
+                    <label htmlFor="filter-claimedStatus">Trạng thái xác nhận</label>
+                    <select
+                      id="filter-claimedStatus"
+                      value={claimedStatus}
+                      onChange={(e) => setClaimedStatus(e.target.value)}
+                    >
+                      <option value="">Tất cả</option>
+                      <option value="claimed">Đã xác nhận</option>
+                      <option value="unclaimed">Chưa xác nhận</option>
+                    </select>
+
+                    <label htmlFor="filter-relationshipType">Loại quan hệ</label>
+                    <select
+                      id="filter-relationshipType"
+                      value={relationshipType}
+                      onChange={(e) => setRelationshipType(e.target.value)}
+                    >
+                      <option value="">Tất cả</option>
+                      <option value="bloodline">Huyết thống</option>
+                      <option value="marriage">Hôn nhân</option>
+                      <option value="asserted">Khai báo</option>
+                      <option value="non_bloodline">Ngoài huyết thống</option>
+                    </select>
+                  </div>
+
+                  <div style={{ display: "flex", gap: "0.5rem", borderTop: "1px solid var(--color-hairline-soft)", paddingTop: "0.85rem", marginTop: "1rem" }}>
+                    <button
+                      type="button"
+                      className="btn btn-secondary"
+                      onClick={handleResetFilters}
+                      style={{ flex: 1, margin: 0 }}
+                    >
+                      Xóa bộ lọc
+                    </button>
+                    <button
+                      type="button"
+                      className="btn btn-primary btn-terracotta"
+                      onClick={() => setIsFilterDropdownOpen(false)}
+                      style={{ flex: 1, margin: 0 }}
+                    >
+                      Áp dụng
+                    </button>
+                  </div>
+                </div>
+              </CGPPopover>
 
               {/* Removed submit button as per user request (reactive search is sufficient) */}
             </div>
@@ -451,127 +584,6 @@ export function SearchPanel({
               </button>
             )}
 
-            {/* Floating popover filter dropdown */}
-            {isFilterDropdownOpen && (
-              <div className="search-filter-popover">
-                <div className="field" style={{ marginBottom: "1rem" }}>
-                  <label htmlFor="filter-gender" style={{ display: "block", marginBottom: "0.5rem", fontWeight: 600 }}>Giới tính</label>
-                  <select
-                    id="filter-gender"
-                    value={gender}
-                    onChange={(e) => setGender(e.target.value)}
-                    style={{ width: "100%" }}
-                  >
-                    <option value="">Tất cả</option>
-                    <option value="male">Nam</option>
-                    <option value="female">Nữ</option>
-                  </select>
-                </div>
-
-                <div className="field" style={{ marginBottom: "1.25rem" }}>
-                  <label style={{ display: "block", marginBottom: "0.5rem", fontWeight: 600 }}>Năm sinh</label>
-                  <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                    <input
-                      id="filter-birthYearMin"
-                      type="number"
-                      placeholder="Từ"
-                      aria-label="Năm sinh từ"
-                      value={birthYearMin}
-                      aria-invalid={fieldErrors.birthYearMin ? true : undefined}
-                      aria-describedby={describedBy("birthYearMin")}
-                      onChange={(e) => setBirthYearMin(e.target.value)}
-                      style={{ flex: 1, minWidth: 0, margin: 0 }}
-                    />
-                    <span style={{ fontSize: "0.875rem", color: "var(--color-muted)" }}>đến</span>
-                    <input
-                      id="filter-birthYearMax"
-                      type="number"
-                      placeholder="Đến"
-                      aria-label="đến"
-                      value={birthYearMax}
-                      aria-invalid={fieldErrors.birthYearMax ? true : undefined}
-                      aria-describedby={describedBy("birthYearMax")}
-                      onChange={(e) => setBirthYearMax(e.target.value)}
-                      style={{ flex: 1, minWidth: 0, margin: 0 }}
-                    />
-                  </div>
-                  {fieldErrors.birthYearMin ? (
-                    <span id="birthYearMin-error" role="alert" className="field-error" style={{ display: "block", marginTop: "0.25rem" }}>
-                      {fieldErrors.birthYearMin}
-                    </span>
-                  ) : null}
-                  {fieldErrors.birthYearMax ? (
-                    <span id="birthYearMax-error" role="alert" className="field-error" style={{ display: "block", marginTop: "0.25rem" }}>
-                      {fieldErrors.birthYearMax}
-                    </span>
-                  ) : null}
-                </div>
-
-                {/* Hidden fields to satisfy automated testing expectations for advanced filters */}
-                <div style={{ display: "none" }} aria-hidden="true">
-                  <label htmlFor="filter-side">Bên</label>
-                  <select id="filter-side" value={side} onChange={(e) => setSide(e.target.value)}>
-                    <option value="">Tất cả</option>
-                    <option value="paternal">Nội</option>
-                    <option value="maternal">Ngoại</option>
-                  </select>
-
-                  <label htmlFor="filter-deathStatus">Tình trạng mất</label>
-                  <select
-                    id="filter-deathStatus"
-                    value={deathStatus}
-                    onChange={(e) => setDeathStatus(e.target.value)}
-                  >
-                    <option value="">Tất cả</option>
-                    <option value="true">Đã qua đời</option>
-                    <option value="false">Còn sống</option>
-                  </select>
-
-                  <label htmlFor="filter-claimedStatus">Trạng thái xác nhận</label>
-                  <select
-                    id="filter-claimedStatus"
-                    value={claimedStatus}
-                    onChange={(e) => setClaimedStatus(e.target.value)}
-                  >
-                    <option value="">Tất cả</option>
-                    <option value="claimed">Đã xác nhận</option>
-                    <option value="unclaimed">Chưa xác nhận</option>
-                  </select>
-
-                  <label htmlFor="filter-relationshipType">Loại quan hệ</label>
-                  <select
-                    id="filter-relationshipType"
-                    value={relationshipType}
-                    onChange={(e) => setRelationshipType(e.target.value)}
-                  >
-                    <option value="">Tất cả</option>
-                    <option value="bloodline">Huyết thống</option>
-                    <option value="marriage">Hôn nhân</option>
-                    <option value="asserted">Khai báo</option>
-                    <option value="non_bloodline">Ngoài huyết thống</option>
-                  </select>
-                </div>
-
-                <div style={{ display: "flex", gap: "0.5rem", borderTop: "1px solid var(--color-hairline-soft)", paddingTop: "0.85rem", marginTop: "1rem" }}>
-                  <button
-                    type="button"
-                    className="btn btn-secondary"
-                    onClick={handleResetFilters}
-                    style={{ flex: 1, margin: 0 }}
-                  >
-                    Xóa bộ lọc
-                  </button>
-                  <button
-                    type="button"
-                    className="btn btn-primary btn-terracotta"
-                    onClick={() => setIsFilterDropdownOpen(false)}
-                    style={{ flex: 1, margin: 0 }}
-                  >
-                    Áp dụng
-                  </button>
-                </div>
-              </div>
-            )}
           </div>
         </form>
 

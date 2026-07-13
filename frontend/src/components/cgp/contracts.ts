@@ -2,6 +2,7 @@ import type { ReactNode, RefObject } from "react";
 import type {
   ButtonProps,
   CheckboxProps,
+  Placement,
   SelectProps,
   TextFieldProps,
 } from "react-aria-components";
@@ -98,6 +99,43 @@ export interface CGPDialogProps {
   className?: string;
 }
 
+export interface CGPPopoverProps {
+  isOpen: boolean;
+  onOpenChange: (isOpen: boolean) => void;
+  trigger: ReactNode;
+  triggerAriaLabel: string;
+  triggerClassName?: string;
+  children: ReactNode;
+  ariaLabel: string;
+  placement?: Placement;
+  offset?: number;
+  size?: CGPComponentSize;
+  className?: string;
+}
+
+interface CGPDrawerBaseProps {
+  id?: string;
+  label: string;
+  placement?: "left" | "right";
+  safeAreaEdge?: "left" | "right";
+  className?: string;
+  children: ReactNode;
+}
+
+export type CGPDrawerProps = CGPDrawerBaseProps &
+  (
+    | { presentation: "persistent" }
+    | {
+        presentation: "modal";
+        isOpen: boolean;
+        onOpenChange: (isOpen: boolean) => void;
+        dismissPolicy?: CGPDialogDismissPolicy;
+        closeLabel?: string;
+        initialFocusRef?: RefObject<HTMLElement>;
+        returnFocusRef?: RefObject<HTMLElement>;
+      }
+  );
+
 export interface CGPToastAction {
   label: string;
   onAction: () => void;
@@ -112,4 +150,20 @@ export interface CGPToastOptions {
 
 export interface CGPToastApi {
   show: (message: string, options?: CGPToastOptions) => () => void;
+}
+
+export interface CGPTabItem {
+  id: string;
+  label: ReactNode;
+  content: ReactNode;
+  disabled?: boolean;
+}
+
+export interface CGPTabsProps {
+  ariaLabel: string;
+  items: Iterable<CGPTabItem>;
+  defaultSelectedKey?: string;
+  selectedKey?: string;
+  onSelectionChange?: (key: string) => void;
+  className?: string;
 }

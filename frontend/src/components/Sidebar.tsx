@@ -16,15 +16,19 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { NotificationBell } from "@/components/ui/NotificationBell";
 import { SignOutButton } from "@/components/auth/SignOutButton";
+import { CGPDrawer } from "@/components/cgp";
+import type { RefObject } from "react";
 
 interface SidebarProps {
+  presentation: "persistent" | "modal";
   isOpen: boolean;
   onClose: () => void;
   isCollapsed: boolean;
   onToggleCollapse: () => void;
+  returnFocusRef?: RefObject<HTMLElement>;
 }
 
-export function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse }: SidebarProps) {
+export function Sidebar({ presentation, isOpen, onClose, isCollapsed, onToggleCollapse, returnFocusRef }: SidebarProps) {
   const { user, loading } = useSession();
   const pathname = usePathname();
 
@@ -54,15 +58,25 @@ export function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse }: Side
     ? "Mở rộng menu"
     : "Thu gọn menu";
 
-  return (
-    <>
-      {/* Mobile Drawer Overlay */}
-      {isOpen && <div className="global-sidebar__overlay" onClick={onClose} aria-hidden="true" />}
+  const drawerProps = presentation === "modal"
+    ? {
+        presentation: "modal" as const,
+        isOpen,
+        onOpenChange: (nextIsOpen: boolean) => {
+          if (!nextIsOpen) onClose();
+        },
+        closeLabel: "Đóng menu ứng dụng",
+        returnFocusRef,
+      }
+    : { presentation: "persistent" as const };
 
-      <aside
-        className={`global-sidebar ${isOpen ? "global-sidebar--open" : ""} ${isCollapsed ? "global-sidebar--collapsed" : ""}`}
-        aria-label="Menu ứng dụng"
-        data-graph-safe-external="left"
+  return (
+      <CGPDrawer
+        {...drawerProps}
+        id="app-sidebar"
+        label="Menu ứng dụng"
+        safeAreaEdge="left"
+        className={`global-sidebar ${isOpen ? "global-sidebar--open" : ""} ${presentation === "persistent" && isCollapsed ? "global-sidebar--collapsed" : ""}`}
       >
         <div className="global-sidebar__top">
           <div className="global-sidebar__brand-container">
@@ -200,7 +214,6 @@ export function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse }: Side
             </div>
           )}
         </div>
-      </aside>
-    </>
+      </CGPDrawer>
   );
 }
