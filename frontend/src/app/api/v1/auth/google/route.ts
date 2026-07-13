@@ -9,7 +9,7 @@ export async function POST(request: Request) {
     const { idToken, region, acceptedTos, acceptedPrivacy, displayName } = await request.json();
     const clientIp = request.headers.get("x-forwarded-for") || "127.0.0.1";
 
-    await rateLimiter.check(`ip:${clientIp}`);
+    await rateLimiter.check(`ip:${clientIp}`, { failClosed: true });
 
     const session = await authService.verifyGoogleAuth(
       idToken,

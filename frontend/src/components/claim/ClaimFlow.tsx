@@ -2,17 +2,12 @@
 
 import { useState, type FormEvent } from "react";
 import { ApiError } from "@/lib/apiClient";
-import { invite, verifyClaim } from "@/lib/claim";
+import { invite, verifyClaim, type ClaimResult } from "@/lib/claim";
 import { CGPButton } from "@/components/cgp";
 
 /**
- * Node invite + claim-by-code UI (task 10.4, Requirements 11.1, 11.2).
- *
- * Two complementary flows rendered together:
- *   - Invite: the owner enters a phone/email and sends a 15-minute claim code
- *     to an unclaimed node (11.1).
- *   - Claim by code: the recipient enters the identifier the invitation was
- *     sent to plus the code, and the node is linked to their account (11.2).
+ * Separate owner-invite and signed-in recipient verification modes
+ * (task 10.4, Requirements 11.1, 11.2).
  *
  * Field-level errors from the error envelope (wrong/expired code, already
  * claimed, attempts exhausted — 11.3–11.7) are surfaced inline and associated
@@ -20,13 +15,24 @@ import { CGPButton } from "@/components/cgp";
  */
 
 interface ClaimFlowProps {
+  mode: "invite" | "verify";
   personId: string;
-  treeId: string;
+  treeId?: string;
   onInvited?: () => void;
-  onClaimed?: (personId: string) => void;
+  onClaimed?: (result: ClaimResult) => void;
+  inviteAction?: (destination: string) => Promise<void>;
+  verifyAction?: (code: string) => Promise<ClaimResult>;
 }
 
-export function ClaimFlow({ personId, treeId, onInvited, onClaimed }: ClaimFlowProps) {
+export function ClaimFlow({
+  mode,
+  personId,
+  treeId,
+  onInvited,
+  onClaimed,
+  inviteAction,
+  verifyAction,
+}: ClaimFlowProps) {
   // Invite flow state.
   const [destination, setDestination] = useState("");
   const [inviteSent, setInviteSent] = useState(false);
@@ -35,7 +41,6 @@ export function ClaimFlow({ personId, treeId, onInvited, onClaimed }: ClaimFlowP
   const [inviting, setInviting] = useState(false);
 
   // Claim flow state.
-  const [identifier, setIdentifier] = useState("");
   const [code, setCode] = useState("");
   const [claimedOk, setClaimedOk] = useState(false);
   const [claimFieldErrors, setClaimFieldErrors] = useState<Record<string, string>>({});
@@ -49,7 +54,12 @@ export function ClaimFlow({ personId, treeId, onInvited, onClaimed }: ClaimFlowP
     setInviteSent(false);
     setInviting(true);
     try {
-      await invite(personId, { treeId, destination });
+      if (!treeId) throw new Error("treeId is required for owner invitations.");
+      if (inviteAction) {
+        await inviteAction(destination);
+      } else {
+        await invite(personId, { treeId, destination });
+      }
       setInviteSent(true);
       onInvited?.();
     } catch (error) {
@@ -72,9 +82,11 @@ export function ClaimFlow({ personId, treeId, onInvited, onClaimed }: ClaimFlowP
     setClaimedOk(false);
     setClaiming(true);
     try {
-      await verifyClaim(personId, { treeId, identifier, code });
+      const result = verifyAction
+        ? await verifyAction(code)
+        : await verifyClaim(personId, { code });
       setClaimedOk(true);
-      onClaimed?.(personId);
+      onClaimed?.(result);
     } catch (error) {
       if (error instanceof ApiError && error.field) {
         setClaimFieldErrors({ [error.field]: error.message });
@@ -88,8 +100,8 @@ export function ClaimFlow({ personId, treeId, onInvited, onClaimed }: ClaimFlowP
     }
   }
 
-  return (
-    <section aria-label="Mời và xác nhận">
+  if (mode === "invite") return (
+    <section aria-label="Mời người thân xác nhận">
       <form onSubmit={handleInvite} aria-label="Gửi lời mời">
         <h3>Mời người thân xác nhận</h3>
         {inviteError ? (
@@ -127,9 +139,13 @@ export function ClaimFlow({ personId, treeId, onInvited, onClaimed }: ClaimFlowP
           Gửi lời mời
         </CGPButton>
       </form>
+    </section>
+  );
 
+  return (
+    <section aria-label="Xác nhận đây là tôi">
       <form onSubmit={handleClaim} aria-label="Xác nhận bằng mã">
-        <h3>Xác nhận danh tính bằng mã mời</h3>
+        <h3>Xác nhận đây là tôi</h3>
         {claimError ? (
           <p role="alert" data-testid="claim-error">
             {claimError}
@@ -140,27 +156,6 @@ export function ClaimFlow({ personId, treeId, onInvited, onClaimed }: ClaimFlowP
             Xác nhận thành công! Hồ sơ đã được liên kết với tài khoản của bạn.
           </p>
         ) : null}
-        <p>
-          <label htmlFor="claim-identifier">Số điện thoại hoặc email</label>
-          <br />
-          <input
-            id="claim-identifier"
-            name="identifier"
-            type="text"
-            value={identifier}
-            required
-            aria-invalid={claimFieldErrors.identifier ? true : undefined}
-            aria-describedby={
-              claimFieldErrors.identifier ? "claim-identifier-error" : undefined
-            }
-            onChange={(e) => setIdentifier(e.target.value)}
-          />
-          {claimFieldErrors.identifier ? (
-            <span id="claim-identifier-error" role="alert">
-              {claimFieldErrors.identifier}
-            </span>
-          ) : null}
-        </p>
         <p>
           <label htmlFor="claim-code">Mã xác nhận</label>
           <br />
@@ -182,7 +177,7 @@ export function ClaimFlow({ personId, treeId, onInvited, onClaimed }: ClaimFlowP
           ) : null}
         </p>
         <CGPButton type="submit" isDisabled={claiming}>
-          Xác nhận
+          Xác nhận đây là tôi
         </CGPButton>
       </form>
     </section>

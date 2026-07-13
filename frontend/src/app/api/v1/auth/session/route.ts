@@ -4,6 +4,7 @@ import { db, ensureUserDisplayNameSchema } from "@/lib/db";
 import { users } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { ApiException } from "@/lib/services/errors";
+import { consentService } from "@/lib/services/consent";
 
 export const dynamic = "force-dynamic";
 
@@ -34,13 +35,15 @@ export async function GET() {
       throw ApiException.accountNotFound("No user found for current session.");
     }
 
+    const consentRequired = await consentService.needsReacceptance(user.id);
+
     return Response.json({
       userId: user.id,
-      treeId: auth.ownedTreeId,
       identifier: user.phone || user.email || "",
       displayName: user.displayName ?? null,
       verified: user.verified,
       role: user.role === "admin" ? "admin" : "user",
+      consentRequired,
     });
   });
 }

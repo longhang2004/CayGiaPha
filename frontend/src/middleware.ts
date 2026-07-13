@@ -33,16 +33,9 @@ function allowedCorsOrigin(requestOrigin: string | null): string | null {
   return configured.includes(normalized) ? requestOrigin : null;
 }
 
-// Returns true if path is a public API route or matches claim verification
+// Returns true if path is an explicitly public API route.
 function isPublicApiRoute(pathname: string): boolean {
-  if (PUBLIC_API_ROUTES.includes(pathname)) {
-    return true;
-  }
-  // Claim verification path is public: /api/v1/persons/[id]/claim/verify
-  if (/\/api\/v1\/persons\/[^/]+\/claim\/verify/.test(pathname)) {
-    return true;
-  }
-  return false;
+  return PUBLIC_API_ROUTES.includes(pathname);
 }
 
 export function middleware(request: NextRequest) {

@@ -32,7 +32,6 @@ export async function PATCH(
 
     const photo = await photoService.setPrimary(
       auth.userId || "",
-      auth.ownedTreeId,
       treeId,
       personId,
       photoId

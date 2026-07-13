@@ -13,7 +13,7 @@ export async function GET(
     const treeId = params.treeId;
 
     // Enforce owner check
-    await authorizationService.requireOwner(auth.userId, auth.ownedTreeId, treeId);
+    await authorizationService.requireOwner(auth.userId, treeId);
 
     const pendings = await db
       .select()

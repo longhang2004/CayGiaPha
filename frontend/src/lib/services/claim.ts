@@ -1,62 +1,138 @@
 import { db } from "../db";
 import { claims, persons, users } from "../db/schema";
-import { eq, and, or } from "drizzle-orm";
+import { and, eq, or } from "drizzle-orm";
 import { ApiException } from "./errors";
-import { identifierValidator, verificationCodeService } from "./auth";
+import {
+  identifierValidator,
+  normalizeIdentifierIdentity,
+  verificationCodeService,
+} from "./auth";
+
+type ClaimPerson = Pick<typeof persons.$inferSelect, "id" | "treeId">;
+type ClaimUser = Pick<typeof users.$inferSelect, "id" | "email" | "phone" | "verified">;
+type ClaimRecord = typeof claims.$inferSelect;
+
+export interface ClaimServiceDependencies {
+  findPerson(personId: string, treeId?: string): Promise<ClaimPerson | null>;
+  hasClaim(personId: string): Promise<boolean>;
+  findUserById(userId: string): Promise<ClaimUser | null>;
+  findVerifiedLegacyPhone(phone: string): Promise<boolean>;
+  issueCode(personId: string, destination: string): Promise<unknown>;
+  verifyCode(
+    personId: string,
+    code: string,
+    expectedDestinations: string[],
+  ): Promise<void>;
+  saveClaim(personId: string, userId: string): Promise<ClaimRecord>;
+}
+
+const defaultDependencies: ClaimServiceDependencies = {
+  async findPerson(personId, treeId) {
+    const condition = treeId
+      ? and(eq(persons.id, personId), eq(persons.treeId, treeId))
+      : eq(persons.id, personId);
+    return db
+      .select({ id: persons.id, treeId: persons.treeId })
+      .from(persons)
+      .where(condition)
+      .then((rows) => rows[0] ?? null);
+  },
+  async hasClaim(personId) {
+    return db
+      .select({ id: claims.id })
+      .from(claims)
+      .where(eq(claims.personId, personId))
+      .then((rows) => rows.length > 0);
+  },
+  async findUserById(userId) {
+    return db
+      .select({
+        id: users.id,
+        email: users.email,
+        phone: users.phone,
+        verified: users.verified,
+      })
+      .from(users)
+      .where(eq(users.id, userId))
+      .then((rows) => rows[0] ?? null);
+  },
+  async findVerifiedLegacyPhone(phone) {
+    const canonical = normalizeIdentifierIdentity(phone);
+    const local = canonical.startsWith("84") ? `0${canonical.slice(2)}` : phone;
+    const international = canonical.startsWith("84") ? `+${canonical}` : phone;
+    return db
+      .select({ id: users.id })
+      .from(users)
+      .where(
+        and(
+          eq(users.verified, true),
+          or(eq(users.phone, phone), eq(users.phone, local), eq(users.phone, international)),
+        ),
+      )
+      .then((rows) => rows.length > 0);
+  },
+  issueCode(personId, destination) {
+    return verificationCodeService.issueForNode(personId, destination);
+  },
+  verifyCode(personId, code, expectedDestinations) {
+    return verificationCodeService.verifyForNode(personId, code, expectedDestinations);
+  },
+  async saveClaim(personId, userId) {
+    const [saved] = await db.insert(claims).values({ personId, userId }).returning();
+    return saved;
+  },
+};
 
 export class ClaimService {
-  async invite(treeId: string, personId: string, destination: string): Promise<void> {
-    await this.requirePerson(treeId, personId);
-    identifierValidator.requireValid("destination", destination);
+  constructor(private readonly dependencies: ClaimServiceDependencies = defaultDependencies) {}
 
-    const isClaimed = await this.isClaimed(personId);
-    if (isClaimed) {
+  async invite(treeId: string, personId: string, destination: string): Promise<void> {
+    await this.requirePerson(personId, treeId);
+    const trimmedDestination = destination?.trim();
+    const type = identifierValidator.requireValid("destination", trimmedDestination);
+
+    if (await this.dependencies.hasClaim(personId)) {
       throw ApiException.alreadyClaimed("This node has already been claimed.");
     }
+    if (
+      type === "PHONE" &&
+      !(await this.dependencies.findVerifiedLegacyPhone(trimmedDestination))
+    ) {
+      throw ApiException.accountNotFound(
+        "Phone invitations are only available for verified legacy accounts.",
+      );
+    }
 
-    // Issue claim code
-    await verificationCodeService.issueForNode(personId, destination);
+    const normalizedDestination =
+      type === "EMAIL" ? trimmedDestination.toLowerCase() : trimmedDestination;
+    await this.dependencies.issueCode(personId, normalizedDestination);
   }
 
   async verifyClaim(
-    treeId: string,
     personId: string,
-    identifier: string,
-    code: string
-  ): Promise<typeof claims.$inferSelect> {
-    await this.requirePerson(treeId, personId);
-
-    const isAlreadyClaimed = await this.isClaimed(personId);
-    if (isAlreadyClaimed) {
+    currentUserId: string,
+    code: string,
+  ): Promise<{ claim: ClaimRecord; treeId: string }> {
+    const person = await this.requirePerson(personId);
+    if (await this.dependencies.hasClaim(personId)) {
       throw ApiException.alreadyClaimed("This node has already been claimed.");
     }
 
-    const type = identifierValidator.requireValid("identifier", identifier);
-    const recipient = await db
-      .select()
-      .from(users)
-      .where(
-        type === "PHONE" ? eq(users.phone, identifier) : eq(users.email, identifier)
-      )
-      .then((rows) => rows[0]);
-
-    if (!recipient || !recipient.verified) {
-      throw ApiException.accountNotFound("No verified account was found for the provided identifier.");
+    const recipient = await this.dependencies.findUserById(currentUserId);
+    if (!recipient?.verified) {
+      throw ApiException.accountNotFound("A verified account is required to claim this person.");
     }
 
-    // Verify OTP
-    await verificationCodeService.verifyForNode(personId, code);
+    const expectedDestinations = [recipient.email, recipient.phone]
+      .filter((value): value is string => !!value)
+      .map(normalizeIdentifierIdentity);
+    if (expectedDestinations.length === 0) {
+      throw ApiException.accountNotFound("A verified account identity is required to claim this person.");
+    }
 
-    // Save claim link
-    const [saved] = await db
-      .insert(claims)
-      .values({
-        personId,
-        userId: recipient.id,
-      })
-      .returning();
-
-    return saved;
+    await this.dependencies.verifyCode(personId, code, expectedDestinations);
+    const claim = await this.dependencies.saveClaim(personId, currentUserId);
+    return { claim, treeId: person.treeId };
   }
 
   async isLinkedUser(personId: string | null, userId: string | null): Promise<boolean> {
@@ -70,8 +146,7 @@ export class ClaimService {
 
   async isClaimed(personId: string | null): Promise<boolean> {
     if (!personId) return false;
-    const rows = await db.select().from(claims).where(eq(claims.personId, personId));
-    return rows.length > 0;
+    return this.dependencies.hasClaim(personId);
   }
 
   async isLinkedToTree(treeId: string | null, userId: string | null): Promise<boolean> {
@@ -84,13 +159,11 @@ export class ClaimService {
     return rows.length > 0;
   }
 
-  private async requirePerson(treeId: string, personId: string) {
-    const person = await db
-      .select()
-      .from(persons)
-      .where(and(eq(persons.id, personId), eq(persons.treeId, treeId)))
-      .then((rows) => rows[0]);
-
+  private async requirePerson(personId: string, treeId?: string): Promise<ClaimPerson> {
+    if (!personId || (treeId !== undefined && !treeId)) {
+      throw ApiException.nodeNotAccessible("The target node is not accessible.");
+    }
+    const person = await this.dependencies.findPerson(personId, treeId);
     if (!person) {
       throw ApiException.nodeNotAccessible("The target node is not accessible.");
     }

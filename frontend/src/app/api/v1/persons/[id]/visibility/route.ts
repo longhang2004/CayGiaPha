@@ -45,7 +45,7 @@ export async function PATCH(
     }
 
     const personId = params.id;
-    await authorizationService.requireMutationPermitted(auth.userId, auth.ownedTreeId, treeId, personId);
+    await authorizationService.requireVisibilityEditor(auth.userId, treeId, personId);
 
     const body = await request.json();
     const updated = await personService.setVisibility(treeId, personId, body);

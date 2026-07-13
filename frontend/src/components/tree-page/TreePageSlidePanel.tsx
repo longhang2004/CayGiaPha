@@ -1,4 +1,3 @@
-import { useSession } from "@/app/providers";
 import { PersonForm } from "@/components/person/PersonForm";
 import { AddRelativeForm } from "@/components/person/AddRelativeForm";
 import { PersonInfoPanel } from "@/components/graph/PersonInfoPanel";
@@ -6,10 +5,10 @@ import { DeletionDialog } from "@/components/deletion/DeletionDialog";
 import { PersonPhotos } from "@/components/photos/PersonPhotos";
 import { UpcomingEventsWidget } from "@/components/graph/UpcomingEventsWidget";
 import { CloseIcon } from "@/components/ui/Icons";
+import { ClaimFlow } from "@/components/claim/ClaimFlow";
 import { useTreeContext } from "./TreeContext";
 
 export function TreePageSlidePanel() {
-  const { user } = useSession();
   const {
     activeTreeId,
     persons,
@@ -22,17 +21,20 @@ export function TreePageSlidePanel() {
     editMode,
     addRelativeMode,
     addressLoading,
+    capabilities,
     canEdit,
-    isOwner,
     setCreateMode,
     setEditMode,
     setAddRelativeMode,
     setSelectedId,
     setEgoId,
     refreshTree,
+    claimInviteAction,
   } = useTreeContext();
 
   const selectedPerson = selectedId ? persons.find((p) => p.id === selectedId) : null;
+  const selectedCapabilities = selectedPerson?.capabilities ?? capabilities;
+  const canEditSelected = selectedCapabilities?.editContent ?? canEdit;
   const selectedSpouseRelationship = selectedPerson
     ? relationships.find((r) => r.type === "marriage" && (r.sourceId === selectedPerson.id || r.targetId === selectedPerson.id))
     : undefined;
@@ -153,7 +155,7 @@ export function TreePageSlidePanel() {
               />
 
               <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem", marginTop: "1rem" }}>
-                {canEdit && (
+                {canEditSelected && (
                   <div className="person-actions">
                     <button
                       type="button"
@@ -191,11 +193,22 @@ export function TreePageSlidePanel() {
                 )}
               </div>
 
+              {selectedCapabilities?.manageClaim && !selectedPerson.claimed ? (
+                <div style={{ marginTop: "1.5rem", borderTop: "1px solid var(--color-hairline-soft)", paddingTop: "1rem" }}>
+                  <ClaimFlow
+                    mode="invite"
+                    treeId={activeTreeId}
+                    personId={selectedPerson.id}
+                    inviteAction={claimInviteAction}
+                  />
+                </div>
+              ) : null}
+
               <div style={{ marginTop: "1.5rem", borderTop: "1px solid var(--color-hairline-soft)", paddingTop: "1rem" }}>
                 <PersonPhotos
                   treeId={activeTreeId}
                   personId={selectedPerson.id}
-                  canEdit={isOwner}
+                  canEdit={selectedCapabilities?.editPhotos ?? false}
                 />
               </div>
             </div>

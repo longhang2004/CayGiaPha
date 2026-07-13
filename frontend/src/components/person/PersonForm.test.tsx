@@ -45,6 +45,7 @@ describe("PersonForm (create)", () => {
     expect(url).toBe("/api/v1/persons");
     expect(init.method).toBe("POST");
     expect(JSON.parse(init.body as string)).toEqual({
+      treeId: "t1",
       displayName: "Anh",
       gender: "male",
       deathStatus: false,
@@ -66,6 +67,7 @@ describe("PersonForm (create)", () => {
 
     const [, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
     expect(JSON.parse(init.body as string)).toEqual({
+      treeId: "t1",
       displayName: "Bình",
       gender: "female",
       deathStatus: true,

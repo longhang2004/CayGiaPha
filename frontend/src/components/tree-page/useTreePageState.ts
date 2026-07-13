@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "@/app/providers";
 import { api, ApiError } from "@/lib/apiClient";
-import type { Person, Relationship, Address } from "@/lib/graph";
+import type { Person, Relationship, Address, Capabilities, TreeAccessRole } from "@/lib/graph";
 import type { Region } from "@/lib/region";
 import { getCollaborators, type TreeCollaborator } from "@/lib/collaboration";
 import type { TreeContextType } from "./TreeContext";
@@ -23,6 +23,15 @@ export function useTreePageState(
   const [livingRedaction, setLivingRedaction] = useState(true);
   const [sharing, setSharing] = useState("private");
   const [treeName, setTreeName] = useState("Cây Gia Phả");
+  const [accessRole, setAccessRole] = useState<TreeAccessRole>("NONE");
+  const [capabilities, setCapabilities] = useState<Capabilities>({
+    editContent: false,
+    editPhotos: false,
+    editVisibility: false,
+    manageClaim: false,
+    manageTree: false,
+    manageCollaboration: false,
+  });
 
   const [loadingData, setLoadingData] = useState(true);
   const [addressesReady, setAddressesReady] = useState(false);
@@ -64,7 +73,7 @@ export function useTreePageState(
   useEffect(() => {
     let cancelled = false;
 
-    if (!activeTreeId || !user?.userId) {
+    if (!activeTreeId || !user?.userId || accessRole !== "OWNER") {
       setCollaborators([]);
       return;
     }
@@ -84,7 +93,7 @@ export function useTreePageState(
     return () => {
       cancelled = true;
     };
-  }, [activeTreeId, user?.userId]);
+  }, [activeTreeId, user?.userId, accessRole]);
 
   const loadTree = useCallback(async (id: string, token?: string) => {
     setLoadingData(true);
@@ -98,6 +107,8 @@ export function useTreePageState(
         livingRedaction: boolean;
         sharing: string;
         name: string;
+        accessRole: TreeAccessRole;
+        capabilities: Capabilities;
       }>(`/trees/${encodeURIComponent(id)}`, {
         headers: token ? { "X-Share-Token": token } : undefined,
       });
@@ -107,6 +118,8 @@ export function useTreePageState(
       setLivingRedaction(data.livingRedaction);
       setSharing(data.sharing);
       setTreeName(data.name || "Cây Gia Phả");
+      setAccessRole(data.accessRole);
+      setCapabilities(data.capabilities);
     } catch (err) {
       if (err instanceof ApiError) {
         if (err.status === 401 || err.status === 403) {
@@ -163,9 +176,9 @@ export function useTreePageState(
     setAddressesReady(true);
   }, []);
 
-  const isOwner = user?.treeId === activeTreeId;
-  const isCollaborator = collaborators.some((collaborator) => collaborator.userId === user?.userId);
-  const canEdit = isOwner || isCollaborator;
+  const isOwner = accessRole === "OWNER";
+  const isCollaborator = accessRole === "CONTRIBUTOR";
+  const canEdit = capabilities.editContent;
   const guidanceRole = isOwner ? "owner" : canEdit ? "editor" : "reader";
 
   const isSessionOrDataLoading = sessionLoading || (loadingData && persons.length === 0);
@@ -198,6 +211,8 @@ export function useTreePageState(
     createMode,
     isSettingsOpen,
     isCollaborationOpen,
+    accessRole,
+    capabilities,
     isOwner,
     isCollaborator,
     canEdit,

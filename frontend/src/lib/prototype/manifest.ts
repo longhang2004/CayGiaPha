@@ -56,6 +56,11 @@ export const PROTOTYPE_PAGES: PrototypePage[] = [
     description: "Invitation acceptance flow",
   },
   {
+    href: "/prototype/claim/example-person",
+    label: "🪪 Xác nhận đây là tôi",
+    description: "Signed-in claim verification bound to account identity",
+  },
+  {
     href: "/prototype/help",
     label: "❓ Hướng dẫn (Help)",
     description: "In-app help guide",

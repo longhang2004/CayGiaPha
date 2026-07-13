@@ -225,6 +225,7 @@ export function AddRelativeForm({ treeId, persons, preselectedPersonId, onCreate
 
         // 1. Create the new person
         const created = await createPerson({
+          treeId,
           displayName: newDisplayName.trim(),
           gender: finalGender,
           deathStatus: newDeathStatus,

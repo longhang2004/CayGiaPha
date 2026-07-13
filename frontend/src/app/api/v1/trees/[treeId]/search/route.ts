@@ -13,7 +13,7 @@ export async function POST(
     const treeId = params.treeId;
     const shareToken = request.headers.get("x-share-token");
 
-    await authorizationService.requireReadAccess(auth.userId, auth.ownedTreeId, treeId, shareToken);
+    await authorizationService.requireReadAccess(auth.userId, treeId, shareToken);
     const clientIp = request.headers.get("x-forwarded-for") || "127.0.0.1";
     await rateLimiter.check(`search:${auth.userId || clientIp}`);
     await rateLimiter.check(`search-ip:${clientIp}`);
@@ -22,8 +22,7 @@ export async function POST(
     const results = await searchService.search(
       treeId,
       body,
-      auth.userId || "",
-      auth.ownedTreeId
+      auth.userId || ""
     );
 
     return Response.json(results);

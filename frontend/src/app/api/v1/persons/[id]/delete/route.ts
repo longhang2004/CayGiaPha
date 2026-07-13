@@ -18,7 +18,7 @@ export async function POST(
     }
 
     const personId = params.id;
-    await authorizationService.requireOwner(auth.userId, auth.ownedTreeId, treeId);
+    await authorizationService.requireContentEditor(auth.userId, treeId, personId);
 
     const { strategy } = await request.json();
     if (!strategy) {

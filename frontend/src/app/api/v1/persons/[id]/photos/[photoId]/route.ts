@@ -21,7 +21,6 @@ export async function GET(
 
     const image = await photoService.serve(
       auth.userId || "",
-      auth.ownedTreeId,
       treeId,
       personId,
       photoId,
@@ -54,7 +53,6 @@ export async function DELETE(
 
     await photoService.delete(
       auth.userId || "",
-      auth.ownedTreeId,
       treeId,
       personId,
       photoId

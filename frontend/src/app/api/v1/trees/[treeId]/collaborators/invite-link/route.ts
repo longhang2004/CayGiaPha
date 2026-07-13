@@ -27,7 +27,7 @@ export async function POST(
       throw ApiException.notAuthorized("Vui lòng đăng nhập để tạo mã mời.");
     }
 
-    await authorizationService.requireOwner(auth.userId, auth.ownedTreeId, treeId);
+    await authorizationService.requireOwner(auth.userId, treeId);
 
     const code = generateRandomCode();
     const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);

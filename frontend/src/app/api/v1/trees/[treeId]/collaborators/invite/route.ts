@@ -160,7 +160,7 @@ export async function POST(
     if (!auth.userId) {
       throw ApiException.notAuthorized("Vui lòng đăng nhập để gửi lời mời.");
     }
-    await authorizationService.requireOwner(auth.userId, auth.ownedTreeId, treeId);
+    await authorizationService.requireOwner(auth.userId, treeId);
 
     const tree = await db
       .select({ name: trees.name })

@@ -72,13 +72,13 @@ export async function GET(
     }
 
     const shareToken = request.headers.get("x-share-token");
-    await authorizationService.requireReadAccess(auth.userId, auth.ownedTreeId, treeId, shareToken);
+    await authorizationService.requireReadAccess(auth.userId, treeId, shareToken);
 
     const personId = params.id;
     const person = await personService.read(treeId, personId);
 
-    const role = await authorizationService.classify(auth.userId, auth.ownedTreeId, treeId, personId);
-    const privileged = role !== "NEITHER";
+    const role = await authorizationService.classify(auth.userId, treeId, personId);
+    const privileged = role === "OWNER" || role === "CONTRIBUTOR" || role === "LINKED";
 
     const tree = await db
       .select()
@@ -105,7 +105,7 @@ export async function PATCH(
     }
 
     const personId = params.id;
-    await authorizationService.requireMutationPermitted(auth.userId, auth.ownedTreeId, treeId, personId);
+    await authorizationService.requireContentEditor(auth.userId, treeId, personId);
     const clientIp = request.headers.get("x-forwarded-for") || "127.0.0.1";
     await rateLimiter.check(`mutate-person:${auth.userId || clientIp}`);
     await rateLimiter.check(`mutate-ip:${clientIp}`);
@@ -130,7 +130,7 @@ export async function DELETE(
     }
 
     const personId = params.id;
-    await authorizationService.requireOwner(auth.userId, auth.ownedTreeId, treeId);
+    await authorizationService.requireContentEditor(auth.userId, treeId, personId);
 
     const res = await personDeletionService.beginDeletion(treeId, personId);
     return Response.json(res);

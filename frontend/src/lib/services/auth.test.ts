@@ -1,5 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { deliverOtp, normalizePhoneTo84 } from "./auth";
+import {
+  deliverOtp,
+  matchesVerificationDestination,
+  normalizePhoneTo84,
+} from "./auth";
 
 describe("Phone Number Normalization", () => {
   it("converts leading 0 to 84", () => {
@@ -12,6 +16,21 @@ describe("Phone Number Normalization", () => {
 
   it("leaves already normalized numbers unchanged", () => {
     expect(normalizePhoneTo84("84987654321")).toBe("84987654321");
+  });
+});
+
+describe("claim destination identity matching", () => {
+  it("matches email case-insensitively and canonical Vietnamese phone formats", () => {
+    expect(
+      matchesVerificationDestination("User@Example.Test", ["user@example.test"]),
+    ).toBe(true);
+    expect(matchesVerificationDestination("0987654321", ["+84987654321"])).toBe(true);
+  });
+
+  it("rejects a destination belonging to another account", () => {
+    expect(
+      matchesVerificationDestination("invitee@example.test", ["session@example.test"]),
+    ).toBe(false);
   });
 });
 

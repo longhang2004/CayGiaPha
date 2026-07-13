@@ -56,6 +56,7 @@ function TreePageContent({ params, searchParams }: TreePageProps) {
     shareToken,
     isSettingsOpen,
     isCollaborationOpen,
+    capabilities,
     isOwner,
     guidanceRole,
     setSelectedId,
@@ -98,6 +99,15 @@ function TreePageContent({ params, searchParams }: TreePageProps) {
     }
   }, [nextSearchParams, setIsSettingsOpen]);
 
+  useEffect(() => {
+    if (
+      nextSearchParams.get("collaboration") === "true" &&
+      capabilities.manageCollaboration
+    ) {
+      setIsCollaborationOpen(true);
+    }
+  }, [capabilities.manageCollaboration, nextSearchParams, setIsCollaborationOpen]);
+
   const handleCloseSettings = () => {
     setIsSettingsOpen(false);
     const paramsUrl = new URLSearchParams(nextSearchParams.toString());
@@ -108,6 +118,10 @@ function TreePageContent({ params, searchParams }: TreePageProps) {
 
   const handleCloseCollaboration = () => {
     setIsCollaborationOpen(false);
+    const paramsUrl = new URLSearchParams(nextSearchParams.toString());
+    paramsUrl.delete("collaboration");
+    const query = paramsUrl.toString() ? `?${paramsUrl.toString()}` : "";
+    router.replace(`${pathname}${query}`);
   };
 
   if (isSessionOrDataLoading) {

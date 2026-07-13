@@ -1,5 +1,5 @@
 import { createContext, useContext } from "react";
-import type { Person, Relationship, Address } from "@/lib/graph";
+import type { Person, Relationship, Address, Capabilities, TreeAccessRole } from "@/lib/graph";
 import type { Region } from "@/lib/region";
 import type { TreeCollaborator } from "@/lib/collaboration";
 
@@ -42,6 +42,8 @@ export interface TreeContextType {
   isCollaborationOpen: boolean;
 
   // Permissions & Roles
+  accessRole: TreeAccessRole;
+  capabilities: Capabilities;
   isOwner: boolean;
   isCollaborator: boolean;
   canEdit: boolean;
@@ -61,6 +63,7 @@ export interface TreeContextType {
   setAddressLoading: (loading: boolean) => void;
   handleAddressesLoaded: (loaded: Map<string, Address>) => void;
   refreshTree: () => void;
+  claimInviteAction?: (destination: string) => Promise<void>;
 
   // Settings Actions
   setTreeName: (name: string) => void;

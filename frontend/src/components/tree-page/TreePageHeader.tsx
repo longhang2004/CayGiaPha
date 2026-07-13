@@ -16,6 +16,7 @@ export function TreePageHeader() {
     egoId,
     selectedId,
     addressLoading,
+    capabilities,
     canEdit,
     setSelectedId,
     setEditMode,
@@ -76,7 +77,7 @@ export function TreePageHeader() {
             <LightbulbIcon size={18} />
             <span className="hide-on-tablet hide-on-mobile">Hướng dẫn</span>
           </button>
-          {user && (
+          {user && capabilities.manageCollaboration && (
             <button
               type="button"
               className="btn btn-secondary"

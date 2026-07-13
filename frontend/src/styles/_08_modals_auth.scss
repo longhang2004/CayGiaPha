@@ -1164,7 +1164,8 @@ html.dark .full-screen-loader__spinner {
   background-color: var(--color-brand) !important;
   transform: scale(1.3) !important;
 }
-.invitation-page {
+.invitation-page,
+.claim-page {
   min-height: 100vh;
   display: flex;
   align-items: center;
@@ -1173,10 +1174,36 @@ html.dark .full-screen-loader__spinner {
   background: var(--color-bg);
 }
 
-.invitation-page__card {
+.invitation-page__card,
+.claim-page__card {
   width: min(100%, 30rem);
   padding: clamp(1.5rem, 5vw, 2.5rem);
   text-align: center;
+}
+
+.claim-page__card {
+  text-align: left;
+
+  form {
+    display: grid;
+    gap: 0.75rem;
+    margin-top: 1.5rem;
+  }
+
+  form h3 {
+    font-size: 1rem;
+    margin: 0;
+  }
+
+  form p {
+    margin: 0;
+  }
+
+  form input {
+    width: 100%;
+    min-height: 44px;
+    margin-top: 0.35rem;
+  }
 }
 
 .invitation-account {
@@ -1191,7 +1218,8 @@ html.dark .full-screen-loader__spinner {
 }
 
 @media (max-width: 640px) {
-  .invitation-page {
+  .invitation-page,
+  .claim-page {
     align-items: flex-start;
     padding-top: max(1rem, env(safe-area-inset-top));
   }

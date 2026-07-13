@@ -2,8 +2,8 @@ import { handleApiRoute } from "@/lib/services/routeHelper";
 import { getAuthContext } from "@/lib/services/authorization";
 import { ApiException } from "@/lib/services/errors";
 import { db } from "@/lib/db";
-import { trees, treeCollaborators } from "@/lib/db/schema";
-import { eq, or, and } from "drizzle-orm";
+import { trees, treeCollaborators, claims, persons } from "@/lib/db/schema";
+import { eq } from "drizzle-orm";
 import { rateLimiter } from "@/lib/services/rateLimiter";
 
 export const dynamic = "force-dynamic";
@@ -36,12 +36,32 @@ export async function GET() {
       .innerJoin(trees, eq(treeCollaborators.treeId, trees.id))
       .where(eq(treeCollaborators.userId, auth.userId));
 
+    const linkedTrees = await db
+      .select({
+        id: trees.id,
+        ownerUserId: trees.ownerUserId,
+        name: trees.name,
+        region: trees.region,
+        createdAt: trees.createdAt,
+        sharing: trees.sharing,
+        livingRedaction: trees.livingRedaction,
+      })
+      .from(claims)
+      .innerJoin(persons, eq(claims.personId, persons.id))
+      .innerJoin(trees, eq(persons.treeId, trees.id))
+      .where(eq(claims.userId, auth.userId));
+
     // Combine and deduplicate
     const allTreesMap = new Map<string, any>();
-    ownedTrees.forEach(t => allTreesMap.set(t.id, { ...t, isOwner: true }));
+    ownedTrees.forEach(t => allTreesMap.set(t.id, { ...t, accessRole: "OWNER", isOwner: true }));
     collaboratedTrees.forEach(t => {
       if (!allTreesMap.has(t.id)) {
-        allTreesMap.set(t.id, { ...t, isOwner: false });
+        allTreesMap.set(t.id, { ...t, accessRole: "CONTRIBUTOR", isOwner: false });
+      }
+    });
+    linkedTrees.forEach(t => {
+      if (!allTreesMap.has(t.id)) {
+        allTreesMap.set(t.id, { ...t, accessRole: "LINKED", isOwner: false });
       }
     });
 

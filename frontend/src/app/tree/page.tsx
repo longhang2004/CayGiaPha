@@ -18,7 +18,14 @@ interface TreeItem {
   createdAt: string;
   sharing: string;
   isOwner: boolean;
+  accessRole: "OWNER" | "CONTRIBUTOR" | "LINKED";
 }
+
+const ACCESS_ROLE_LABEL: Record<TreeItem["accessRole"], string> = {
+  OWNER: "Chủ cây",
+  CONTRIBUTOR: "Cộng tác viên",
+  LINKED: "Thành viên đã xác nhận",
+};
 
 function TreeListContent() {
   const router = useRouter();
@@ -158,7 +165,7 @@ function TreeListContent() {
                 </h3>
                 <div className="tree-list-card__meta">
                   <span>
-                    Vai trò: <strong>{tree.isOwner ? "Chủ cây" : "Cộng tác viên"}</strong>
+                    Vai trò: <strong>{ACCESS_ROLE_LABEL[tree.accessRole]}</strong>
                   </span>
                   <span>
                     Phương ngữ: <strong>{tree.region === "Bac" ? "Bắc" : tree.region === "Trung" ? "Trung" : "Nam"}</strong>
@@ -173,7 +180,7 @@ function TreeListContent() {
                 >
                   Xem sơ đồ
                 </button>
-                {tree.isOwner && (
+                {tree.accessRole === "OWNER" && (
                   <button
                     type="button"
                     className="btn btn-secondary tree-list-card__delete"

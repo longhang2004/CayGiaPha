@@ -42,8 +42,13 @@ function layoutMode(pathname: string | null): "bare" | "marketing" | "inapp" {
     return "bare";
   }
 
-  // Invitation accept (full-screen card; real + prototype)
-  if (path.startsWith("/invitation/") || path.startsWith("/prototype/invitation/")) {
+  // Invitation and identity-claim flows use a focused full-screen card.
+  if (
+    path.startsWith("/invitation/") ||
+    path.startsWith("/claim/") ||
+    path.startsWith("/prototype/invitation/") ||
+    path.startsWith("/prototype/claim/")
+  ) {
     return "bare";
   }
 

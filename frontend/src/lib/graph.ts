@@ -27,6 +27,17 @@ export type DerivationState = "derived" | "asserted" | "verified" | "conflict";
 /** Social subtype for non-bloodline edges (Requirement 12.1). */
 export type SocialType = "friend" | "teacher" | "colleague";
 
+export type TreeAccessRole = "OWNER" | "CONTRIBUTOR" | "LINKED" | "READER" | "NONE";
+
+export interface Capabilities {
+  editContent: boolean;
+  editPhotos: boolean;
+  editVisibility: boolean;
+  manageClaim: boolean;
+  manageTree: boolean;
+  manageCollaboration: boolean;
+}
+
 export interface Person {
   id: string;
   displayName: string;
@@ -43,6 +54,7 @@ export interface Person {
   deathCalendar?: string | null;
   deathLunarLeap?: boolean | null;
   visDeath?: string | null;
+  capabilities?: Capabilities;
 }
 
 export interface Relationship {

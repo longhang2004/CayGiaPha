@@ -1,17 +1,66 @@
 import { db } from "../db";
-import { trees, claims, treeShareTokens, userConsents, legalDocuments, persons, users, treeCollaborators } from "../db/schema";
-import { eq, and, desc } from "drizzle-orm";
+import { trees, claims, treeShareTokens, persons, users, treeCollaborators } from "../db/schema";
+import { eq, and } from "drizzle-orm";
 import { ApiException } from "./errors";
 import { consentService } from "./consent";
 import { cookies } from "next/headers";
 import { sessionService } from "./auth";
 import crypto from "crypto";
 
-export type Role = "OWNER" | "LINKED_CLAIMED_USER" | "NEITHER";
+export type Role = "OWNER" | "CONTRIBUTOR" | "LINKED" | "READER" | "NONE";
+
+export interface Capabilities {
+  editContent: boolean;
+  editPhotos: boolean;
+  editVisibility: boolean;
+  manageClaim: boolean;
+  manageTree: boolean;
+  manageCollaboration: boolean;
+}
+
+const NO_CAPABILITIES: Capabilities = {
+  editContent: false,
+  editPhotos: false,
+  editVisibility: false,
+  manageClaim: false,
+  manageTree: false,
+  manageCollaboration: false,
+};
+
+export function capabilitiesFor(
+  role: Role,
+  options: { personScoped?: boolean } = {},
+): Capabilities {
+  if (role === "OWNER") {
+    return {
+      editContent: true,
+      editPhotos: true,
+      editVisibility: true,
+      manageClaim: true,
+      manageTree: true,
+      manageCollaboration: true,
+    };
+  }
+  if (role === "CONTRIBUTOR") {
+    return {
+      ...NO_CAPABILITIES,
+      editContent: true,
+      editPhotos: true,
+    };
+  }
+  if (role === "LINKED" && options.personScoped) {
+    return {
+      ...NO_CAPABILITIES,
+      editContent: true,
+      editPhotos: true,
+      editVisibility: true,
+    };
+  }
+  return { ...NO_CAPABILITIES };
+}
 
 export interface AuthContext {
   userId: string | null;
-  ownedTreeId: string | null;
   isAuthenticated: boolean;
   role: "user" | "admin" | null;
 }
@@ -20,12 +69,12 @@ export async function getAuthContext(): Promise<AuthContext> {
   const cookieStore = cookies();
   const sessionToken = cookieStore.get("SESSION")?.value;
   if (!sessionToken) {
-    return { userId: null, ownedTreeId: null, isAuthenticated: false, role: null };
+    return { userId: null, isAuthenticated: false, role: null };
   }
 
   const session = await sessionService.resolve(sessionToken);
   if (!session) {
-    return { userId: null, ownedTreeId: null, isAuthenticated: false, role: null };
+    return { userId: null, isAuthenticated: false, role: null };
   }
 
   const user = await db
@@ -35,18 +84,11 @@ export async function getAuthContext(): Promise<AuthContext> {
     .then((rows) => rows[0]);
 
   if (!user) {
-    return { userId: null, ownedTreeId: null, isAuthenticated: false, role: null };
+    return { userId: null, isAuthenticated: false, role: null };
   }
-
-  const ownedTree = await db
-    .select({ id: trees.id })
-    .from(trees)
-    .where(eq(trees.ownerUserId, session.userId))
-    .then((rows) => rows[0]);
 
   return {
     userId: session.userId,
-    ownedTreeId: ownedTree ? ownedTree.id : null,
     isAuthenticated: true,
     role: user.role === "admin" ? "admin" : "user",
   };
@@ -56,52 +98,35 @@ export async function getAuthContext(): Promise<AuthContext> {
 export class AuthorizationService {
   async classify(
     currentUserId: string | null,
-    ownedTreeId: string | null,
-    targetTreeId: string | null,
-    targetPersonId?: string | null
+    targetTreeId: string,
+    targetPersonId?: string | null,
+    shareToken?: string | null,
   ): Promise<Role> {
     if (!currentUserId) {
-      return "NEITHER";
+      return "NONE";
     }
 
-    let treeId = targetTreeId;
-    if (!treeId && targetPersonId) {
-      const p = await db
-        .select({ treeId: persons.treeId })
-        .from(persons)
-        .where(eq(persons.id, targetPersonId))
-        .then((rows) => rows[0]);
-      if (p) {
-        treeId = p.treeId;
-      }
+    const isOwner = await db
+      .select({ id: trees.id })
+      .from(trees)
+      .where(and(eq(trees.id, targetTreeId), eq(trees.ownerUserId, currentUserId)))
+      .then((rows) => rows.length > 0);
+    if (isOwner) {
+      return "OWNER";
     }
 
-    if (treeId) {
-      // Check if user is the direct owner of the tree
-      const isOwner = await db
-        .select({ id: trees.id })
-        .from(trees)
-        .where(and(eq(trees.id, treeId), eq(trees.ownerUserId, currentUserId)))
-        .then((rows) => rows.length > 0);
-      if (isOwner) {
-        return "OWNER";
-      }
-
-      // Check if user is a collaborator with write access
-      const isCollab = await db
-        .select({ id: treeCollaborators.id })
-        .from(treeCollaborators)
-        .where(and(eq(treeCollaborators.treeId, treeId), eq(treeCollaborators.userId, currentUserId)))
-        .then((rows) => rows.length > 0);
-      if (isCollab) {
-        return "OWNER";
-      }
+    const isContributor = await db
+      .select({ id: treeCollaborators.id })
+      .from(treeCollaborators)
+      .where(and(eq(treeCollaborators.treeId, targetTreeId), eq(treeCollaborators.userId, currentUserId)))
+      .then((rows) => rows.length > 0);
+    if (isContributor) {
+      return "CONTRIBUTOR";
     }
 
-    // LINKED_CLAIMED_USER: check if the target person is claimed by this user
     if (targetPersonId) {
       const isLinked = await db
-        .select()
+        .select({ id: claims.id })
         .from(claims)
         .where(
           and(
@@ -112,32 +137,77 @@ export class AuthorizationService {
         .then((rows) => rows.length > 0);
 
       if (isLinked) {
-        return "LINKED_CLAIMED_USER";
+        return "LINKED";
       }
     }
 
-    return "NEITHER";
+    if (await this.isUserLinkedToTree(targetTreeId, currentUserId)) {
+      return targetPersonId ? "READER" : "LINKED";
+    }
+
+    const tree = await db
+      .select({ sharing: trees.sharing })
+      .from(trees)
+      .where(eq(trees.id, targetTreeId))
+      .then((rows) => rows[0]);
+    if (!tree) {
+      return "NONE";
+    }
+    if (tree.sharing === "public") {
+      return "READER";
+    }
+    if (tree.sharing === "link" && shareToken) {
+      const tokenHash = this.hashToken(shareToken);
+      const validToken = await db
+        .select({ id: treeShareTokens.id, revokedAt: treeShareTokens.revokedAt })
+        .from(treeShareTokens)
+        .where(and(eq(treeShareTokens.tokenHash, tokenHash), eq(treeShareTokens.treeId, targetTreeId)))
+        .then((rows) => rows.find((row) => !row.revokedAt));
+      if (validToken) {
+        return "READER";
+      }
+    }
+    return "NONE";
+  }
+
+  async requireContentEditor(
+    currentUserId: string | null,
+    targetTreeId: string,
+    targetPersonId?: string | null
+  ): Promise<void> {
+    const role = await this.classify(currentUserId, targetTreeId, targetPersonId);
+    const permitted = role === "OWNER" || role === "CONTRIBUTOR" || (role === "LINKED" && !!targetPersonId);
+    if (!permitted) {
+      throw ApiException.notAuthorized("You are not authorized to modify this tree's contents.");
+    }
+    await this.requireCurrentConsent(currentUserId);
   }
 
   async requireMutationPermitted(
     currentUserId: string | null,
-    ownedTreeId: string | null,
     targetTreeId: string,
-    targetPersonId?: string | null
+    targetPersonId?: string | null,
   ): Promise<void> {
-    const role = await this.classify(currentUserId, ownedTreeId, targetTreeId, targetPersonId);
-    if (role === "NEITHER") {
-      throw ApiException.notAuthorized("You are not authorized to modify this tree's contents.");
+    await this.requireContentEditor(currentUserId, targetTreeId, targetPersonId);
+  }
+
+  async requireVisibilityEditor(
+    currentUserId: string | null,
+    targetTreeId: string,
+    targetPersonId: string,
+  ): Promise<void> {
+    const role = await this.classify(currentUserId, targetTreeId, targetPersonId);
+    if (role !== "OWNER" && role !== "LINKED") {
+      throw ApiException.notAuthorized("Only the tree owner or linked person may change visibility.");
     }
     await this.requireCurrentConsent(currentUserId);
   }
 
   async requireOwner(
     currentUserId: string | null,
-    ownedTreeId: string | null,
     targetTreeId: string
   ): Promise<void> {
-    const role = await this.classify(currentUserId, ownedTreeId, targetTreeId, null);
+    const role = await this.classify(currentUserId, targetTreeId, null);
     if (role !== "OWNER") {
       throw ApiException.notAuthorized("Only the tree owner may perform this operation.");
     }
@@ -176,90 +246,18 @@ export class AuthorizationService {
 
   async hasReadAccess(
     currentUserId: string | null,
-    ownedTreeId: string | null,
     targetTreeId: string,
     shareToken?: string | null
   ): Promise<boolean> {
-    if (!currentUserId || !targetTreeId) {
-      return false;
-    }
-
-    // Owner check
-    const isOwner = await db
-      .select({ id: trees.id })
-      .from(trees)
-      .where(and(eq(trees.id, targetTreeId), eq(trees.ownerUserId, currentUserId)))
-      .then((rows) => rows.length > 0);
-    if (isOwner) {
-      return true;
-    }
-
-    // Collaborator check
-    const isCollab = await db
-      .select({ id: treeCollaborators.id })
-      .from(treeCollaborators)
-      .where(and(eq(treeCollaborators.treeId, targetTreeId), eq(treeCollaborators.userId, currentUserId)))
-      .then((rows) => rows.length > 0);
-    if (isCollab) {
-      return true;
-    }
-
-    // Linked family member has access
-
-    const isLinked = await this.isUserLinkedToTree(targetTreeId, currentUserId);
-    if (isLinked) {
-      return true;
-    }
-
-    const tree = await db
-      .select()
-      .from(trees)
-      .where(eq(trees.id, targetTreeId))
-      .then((rows) => rows[0]);
-
-    if (!tree) {
-      return false;
-    }
-
-    if (tree.sharing === "private") {
-      return false;
-    }
-
-    if (tree.sharing === "public") {
-      return true;
-    }
-
-    // 'link' sharing: check if token is valid
-    if (tree.sharing === "link" && shareToken) {
-      const tokenHash = this.hashToken(shareToken);
-      const validToken = await db
-        .select()
-        .from(treeShareTokens)
-        .where(
-          and(
-            eq(treeShareTokens.tokenHash, tokenHash),
-            eq(treeShareTokens.treeId, targetTreeId),
-            // not revoked
-            // revokedAt is null
-          )
-        )
-        .then((rows) => rows.filter(r => !r.revokedAt)[0]);
-
-      if (validToken) {
-        return true;
-      }
-    }
-
-    return false;
+    return (await this.classify(currentUserId, targetTreeId, null, shareToken)) !== "NONE";
   }
 
   async requireReadAccess(
     currentUserId: string | null,
-    ownedTreeId: string | null,
     targetTreeId: string,
     shareToken?: string | null
   ): Promise<void> {
-    const hasAccess = await this.hasReadAccess(currentUserId, ownedTreeId, targetTreeId, shareToken);
+    const hasAccess = await this.hasReadAccess(currentUserId, targetTreeId, shareToken);
     if (!hasAccess) {
       throw ApiException.notAuthorized("You are not authorized to view this tree.");
     }
@@ -273,25 +271,13 @@ export class AuthorizationService {
       throw ApiException.notAuthorized("You are not authorized to view this collaboration roster.");
     }
 
-    const [owned, collaborated] = await Promise.all([
-      db
-        .select({ id: trees.id })
-        .from(trees)
-        .where(and(eq(trees.id, targetTreeId), eq(trees.ownerUserId, currentUserId)))
-        .then((rows) => rows[0]),
-      db
-        .select({ id: treeCollaborators.id })
-        .from(treeCollaborators)
-        .where(
-          and(
-            eq(treeCollaborators.treeId, targetTreeId),
-            eq(treeCollaborators.userId, currentUserId),
-          ),
-        )
-        .then((rows) => rows[0]),
-    ]);
+    const owned = await db
+      .select({ id: trees.id })
+      .from(trees)
+      .where(and(eq(trees.id, targetTreeId), eq(trees.ownerUserId, currentUserId)))
+      .then((rows) => rows[0]);
 
-    if (!owned && !collaborated) {
+    if (!owned) {
       throw ApiException.notAuthorized("You are not authorized to view this collaboration roster.");
     }
   }

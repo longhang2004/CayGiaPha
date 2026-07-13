@@ -14,11 +14,11 @@ export const PROTOTYPE_TREE_ID = "prototype-tree-id-0001";
 
 export const MOCK_USER: SessionUser = {
   userId: "prototype-user-id-0001",
-  treeId: PROTOTYPE_TREE_ID,
   identifier: "prototype@caygipha.dev",
   displayName: "Hàng Nhựt Prototype",
   verified: true,
   role: "user",
+  consentRequired: false,
 };
 
 export const MOCK_PERSONS: Person[] = [

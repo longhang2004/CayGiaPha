@@ -17,7 +17,7 @@ export async function GET(
     const egoId = params.egoId;
     const shareToken = request.headers.get("x-share-token");
 
-    await authorizationService.requireReadAccess(auth.userId, auth.ownedTreeId, treeId, shareToken);
+    await authorizationService.requireReadAccess(auth.userId, treeId, shareToken);
 
     const allPersons = await db
       .select()

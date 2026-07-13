@@ -12,7 +12,7 @@ export async function POST(
     const auth = await getAuthContext();
     const treeId = params.treeId;
 
-    await authorizationService.requireOwner(auth.userId, auth.ownedTreeId, treeId);
+    await authorizationService.requireOwner(auth.userId, treeId);
 
     const token = await treeService.issueShareToken(treeId);
 
@@ -35,7 +35,7 @@ export async function DELETE(
     const auth = await getAuthContext();
     const treeId = params.treeId;
 
-    await authorizationService.requireOwner(auth.userId, auth.ownedTreeId, treeId);
+    await authorizationService.requireOwner(auth.userId, treeId);
 
     await treeService.revokeShareToken(treeId);
 

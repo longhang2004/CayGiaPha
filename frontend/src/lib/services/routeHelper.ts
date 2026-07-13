@@ -12,7 +12,7 @@ export async function handleApiRoute(handler: () => Promise<Response>): Promise<
       {
         error: {
           code: "INTERNAL_ERROR",
-          message: error instanceof Error ? error.message : "An unexpected error occurred",
+          message: "Đã xảy ra lỗi hệ thống. Vui lòng thử lại sau.",
         },
       },
       { status: 500 }

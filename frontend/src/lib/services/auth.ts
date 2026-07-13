@@ -99,13 +99,33 @@ export function normalizePhoneTo84(phone: string): string {
   return phone;
 }
 
+/** Canonical form used only for comparing an OTP destination with session identity. */
+export function normalizeIdentifierIdentity(identifier: string): string {
+  const trimmed = identifier.trim();
+  if (identifierValidator.isValidEmail(trimmed)) {
+    return trimmed.toLowerCase();
+  }
+  return normalizePhoneTo84(trimmed);
+}
+
+export function matchesVerificationDestination(
+  destination: string,
+  expectedDestinations: string[],
+): boolean {
+  const canonicalDestination = normalizeIdentifierIdentity(destination);
+  return expectedDestinations.some(
+    (expected) => normalizeIdentifierIdentity(expected) === canonicalDestination,
+  );
+}
+
 // ------------------------------------------
 // OTP DELIVERY PROVIDER
 // ------------------------------------------
 export async function deliverOtp(
   destination: string,
   code: string,
-  purpose: string
+  purpose: string,
+  personId?: string | null,
 ): Promise<void> {
   const mask = (dest: string) => {
     if (!dest) return "<unknown>";
@@ -114,15 +134,25 @@ export async function deliverOtp(
     return "*".repeat(hidden) + dest.substring(hidden);
   };
 
-  console.log(`[OTP] Delivered ${purpose} verification code to ${mask(destination)}`);
-  if (process.env.NODE_ENV !== "production") {
-    console.log(`[dev-only] ${purpose} code for ${destination} = ${code}`);
-  }
+  console.info(`[OTP] Dispatching ${purpose} verification code to ${mask(destination)}`);
 
   const mailEnabled = process.env.EMAIL_ENABLED === "true";
   const zaloEnabled = process.env.ZALO_ENABLED === "true";
   const speedSmsEnabled = process.env.SPEEDSMS_ENABLED === "true";
   const identifierType = identifierValidator.classify(destination);
+  const appUrl = (process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000")
+    .replace(/\/$/, "");
+  const claimUrl = purpose === "claim" && personId
+    ? `${appUrl}/claim/${encodeURIComponent(personId)}`
+    : null;
+  const purposeLabel = purpose === "signup"
+    ? "Đăng ký"
+    : purpose === "signin"
+      ? "Đăng nhập"
+      : purpose === "password_reset"
+        ? "Khôi phục mật khẩu"
+        : "Xác nhận hồ sơ";
+  const validityMinutes = purpose === "claim" || purpose === "password_reset" ? "15" : "5";
 
   if (mailEnabled && identifierType === "EMAIL") {
     try {
@@ -139,13 +169,13 @@ export async function deliverOtp(
       await transporter.sendMail({
         from: `"Cây Gia Phả" <${process.env.EMAIL_USER}>`,
         to: destination,
-        subject: `Mã xác thực ${purpose === "signup" ? "Đăng ký" : purpose === "signin" ? "Đăng nhập" : "Claim Node"}`,
-        text: `Mã xác thực của bạn là: ${code}. Mã này có hiệu lực trong ${purpose === "claim" ? "15" : "5"} phút.`,
-        html: `<p>Mã xác thực của bạn là: <strong>${code}</strong>.</p><p>Mã này có hiệu lực trong ${purpose === "claim" ? "15" : "5"} phút.</p>`,
+        subject: `Mã xác thực ${purposeLabel}`,
+        text: `Mã xác thực của bạn là: ${code}. Mã này có hiệu lực trong ${validityMinutes} phút.${claimUrl ? ` Mở trang xác nhận: ${claimUrl}` : ""}`,
+        html: `<p>Mã xác thực của bạn là: <strong>${code}</strong>.</p><p>Mã này có hiệu lực trong ${validityMinutes} phút.</p>${claimUrl ? `<p><a href="${claimUrl}">Xác nhận đây là tôi</a></p>` : ""}`,
       });
-    } catch (error: any) {
-      console.error("Nodemailer failed to deliver OTP:", error);
-      throw new Error(`OTP delivery failed: ${error.message}`);
+    } catch {
+      console.error("[Email] OTP delivery failed.");
+      throw new Error("OTP delivery failed.");
     }
   }
 
@@ -158,9 +188,7 @@ export async function deliverOtp(
 
       const formattedPhone = normalizePhoneTo84(destination);
 
-      const messageText = `Mã xác thực ${
-        purpose === "signup" ? "Đăng ký" : purpose === "signin" ? "Đăng nhập" : "Claim Node"
-      } Cây Gia Phả của bạn là: ${code}. Mã có hiệu lực trong ${purpose === "claim" ? "15" : "5"} phút.`;
+      const messageText = `Mã xác thực ${purposeLabel} Cây Gia Phả của bạn là: ${code}. Mã có hiệu lực trong ${validityMinutes} phút.${claimUrl ? ` ${claimUrl}` : ""}`;
 
       const templateId = process.env.ZALO_TEMPLATE_ID;
       if (templateId) {
@@ -207,13 +235,13 @@ export async function deliverOtp(
           throw new Error(`Zalo OA API error: ${data.message} (code ${data.error})`);
         }
       }
-      console.log(`[Zalo] OTP sent successfully to ${destination}`);
-    } catch (error: any) {
-      console.error("Zalo failed to deliver OTP:", error);
+      console.info("[Zalo] OTP sent successfully.");
+    } catch {
+      console.error("[Zalo] OTP delivery failed.");
       if (process.env.NODE_ENV !== "production") {
         console.warn("[dev-only] Gracefully ignoring Zalo OTP delivery failure.");
       } else {
-        throw new Error(`Zalo OTP delivery failed: ${error.message}`);
+        throw new Error("Zalo OTP delivery failed.");
       }
     }
   }
@@ -246,14 +274,11 @@ export async function deliverOtp(
           throw new Error(`HTTP error! status: ${response.status}`);
         }
 
-        const data = await response.json();
-        console.log("[SpeedSMS Voice] Response:", data);
+        await response.json();
       } else {
         // SMS mode (default)
         const sender = process.env.SPEEDSMS_SENDER || "";
-        const messageText = `Mã xác thực ${
-          purpose === "signup" ? "Đăng ký" : purpose === "signin" ? "Đăng nhập" : "Claim Node"
-        } Cây Gia Phả của bạn là: ${code}. Mã có hiệu lực trong ${purpose === "claim" ? "15" : "5"} phút.`;
+        const messageText = `Mã xác thực ${purposeLabel} Cây Gia Phả của bạn là: ${code}. Mã có hiệu lực trong ${validityMinutes} phút.${claimUrl ? ` ${claimUrl}` : ""}`;
 
         const response = await fetch("https://api.speedsms.vn/index.php/sms/send", {
           method: "POST",
@@ -273,12 +298,11 @@ export async function deliverOtp(
           throw new Error(`HTTP error! status: ${response.status}`);
         }
 
-        const data = await response.json();
-        console.log("[SpeedSMS SMS] Response:", data);
+        await response.json();
       }
-      console.log(`[SpeedSMS] OTP sent successfully to ${destination}`);
-    } catch (error: any) {
-      console.error("SpeedSMS failed to deliver OTP:", error);
+      console.info("[SpeedSMS] OTP sent successfully.");
+    } catch {
+      console.error("[SpeedSMS] OTP delivery failed.");
     }
   }
 }
@@ -314,7 +338,7 @@ export class VerificationCodeService {
   private MAX_ATTEMPTS = 5;
   private LOCKOUT_DURATION = 900 * 1000; // 15 minutes in ms
 
-  async issueForAccount(purpose: "signup" | "signin", userId: string, destination: string) {
+  async issueForAccount(purpose: "signup" | "signin" | "password_reset", userId: string, destination: string) {
     return this.issue(purpose, userId, null, destination);
   }
 
@@ -323,7 +347,7 @@ export class VerificationCodeService {
   }
 
   private async issue(
-    purpose: "signup" | "signin" | "claim",
+    purpose: "signup" | "signin" | "claim" | "password_reset",
     userId: string | null,
     personId: string | null,
     destination: string
@@ -343,7 +367,7 @@ export class VerificationCodeService {
     const code = generateVerificationCode();
     const hash = codeHasher.hash(code);
     const now = new Date();
-    const validitySec = purpose === "claim" ? 900 : 300;
+    const validitySec = purpose === "claim" || purpose === "password_reset" ? 900 : 300;
     const expiresAt = new Date(now.getTime() + validitySec * 1000);
 
     const [saved] = await db
@@ -362,12 +386,12 @@ export class VerificationCodeService {
       .returning();
 
     // Deliver OTP plaintext
-    await deliverOtp(destination, code, purpose);
+    await deliverOtp(destination, code, purpose, personId);
 
     return saved;
   }
 
-  async verifyForAccount(purpose: "signup" | "signin", userId: string, submittedCode: string) {
+  async verifyForAccount(purpose: "signup" | "signin" | "password_reset", userId: string, submittedCode: string) {
     const code = await db
       .select()
       .from(verificationCodes)
@@ -387,7 +411,11 @@ export class VerificationCodeService {
     await this.verify(code, submittedCode);
   }
 
-  async verifyForNode(personId: string, submittedCode: string) {
+  async verifyForNode(
+    personId: string,
+    submittedCode: string,
+    expectedDestinations: string[],
+  ) {
     const code = await db
       .select()
       .from(verificationCodes)
@@ -404,12 +432,15 @@ export class VerificationCodeService {
     if (!code) {
       throw ApiException.codeInvalid("No active verification code was found. Please request a new code.");
     }
+    if (!matchesVerificationDestination(code.destination, expectedDestinations)) {
+      throw ApiException.codeInvalid("The verification code is not valid for this account.");
+    }
     await this.verify(code, submittedCode);
   }
 
   private async verify(code: typeof verificationCodes.$inferSelect, submittedCode: string) {
     const now = new Date();
-    const purpose = code.purpose as "signup" | "signin" | "claim";
+    const purpose = code.purpose as "signup" | "signin" | "claim" | "password_reset";
 
     // 1) Lockout check
     if (code.attempts >= this.MAX_ATTEMPTS) {
@@ -432,8 +463,7 @@ export class VerificationCodeService {
     }
 
     // 4) Match check
-    const matchesMock = submittedCode === "123456" && code.destination.startsWith("test-e2e-");
-    if (codeHasher.matches(submittedCode, code.codeHash) || matchesMock) {
+    if (codeHasher.matches(submittedCode, code.codeHash)) {
       await db
         .update(verificationCodes)
         .set({ consumed: true })
@@ -487,7 +517,7 @@ function hashSessionToken(rawToken: string): string {
 }
 
 /** Shared password strength rules (min 8, max 128, letter + digit). */
-function requirePasswordPolicy(password: string | undefined | null) {
+export function requirePasswordPolicy(password: string | undefined | null) {
   if (!password || !password.trim()) {
     throw ApiException.validation("password", "Vui lòng nhập mật khẩu.");
   }
@@ -560,6 +590,10 @@ export class SessionService {
     if (updated.length === 0) {
       await db.update(sessions).set({ revoked: true }).where(eq(sessions.id, token));
     }
+  }
+
+  async revokeAllForUser(userId: string) {
+    await db.update(sessions).set({ revoked: true }).where(eq(sessions.userId, userId));
   }
 }
 
@@ -646,10 +680,7 @@ export class AuthService {
       throw ApiException.accountNotFound("No account was found for the provided identifier.");
     }
 
-    // Verify OTP (if code is provided, otherwise no-op for backward compatibility)
-    if (code !== "123456" && code !== "") {
-      await verificationCodeService.verifyForAccount("signup", user.id, code);
-    }
+    await verificationCodeService.verifyForAccount("signup", user.id, code);
 
     // Mark verified
     await db.update(users).set({ verified: true }).where(eq(users.id, user.id));

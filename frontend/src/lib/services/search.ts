@@ -50,7 +50,6 @@ export class SearchService {
     treeId: string,
     request: SearchRequest,
     currentUserId: string,
-    ownedTreeId: string | null
   ): Promise<SearchResponse> {
     const { nameQuery, addressQuery, viewpointId, filters } = request;
 
@@ -119,7 +118,7 @@ export class SearchService {
     }
 
     // Redact results
-    return this.redact(treeId, { results }, !!nameQuery, currentUserId, ownedTreeId);
+    return this.redact(treeId, { results }, !!nameQuery, currentUserId);
   }
 
   private async redact(
@@ -127,7 +126,6 @@ export class SearchService {
     response: SearchResponse,
     nameSearchUsed: boolean,
     currentUserId: string,
-    ownedTreeId: string | null
   ): Promise<SearchResponse> {
     const tree = await db
       .select()
@@ -154,11 +152,10 @@ export class SearchService {
 
       const role = await authorizationService.classify(
         currentUserId,
-        ownedTreeId,
         treeId,
         result.personId
       );
-      const privileged = role !== "NEITHER";
+      const privileged = role === "OWNER" || role === "CONTRIBUTOR" || role === "LINKED";
 
       const redactName =
         !privileged &&

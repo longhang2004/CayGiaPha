@@ -8,8 +8,9 @@ const mocks = vi.hoisted(() => ({
   getPendingInvitations: vi.fn(),
   getReminders: vi.fn(),
   markReminderAsRead: vi.fn(),
+  apiGet: vi.fn(),
   push: vi.fn(),
-  user: { id: "user-1", treeId: "tree-1" },
+  user: { userId: "user-1" },
 }));
 
 vi.mock("@/lib/persons", () => ({
@@ -20,6 +21,10 @@ vi.mock("@/lib/persons", () => ({
 
 vi.mock("@/lib/collaboration", () => ({
   getPendingInvitations: mocks.getPendingInvitations,
+}));
+
+vi.mock("@/lib/apiClient", () => ({
+  api: { get: mocks.apiGet },
 }));
 
 vi.mock("@/app/providers", () => ({
@@ -42,6 +47,7 @@ describe("NotificationBell", () => {
       },
     ]);
     mocks.getPendingInvitations.mockResolvedValue([]);
+    mocks.apiGet.mockResolvedValue([{ id: "tree-1", accessRole: "OWNER" }]);
     mocks.markReminderAsRead.mockResolvedValue(undefined);
     mocks.deleteReminder.mockResolvedValue(undefined);
   });
@@ -88,7 +94,7 @@ describe("NotificationBell", () => {
       screen.getByRole("button", { name: "Mở quản lý cộng tác" }),
     );
 
-    expect(mocks.push).toHaveBeenCalledWith("/tree?panel=settings");
+    expect(mocks.push).toHaveBeenCalledWith("/tree/tree-1?collaboration=true");
     expect(
       screen.queryByRole("dialog", { name: "Thông báo dòng họ" }),
     ).not.toBeInTheDocument();

@@ -43,7 +43,6 @@ export async function POST(
     const personId = params.id;
     const photo = await photoService.upload(
       auth.userId || "",
-      auth.ownedTreeId,
       treeId,
       personId,
       bytes
@@ -70,7 +69,6 @@ export async function GET(
 
     const photos = await photoService.list(
       auth.userId || "",
-      auth.ownedTreeId,
       treeId,
       personId,
       shareToken

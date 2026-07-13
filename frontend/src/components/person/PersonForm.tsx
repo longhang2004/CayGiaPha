@@ -202,6 +202,7 @@ export function PersonForm({
 
       if (mode === "create") {
         const body: CreatePersonInput = {
+          treeId,
           displayName,
           gender,
           deathStatus,

@@ -206,6 +206,16 @@ function PrototypeTreeContent() {
   const treeState: TreeContextType = {
     activeTreeId: PROTOTYPE_TREE_ID,
     shareToken,
+    accessRole: "OWNER",
+    capabilities: {
+      editContent: true,
+      editPhotos: true,
+      editVisibility: true,
+      manageClaim: true,
+      manageTree: true,
+      manageCollaboration: true,
+    },
+    claimInviteAction: async () => {},
     persons,
     relationships,
     addresses,

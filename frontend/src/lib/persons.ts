@@ -41,6 +41,7 @@ export type MaritalStatus = "married" | "divorced" | "deceased";
 
 /** Request body for POST /persons (Requirements 3.1, 3.2, 3.5, 3.6). */
 export interface CreatePersonInput {
+  treeId: string;
   displayName: string;
   gender: Gender;
   birthOrder?: number;
@@ -106,7 +107,7 @@ export interface RelationshipResult {
   conflicts?: ConflictWarning[];
 }
 
-/** Create a person in the owner's tree; resolves to the new node id (3.1). */
+/** Create a person in the explicitly selected editable tree; resolves to the new node id (3.1). */
 export function createPerson(input: CreatePersonInput): Promise<CreatedPerson> {
   return api.post<CreatedPerson>("/persons", input);
 }

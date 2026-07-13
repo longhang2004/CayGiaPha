@@ -28,4 +28,15 @@ describe("RateLimiter with Redis", () => {
     await expect(limiter.check("test-key")).resolves.not.toThrow();
     await expect(limiter.check("another-key")).resolves.not.toThrow();
   });
+
+  it("fails closed for sensitive routes when the limiter backend fails", async () => {
+    const limiter = new RateLimiter(2, 60);
+    const failure = vi.spyOn(redisClient, "incr").mockRejectedValueOnce(new Error("redis secret"));
+
+    await expect(limiter.check("sensitive", { failClosed: true })).rejects.toMatchObject({
+      code: "INTERNAL_ERROR",
+      message: "Request protection is temporarily unavailable.",
+    });
+    failure.mockRestore();
+  });
 });

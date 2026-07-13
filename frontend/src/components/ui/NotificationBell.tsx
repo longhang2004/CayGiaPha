@@ -12,6 +12,7 @@ import { useSession } from "@/app/providers";
 import { CGPPopover } from "@/components/cgp";
 import { BellIcon, TrashIcon } from "@/components/ui/Icons";
 import { useRouter } from "next/navigation";
+import { api } from "@/lib/apiClient";
 
 export type ExtendedNotification = Partial<InAppReminder> & {
   id: string;
@@ -19,6 +20,7 @@ export type ExtendedNotification = Partial<InAppReminder> & {
   content: string;
   isRead: boolean;
   isInvite?: boolean;
+  treeId?: string;
 };
 
 export function NotificationBell({ align = "right" }: { align?: "left" | "right" }) {
@@ -34,16 +36,26 @@ export function NotificationBell({ align = "right" }: { align?: "left" | "right"
       const data = await getReminders();
       let extended: ExtendedNotification[] = [...data];
 
-      if (user?.treeId) {
+      if (user) {
         try {
-          const pending = await getPendingInvitations(user.treeId);
-          const inviteNotifications: ExtendedNotification[] = pending.map((inv) => ({
-            id: `invite-${inv.id}`,
-            title: "Yêu cầu tham gia cây",
-            content: `${inv.email || "Một người dùng"} đang xin vào cây gia phả của bạn.`,
-            isRead: false,
-            isInvite: true,
-          }));
+          const treeList = await api.get<Array<{ id: string; accessRole: string }>>("/trees");
+          const ownerTreeIds = treeList.filter((tree) => tree.accessRole === "OWNER").map((tree) => tree.id);
+          const pendingGroups = await Promise.all(
+            ownerTreeIds.map(async (treeId) => ({
+              treeId,
+              invitations: await getPendingInvitations(treeId),
+            })),
+          );
+          const inviteNotifications: ExtendedNotification[] = pendingGroups.flatMap(
+            ({ treeId, invitations }) => invitations.map((inv) => ({
+              id: `invite-${inv.id}`,
+              title: "Yêu cầu tham gia cây",
+              content: `${inv.email || "Một người dùng"} đang xin vào cây gia phả của bạn.`,
+              isRead: false,
+              isInvite: true,
+              treeId,
+            })),
+          );
           extended = [...inviteNotifications, ...extended];
         } catch (e) {
           // ignore 403 if not owner
@@ -55,7 +67,7 @@ export function NotificationBell({ align = "right" }: { align?: "left" | "right"
     } finally {
       setLoading(false);
     }
-  }, [user?.treeId]);
+  }, [user]);
 
   useEffect(() => {
     if (user) {
@@ -95,9 +107,9 @@ export function NotificationBell({ align = "right" }: { align?: "left" | "right"
 
   const handleAction = (reminder: ExtendedNotification, e: React.MouseEvent) => {
     e.stopPropagation();
-    if (reminder.isInvite) {
+    if (reminder.isInvite && reminder.treeId) {
       setIsOpen(false);
-      router.push("/tree?panel=settings");
+      router.push(`/tree/${encodeURIComponent(reminder.treeId)}?collaboration=true`);
     }
   };
 

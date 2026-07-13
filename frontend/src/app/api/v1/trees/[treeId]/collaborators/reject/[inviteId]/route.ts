@@ -14,7 +14,7 @@ export async function POST(
     const { treeId, inviteId } = params;
 
     // Enforce owner check
-    await authorizationService.requireOwner(auth.userId, auth.ownedTreeId, treeId);
+    await authorizationService.requireOwner(auth.userId, treeId);
 
     const invite = await db
       .select()

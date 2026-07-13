@@ -11,11 +11,11 @@ import { ApiError, api } from "./apiClient";
 
 export interface SessionUser {
   userId: string;
-  treeId: string | null;
   identifier: string;
   displayName: string | null;
   verified: boolean;
   role: "user" | "admin";
+  consentRequired: boolean;
 }
 
 /**

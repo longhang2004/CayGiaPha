@@ -12,7 +12,7 @@ export async function PATCH(
     const auth = await getAuthContext();
     const treeId = params.treeId;
 
-    await authorizationService.requireOwner(auth.userId, auth.ownedTreeId, treeId);
+    await authorizationService.requireOwner(auth.userId, treeId);
 
     const { sharing } = await request.json();
     const tree = await treeService.changeSharing(treeId, sharing);

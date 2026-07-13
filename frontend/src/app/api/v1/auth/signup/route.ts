@@ -1,6 +1,6 @@
 import { handleApiRoute } from "@/lib/services/routeHelper";
 import { authService, sessionService } from "@/lib/services/auth";
-import { rateLimiter } from "@/lib/services/rateLimiter";
+import { hashRateLimitIdentifier, rateLimiter } from "@/lib/services/rateLimiter";
 import { auditService, AuditActions } from "@/lib/services/audit";
 import { cookies } from "next/headers";
 
@@ -9,8 +9,11 @@ export async function POST(request: Request) {
     const { identifier, password, region, acceptedTos, acceptedPrivacy, displayName } = await request.json();
     const clientIp = request.headers.get("x-forwarded-for") || "127.0.0.1";
 
-    await rateLimiter.check(`signup:${identifier}`);
-    await rateLimiter.check(`ip:${clientIp}`);
+    await rateLimiter.check(
+      `signup:${hashRateLimitIdentifier(typeof identifier === "string" ? identifier : "")}`,
+      { failClosed: true },
+    );
+    await rateLimiter.check(`ip:${clientIp}`, { failClosed: true });
 
     const res = await authService.signUp({
       identifier,

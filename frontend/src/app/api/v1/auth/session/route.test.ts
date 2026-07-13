@@ -6,12 +6,16 @@ const mocks = vi.hoisted(() => ({
   from: vi.fn(),
   where: vi.fn(),
   ensureUserDisplayNameSchema: vi.fn(),
+  needsReacceptance: vi.fn(),
 }));
 
 vi.mock("@/lib/services/authorization", () => ({ getAuthContext: mocks.auth }));
 vi.mock("@/lib/db", () => ({
   db: { select: mocks.select },
   ensureUserDisplayNameSchema: mocks.ensureUserDisplayNameSchema,
+}));
+vi.mock("@/lib/services/consent", () => ({
+  consentService: { needsReacceptance: mocks.needsReacceptance },
 }));
 
 import { GET } from "./route";
@@ -22,10 +26,11 @@ describe("GET /api/v1/auth/session", () => {
     mocks.ensureUserDisplayNameSchema.mockResolvedValue(undefined);
     mocks.select.mockReturnValue({ from: mocks.from });
     mocks.from.mockReturnValue({ where: mocks.where });
+    mocks.needsReacceptance.mockResolvedValue(true);
   });
 
   it("returns nullable displayName with the compatible identifier", async () => {
-    mocks.auth.mockResolvedValue({ isAuthenticated: true, userId: "u1", ownedTreeId: "t1" });
+    mocks.auth.mockResolvedValue({ isAuthenticated: true, userId: "u1" });
     mocks.where.mockResolvedValue([{
       id: "u1",
       phone: null,
@@ -35,11 +40,13 @@ describe("GET /api/v1/auth/session", () => {
       role: "user",
     }]);
     const response = await GET();
-    await expect(response.json()).resolves.toMatchObject({
+    const body = await response.json();
+    expect(body).toMatchObject({
       userId: "u1",
-      treeId: "t1",
       identifier: "user@example.test",
       displayName: null,
+      consentRequired: true,
     });
+    expect(body).not.toHaveProperty("treeId");
   });
 });

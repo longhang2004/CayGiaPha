@@ -13,7 +13,10 @@ vi.mock("@/lib/services/auth", () => ({
   authService: { signUp: mocks.signUp, verifyGoogleAuth: mocks.verifyGoogleAuth },
   sessionService: { create: mocks.createSession },
 }));
-vi.mock("@/lib/services/rateLimiter", () => ({ rateLimiter: { check: mocks.rateCheck } }));
+vi.mock("@/lib/services/rateLimiter", () => ({
+  rateLimiter: { check: mocks.rateCheck },
+  hashRateLimitIdentifier: (value: string) => `hash:${value.trim().toLowerCase()}`,
+}));
 vi.mock("@/lib/services/audit", () => ({
   auditService: { record: mocks.auditRecord },
   AuditActions: { SIGN_UP_VERIFIED: "SIGN_UP_VERIFIED", SIGN_IN: "SIGN_IN" },

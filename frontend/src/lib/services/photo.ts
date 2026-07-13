@@ -203,12 +203,11 @@ const MAX_PHOTOS_PER_PERSON = 5;
 export class PhotoService {
   async upload(
     currentUserId: string,
-    ownedTreeId: string | null,
     treeId: string,
     personId: string,
     bytes: Buffer
   ): Promise<typeof personPhotos.$inferSelect> {
-    await authorizationService.requireMutationPermitted(currentUserId, ownedTreeId, treeId, personId);
+    await authorizationService.requireContentEditor(currentUserId, treeId, personId);
     const person = await this.requirePerson(treeId, personId);
 
     const existingPhotos = await db
@@ -247,12 +246,11 @@ export class PhotoService {
 
   async setPrimary(
     currentUserId: string,
-    ownedTreeId: string | null,
     treeId: string,
     personId: string,
     photoId: string
   ): Promise<typeof personPhotos.$inferSelect> {
-    await authorizationService.requireMutationPermitted(currentUserId, ownedTreeId, treeId, personId);
+    await authorizationService.requireContentEditor(currentUserId, treeId, personId);
     await this.requirePerson(treeId, personId);
 
     const target = await db
@@ -283,12 +281,11 @@ export class PhotoService {
 
   async list(
     currentUserId: string,
-    ownedTreeId: string | null,
     treeId: string,
     personId: string,
     shareToken?: string | null
   ): Promise<(typeof personPhotos.$inferSelect)[]> {
-    await authorizationService.requireReadAccess(currentUserId, ownedTreeId, treeId, shareToken);
+    await authorizationService.requireReadAccess(currentUserId, treeId, shareToken);
     await this.requirePerson(treeId, personId);
 
     return db
@@ -300,13 +297,12 @@ export class PhotoService {
 
   async serve(
     currentUserId: string,
-    ownedTreeId: string | null,
     treeId: string,
     personId: string,
     photoId: string,
     shareToken?: string | null
   ): Promise<{ contentType: string; bytes: Buffer }> {
-    await authorizationService.requireReadAccess(currentUserId, ownedTreeId, treeId, shareToken);
+    await authorizationService.requireReadAccess(currentUserId, treeId, shareToken);
     const person = await this.requirePerson(treeId, personId);
 
     const photo = await db
@@ -319,7 +315,7 @@ export class PhotoService {
       throw ApiException.nodeNotAccessible("The photo is not accessible.");
     }
 
-    const isVisible = await this.photoVisible(currentUserId, ownedTreeId, treeId, person);
+    const isVisible = await this.photoVisible(currentUserId, treeId, person);
     if (!isVisible) {
       throw ApiException.notAuthorized("You are not authorized to view this photo.");
     }
@@ -330,12 +326,11 @@ export class PhotoService {
 
   async delete(
     currentUserId: string,
-    ownedTreeId: string | null,
     treeId: string,
     personId: string,
     photoId: string
   ): Promise<void> {
-    await authorizationService.requireMutationPermitted(currentUserId, ownedTreeId, treeId, personId);
+    await authorizationService.requireContentEditor(currentUserId, treeId, personId);
     await this.requirePerson(treeId, personId);
 
     const photo = await db
@@ -370,12 +365,11 @@ export class PhotoService {
 
   private async photoVisible(
     currentUserId: string,
-    ownedTreeId: string | null,
     treeId: string,
     person: typeof persons.$inferSelect
   ): Promise<boolean> {
-    const role = await authorizationService.classify(currentUserId, ownedTreeId, treeId, person.id);
-    if (role !== "NEITHER") {
+    const role = await authorizationService.classify(currentUserId, treeId, person.id);
+    if (role === "OWNER" || role === "CONTRIBUTOR" || role === "LINKED") {
       return true;
     }
     if (person.visPhoto !== "public") {

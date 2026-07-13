@@ -21,7 +21,7 @@ import { GET } from "./route";
 describe("GET tree collaboration roster", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mocks.auth.mockResolvedValue({ userId: "owner-user", ownedTreeId: "tree-1" });
+    mocks.auth.mockResolvedValue({ isAuthenticated: true, userId: "owner-user", role: "user" });
     mocks.requireRoster.mockResolvedValue(undefined);
     mocks.select.mockReturnValue({ from: mocks.from });
     mocks.from.mockReturnValue({ innerJoin: mocks.innerJoin });

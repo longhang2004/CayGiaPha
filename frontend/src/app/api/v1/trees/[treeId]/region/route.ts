@@ -11,7 +11,7 @@ export async function PATCH(
     const auth = await getAuthContext();
     const treeId = params.treeId;
 
-    await authorizationService.requireOwner(auth.userId, auth.ownedTreeId, treeId);
+    await authorizationService.requireOwner(auth.userId, treeId);
 
     const { region } = await request.json();
     const tree = await treeService.changeRegion(treeId, region);

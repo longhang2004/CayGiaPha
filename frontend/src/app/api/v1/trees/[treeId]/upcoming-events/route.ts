@@ -111,7 +111,7 @@ export async function GET(
     const { searchParams } = new URL(request.url);
     const shareToken = request.headers.get("x-share-token") || searchParams.get("shareToken");
 
-    await authorizationService.requireReadAccess(auth.userId, auth.ownedTreeId, treeId, shareToken);
+    await authorizationService.requireReadAccess(auth.userId, treeId, shareToken);
 
     const deceased = await db
       .select()
@@ -123,8 +123,8 @@ export async function GET(
 
     for (const person of deceased) {
       // Check privacy of death status
-      const role = await authorizationService.classify(auth.userId, auth.ownedTreeId, treeId, person.id);
-      const privileged = role !== "NEITHER";
+      const role = await authorizationService.classify(auth.userId, treeId, person.id);
+      const privileged = role === "OWNER" || role === "CONTRIBUTOR" || role === "LINKED";
       if (!privileged && person.visDeath === "private") {
         continue; // Privacy gate: skip private death info for public/link viewers
       }

@@ -195,7 +195,7 @@ export const verificationCodes = pgTable(
   "verification_codes",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    purpose: text("purpose").notNull(), // 'signup', 'signin', 'claim'
+    purpose: text("purpose").notNull(), // 'signup', 'signin', 'claim', 'password_reset'
     userId: uuid("user_id").references(() => users.id),
     personId: uuid("person_id").references(() => persons.id),
     destination: text("destination").notNull(),

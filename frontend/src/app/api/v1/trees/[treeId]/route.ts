@@ -1,5 +1,5 @@
 import { handleApiRoute } from "@/lib/services/routeHelper";
-import { getAuthContext, authorizationService } from "@/lib/services/authorization";
+import { getAuthContext, authorizationService, capabilitiesFor } from "@/lib/services/authorization";
 import { ApiException } from "@/lib/services/errors";
 import { db } from "@/lib/db";
 import { persons, relationships, trees, claims, treeCollaborators, collaborationInvitations, personPhotos, inAppReminders, users } from "@/lib/db/schema";
@@ -29,7 +29,7 @@ export async function GET(
     const shareToken = request.headers.get("x-share-token") || searchParams.get("shareToken");
 
     // Enforce read access
-    await authorizationService.requireReadAccess(auth.userId, auth.ownedTreeId, treeId, shareToken);
+    await authorizationService.requireReadAccess(auth.userId, treeId, shareToken);
 
     // Fetch tree to check settings
     const tree = await db
@@ -41,6 +41,7 @@ export async function GET(
     if (!tree) {
       throw ApiException.nodeNotAccessible("The specified tree was not found.");
     }
+    const accessRole = await authorizationService.classify(auth.userId, treeId);
 
     // Fetch all persons in the tree
     const dbPersons = await db
@@ -66,8 +67,8 @@ export async function GET(
 
     const projectedPersons = [];
     for (const person of dbPersons) {
-      const role = await authorizationService.classify(auth.userId, auth.ownedTreeId, treeId, person.id);
-      const privileged = role !== "NEITHER";
+      const role = await authorizationService.classify(auth.userId, treeId, person.id);
+      const privileged = role === "OWNER" || role === "CONTRIBUTOR" || role === "LINKED";
       const redactLiving = !privileged && (tree.livingRedaction !== false) && isLiving(person);
 
       const nameHidden = redactLiving || (!privileged && person.visName === "private");
@@ -94,11 +95,15 @@ export async function GET(
         visMarital: privileged ? person.visMarital : undefined,
         visAdoption: privileged ? person.visAdoption : undefined,
         claimed: claimedPersonIds.has(person.id),
+        capabilities: capabilitiesFor(role, { personScoped: true }),
       });
     }
 
     return Response.json({
       treeId,
+      name: tree.name,
+      accessRole,
+      capabilities: capabilitiesFor(accessRole),
       region: tree.region,
       sharing: tree.sharing,
       livingRedaction: tree.livingRedaction,
@@ -125,7 +130,7 @@ export async function DELETE(
     const auth = await getAuthContext();
     const treeId = params.treeId;
 
-    await authorizationService.requireOwner(auth.userId, auth.ownedTreeId, treeId);
+    await authorizationService.requireOwner(auth.userId, treeId);
     const clientIp = request.headers.get("x-forwarded-for") || "127.0.0.1";
     await rateLimiter.check(`delete-tree:${auth.userId || clientIp}`);
     await rateLimiter.check(`mutate-ip:${clientIp}`);
@@ -199,7 +204,7 @@ export async function PATCH(
   return handleApiRoute(async () => {
     const auth = await getAuthContext();
     const treeId = params.treeId;
-    await authorizationService.requireOwner(auth.userId, auth.ownedTreeId, treeId);
+    await authorizationService.requireOwner(auth.userId, treeId);
 
     const body = await request.json().catch(() => null) as { name?: unknown } | null;
     const name = typeof body?.name === "string" ? body.name.trim() : "";
