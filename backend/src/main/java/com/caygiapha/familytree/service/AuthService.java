@@ -394,9 +394,6 @@ public class AuthService {
                 if (finalDisplayName == null || finalDisplayName.isBlank()) {
                     finalDisplayName = googleName;
                 }
-                if (finalDisplayName == null || finalDisplayName.isBlank()) {
-                    finalDisplayName = email.split("@")[0];
-                }
                 user.setDisplayName(normalizeAndValidateDisplayName(finalDisplayName));
                 User saved = userRepository.save(user);
 
