@@ -261,7 +261,6 @@ html.dark .global-sidebar__brand img {
   }
 
   .global-sidebar {
-    transform: translateX(-100%);
     width: 260px !important;
     padding: 1.5rem !important;
   }
@@ -269,11 +268,10 @@ html.dark .global-sidebar__brand img {
   .global-sidebar--collapsed {
     width: 260px !important;
     padding: 1.5rem !important;
-    transform: translateX(-100%);
   }
 
   .global-sidebar--open {
-    transform: translateX(0) !important;
+    /* No longer needed, animation handled by cgp-drawer */
   }
 
   .sidebar-toggle-btn {
@@ -594,6 +592,14 @@ fieldset .field {
   background: rgba(0, 0, 0, 0.4);
 }
 
+.cgp-drawer-overlay[data-entering] {
+  animation: cgp-drawer-fade-in 0.2s ease both;
+}
+
+.cgp-drawer-overlay[data-exiting] {
+  animation: cgp-drawer-fade-out 0.2s ease both;
+}
+
 .cgp-drawer-modal {
   position: fixed;
   inset-block: 0;
@@ -633,8 +639,16 @@ fieldset .field {
   animation: cgp-drawer-enter-left 0.2s ease both;
 }
 
+.cgp-drawer-modal[data-exiting] .cgp-drawer--left {
+  animation: cgp-drawer-exit-left 0.2s ease both;
+}
+
 .cgp-drawer--right {
   animation: cgp-drawer-enter-right 0.2s ease both;
+}
+
+.cgp-drawer-modal[data-exiting] .cgp-drawer--right {
+  animation: cgp-drawer-exit-right 0.2s ease both;
 }
 
 .cgp-drawer__close {
@@ -650,9 +664,29 @@ fieldset .field {
   to { transform: translateX(0); }
 }
 
+@keyframes cgp-drawer-exit-left {
+  from { transform: translateX(0); }
+  to { transform: translateX(-100%); }
+}
+
 @keyframes cgp-drawer-enter-right {
   from { transform: translateX(100%); }
   to { transform: translateX(0); }
+}
+
+@keyframes cgp-drawer-exit-right {
+  from { transform: translateX(0); }
+  to { transform: translateX(100%); }
+}
+
+@keyframes cgp-drawer-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes cgp-drawer-fade-out {
+  from { opacity: 1; }
+  to { opacity: 0; }
 }
 
 @media (prefers-reduced-motion: reduce) {
