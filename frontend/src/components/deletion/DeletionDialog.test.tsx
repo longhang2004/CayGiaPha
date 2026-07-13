@@ -48,7 +48,7 @@ describe("DeletionDialog", () => {
     expect(init.method).toBe("DELETE");
 
     // Both options are presented (15.1).
-    expect(await screen.findByRole("dialog")).toBeInTheDocument();
+    expect(await screen.findByRole("dialog")).toHaveClass("cgp-dialog");
     expect(screen.getByLabelText(/Xóa theo dây chuyền/)).toBeInTheDocument();
     expect(screen.getByLabelText(/giữ lại những người liên quan/)).toBeInTheDocument();
 

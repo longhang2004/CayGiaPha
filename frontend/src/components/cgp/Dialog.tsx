@@ -22,6 +22,7 @@ export function CGPDialog({
   title,
   description,
   children,
+  footer,
   size = "md",
   dismissPolicy = DEFAULT_DISMISS_POLICY,
   initialFocusRef,
@@ -91,6 +92,7 @@ export function CGPDialog({
             </Text>
           ) : null}
           <div className="cgp-dialog__body">{children}</div>
+          {footer ? <footer className="cgp-dialog__footer">{footer}</footer> : null}
         </ReactAriaDialog>
       </Modal>
     </ModalOverlay>

@@ -9,7 +9,7 @@ import {
   type DeletionStrategy,
 } from "@/lib/deletion";
 import { Button } from "@/components/Button";
-import { Modal, ModalHeader, ModalBody, ModalFooter } from "@/components/ui/Modal";
+import { CGPDialog } from "@/components/cgp";
 
 /**
  * Two-phase deletion-choice dialog (task 10.4, Requirements 15.1, 15.2).
@@ -123,44 +123,49 @@ export function DeletionDialog({
         {triggerLabel}
       </Button>
 
-      <Modal isOpen={open && choice !== null} onClose={handleDismiss} aria-label="Xác nhận xóa thành viên">
-        <ModalHeader title="Xác nhận xóa thành viên" onClose={handleDismiss} />
-        <ModalBody>
-          {error ? (
-            <p role="alert" data-testid="deletion-error" style={{ color: "var(--color-danger)", marginBottom: "1rem" }}>
-              {error}
-            </p>
-          ) : null}
+      <CGPDialog
+        isOpen={open && choice !== null}
+        onOpenChange={(isOpen) => {
+          if (!isOpen) handleDismiss();
+        }}
+        title="Xác nhận xóa thành viên"
+        footer={
+          <>
+            <Button type="button" onClick={handleDismiss} disabled={executing} className="btn-secondary">
+              Hủy
+            </Button>
+            <Button type="button" onClick={handleConfirm} disabled={!strategy} loading={executing} loadingLabel="Đang xóa..." className="btn-danger">
+              Xóa thành viên
+            </Button>
+          </>
+        }
+      >
+        {error ? (
+          <p role="alert" data-testid="deletion-error" style={{ color: "var(--color-danger)", marginBottom: "1rem" }}>
+            {error}
+          </p>
+        ) : null}
 
-          <fieldset>
-            <legend style={{ fontWeight: 600, marginBottom: "0.5rem" }}>Chọn cách xử lý các mối liên hệ</legend>
-            {(["cascade", "preserve"] as DeletionStrategy[]).map((s) => (
-              <label key={s} htmlFor={`deletion-${s}`} style={{ display: "block", marginBottom: "1rem", cursor: "pointer" }}>
-                <input
-                  id={`deletion-${s}`}
-                  type="radio"
-                  name="deletion-strategy"
-                  value={s}
-                  checked={strategy === s}
-                  onChange={() => setStrategy(s)}
-                  style={{ marginRight: "0.5rem" }}
-                />
-                <strong>{STRATEGY_LABELS[s].title}</strong>
-                <br />
-                <span style={{ fontSize: "0.9rem", color: "var(--color-muted)" }}>{STRATEGY_LABELS[s].description}</span>
-              </label>
-            ))}
-          </fieldset>
-        </ModalBody>
-        <ModalFooter style={{ display: "flex", gap: "0.5rem", justifyContent: "flex-end" }}>
-          <Button type="button" onClick={handleDismiss} disabled={executing} className="btn-secondary">
-            Hủy
-          </Button>
-          <Button type="button" onClick={handleConfirm} disabled={!strategy} loading={executing} loadingLabel="Đang xóa..." className="btn-danger">
-            Xóa thành viên
-          </Button>
-        </ModalFooter>
-      </Modal>
+        <fieldset>
+          <legend style={{ fontWeight: 600, marginBottom: "0.5rem" }}>Chọn cách xử lý các mối liên hệ</legend>
+          {(["cascade", "preserve"] as DeletionStrategy[]).map((s) => (
+            <label key={s} htmlFor={`deletion-${s}`} style={{ display: "block", marginBottom: "1rem", cursor: "pointer" }}>
+              <input
+                id={`deletion-${s}`}
+                type="radio"
+                name="deletion-strategy"
+                value={s}
+                checked={strategy === s}
+                onChange={() => setStrategy(s)}
+                style={{ marginRight: "0.5rem" }}
+              />
+              <strong>{STRATEGY_LABELS[s].title}</strong>
+              <br />
+              <span style={{ fontSize: "0.9rem", color: "var(--color-muted)" }}>{STRATEGY_LABELS[s].description}</span>
+            </label>
+          ))}
+        </fieldset>
+      </CGPDialog>
     </div>
   );
 }

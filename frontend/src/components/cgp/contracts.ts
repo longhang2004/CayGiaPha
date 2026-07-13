@@ -90,6 +90,7 @@ export interface CGPDialogProps {
   title: ReactNode;
   description?: ReactNode;
   children: ReactNode;
+  footer?: ReactNode;
   size?: CGPComponentSize | "fullscreen-mobile";
   dismissPolicy?: CGPDialogDismissPolicy;
   initialFocusRef?: RefObject<HTMLElement>;

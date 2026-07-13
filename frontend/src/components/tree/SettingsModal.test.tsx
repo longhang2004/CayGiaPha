@@ -60,6 +60,15 @@ describe("SettingsModal", () => {
     );
   };
 
+  it("renders through the CGP dialog foundation", () => {
+    renderModal();
+
+    expect(screen.getByRole("dialog", { name: "Cài đặt" })).toHaveClass(
+      "cgp-dialog",
+      "settings-modal-cgp",
+    );
+  });
+
   it("passes isPrototype down to RegionSelector", () => {
     renderModal({ isPrototype: true });
     expect(screen.getByTestId("is-prototype")).toBeInTheDocument();

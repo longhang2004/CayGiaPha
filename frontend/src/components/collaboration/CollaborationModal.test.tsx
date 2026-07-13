@@ -42,6 +42,17 @@ describe("CollaborationModal", () => {
     vi.mocked(mockAdapter.getPendingInvitations).mockResolvedValue([]);
   });
 
+  it("renders with the shared CGP large dialog shell", async () => {
+    renderModal();
+
+    expect(screen.getByRole("dialog", { name: "Quản lý cộng tác viên" })).toHaveClass(
+      "cgp-dialog",
+      "cgp-dialog--lg",
+      "collaboration-modal",
+    );
+    await waitFor(() => expect(mockAdapter.getCollaborators).toHaveBeenCalled());
+  });
+
   it("shows owner-only sections when isOwner is true", async () => {
     renderModal({ isOwner: true });
     expect(screen.getByText("Thêm cộng tác viên mới")).toBeInTheDocument();

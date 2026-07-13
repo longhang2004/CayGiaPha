@@ -1,8 +1,8 @@
 import { useState, useCallback, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "@/app/providers";
+import { CGPDialog } from "@/components/cgp";
 import { useToast } from "@/components/ui/ToastProvider";
-import { Modal, ModalHeader, ModalBody, ModalFooter } from "@/components/ui/Modal";
 import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { Input } from "@/components/ui/FormControls";
@@ -158,9 +158,20 @@ export function CollaborationModal({ isOpen, onClose, treeId, isOwner, adapter =
 
 
   return (
-    <Modal className="collaboration-modal" isOpen={isOpen} onClose={onClose} aria-label="Quản lý cộng tác viên">
-      <ModalHeader title="Quản lý cộng tác viên" onClose={onClose} />
-      <ModalBody>
+    <CGPDialog
+      className="collaboration-modal"
+      isOpen={isOpen}
+      onOpenChange={(nextIsOpen) => {
+        if (!nextIsOpen) onClose();
+      }}
+      title="Quản lý cộng tác viên"
+      size="lg"
+      footer={
+        <button type="button" className="btn btn-secondary" onClick={onClose}>
+          Đóng
+        </button>
+      }
+    >
         <section className="settings-section">
           <h3>Thành viên hiện tại</h3>
           <div className="collaborator-roster" style={{ marginBottom: "1.5rem", display: "flex", flexDirection: "column", gap: "0.5rem" }}>
@@ -215,7 +226,7 @@ export function CollaborationModal({ isOpen, onClose, treeId, isOwner, adapter =
           {isOwner && (
             <form onSubmit={handleSendInvite} style={{ display: "flex", flexDirection: "column", gap: "0.5rem", marginBottom: "1.5rem", borderTop: "1px solid var(--color-hairline-soft)", paddingTop: "1.5rem" }}>
               <label htmlFor="invite-email" style={{ fontWeight: "bold" }}>Thêm cộng tác viên mới</label>
-              <div style={{ display: "flex", gap: "0.5rem" }}>
+              <div className="collaboration-invite-row" style={{ display: "flex", flexWrap: "wrap", gap: "0.5rem" }}>
                 <Input
                   id="invite-email"
                   type="email"
@@ -223,7 +234,7 @@ export function CollaborationModal({ isOpen, onClose, treeId, isOwner, adapter =
                   onChange={(e) => setInviteEmail(e.target.value)}
                   placeholder="email@example.com"
                   required
-                  style={{ flex: 1 }}
+                  style={{ flex: "1 1 12rem", minWidth: 0 }}
                 />
                 <button type="submit" className="btn btn-secondary" disabled={collaborationAction !== null} aria-busy={collaborationAction === "invite" || undefined}>
                   {collaborationAction === "invite" ? <><span className="btn__spinner" aria-hidden="true" />Đang gửi mail…</> : "Mời"}
@@ -271,9 +282,9 @@ export function CollaborationModal({ isOpen, onClose, treeId, isOwner, adapter =
               <h3 style={{ fontSize: "1.1rem", marginBottom: "1rem", color: "var(--color-danger)" }}>Đang chờ duyệt ({pendingInvites.length} yêu cầu):</h3>
               <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
                 {pendingInvites.map((invite) => (
-                  <Card key={invite.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "0.75rem", borderLeftWidth: "4px", borderLeftColor: "var(--color-danger)" }}>
-                    <span style={{ fontSize: "0.85rem", fontWeight: 600 }}>{invite.email}</span>
-                    <div style={{ display: "flex", gap: "0.25rem" }}>
+                  <Card className="collaboration-pending-row" key={invite.id} style={{ display: "flex", flexWrap: "wrap", justifyContent: "space-between", alignItems: "center", gap: "0.5rem", padding: "0.75rem", borderLeftWidth: "4px", borderLeftColor: "var(--color-danger)" }}>
+                    <span style={{ flex: "1 1 12rem", minWidth: 0, fontSize: "0.85rem", fontWeight: 600, overflowWrap: "anywhere" }}>{invite.email}</span>
+                    <div className="collaboration-pending-row__actions" style={{ display: "flex", flexWrap: "wrap", gap: "0.25rem" }}>
                       <button type="button" className="btn" style={{ padding: "0.2rem 0.5rem", fontSize: "0.75rem" }} onClick={() => handleApproveInvite(invite.id)} disabled={collaborationAction !== null} aria-busy={collaborationAction === `approve:${invite.id}` || undefined}>
                         {collaborationAction === `approve:${invite.id}` ? <span className="btn__spinner" aria-hidden="true" /> : "Duyệt"}
                       </button>
@@ -289,12 +300,6 @@ export function CollaborationModal({ isOpen, onClose, treeId, isOwner, adapter =
 
 
         </section>
-      </ModalBody>
-      <ModalFooter>
-        <button type="button" className="btn btn-secondary" onClick={onClose}>
-          Đóng
-        </button>
-      </ModalFooter>
-    </Modal>
+    </CGPDialog>
   );
 }

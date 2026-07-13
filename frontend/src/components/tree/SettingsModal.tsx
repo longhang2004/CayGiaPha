@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useSession } from "@/app/providers";
+import { CGPDialog } from "@/components/cgp";
 import { useToast } from "@/components/ui/ToastProvider";
-import { Modal, ModalHeader, ModalBody, ModalFooter } from "@/components/ui/Modal";
 import { Input } from "@/components/ui/FormControls";
 import { RegionSelector } from "@/components/region/RegionSelector";
 import { TextSizeControl } from "@/components/a11y/TextSizeControl";
@@ -174,9 +174,20 @@ export function SettingsModal({
   }
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} aria-label="Cài đặt">
-      <ModalHeader title="Cài đặt" onClose={onClose} />
-      <ModalBody>
+    <CGPDialog
+      isOpen={isOpen}
+      onOpenChange={(nextIsOpen) => {
+        if (!nextIsOpen) onClose();
+      }}
+      title="Cài đặt"
+      size="lg"
+      className="settings-modal-cgp"
+      footer={
+        <button type="button" className="btn btn-secondary" onClick={onClose}>
+          Đóng
+        </button>
+      }
+    >
         {isOwner && (
           <section className="settings-section">
             <h3>Cài đặt gia phả</h3>
@@ -364,12 +375,6 @@ export function SettingsModal({
             </div>
           )}
         </section>
-      </ModalBody>
-      <ModalFooter>
-        <button type="button" className="btn btn-secondary" onClick={onClose}>
-          Đóng
-        </button>
-      </ModalFooter>
-    </Modal>
+    </CGPDialog>
   );
 }

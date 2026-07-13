@@ -172,6 +172,25 @@ describe("CGPDialog", () => {
       "member-details",
     );
   });
+
+  it("renders an optional footer outside the scrollable body", () => {
+    render(
+      <CGPDialog
+        isOpen
+        onOpenChange={vi.fn()}
+        title="Thông tin"
+        footer={<button type="button">Lưu</button>}
+      >
+        Nội dung dài
+      </CGPDialog>,
+    );
+
+    const footer = screen.getByRole("button", { name: "Lưu" }).closest(
+      ".cgp-dialog__footer",
+    );
+    expect(footer).toBeInTheDocument();
+    expect(footer?.closest(".cgp-dialog__body")).toBeNull();
+  });
 });
 
 describe("CGP dialog implementation ownership", () => {
