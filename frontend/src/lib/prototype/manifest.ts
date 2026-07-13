@@ -37,8 +37,23 @@ export const PROTOTYPE_PAGES: PrototypePage[] = [
   },
   {
     href: "/prototype/tree",
-    label: "🌳 Cây gia phả (Tree — populated)",
-    description: "Full tree workspace with mock persons and relationships",
+    label: "🌳 Cây gia phả — Chủ cây",
+    description: "Owner workspace with all content and administration capabilities",
+  },
+  {
+    href: "/prototype/tree?role=contributor&person=ego",
+    label: "✍️ Cây gia phả — Cộng tác viên",
+    description: "Trusted content editor without tree administration",
+  },
+  {
+    href: "/prototype/tree?role=linked&person=ego",
+    label: "🪪 Cây gia phả — Thành viên đã xác nhận",
+    description: "Own-node and own-photo actions without relationship editing",
+  },
+  {
+    href: "/prototype/tree?role=reader&person=ego",
+    label: "👁️ Cây gia phả — Người xem",
+    description: "Projected read-only workspace",
   },
   {
     href: "/prototype/tree?panel=settings",
@@ -69,5 +84,20 @@ export const PROTOTYPE_PAGES: PrototypePage[] = [
     href: "/prototype/settings",
     label: "⚙️ Cài đặt và quyền dữ liệu",
     description: "Profile, linked-node data rights, and account deletion",
+  },
+  {
+    href: "/prototype/consent",
+    label: "✅ Chấp thuận lại điều khoản",
+    description: "Consent reacceptance dialog with canonical legal links",
+  },
+  {
+    href: "/prototype/legal/tos",
+    label: "📄 Điều khoản dịch vụ v2",
+    description: "Canonical early-access terms",
+  },
+  {
+    href: "/prototype/legal/privacy",
+    label: "🔐 Chính sách quyền riêng tư v2",
+    description: "Canonical early-access privacy policy",
   },
 ];

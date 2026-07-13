@@ -8,10 +8,18 @@ const PROTOTYPE_PAGES = [
   { href: "/prototype/tree-list", label: "Danh sách cây" },
   { href: "/prototype/tree-list?welcome=open", label: "Chào mừng truy cập sớm" },
   { href: "/prototype/tree", label: "Cây gia phả" },
+  { href: "/prototype/tree?role=contributor&person=ego", label: "Cộng tác viên" },
+  { href: "/prototype/tree?role=linked&person=ego", label: "Thành viên đã xác nhận" },
+  { href: "/prototype/tree?role=reader&person=ego", label: "Người xem" },
   { href: "/prototype/tree?panel=settings", label: "Cây gia phả - Cài đặt" },
   { href: "/prototype/tree/empty", label: "Cây gia phả rỗng" },
   { href: "/prototype/invitation/test-invite-123", label: "Thư mời" },
+  { href: "/prototype/claim/example-person", label: "Xác nhận đây là tôi" },
   { href: "/prototype/help", label: "Hướng dẫn" },
+  { href: "/prototype/settings", label: "Quyền dữ liệu" },
+  { href: "/prototype/consent", label: "Chấp thuận lại" },
+  { href: "/prototype/legal/tos", label: "Điều khoản" },
+  { href: "/prototype/legal/privacy", label: "Quyền riêng tư" },
 ];
 
 /**
@@ -61,7 +69,7 @@ test.describe("Prototype Pages — smoke tests (no auth required)", () => {
   test("home prototype — help CTA opens the usage guide", async ({ page }) => {
     await page.goto("/prototype/home");
     await page.getByRole("link", { name: "Hướng dẫn sử dụng" }).click();
-    await expect(page).toHaveURL(/\/help$/);
+    await expect(page).toHaveURL(/\/help$/, { timeout: 15_000 });
     await expect(page.getByRole("heading", { name: "Hướng dẫn sử dụng" })).toBeVisible();
   });
 
@@ -73,20 +81,35 @@ test.describe("Prototype Pages — smoke tests (no auth required)", () => {
     await expect(page.locator('button[type="submit"]')).toBeVisible();
   });
 
+  test("forgot-password prototype completes recovery without a live API request", async ({ page }) => {
+    const authRequests: string[] = [];
+    page.on("request", (request) => {
+      if (request.url().includes("/api/v1/auth/password-reset")) authRequests.push(request.url());
+    });
+    await page.goto("/prototype/forgot-password");
+    await page.getByLabel("Số điện thoại hoặc email").fill("legacy@example.test");
+    await page.getByRole("button", { name: "Gửi mã" }).click();
+    await page.getByLabel("Mã xác nhận (6 chữ số)").fill("123456");
+    await page.getByLabel("Mật khẩu mới (ít nhất 8 ký tự)").fill("MatKhauMoi123");
+    await page.getByRole("button", { name: "Cập nhật mật khẩu" }).click();
+    await expect(page.getByRole("status")).toContainText("Đã cập nhật mật khẩu");
+    expect(authRequests).toEqual([]);
+  });
+
   test("signup prototype — step renders region, fields and checkboxes", async ({
     page,
   }) => {
     await page.goto("/prototype/signup");
     await expect(page.locator("h1")).toContainText("Đăng ký");
-    await expect(page.locator('select#signup-region')).toBeVisible();
+    await expect(page.getByRole("button", { name: /Vùng miền \(cách xưng hô\)/i })).toBeVisible();
     await expect(page.locator('input[name="identifier"]')).toBeVisible();
     await expect(page.locator('input[name="password"]')).toBeVisible();
     await expect(page.locator('input[name="displayName"]')).toHaveAttribute("autocomplete", "name");
     await expect(page.getByText("Tên này sẽ được dùng để người thân nhận ra bạn khi cộng tác.")).toBeVisible();
     // Submit should be disabled until both checkboxes are checked
     await expect(page.locator('button[type="submit"]')).toBeDisabled();
-    await page.locator('input[type="checkbox"]').first().check();
-    await page.locator('input[type="checkbox"]').last().check();
+    await page.getByRole("checkbox", { name: /Điều khoản dịch vụ/i }).press("Space");
+    await page.getByRole("checkbox", { name: /Chính sách bảo mật/i }).press("Space");
     await expect(page.locator('button[type="submit"]')).toBeEnabled();
   });
 
@@ -398,14 +421,32 @@ test.describe("Prototype Pages — smoke tests (no auth required)", () => {
     await expect(page.locator(".person-info__header-name")).toContainText("Hàng Hữu Thiền");
   });
 
+  test("tree prototype — actions follow Owner, Contributor, Linked, and Reader capabilities", async ({ page }) => {
+    await page.goto("/prototype/tree?role=contributor&person=ego");
+    await expect(page.getByRole("button", { name: "Thêm thành viên" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Thêm quan hệ" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Cộng tác" })).toHaveCount(0);
+
+    await page.goto("/prototype/tree?role=linked&person=ego");
+    await expect(page.getByRole("button", { name: "Chỉnh sửa thông tin" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Thêm quan hệ" })).toHaveCount(0);
+    await expect(page.getByRole("button", { name: "Thêm thành viên" })).toHaveCount(0);
+
+    await page.goto("/prototype/tree?role=reader&person=ego");
+    await expect(page.getByRole("button", { name: "Chỉnh sửa thông tin" })).toHaveCount(0);
+    await expect(page.getByRole("button", { name: "Thêm quan hệ" })).toHaveCount(0);
+    await expect(page.getByRole("button", { name: "Thêm thành viên" })).toHaveCount(0);
+  });
+
   test("tree prototype — settings modal opens via ?panel=settings", async ({
     page,
   }) => {
     await page.goto("/prototype/tree?panel=settings");
-    await expect(page.locator(".settings-modal")).toBeVisible();
-    await expect(page.locator(".settings-modal h2")).toContainText("Cài đặt");
-    await expect(page.getByText("Hàng Nhựt Prototype")).toBeVisible();
-    await expect(page.getByText("prototype@caygipha.dev")).toBeVisible();
+    const dialog = page.getByRole("dialog", { name: "Cài đặt" });
+    await expect(dialog).toBeVisible();
+    await expect(dialog.getByRole("heading", { level: 2, name: "Cài đặt" })).toBeVisible();
+    await expect(dialog.getByText("Hàng Nhựt Prototype")).toBeVisible();
+    await expect(dialog.getByText("prototype@caygipha.dev")).toBeVisible();
   });
 
   test("tree prototype — collaboration roster shows owner and contributor identities without UUID labels", async ({ page }) => {
@@ -445,7 +486,53 @@ test.describe("Prototype Pages — smoke tests (no auth required)", () => {
     await expect(
       page.getByRole("heading", { name: "Mời và quản lý cộng tác" }),
     ).toBeInViewport();
-    await expect(page.getByText(/xác nhận danh tính bằng mã/i)).toHaveCount(0);
+    const claimTopic = page.locator('a[href="#xac-nhan-day-la-toi"]');
+    await expect(claimTopic).toBeVisible();
+    await claimTopic.click();
+    await expect(page).toHaveURL(/#xac-nhan-day-la-toi$/);
+    await expect(page.getByRole("heading", { name: "Xác nhận đây là tôi" })).toBeInViewport();
+  });
+
+  test("claim prototype verifies with only a code and opens the target tree state", async ({ page }) => {
+    const claimRequests: string[] = [];
+    page.on("request", (request) => {
+      if (request.url().includes("/claim/verify")) claimRequests.push(request.url());
+    });
+    await page.goto("/prototype/claim/example-person");
+    await page.getByLabel("Mã xác nhận").fill("123456");
+    await page.getByRole("button", { name: "Xác nhận đây là tôi" }).click();
+    await expect(page.getByRole("status")).toContainText("Đang mở cây gia phả mẫu");
+    expect(claimRequests).toEqual([]);
+  });
+
+  test("settings prototype exposes linked-node data rights without live requests", async ({ page }) => {
+    const dataRequests: string[] = [];
+    page.on("request", (request) => {
+      if (request.url().includes("/api/v1/me/")) dataRequests.push(request.url());
+    });
+    await page.goto("/prototype/settings");
+    await expect(page.getByRole("heading", { name: "Quyền dữ liệu của bạn" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Nguyễn Văn Minh" })).toBeVisible();
+    expect(dataRequests).toEqual([]);
+  });
+
+  test("consent and legal prototypes remain usable in dark mode at mobile 200% text", async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 667 });
+    await page.emulateMedia({ colorScheme: "dark" });
+    await page.goto("/prototype/consent");
+    await page.evaluate(() => document.documentElement.style.fontSize = "200%");
+    const dialog = page.getByRole("dialog", { name: "Điều khoản và chính sách đã được cập nhật" });
+    await expect(dialog).toBeVisible();
+    await expect(dialog.getByRole("link", { name: "Điều khoản dịch vụ" })).toHaveAttribute("href", "/legal/tos");
+    await expect(dialog.getByRole("link", { name: "Chính sách quyền riêng tư" })).toHaveAttribute("href", "/legal/privacy");
+    expect(await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1)).toBe(false);
+    await page.keyboard.press("Escape");
+    await expect(page.getByRole("button", { name: "Xem lại điều khoản cập nhật" })).toBeVisible();
+
+    await page.goto("/prototype/legal/tos");
+    await expect(page.getByRole("heading", { level: 1, name: "Điều khoản dịch vụ" })).toBeVisible();
+    await page.goto("/prototype/legal/privacy");
+    await expect(page.getByRole("heading", { level: 1, name: "Chính sách quyền riêng tư" })).toBeVisible();
   });
 
   test("screenshot the family tree", async ({ page }) => {
@@ -456,8 +543,6 @@ test.describe("Prototype Pages — smoke tests (no auth required)", () => {
 
     // Wait for layout and animations to settle
     await page.waitForTimeout(2000);
-    await page.screenshot({
-      path: "/Users/longhang/.gemini/antigravity/brain/0c47392a-b161-4f7a-957f-471aeb2f0e40/tree_screenshot.png",
-    });
+    await page.screenshot({ path: test.info().outputPath("tree_screenshot.png") });
   });
 });

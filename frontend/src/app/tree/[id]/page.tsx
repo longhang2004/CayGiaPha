@@ -57,7 +57,6 @@ function TreePageContent({ params, searchParams }: TreePageProps) {
     isSettingsOpen,
     isCollaborationOpen,
     capabilities,
-    isOwner,
     guidanceRole,
     setSelectedId,
     setEditMode,
@@ -189,7 +188,7 @@ function TreePageContent({ params, searchParams }: TreePageProps) {
             để bắt đầu.
           </p>
         </div>
-        <ContextNote topicId="them-nguoi-dau-tien" role="owner">
+        <ContextNote topicId="them-nguoi-dau-tien" role={guidanceRole}>
           <div className="onboarding-strip onboarding-strip--guidance" aria-label="Các bước gợi ý">
             <span>1. Nhập tên</span>
             <span aria-hidden="true">—</span>
@@ -198,15 +197,23 @@ function TreePageContent({ params, searchParams }: TreePageProps) {
             <span>3. Bấm lưu</span>
           </div>
         </ContextNote>
-        <Card className="empty-tree__form" style={{ padding: "2rem", textAlign: "left" }}>
-          <PersonForm
-            mode="create"
-            treeId={activeTreeId}
-            onSuccess={() => {
-              refreshTree();
-            }}
-          />
-        </Card>
+        {capabilities.editContent ? (
+          <Card className="empty-tree__form" style={{ padding: "2rem", textAlign: "left" }}>
+            <PersonForm
+              mode="create"
+              treeId={activeTreeId}
+              onSuccess={() => {
+                refreshTree();
+              }}
+            />
+          </Card>
+        ) : (
+          <Card className="empty-tree__form" style={{ padding: "2rem", textAlign: "left" }}>
+            <p style={{ margin: 0 }}>
+              Cây này chưa có thành viên. Chỉ chủ cây hoặc cộng tác viên mới có thể thêm người đầu tiên.
+            </p>
+          </Card>
+        )}
       </section>
     );
   }
@@ -271,7 +278,7 @@ function TreePageContent({ params, searchParams }: TreePageProps) {
           isOpen={isSettingsOpen}
           onClose={handleCloseSettings}
           treeId={activeTreeId}
-          isOwner={isOwner}
+          isOwner={capabilities.manageTree}
           treeName={treeName}
           region={region}
           livingRedaction={livingRedaction}
@@ -294,12 +301,14 @@ function TreePageContent({ params, searchParams }: TreePageProps) {
           onShowBirthYearsChange={setShowBirthYears}
         />
 
-        <CollaborationModal
-          isOpen={isCollaborationOpen}
-          onClose={handleCloseCollaboration}
-          treeId={activeTreeId}
-          isOwner={isOwner}
-        />
+        {capabilities.manageCollaboration ? (
+          <CollaborationModal
+            isOpen={isCollaborationOpen}
+            onClose={handleCloseCollaboration}
+            treeId={activeTreeId}
+            isOwner={capabilities.manageCollaboration}
+          />
+        ) : null}
       </section>
     </TreeContext.Provider>
   );

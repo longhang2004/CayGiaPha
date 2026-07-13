@@ -267,8 +267,8 @@ export function AddRelativeForm({ treeId, persons, preselectedPersonId, onCreate
         if (newPhotoFile) {
           try {
             await uploadPhoto(treeId, created.personId, newPhotoFile);
-          } catch (uploadErr) {
-            console.error("Failed to upload photo for new relative:", uploadErr);
+          } catch {
+            console.error("Failed to upload photo for new relative.");
           }
         }
         setConflicts(created.relationship.conflicts);

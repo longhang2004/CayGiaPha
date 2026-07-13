@@ -25,24 +25,25 @@ export default function PrototypeSignInPage() {
   return (
     <div className="auth-container">
       {/* ===== BEGIN: mirror of SignInFlow ===== */}
-      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%", maxWidth: "28rem" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "1.5rem" }}>
-          <a href="/" style={{ display: "flex", alignItems: "center", gap: "0.5rem", textDecoration: "none", color: "var(--color-fg)" }}>
-            <img src="/logo.svg" alt="Logo Cây Gia Phả" style={{ height: "32px", width: "auto" }} />
-            <span style={{ fontSize: "1.5rem", fontWeight: 700, letterSpacing: "-0.03em" }}>Cây Gia Phả</span>
+      <div className="auth-wrapper animate-fade-up-heavy stagger-1" style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%", maxWidth: "30rem" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "2rem" }}>
+          <a href="/" style={{ display: "flex", alignItems: "center", gap: "0.75rem", textDecoration: "none", color: "var(--color-fg)" }}>
+            <img src="/logo.svg" alt="Logo Cây Gia Phả" style={{ height: "40px", width: "auto" }} />
+            <span style={{ fontSize: "1.75rem", fontWeight: 700, letterSpacing: "-0.03em" }}>Cây Gia Phả</span>
           </a>
         </div>
-        <div className="auth-card">
+        <div className="double-bezel-card" style={{ width: "100%" }}>
+          <div className="double-bezel-card__inner">
           <form onSubmit={(e) => { e.preventDefault(); /* no-op in prototype */ }} noValidate>
           <h1 id={`${inputId}-heading`}>Đăng nhập</h1>
-          <p>Đăng nhập bằng số điện thoại/email và mật khẩu của bạn.</p>
+          <p>Đăng nhập bằng email hoặc số điện thoại của tài khoản cũ và mật khẩu của bạn.</p>
 
         <CGPTextField
           id={inputId}
           label="Số điện thoại hoặc email"
           name="identifier"
           type="text"
-          inputMode="email"
+          inputMode="text"
           autoComplete="username"
           value={identifier}
           onChange={setIdentifier}
@@ -99,7 +100,8 @@ export default function PrototypeSignInPage() {
             Chưa có tài khoản?
           </a>
         </div>
-        </form>
+          </form>
+          </div>
       </div>
     </div>
       {/* ===== END ===== */}

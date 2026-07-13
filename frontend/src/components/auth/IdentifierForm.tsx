@@ -23,6 +23,9 @@ interface IdentifierFormProps {
   onSubmit: (identifier: string) => Promise<void>;
   /** When true, the submit button is disabled (e.g. required consent not yet given). */
   disabled?: boolean;
+  /** Visible label; sign-up defaults to email while legacy-aware flows may accept phone. */
+  identifierLabel?: string;
+  identifierInputMode?: "text" | "email" | "tel";
 }
 
 /**
@@ -36,6 +39,8 @@ export function IdentifierForm({
   submitLabel,
   onSubmit,
   disabled = false,
+  identifierLabel = "Email",
+  identifierInputMode = "email",
 }: IdentifierFormProps) {
   const inputId = useId();
   const formErrorId = `${inputId}-form-error`;
@@ -72,9 +77,9 @@ export function IdentifierForm({
 
       <CGPTextField
         id={inputId}
-        label="Email"
+        label={identifierLabel}
         name="identifier"
-        inputMode="email"
+        inputMode={identifierInputMode}
         autoComplete="username"
         value={identifier}
         onChange={setIdentifier}

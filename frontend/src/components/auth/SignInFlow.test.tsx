@@ -35,7 +35,7 @@ describe("SignInFlow", () => {
     );
 
     expect(
-      screen.getByRole("textbox", { name: /Email/i })
+      screen.getByRole("textbox", { name: /Số điện thoại hoặc email/i })
         .closest(".cgp-field"),
     ).toBeInTheDocument();
     expect(screen.getByLabelText(/^Mật khẩu/i)).toHaveAttribute(
@@ -65,7 +65,7 @@ describe("SignInFlow", () => {
     );
 
     await userEvent.type(
-      screen.getByLabelText(/Email/i),
+      screen.getByLabelText(/Số điện thoại hoặc email/i),
       "user@example.com",
     );
     await userEvent.type(
@@ -77,6 +77,17 @@ describe("SignInFlow", () => {
     expect(signIn).toHaveBeenCalledWith("user@example.com", "mypassword123");
     expect(refresh).toHaveBeenCalledTimes(1);
     expect(push).toHaveBeenCalledWith("/");
+  });
+
+  it("retains password sign-in for a legacy phone account", async () => {
+    vi.mocked(signIn).mockResolvedValue(undefined);
+    render(<GoogleOAuthProvider clientId="test"><SignInFlow /></GoogleOAuthProvider>);
+
+    await userEvent.type(screen.getByLabelText(/Số điện thoại hoặc email/i), "0987654321");
+    await userEvent.type(screen.getByLabelText(/^Mật khẩu/i), "mypassword123");
+    await userEvent.click(screen.getByRole("button", { name: "Đăng nhập" }));
+
+    expect(signIn).toHaveBeenCalledWith("0987654321", "mypassword123");
   });
 
   it("surfaces an account-not-found error from the envelope", async () => {
@@ -94,7 +105,7 @@ describe("SignInFlow", () => {
       </GoogleOAuthProvider>
     );
 
-    const input = screen.getByLabelText(/Email/i);
+    const input = screen.getByLabelText(/Số điện thoại hoặc email/i);
     await userEvent.type(input, "user@example.com");
     await userEvent.click(screen.getByRole("button", { name: "Đăng nhập" }));
 

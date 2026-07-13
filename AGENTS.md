@@ -171,12 +171,17 @@ Prototype pages render each main functional page with mock data — no login req
 | `/prototype/forgot-password` | `src/app/forgot-password/page.tsx` / `ForgotPasswordFlow` |
 | `/prototype/invitation/[id]` | `src/app/invitation/[id]/page.tsx` |
 | `/prototype/tree` | `src/app/tree/[id]/page.tsx` — populated workspace |
+| `/prototype/tree?role=contributor&person=ego` | Contributor capability state |
+| `/prototype/tree?role=linked&person=ego` | Linked own-node capability state |
+| `/prototype/tree?role=reader&person=ego` | Reader capability state |
 | `/prototype/tree?panel=settings` | `src/app/tree/[id]/page.tsx` — settings modal open |
 | `/prototype/tree/empty` | `src/app/tree/[id]/page.tsx` — empty/onboarding state |
 | `/prototype/tree-list` | `src/app/tree/page.tsx` — tree list and onboarding |
 | `/prototype/tree-list?welcome=open` | `src/app/tree/page.tsx` — early-access welcome open without persistence |
 | `/prototype/claim/[personId]` | `src/app/claim/[personId]/page.tsx` — authenticated node-linking flow |
 | `/prototype/settings` | `src/app/settings/page.tsx` — profile, consent, and data rights |
+| `/prototype/consent` | consent reacceptance modal with mock acknowledgement |
+| `/prototype/legal/tos`, `/prototype/legal/privacy` | canonical legal v2 documents |
 | `/prototype/help` | `src/app/help/page.tsx` |
 
 ### Mandatory Sync Rule

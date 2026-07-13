@@ -5,10 +5,11 @@ describe("canonical Help registry", () => {
     expect(new Set(HELP_TOPICS.map(t => t.id)).size).toBe(HELP_TOPICS.length);
     for (const topic of getActiveHelpTopics()) for (const key of Object.keys(topic.excerpts)) expect(getHelpExcerpt(topic.id, key as "overview")).toBeTruthy();
   });
-  it("resolves safe legacy aliases and excludes unpublished claims", () => {
+  it("resolves aliases and exposes only the mounted authenticated linking flow", () => {
     expect(getHelpTopic("cach-tinh-xung-ho")?.id).toBe("xem-thong-tin-va-xung-ho");
     expect(getHelpTopic("xac-nhan-nut")).toBeUndefined();
-    expect(getActiveHelpTopics().some(t => /reminder|claim|display-name/.test(t.id))).toBe(false);
+    expect(getHelpTopic("xac-nhan-day-la-toi")?.steps.join(" ")).toContain("/claim/");
+    expect(getActiveHelpTopics().some(t => /reminder|display-name/.test(t.id))).toBe(false);
   });
   it("filters owner-only topics for readers", () => {
     expect(getHelpTopic("chon-vung-mien", "reader")).toBeUndefined();
@@ -19,6 +20,7 @@ describe("canonical Help registry", () => {
       "luu-anh-ky-niem",
       "bao-mat-va-chia-se-cay",
       "gui-phan-hoi-va-ung-ho",
+      "xac-nhan-day-la-toi",
     ]);
     for (const topic of HELP_TOPICS) {
       expect(topic.reviewedAt).toBe("2026-07-13");

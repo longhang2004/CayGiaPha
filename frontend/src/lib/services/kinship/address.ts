@@ -52,7 +52,7 @@ export async function ensureKinshipTermsSeeded() {
     console.log("Seeding region_kinship_terms table completed successfully.");
     isSeeded = true;
   } catch (err) {
-    console.error("Failed to seed region_kinship_terms table:", err);
+    console.error("Failed to seed region_kinship_terms table.");
     throw err;
   }
 }

@@ -11,6 +11,7 @@ export type Role = "OWNER" | "CONTRIBUTOR" | "LINKED" | "READER" | "NONE";
 
 export interface Capabilities {
   editContent: boolean;
+  editRelationships: boolean;
   editPhotos: boolean;
   editVisibility: boolean;
   manageClaim: boolean;
@@ -20,6 +21,7 @@ export interface Capabilities {
 
 const NO_CAPABILITIES: Capabilities = {
   editContent: false,
+  editRelationships: false,
   editPhotos: false,
   editVisibility: false,
   manageClaim: false,
@@ -34,6 +36,7 @@ export function capabilitiesFor(
   if (role === "OWNER") {
     return {
       editContent: true,
+      editRelationships: true,
       editPhotos: true,
       editVisibility: true,
       manageClaim: true,
@@ -45,6 +48,7 @@ export function capabilitiesFor(
     return {
       ...NO_CAPABILITIES,
       editContent: true,
+      editRelationships: true,
       editPhotos: true,
     };
   }

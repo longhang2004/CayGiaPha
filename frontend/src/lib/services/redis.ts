@@ -120,16 +120,14 @@ class LocalRedisWrapper implements IRedisClient {
       try {
         const { createClient } = await import("redis");
         const client = createClient({ url: this.url });
-        client.on("error", (err: any) => {
-          console.error("[Redis] local client error:", err.message);
+        client.on("error", () => {
+          console.error("[Redis] local client error.");
           this.connectionFailed = true;
         });
         await client.connect();
         this.client = client;
-      } catch (err: any) {
-        console.warn(
-          `[Redis] Failed to connect to local Redis at ${this.url}. Falling back to in-memory store. Error: ${err.message}`
-        );
+      } catch {
+        console.warn("[Redis] Failed to connect to local Redis. Falling back to in-memory store.");
         this.connectionFailed = true;
         this.fallback = new InMemoryRedisClient();
         return this.fallback;

@@ -3,7 +3,7 @@ import { handleApiRoute } from "./routeHelper";
 
 describe("handleApiRoute", () => {
   it("never exposes an unexpected server error message", async () => {
-    vi.spyOn(console, "error").mockImplementation(() => {});
+    const error = vi.spyOn(console, "error").mockImplementation(() => {});
 
     const response = await handleApiRoute(async () => {
       throw new Error("database password and private details");
@@ -16,5 +16,7 @@ describe("handleApiRoute", () => {
         message: "Đã xảy ra lỗi hệ thống. Vui lòng thử lại sau.",
       },
     });
+    expect(error).toHaveBeenCalledWith("Internal Server Error in API Route.");
+    expect(JSON.stringify(error.mock.calls)).not.toContain("database password");
   });
 });

@@ -9,6 +9,7 @@ import { auditService, AuditActions } from "./audit";
 import { OAuth2Client } from "google-auth-library";
 import { normalizeAndValidateDisplayName } from "../account/displayName";
 import { escapeHtml } from "./email";
+import { hashRateLimitIdentifier, rateLimiter } from "./rateLimiter";
 
 export type IdentifierType = "PHONE" | "EMAIL";
 
@@ -764,10 +765,18 @@ export class AuthService {
         audience: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID,
       });
       const payload = ticket.getPayload();
-      if (!payload || !payload.email) throw new Error("No email in idToken");
-      email = payload.email;
+      if (!payload || !payload.email) {
+        throw ApiException.validation("idToken", "Lỗi xác thực Google Token.");
+      }
+      if (payload.email_verified !== true) {
+        throw ApiException.validation("idToken", "Tài khoản Google chưa xác minh email.");
+      }
+      email = payload.email.trim().toLowerCase();
       googleName = payload.name;
-    } catch (e) {
+    } catch (error) {
+      if (error instanceof ApiException) {
+        throw error;
+      }
       // Fallback: If verification fails, it might be an access token
       try {
         const response = await fetch("https://www.googleapis.com/oauth2/v3/userinfo", {
@@ -775,13 +784,20 @@ export class AuthService {
         });
         if (!response.ok) throw new Error("Invalid access token");
         const data = await response.json();
-        if (!data || !data.email) throw new Error("No email in userinfo response");
-        email = data.email;
+        if (!data || typeof data.email !== "string" || data.email_verified !== true) {
+          throw new Error("Google identity does not provide a verified email");
+        }
+        email = data.email.trim().toLowerCase();
         googleName = data.name;
-      } catch (fallbackError) {
+      } catch {
         throw ApiException.validation("idToken", "Lỗi xác thực Google Token.");
       }
     }
+
+    await rateLimiter.check(
+      `google-identity:${hashRateLimitIdentifier(email)}`,
+      { failClosed: true },
+    );
 
     const user = await this.findUserByIdentifier("EMAIL", email);
 

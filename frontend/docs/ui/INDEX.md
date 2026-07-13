@@ -16,14 +16,14 @@ For historical findings, read [AUDIT.md](./AUDIT.md) only when relevant.
 | `/signin`, `/signup`, `/forgot-password` | Focused | matching prototype route |
 | `/login` | Bare/focused legacy placeholder | none |
 | `/tree` | In-app | `/prototype/tree-list` |
-| `/tree/[id]` | In-app/full canvas | `/prototype/tree`, `/prototype/tree/empty`, `?panel=settings` |
+| `/tree/[id]` | In-app/full canvas | `/prototype/tree` with `role=owner\|contributor\|linked\|reader`, `/prototype/tree/empty`, `?panel=settings` |
 | `/claim/[personId]` | Focused | `/prototype/claim/[personId]` |
 | `/person` | Legacy redirect to explicit tree workspace | none |
 | `/invitation/[id]` | Bare/focused | `/prototype/invitation/[id]` |
 | `/help` | Marketing | `/prototype/help` |
 | `/support`, `/feedback`, `/admin` | In-app | none |
-| `/settings` | In-app | `/prototype/settings` |
-| `/legal/tos`, `/legal/privacy` | Focused | none |
+| `/settings` | In-app | `/prototype/settings`; consent reacceptance at `/prototype/consent` |
+| `/legal/tos`, `/legal/privacy` | Focused | `/prototype/legal/tos`, `/prototype/legal/privacy` |
 
 Prototype discovery is driven by `src/lib/prototype/manifest.ts`.
 

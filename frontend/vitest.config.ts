@@ -10,6 +10,9 @@ export default defineConfig({
     setupFiles: ["./vitest.setup.ts"],
     include: ["src/**/*.{test,spec}.{ts,tsx}"],
     css: false,
+    // The full 100-file jsdom suite runs UI interactions concurrently; keep
+    // per-test timeouts above the observed parallel setup/interaction cost.
+    testTimeout: 15_000,
   },
   resolve: {
     alias: {

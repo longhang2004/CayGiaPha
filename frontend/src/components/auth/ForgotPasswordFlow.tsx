@@ -9,7 +9,17 @@ import { CGPPasswordField, CGPTextField } from "@/components/cgp";
 import { IdentifierForm } from "./IdentifierForm";
 import { toAuthErrorState, fieldErrorFor, type AuthErrorState } from "./authErrors";
 
-export function ForgotPasswordFlow() {
+export interface ForgotPasswordFlowProps {
+  requestAction?: (identifier: string) => Promise<void>;
+  confirmAction?: (identifier: string, code: string, password: string) => Promise<void>;
+  onComplete?: () => void | Promise<void>;
+}
+
+export function ForgotPasswordFlow({
+  requestAction = requestPasswordReset,
+  confirmAction = confirmPasswordReset,
+  onComplete,
+}: ForgotPasswordFlowProps = {}) {
   const router = useRouter();
   const { refresh } = useSession();
   const [identifier, setIdentifier] = useState("");
@@ -29,7 +39,7 @@ export function ForgotPasswordFlow() {
   const passwordError = fieldErrorFor(error, "password");
 
   async function handleRequest(id: string) {
-    await requestPasswordReset(id);
+    await requestAction(id);
     setIdentifier(id);
     setStep("confirm");
   }
@@ -39,9 +49,13 @@ export function ForgotPasswordFlow() {
     setError({});
     setSubmitting(true);
     try {
-      await confirmPasswordReset(identifier, code.trim(), password);
-      await refresh();
-      router.push("/tree");
+      await confirmAction(identifier, code.trim(), password);
+      if (onComplete) {
+        await onComplete();
+      } else {
+        await refresh();
+        router.push("/tree");
+      }
     } catch (caught) {
       setError(toAuthErrorState(caught));
     } finally {
@@ -65,6 +79,8 @@ export function ForgotPasswordFlow() {
               description="Nhập số điện thoại hoặc email của bạn để nhận mã xác thực."
               submitLabel="Gửi mã"
               onSubmit={handleRequest}
+              identifierLabel="Số điện thoại hoặc email"
+              identifierInputMode="text"
             />
             <div style={{ marginTop: "1rem", textAlign: "center" }}>
               <a href="/signin" style={{ color: "var(--color-fg)", textDecoration: "none", fontSize: "0.875rem" }}>

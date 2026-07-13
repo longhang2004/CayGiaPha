@@ -62,8 +62,8 @@ export function NotificationBell({ align = "right" }: { align?: "left" | "right"
         }
       }
       setReminders(extended);
-    } catch (err) {
-      console.error("Failed to load reminders:", err);
+    } catch {
+      console.error("Failed to load reminders.");
     } finally {
       setLoading(false);
     }
@@ -88,8 +88,8 @@ export function NotificationBell({ align = "right" }: { align?: "left" | "right"
       setReminders((prev) =>
         prev.map((r) => (r.id === id ? { ...r, isRead: true } : r))
       );
-    } catch (err) {
-      console.error("Failed to mark reminder as read:", err);
+    } catch {
+      console.error("Failed to mark reminder as read.");
     }
   };
 
@@ -100,8 +100,8 @@ export function NotificationBell({ align = "right" }: { align?: "left" | "right"
         await deleteReminder(id);
       }
       setReminders((prev) => prev.filter((r) => r.id !== id));
-    } catch (err) {
-      console.error("Failed to delete reminder:", err);
+    } catch {
+      console.error("Failed to delete reminder.");
     }
   };
 

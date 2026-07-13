@@ -34,9 +34,9 @@ export function UpcomingEventsWidget({
           setLoading(false);
         }
       })
-      .catch((err) => {
+      .catch(() => {
         if (active) {
-          console.error("Failed to load upcoming events:", err);
+          console.error("Failed to load upcoming events.");
           setError("Không thể tải danh sách ngày giỗ.");
           setLoading(false);
         }

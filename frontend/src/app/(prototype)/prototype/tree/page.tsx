@@ -23,7 +23,7 @@
 import React, { useState, useEffect, useCallback, Suspense, useMemo } from "react";
 import { useSearchParams } from "next/navigation";
 import { TreeGraph } from "@/components/graph/TreeGraph";
-import type { Person, Relationship, Address, ViewpointAddresses } from "@/lib/graph";
+import type { Person, Relationship, Address, ViewpointAddresses, Capabilities, TreeAccessRole } from "@/lib/graph";
 import type { Region } from "@/lib/region";
 import type { TreeCollaborator, CollaborationInvitation } from "@/lib/collaboration";
 import { MockSessionProvider } from "@/lib/prototype/mockSession";
@@ -92,11 +92,56 @@ async function mockFetchAddresses(
   };
 }
 
+const NO_CAPABILITIES: Capabilities = {
+  editContent: false,
+  editRelationships: false,
+  editPhotos: false,
+  editVisibility: false,
+  manageClaim: false,
+  manageTree: false,
+  manageCollaboration: false,
+};
+
+function prototypeCapabilities(role: TreeAccessRole, personScoped = false): Capabilities {
+  if (role === "OWNER") {
+    return {
+      editContent: true,
+      editRelationships: true,
+      editPhotos: true,
+      editVisibility: true,
+      manageClaim: true,
+      manageTree: true,
+      manageCollaboration: true,
+    };
+  }
+  if (role === "CONTRIBUTOR") {
+    return { ...NO_CAPABILITIES, editContent: true, editRelationships: true, editPhotos: true };
+  }
+  if (role === "LINKED" && personScoped) {
+    return { ...NO_CAPABILITIES, editContent: true, editPhotos: true, editVisibility: true };
+  }
+  return { ...NO_CAPABILITIES };
+}
+
 function PrototypeTreeContent() {
   const searchParams = useSearchParams();
-  const guidanceRole = searchParams.get("role") === "reader" ? "reader" : searchParams.get("role") === "editor" ? "editor" : "owner";
+  const requestedRole = searchParams.get("role");
+  const accessRole: TreeAccessRole = requestedRole === "contributor" || requestedRole === "editor"
+    ? "CONTRIBUTOR"
+    : requestedRole === "linked"
+      ? "LINKED"
+      : requestedRole === "reader"
+        ? "READER"
+        : "OWNER";
+  const capabilities = useMemo(() => prototypeCapabilities(accessRole), [accessRole]);
+  const guidanceRole = accessRole === "OWNER" ? "owner" : accessRole === "CONTRIBUTOR" ? "editor" : "reader";
   const guideState = searchParams.get("guide");
-  const [persons] = useState<Person[]>(MOCK_PERSONS);
+  const persons = useMemo<Person[]>(() => MOCK_PERSONS.map((person) => ({
+    ...person,
+    capabilities: accessRole === "LINKED"
+      ? prototypeCapabilities(accessRole, person.id === "ego")
+      : capabilities,
+  })), [accessRole, capabilities]);
   const [relationships] = useState<Relationship[]>(MOCK_RELATIONSHIPS);
   const [region, setRegionState] = useState<Region>("Bac");
   const [livingRedaction, setLivingRedaction] = useState(false);
@@ -136,7 +181,11 @@ function PrototypeTreeContent() {
     if (searchParams.get("panel") === "settings") {
       setIsSettingsOpen(true);
     }
-  }, [searchParams]);
+    const requestedPerson = searchParams.get("person");
+    if (requestedPerson && persons.some((person) => person.id === requestedPerson)) {
+      setSelectedId(requestedPerson);
+    }
+  }, [persons, searchParams]);
 
   const handleCloseSettings = useCallback(() => {
     setIsSettingsOpen(false);
@@ -206,15 +255,8 @@ function PrototypeTreeContent() {
   const treeState: TreeContextType = {
     activeTreeId: PROTOTYPE_TREE_ID,
     shareToken,
-    accessRole: "OWNER",
-    capabilities: {
-      editContent: true,
-      editPhotos: true,
-      editVisibility: true,
-      manageClaim: true,
-      manageTree: true,
-      manageCollaboration: true,
-    },
+    accessRole,
+    capabilities,
     claimInviteAction: async () => {},
     upcomingEventsLoader: async () => {
       const today = new Date();
@@ -254,9 +296,9 @@ function PrototypeTreeContent() {
     createMode,
     isSettingsOpen,
     isCollaborationOpen,
-    isOwner: true,
-    isCollaborator: false,
-    canEdit: true,
+    isOwner: accessRole === "OWNER",
+    isCollaborator: accessRole === "CONTRIBUTOR",
+    canEdit: capabilities.editContent,
     guidanceRole,
     setEgoId,
     setSelectedId,
@@ -334,7 +376,7 @@ function PrototypeTreeContent() {
           isOpen={isSettingsOpen}
           onClose={handleCloseSettings}
           treeId={PROTOTYPE_TREE_ID}
-          isOwner={true}
+          isOwner={capabilities.manageTree}
           treeName={treeName}
           region={region}
           livingRedaction={livingRedaction}
@@ -355,14 +397,16 @@ function PrototypeTreeContent() {
           isPrototype={true}
         />
 
-        <CollaborationModal
-          isOpen={isCollaborationOpen}
-          onClose={handleCloseCollaboration}
-          treeId={PROTOTYPE_TREE_ID}
-          isOwner={true}
-          adapter={mockAdapter}
-          isPrototype={true}
-        />
+        {capabilities.manageCollaboration ? (
+          <CollaborationModal
+            isOpen={isCollaborationOpen}
+            onClose={handleCloseCollaboration}
+            treeId={PROTOTYPE_TREE_ID}
+            isOwner={capabilities.manageCollaboration}
+            adapter={mockAdapter}
+            isPrototype={true}
+          />
+        ) : null}
       </section>
       {/* ===== END: mirror of src/app/tree/page.tsx (populated branch) ===== */}
     </TreeContext.Provider>

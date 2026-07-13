@@ -273,7 +273,7 @@ against the active Next.js code and current tests.
       explicit authenticated request.
     - _Requirements: 1.1–1.9, 9.2, 13.1, 13.2, 13.3_
 
-  - [ ] 6.6 Replace the obsolete single-tree property with explicit multi-tree isolation
+  - [x] 6.6 Replace the obsolete single-tree property with explicit multi-tree isolation
     - **Property 19: Initial-tree creation and multi-tree isolation** — sign-up creates one initial
       tree; every later explicit create adds one tree; every operation affects only its supplied
       `treeId`.
@@ -516,8 +516,8 @@ against the active Next.js code and current tests.
   - Ensure all new and existing tests pass against the Docker database; confirm the read-access gate,
     living-person redaction, consent gate, and photo access controls behave end-to-end.
 
-- [ ] 23. Account display names (CGP-USER-001)
-  - [ ] 23.1 Add nullable account display-name persistence and validation
+- [x] 23. Account display names (CGP-USER-001)
+  - [x] 23.1 Add nullable account display-name persistence and validation
     - Add forward migration V25, Drizzle/Java mappings, normalized Unicode validation, and legacy-null compatibility without syncing Person names.
   - [x] 23.2 Extend signup, Google, session, and self-profile contracts
     - Require display name for new password/Google accounts, preserve existing Google names, expose it in session, and add self-only `PATCH /me/profile`.
@@ -532,8 +532,8 @@ against the active Next.js code and current tests.
   - [x] 24.3 Add invitation/auth/copy-link UI and synchronized prototypes
     - Preserve internal return paths across sign-in/sign-up, show invitation reason toast, add request/cancel/pending states, and expose copy controls for both code and link.
 
-- [ ] 25. Active Next.js business-conformance remediation (CGP-CONFORMANCE-001)
-  - [ ] 25.1 Make authorization explicitly multi-tree and capability-based
+- [x] 25. Active Next.js business-conformance remediation (CGP-CONFORMANCE-001)
+  - [x] 25.1 Make authorization explicitly multi-tree and capability-based
     - Remove first-owned-tree fallback state; return tree `accessRole` and per-person capabilities;
       enforce Owner/Contributor/Linked/Reader permissions on every active Route Handler.
     - _Requirements: 3, 11, 13, 14, 19, 20, 21, 24_
@@ -551,7 +551,7 @@ against the active Next.js code and current tests.
       add relationship update/delete; align search response; compensate photo failures; hash new
       invitation codes and rate-limit joins by User and IP.
     - _Requirements: 3–7, 12, 15, 16, 24–26_
-  - [ ] 25.5 Synchronize production UI, Help, prototypes, and conformance evidence
+  - [x] 25.5 Synchronize production UI, Help, prototypes, and conformance evidence
     - Expose only capability-permitted actions; add claim/settings/consent/data-rights prototypes;
       keep prototype data isolated; run targeted/full tests and the three-viewport UI audit.
     - _Requirements: 11, 17, 18, 22, 23_

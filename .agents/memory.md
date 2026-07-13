@@ -33,7 +33,10 @@ Durable project knowledge for future AI agents. Keep entries short, verified, an
 - **Mock data**: Lives in `frontend/src/lib/prototype/mockData.ts`. Contains `MOCK_PERSONS`, `MOCK_RELATIONSHIPS`, `MOCK_USER`, `PROTOTYPE_TREE_ID`.
 - **Prototype Playwright spec**: `frontend/tests/e2e/prototype.spec.ts` — smoke tests for all prototype pages without auth.
 - **AGENTS.md sync rule**: Added "Prototype Pages" section to `AGENTS.md` mandating that prototype pages must be updated in the same PR/commit as any main page UI/UX change.
-- **Automatic Spouse Inference**: Implemented logic in both `RelationshipService.java` (Java backend) and `relationship.ts` (Next.js frontend) to automatically detect when a child has both a father and a mother, and insert a `marriage` edge with a default status of `"married"` if one does not already exist. This facilitates natural user onboarding when connecting parents. Sibling relationships are not stored as edges and remain fully derived dynamically from shared parents by the kinship resolver.
+- **Automatic spouse inference (superseded 2026-07-13)**: The active Next.js runtime must not
+  infer a marriage between co-parents. Existing marriage rows are retained because runtime data
+  cannot distinguish prior inference from an explicit user assertion. Sibling relationships remain
+  derived from shared parents rather than stored as primitive edges.
 - **Serverless-Safe Seeding & Database Connection Timeout**: Configured `connectionTimeoutMillis` (10s for Neon on production, 5s for local pg) to prevent the application from hanging indefinitely during database outages. Replaced the global `seedingPromise` in `address.ts` with a simple boolean `isSeeded` flag to prevent serverless containers from getting stuck waiting on a permanently pending/suspended promise if a cold start or database query times out during initial migration seeding.
 
 ## 2026-06-25
@@ -76,7 +79,10 @@ Durable project knowledge for future AI agents. Keep entries short, verified, an
 - **Active architecture/auth baseline**: The production-priority runtime is Next.js full-stack with Route Handlers, TypeScript services, Drizzle, and PostgreSQL. Spring Boot is an inactive reference/future synchronization target. Password and Google are the active sign-up/sign-in methods; OTP-only auth is legacy. Bounded codes remain for password recovery and person-node claiming.
 - **Photo format decision**: The product contract accepts JPEG and PNG only. WebP remains deferred and must be rejected; older design/task text that accepted WebP was documentation drift.
 - **UI audit revalidation**: `frontend/docs/ui/AUDIT.md` was captured before same-day fixes. Commits `f7ee39d` and `23224fc` improved semantic tokens, shell mapping, prototype manifest/tests, touch targets, landing media sizing, shared modal behavior, and graph legend. Revalidate each historical audit finding before creating a task.
-- **Known remaining prototype/UI debt**: `/prototype/tree` still mounts `UpcomingEventsWidget`, which calls the real API and can log 401 despite mock session; invitation production/prototype pages begin with `h2` and lack `h1`; inline styles/global selectors remain numerous; breakpoint vocabulary remains inconsistent.
+- **Known remaining prototype/UI debt**: Prototype tree/event, claim, recovery, consent, settings,
+  collaboration, and invitation states use mock adapters and must not call production APIs.
+  Invitation production/prototype pages begin with `h2` and lack `h1`; inline styles/global
+  selectors remain numerous; breakpoint vocabulary remains inconsistent.
 - **Password recovery active-runtime gap**: `ForgotPasswordFlow` and client helpers exist, but there are no Next.js `/api/v1/auth/password-reset/request` or `/confirm` Route Handlers while `USE_BACKEND=false`. Do not report password recovery as end-to-end complete until the active handlers and tests exist.
 
 ## 2026-07-11
@@ -88,7 +94,7 @@ Durable project knowledge for future AI agents. Keep entries short, verified, an
 - **CGP component-system boundary**: `frontend/src/components/cgp/` owns the public component contracts and is the only production UI layer allowed to import `react-aria-components`. Version `1.19.0` is pinned for React 18. Its Toast exports remain `UNSTABLE_*`, so CGP keeps a library-independent toast contract until a separately approved phase validates a stable kernel API. `GraphOverlayBoundary` remains a separate local portal/safe-rectangle system.
 - **CGP button migration**: `CGPButton`/`CGPIconButton` are the first runtime wrappers. RAC 1.19 filters `aria-busy`, so `CGPButton` restores it after mount while retaining `isPending`. The legacy `components/Button.tsx` remains native because its full React DOM event/style contract is not type-compatible with RAC; migrate consumers in bounded groups. Initial CGP padding/pill radius intentionally matches the legacy global button shape to prevent visual drift.
 - **CGP field foundation**: `CGPTextField`/`CGPPasswordField` keep controlled and uncontrolled values on the React Aria `TextField` root, while the wrapper owns label/description/error association, semantic state classes, and an accessible password reveal toggle. Consumer migration remains a separately approved bounded task.
-- **CGP auth field migration**: Sign-in, sign-up, `IdentifierForm`, and password-reset confirmation now use CGP text/password fields, with matching auth prototypes. CGP wraps `FieldError` in a live `role="alert"` boundary because RAC 1.19 filters `role` from `FieldError` itself; the RAC-owned error ID remains the input's `aria-describedby` target. Region Select remains legacy pending its own primitive phase.
+- **CGP auth field migration**: Sign-in, sign-up, `IdentifierForm`, and password-reset confirmation now use CGP text/password fields, with matching auth prototypes. CGP wraps `FieldError` in a live `role="alert"` boundary because RAC 1.19 filters `role` from `FieldError` itself; the RAC-owned error ID remains the input's `aria-describedby` target. Signup region uses `CGPSelect`.
 - **CGP Select/Checkbox foundation**: `CGPSelect` owns label/value/trigger/listbox/popover semantics and `CGPCheckbox` owns checked indicator plus description/error IDs. RAC 1.19 filters `aria-invalid` from the Select trigger Button, so CGP restores it on the focusable trigger via a ref effect. Consumer migration remains bounded and separate.
 - **CGP signup choice migration**: Signup production and prototype now use `CGPSelect` for regional kinship preference and `CGPCheckbox` for both legal consents. The controlled `Region` value and consent booleans remain the existing API payload contract; `.auth-consents` supplies auth-only spacing without changing primitive styles.
 - **CGP dialog foundation**: `CGPDialog` delegates focus containment/restoration, outside/Escape dismissal mechanics, and document scroll locking to RAC ModalOverlay/Modal/Dialog. RAC 1.19 filters `aria-modal` from Dialog DOM props and does not associate its description slot automatically, so the wrapper restores `aria-modal` after mount and owns an explicit description ID/`aria-describedby` association.
@@ -135,3 +141,16 @@ Durable project knowledge for future AI agents. Keep entries short, verified, an
   `sha256:<base64url-digest>` and the raw code is returned only at issuance. Acceptance checks the
   digest first and temporarily falls back to unexpired plaintext legacy rows; pending-list APIs
   must never serialize either representation.
+- **Capability/UI contract (2026-07-13)**: `editRelationships` is distinct from `editContent`.
+  Owner and Contributor may edit relationships; Linked may edit only the linked Person's own
+  fields/photos/visibility and never tree structure; Reader is read-only. Production UI consumes
+  server-returned tree/person capabilities, while prototypes reproduce them from isolated mock data.
+- **Auth/logging hardening (2026-07-13)**: The supported Google flow is
+  `POST /api/v1/auth/google`; legacy GET login/callback routes only redirect to `/signin` and never
+  create accounts. Google identity must expose a verified normalized email and is rate-limited by
+  hashed identity plus IP. Runtime logs use generic messages/counts and never attach provider
+  responses, raw errors, OTPs, destinations, credentials, session/share tokens, or family data.
+- **Verification environment (2026-07-13)**: The 100-file frontend Vitest suite uses a 15-second
+  per-test budget because concurrent jsdom UI setup can exceed Vitest's 5-second default. Java
+  Flyway/Testcontainers verification passes all 27 migrations on PostgreSQL 16; the host Java 26
+  cannot run the full Mockito suite because the pinned ByteBuddy supports only through Java 23.

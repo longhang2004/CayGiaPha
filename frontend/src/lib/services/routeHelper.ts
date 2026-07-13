@@ -7,7 +7,7 @@ export async function handleApiRoute(handler: () => Promise<Response>): Promise<
     if (error instanceof ApiException) {
       return error.toResponse();
     }
-    console.error("Internal Server Error in API Route:", error);
+    console.error("Internal Server Error in API Route.");
     return Response.json(
       {
         error: {

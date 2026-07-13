@@ -124,8 +124,8 @@ export const HELP_TOPICS: HelpTopic[] = [
     id: "luu-anh-ky-niem", version: 1, status: "active", roles: ALL_ROLES,
     title: "Lưu ảnh kỷ niệm cho thành viên", summary: "Xem ảnh theo năm và, khi có quyền, tải ảnh hoặc chọn ảnh đại diện.",
     purpose: "Lưu lại hình ảnh gắn với từng thành viên trong gia đình.",
-    prerequisites: ["Cây có ít nhất một người.", "Chủ cây mới có thể thêm, đặt ảnh đại diện hoặc xóa ảnh."],
-    steps: ["Chọn một người trên sơ đồ và mở Thư viện ảnh.", "Chủ cây chọn ảnh JPEG hoặc PNG, bổ sung năm chụp và mô tả nếu có, rồi chọn Lưu ảnh.", "Dùng Đặt làm ảnh đại diện hoặc Xóa khi cần quản lý ảnh đã tải."],
+    prerequisites: ["Cây có ít nhất một người.", "Chủ cây và cộng tác viên quản lý ảnh của mọi người; thành viên đã xác nhận quản lý ảnh của chính mình."],
+    steps: ["Chọn một người trên sơ đồ và mở Thư viện ảnh.", "Nếu bạn có quyền sửa ảnh của người đó, chọn ảnh JPEG hoặc PNG, bổ sung năm chụp và mô tả nếu có, rồi chọn Lưu ảnh.", "Dùng Đặt làm ảnh đại diện hoặc Xóa khi cần quản lý ảnh đã tải."],
     success: "Ảnh xuất hiện trong thư viện của thành viên và được nhóm theo năm chụp.",
     recovery: "Nếu ảnh không tải được, kiểm tra định dạng JPEG/PNG, giới hạn dung lượng và số ảnh được phép.",
     privacyNote: "Chỉ tải ảnh mà gia đình đồng ý lưu và chia sẻ theo chế độ của cây.",
@@ -152,6 +152,17 @@ export const HELP_TOPICS: HelpTopic[] = [
     recovery: "Nếu chưa gửi được, kiểm tra email, độ dài nội dung, định dạng ảnh và thử lại sau.",
     privacyNote: "Không gửi mật khẩu, mã xác nhận, token phiên hoặc dữ liệu gia đình nhạy cảm trong phản hồi.",
     excerpts: {}, relatedTopicIds: [], reviewedAt: "2026-07-13",
+  },
+  {
+    id: "xac-nhan-day-la-toi", version: 1, status: "active", roles: ALL_ROLES,
+    title: "Xác nhận đây là tôi", summary: "Liên kết đúng hồ sơ trong cây với tài khoản đã đăng nhập bằng mã xác nhận.",
+    purpose: "Cho phép bạn quản lý thông tin và ảnh của chính mình mà không cấp quyền chỉnh sửa toàn bộ cây.",
+    prerequisites: ["Chủ cây đã gửi lời mời xác nhận từ đúng hồ sơ của bạn.", "Bạn đăng nhập hoặc đăng ký bằng đúng email nhận lời mời; số điện thoại chỉ dùng cho tài khoản cũ đã được xác minh."],
+    steps: ["Mở liên kết Xác nhận đây là tôi có đường dẫn /claim/[personId] trong lời mời.", "Nếu chưa đăng nhập, hoàn tất đăng nhập hoặc đăng ký; hệ thống sẽ đưa bạn trở lại đúng hồ sơ.", "Nhập mã xác nhận và chọn Xác nhận đây là tôi."],
+    success: "Hồ sơ được liên kết với tài khoản của bạn và cây mở ở đúng không gian gia đình với quyền Thành viên đã xác nhận.",
+    recovery: "Nếu danh tính tài khoản không khớp, mã đã hết hạn hoặc đã được thay thế, hãy đăng nhập đúng tài khoản và nhờ chủ cây gửi lời mời mới.",
+    privacyNote: "Chỉ gửi mã xác nhận cho đúng người được mời. Trang xác nhận không yêu cầu bạn nhập lại email, số điện thoại hay định danh khác.",
+    excerpts: {}, relatedTopicIds: ["xem-thong-tin-va-xung-ho", "luu-anh-ky-niem"], reviewedAt: "2026-07-13",
   },
 ];
 

@@ -17,6 +17,7 @@ const EXPECTED_ACTIVE_TOPIC_IDS = [
   "luu-anh-ky-niem",
   "bao-mat-va-chia-se-cay",
   "gui-phan-hoi-va-ung-ho",
+  "xac-nhan-day-la-toi",
 ];
 
 describe("HelpGuide", () => {
@@ -30,7 +31,8 @@ describe("HelpGuide", () => {
     const links = within(screen.getByTestId("help-nav")).getAllByTestId("help-nav-link");
     expect(links).toHaveLength(topics.length);
     for (const topic of topics) expect(within(screen.getByTestId("help-nav")).getByRole("link", { name: topic.title })).toHaveAttribute("href", `#${topic.id}`);
-    expect(screen.queryByText(/xác nhận danh tính bằng mã/i)).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Xác nhận đây là tôi" })).toHaveAttribute("href", "#xac-nhan-day-la-toi");
+    expect(screen.getByText(/chỉ gửi mã xác nhận/i)).toBeInTheDocument();
     expect(screen.queryByText(/ngày giỗ/i)).not.toBeInTheDocument();
   });
   it("renders task-oriented sections", () => {

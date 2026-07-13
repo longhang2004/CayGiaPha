@@ -37,6 +37,17 @@ describe("PasswordResetService", () => {
     expect(deps.issueCode).toHaveBeenCalledWith("u1", "user@example.test");
   });
 
+  it("retains recovery support for a verified legacy phone account", async () => {
+    const deps = dependencies({
+      findUser: vi.fn().mockResolvedValue({ id: "legacy", destination: "0987654321" }),
+    });
+
+    await new PasswordResetService(deps).request(" 0987654321 ");
+
+    expect(deps.findUser).toHaveBeenCalledWith("0987654321");
+    expect(deps.issueCode).toHaveBeenCalledWith("legacy", "0987654321");
+  });
+
   it("verifies the code, updates the password, revokes prior sessions, and creates one fresh session", async () => {
     const deps = dependencies();
 

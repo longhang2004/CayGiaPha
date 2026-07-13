@@ -35,8 +35,8 @@ export function useTreeGraphZoom(
   const handleToggleFullscreen = useCallback(() => {
     if (!fullscreenRef.current) return;
     if (!document.fullscreenElement) {
-      fullscreenRef.current.requestFullscreen().catch((err) => {
-        console.error("Error attempting to enable fullscreen:", err);
+      fullscreenRef.current.requestFullscreen().catch(() => {
+        console.error("Error attempting to enable fullscreen.");
       });
     } else {
       document.exitFullscreen();

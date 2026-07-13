@@ -281,7 +281,7 @@ export function PersonForm({
         try {
           await uploadPhoto(treeId, resolvedId, photoFile);
         } catch (uploadErr) {
-          console.error("Failed to upload photo:", uploadErr);
+          console.error("Failed to upload photo.");
           // Don't fail the whole form submit if photo fails, just warn
           alert("Lưu thông tin thành công nhưng không thể tải ảnh lên: " + (uploadErr instanceof Error ? uploadErr.message : ""));
         }

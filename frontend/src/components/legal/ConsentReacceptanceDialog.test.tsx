@@ -63,4 +63,15 @@ describe("ConsentReacceptanceDialog", () => {
     await userEvent.click(reopen);
     expect(screen.getByRole("dialog")).toBeInTheDocument();
   });
+
+  it("uses a prototype adapter without calling the live consent API", async () => {
+    const acknowledge = vi.fn().mockResolvedValue(undefined);
+    render(<ConsentReacceptanceDialog acknowledge={acknowledge} />);
+
+    await userEvent.click(screen.getByRole("checkbox", { name: /Tôi đã đọc và đồng ý/i }));
+    await userEvent.click(screen.getByRole("button", { name: "Đồng ý và tiếp tục" }));
+
+    expect(acknowledge).toHaveBeenCalledOnce();
+    expect(mocks.post).not.toHaveBeenCalled();
+  });
 });

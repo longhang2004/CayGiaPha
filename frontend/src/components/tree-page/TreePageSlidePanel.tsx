@@ -36,6 +36,7 @@ export function TreePageSlidePanel() {
   const selectedPerson = selectedId ? persons.find((p) => p.id === selectedId) : null;
   const selectedCapabilities = selectedPerson?.capabilities ?? capabilities;
   const canEditSelected = selectedCapabilities?.editContent ?? canEdit;
+  const canEditSelectedRelationships = selectedCapabilities?.editRelationships ?? capabilities.editRelationships;
   const selectedSpouseRelationship = selectedPerson
     ? relationships.find((r) => r.type === "marriage" && (r.sourceId === selectedPerson.id || r.targetId === selectedPerson.id))
     : undefined;
@@ -66,7 +67,7 @@ export function TreePageSlidePanel() {
 
   return (
     <div data-graph-safe-exclude="panel" className={`tree-workspace__info-panel ${isPanelOpen ? "tree-workspace__info-panel--open" : ""}`}>
-      {createMode ? (
+      {createMode && capabilities.editContent ? (
         <div className="surface-card side-panel" style={{ position: "relative" }}>
           <button
             type="button"
@@ -110,7 +111,7 @@ export function TreePageSlidePanel() {
             </h3>
           )}
 
-          {editMode ? (
+          {editMode && canEditSelected ? (
             <div>
               <h4 style={{ margin: "1rem 0" }}>Chỉnh sửa thông tin</h4>
               <PersonForm
@@ -131,7 +132,7 @@ export function TreePageSlidePanel() {
                 hideCancelButton={true}
               />
             </div>
-          ) : addRelativeMode ? (
+          ) : addRelativeMode && canEditSelectedRelationships ? (
             <div>
               <h4 style={{ margin: "1rem 0" }}>Thêm kết nối cho {selectedPerson.displayName}</h4>
               <AddRelativeForm
@@ -166,13 +167,15 @@ export function TreePageSlidePanel() {
                     >
                       Chỉnh sửa thông tin
                     </button>
-                    <button
-                      type="button"
-                      className="btn btn-secondary"
-                      onClick={() => setAddRelativeMode(true)}
-                    >
-                      Thêm quan hệ
-                    </button>
+                    {canEditSelectedRelationships ? (
+                      <button
+                        type="button"
+                        className="btn btn-secondary"
+                        onClick={() => setAddRelativeMode(true)}
+                      >
+                        Thêm quan hệ
+                      </button>
+                    ) : null}
                     <button
                       type="button"
                       className="btn btn-secondary"
@@ -216,7 +219,7 @@ export function TreePageSlidePanel() {
             </div>
           )}
         </div>
-      ) : addRelativeMode ? (
+      ) : addRelativeMode && capabilities.editRelationships ? (
         <div className="surface-card side-panel" style={{ position: "relative" }}>
           <button
             type="button"

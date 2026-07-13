@@ -31,6 +31,7 @@ export type TreeAccessRole = "OWNER" | "CONTRIBUTOR" | "LINKED" | "READER" | "NO
 
 export interface Capabilities {
   editContent: boolean;
+  editRelationships: boolean;
   editPhotos: boolean;
   editVisibility: boolean;
   manageClaim: boolean;

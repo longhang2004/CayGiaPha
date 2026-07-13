@@ -126,30 +126,35 @@ describe("tree capability classification", () => {
   it("maps roles to server-owned UI capabilities", () => {
     expect(capabilitiesFor("OWNER")).toMatchObject({
       editContent: true,
+      editRelationships: true,
       editVisibility: true,
       manageTree: true,
       manageClaim: true,
     });
     expect(capabilitiesFor("CONTRIBUTOR")).toMatchObject({
       editContent: true,
+      editRelationships: true,
       editVisibility: false,
       manageTree: false,
       manageClaim: false,
     });
     expect(capabilitiesFor("LINKED")).toMatchObject({
       editContent: false,
+      editRelationships: false,
       editVisibility: false,
       manageTree: false,
       manageClaim: false,
     });
     expect(capabilitiesFor("LINKED", { personScoped: true })).toMatchObject({
       editContent: true,
+      editRelationships: false,
       editVisibility: true,
       manageTree: false,
       manageClaim: false,
     });
     expect(capabilitiesFor("READER")).toMatchObject({
       editContent: false,
+      editRelationships: false,
       editVisibility: false,
       manageTree: false,
     });

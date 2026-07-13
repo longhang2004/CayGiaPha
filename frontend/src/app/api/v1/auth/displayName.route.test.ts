@@ -70,6 +70,11 @@ describe("display-name auth route contracts", () => {
     expect(mocks.verifyGoogleAuth).toHaveBeenCalledWith(
       "google-token", "Nam", true, true, "Nguyễn Văn An",
     );
+    expect(mocks.rateCheck).toHaveBeenNthCalledWith(
+      1,
+      "ip:127.0.0.1",
+      { failClosed: true },
+    );
   });
 });
 

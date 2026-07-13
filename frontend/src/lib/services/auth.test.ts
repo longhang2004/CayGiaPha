@@ -1,9 +1,26 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   deliverOtp,
+  AuthService,
   matchesVerificationDestination,
   normalizePhoneTo84,
 } from "./auth";
+
+describe("new-account identifier contract", () => {
+  it("rejects a new phone registration before any account is created", async () => {
+    await expect(new AuthService().signUp({
+      identifier: "0987654321",
+      password: "MatKhau123",
+      region: "Bac",
+      acceptedTos: true,
+      acceptedPrivacy: true,
+      displayName: "Nguyễn Văn Minh",
+    })).rejects.toMatchObject({
+      code: "VALIDATION_ERROR",
+      field: "identifier",
+    });
+  });
+});
 
 describe("Phone Number Normalization", () => {
   it("converts leading 0 to 84", () => {

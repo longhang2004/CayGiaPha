@@ -70,8 +70,8 @@ export function CollaborationModal({ isOpen, onClose, treeId, isOwner, adapter =
         if (signal?.aborted) return;
         setPendingInvites(pendings);
       }
-    } catch (err) {
-      console.error("Failed to load collaboration data", err);
+    } catch {
+      console.error("Failed to load collaboration data.");
     } finally {
       if (!signal?.aborted) setLoadingCollaborators(false);
     }

@@ -205,8 +205,8 @@ if (databaseUrl && !isProductionBuild) {
         ALTER TABLE collaboration_invitations ALTER COLUMN id SET DEFAULT gen_random_uuid();
       `);
       console.log("[drizzle] Schema migrations verified and applied.");
-    } catch (err) {
-      console.warn("[drizzle] Schema migration check completed with warning (usually safe if already applied):", err);
+    } catch {
+      console.warn("[drizzle] Schema migration check completed with a sanitized warning.");
     }
   });
 }

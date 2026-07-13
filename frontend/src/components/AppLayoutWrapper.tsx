@@ -53,7 +53,7 @@ function layoutMode(pathname: string | null): "bare" | "marketing" | "inapp" {
   }
 
   // Legal
-  if (path.startsWith("/legal/")) {
+  if (path.startsWith("/legal/") || path.startsWith("/prototype/legal/")) {
     return "bare";
   }
 

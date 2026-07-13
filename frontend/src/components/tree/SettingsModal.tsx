@@ -106,8 +106,8 @@ export function SettingsModal({
 
       const result = await api.patch<{ enabled: boolean }>(`/trees/${treeId}/living-redaction`, { enabled });
       onLivingRedactionChange(result.enabled);
-    } catch (err) {
-      console.warn(err instanceof ApiError ? err.message : "Không thể cập nhật cấu hình bảo vệ.");
+    } catch {
+      console.warn("Không thể cập nhật cấu hình bảo vệ.");
     } finally {
       setUpdatingRedaction(false);
     }
@@ -125,8 +125,8 @@ export function SettingsModal({
 
       const result = await api.patch<{ sharing: string }>(`/trees/${treeId}/sharing`, { sharing: nextSharing });
       onSharingChange(result.sharing, result.sharing !== "link" ? null : shareToken);
-    } catch (err) {
-      console.warn(err instanceof ApiError ? err.message : "Không thể thay đổi cấu hình chia sẻ.");
+    } catch {
+      console.warn("Không thể thay đổi cấu hình chia sẻ.");
     } finally {
       setUpdatingSharing(false);
     }
@@ -144,8 +144,8 @@ export function SettingsModal({
 
       const result = await api.post<{ token: string }>(`/trees/${treeId}/share-token`);
       onSharingChange(sharing, result.token);
-    } catch (err) {
-      console.warn(err instanceof ApiError ? err.message : "Không thể tạo liên kết chia sẻ.");
+    } catch {
+      console.warn("Không thể tạo liên kết chia sẻ.");
     } finally {
       setGeneratingToken(false);
     }
@@ -165,8 +165,8 @@ export function SettingsModal({
       await api.del(`/trees/${treeId}/share-token`);
       onSharingChange(sharing, null);
       show("Đã hủy bỏ tất cả liên kết chia sẻ trước đó.", { tone: "success" });
-    } catch (err) {
-      console.warn(err instanceof ApiError ? err.message : "Không thể hủy bỏ liên kết chia sẻ.");
+    } catch {
+      console.warn("Không thể hủy bỏ liên kết chia sẻ.");
     } finally {
       setGeneratingToken(false);
     }

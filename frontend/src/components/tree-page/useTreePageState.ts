@@ -26,6 +26,7 @@ export function useTreePageState(
   const [accessRole, setAccessRole] = useState<TreeAccessRole>("NONE");
   const [capabilities, setCapabilities] = useState<Capabilities>({
     editContent: false,
+    editRelationships: false,
     editPhotos: false,
     editVisibility: false,
     manageClaim: false,

@@ -6,7 +6,11 @@ import { useSession } from "@/app/providers";
 import { api } from "@/lib/apiClient";
 import { CGPCheckbox, CGPDialog } from "@/components/cgp";
 
-export function ConsentReacceptanceDialog() {
+export function ConsentReacceptanceDialog({
+  acknowledge,
+}: {
+  acknowledge?: () => Promise<void>;
+} = {}) {
   const { user, refresh } = useSession();
   const [accepted, setAccepted] = useState(false);
   const [dismissed, setDismissed] = useState(false);
@@ -28,10 +32,14 @@ export function ConsentReacceptanceDialog() {
     setSubmitting(true);
     setError(null);
     try {
-      await api.post("/me/consent", {
-        acceptedTos: true,
-        acceptedPrivacy: true,
-      });
+      if (acknowledge) {
+        await acknowledge();
+      } else {
+        await api.post("/me/consent", {
+          acceptedTos: true,
+          acceptedPrivacy: true,
+        });
+      }
       setDismissed(true);
       await refresh();
     } catch {
