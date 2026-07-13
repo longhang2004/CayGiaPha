@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import { TreeEntryModal, type TreeEntryResult } from "./TreeEntryModal";
@@ -20,6 +20,10 @@ function renderModal(overrides: Partial<React.ComponentProps<typeof TreeEntryMod
 describe("TreeEntryModal", () => {
   it("starts with two clear choices and only reveals the selected form", async () => {
     renderModal();
+    expect(screen.getByRole("dialog", { name: "Thêm cây gia phả" })).toHaveClass(
+      "cgp-dialog",
+      "tree-entry-modal",
+    );
     expect(screen.getByRole("heading", { name: "Thêm cây gia phả" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /Tạo cây mới/ })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /Tham gia bằng mã mời/ })).toBeInTheDocument();
@@ -110,9 +114,9 @@ describe("TreeEntryModal", () => {
     await waitFor(() => expect(props.onTreeReady).toHaveBeenCalledWith("tree-ready"));
   });
 
-  it("closes on Escape", () => {
+  it("closes on Escape", async () => {
     const { props } = renderModal();
-    fireEvent.keyDown(document, { key: "Escape" });
+    await userEvent.keyboard("{Escape}");
     expect(props.onClose).toHaveBeenCalledTimes(1);
   });
 });

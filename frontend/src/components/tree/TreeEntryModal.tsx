@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useId, useRef, useState } from "react";
-import { Modal, ModalBody, ModalHeader } from "@/components/ui/Modal";
+import { CGPDialog } from "@/components/cgp";
 
 export type TreeEntryMode = "choose" | "create" | "join";
 export type TreeEntryResult = { kind: "ready"; treeId: string } | { kind: "pending" };
@@ -112,9 +112,15 @@ export function TreeEntryModal({
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} className="tree-entry-modal" aria-labelledby="tree-entry-title">
-      <ModalHeader title="Thêm cây gia phả" titleId="tree-entry-title" onClose={onClose} />
-      <ModalBody>
+    <CGPDialog
+      isOpen={isOpen}
+      onOpenChange={(nextIsOpen) => {
+        if (!nextIsOpen) onClose();
+      }}
+      title="Thêm cây gia phả"
+      size="lg"
+      className="tree-entry-modal"
+    >
         {outcome === "pending" ? (
           <section className="tree-entry-modal__status" role="status">
             <span className="tree-entry-modal__status-icon" aria-hidden="true">✓</span>
@@ -174,7 +180,6 @@ export function TreeEntryModal({
             </button>
           </form>
         )}
-      </ModalBody>
-    </Modal>
+    </CGPDialog>
   );
 }

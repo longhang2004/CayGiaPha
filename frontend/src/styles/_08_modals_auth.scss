@@ -924,8 +924,9 @@ html.dark .full-screen-loader__spinner {
   overflow: hidden;
 }
 
-.tree-entry-modal .settings-modal__body {
+.tree-entry-modal .cgp-dialog__body {
   max-height: calc(100dvh - 8rem);
+  padding: 1.5rem;
   overflow-y: auto;
 }
 
@@ -1053,7 +1054,7 @@ html.dark .full-screen-loader__spinner {
     max-height: calc(100dvh - 1rem);
   }
 
-  .tree-entry-modal .settings-modal__body {
+  .tree-entry-modal .cgp-dialog__body {
     max-height: calc(100dvh - 7rem);
   }
 

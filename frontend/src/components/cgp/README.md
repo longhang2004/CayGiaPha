@@ -60,8 +60,9 @@ its consumers are migrated in bounded tasks; this preserves its React DOM event
 and inline-style contract rather than casting those props into incompatible
 React Aria types.
 
-Dialog consumer migration and toast, menu, and drawer implementations still
-require their separately approved migration phases. Existing form consumers remain on their legacy
+Remaining dialog consumer migration and toast, menu, and drawer implementations
+still require their separately approved migration phases. `TreeEntryModal` is
+the first bounded dialog consumer on `CGPDialog`. Existing form consumers remain on their legacy
 controls until a bounded migration task is approved. The first
 bounded auth migration covers sign-in, sign-up, password recovery, and their
 synchronized prototypes. Sign-up region selection and legal-consent controls
