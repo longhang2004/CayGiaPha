@@ -1,5 +1,5 @@
 import { db } from "../db";
-import { relationships, persons, trees } from "../db/schema";
+import { relationships, persons } from "../db/schema";
 import { eq, and, or, inArray } from "drizzle-orm";
 import { ApiException } from "./errors";
 import { projectionCache, kinshipAddressService } from "./kinship/address";
@@ -26,6 +26,30 @@ export interface RelationshipMutationResult {
   conflicts: ConflictWarning[];
 }
 
+export type RelationshipMutationStore = Pick<typeof db, "select" | "insert">;
+
+export function formatRelationshipMutationResult(result: RelationshipMutationResult) {
+  const edge = result.edge;
+  return {
+    id: edge.id,
+    treeId: edge.treeId,
+    type: edge.type,
+    sourceId: edge.sourceId,
+    targetId: edge.targetId,
+    ...(edge.maritalStatus ? { maritalStatus: edge.maritalStatus } : {}),
+    ...(edge.socialType ? { socialType: edge.socialType } : {}),
+    ...(edge.assertedLabel ? { assertedLabel: edge.assertedLabel } : {}),
+    derivationState: edge.derivationState,
+    ...(result.conflicts.length > 0 ? { conflicts: result.conflicts } : {}),
+  };
+}
+
+export interface UpdateRelationshipCommand {
+  maritalStatus?: string | null;
+  socialType?: string | null;
+  assertedLabel?: string | null;
+}
+
 const KNOWN_TYPES = new Set([
   "bloodline_father",
   "bloodline_mother",
@@ -43,6 +67,14 @@ const ASSERTED_LABEL_MAX = 50;
 
 export class RelationshipService {
   async create(command: CreateRelationshipCommand): Promise<RelationshipMutationResult> {
+    const edge = await this.createWithStore(db, command);
+    return this.finalizeCreatedEdge(command.treeId, command.type, edge);
+  }
+
+  async createWithStore(
+    store: RelationshipMutationStore,
+    command: CreateRelationshipCommand,
+  ): Promise<typeof relationships.$inferSelect> {
     const type = command.type;
     if (!type || !KNOWN_TYPES.has(type)) {
       throw ApiException.validation(
@@ -59,87 +91,62 @@ export class RelationshipService {
     }
 
     // (4.8, 5.5) Both referenced nodes must exist within the tree.
-    await this.requireExistingNode(treeId, sourceId, "sourceId");
-    await this.requireExistingNode(treeId, targetId, "targetId");
+    await this.requireExistingNode(store, treeId, sourceId, "sourceId");
+    await this.requireExistingNode(store, treeId, targetId, "targetId");
 
-    // If a relationship already exists between these two persons (in either direction), overwrite it.
-    const existingRelationship = await db
+    const details = this.validateAndNormalizeDetails(command);
+
+    // Structural duplicates must be edited through PATCH by relationship id.
+    // Asserted and bloodline edges remain directional; marriage is undirected.
+    const duplicateConditions = type === "marriage"
+      ? or(
+          and(eq(relationships.sourceId, sourceId), eq(relationships.targetId, targetId)),
+          and(eq(relationships.sourceId, targetId), eq(relationships.targetId, sourceId)),
+        )
+      : and(eq(relationships.sourceId, sourceId), eq(relationships.targetId, targetId));
+    const duplicate = await store
       .select()
       .from(relationships)
       .where(
-        or(
-          and(eq(relationships.sourceId, sourceId), eq(relationships.targetId, targetId)),
-          and(eq(relationships.sourceId, targetId), eq(relationships.targetId, sourceId))
-        )
+        and(
+          eq(relationships.treeId, treeId),
+          eq(relationships.type, type),
+          duplicateConditions,
+        ),
       )
       .then((rows) => rows[0]);
-
-    if (existingRelationship) {
-      await db
-        .delete(relationships)
-        .where(eq(relationships.id, existingRelationship.id));
-      projectionCache.evict(treeId);
+    if (duplicate) {
+      throw ApiException.validation(
+        "relationship",
+        "This relationship already exists. Edit the existing relationship instead.",
+      );
     }
 
     // Bloodline edge rules
     if (BLOODLINE_TYPES.has(type)) {
-      await this.validateBloodlineEdge(type, sourceId, targetId);
-    }
-
-    let maritalStatus: string | null = null;
-    let socialType: string | null = null;
-    let assertedLabel: string | null = null;
-    let derivationState = "derived";
-
-    if (type === "marriage") {
-      if (!command.maritalStatus || !MARITAL_STATUSES.has(command.maritalStatus)) {
-        throw ApiException.validation(
-          "maritalStatus",
-          "Marital status must be one of married, divorced, deceased."
-        );
-      }
-      maritalStatus = command.maritalStatus;
-    } else if (type === "non_bloodline") {
-      if (!command.socialType || !SOCIAL_TYPES.has(command.socialType)) {
-        throw ApiException.validation(
-          "socialType",
-          "Social type must be one of friend, teacher, colleague."
-        );
-      }
-      socialType = command.socialType;
-    } else if (type === "asserted") {
-      if (
-        !command.assertedLabel ||
-        command.assertedLabel.length < ASSERTED_LABEL_MIN ||
-        command.assertedLabel.length > ASSERTED_LABEL_MAX
-      ) {
-        throw ApiException.validation("assertedLabel", "Asserted label must be 1 to 50 characters.");
-      }
-      assertedLabel = command.assertedLabel;
-      derivationState = "asserted";
+      await this.validateBloodlineEdge(store, treeId, type, sourceId, targetId);
     }
 
     // Insert relationship
-    const [saved] = await db
+    const [saved] = await store
       .insert(relationships)
       .values({
         treeId,
         type,
         sourceId,
         targetId,
-        maritalStatus,
-        socialType,
-        assertedLabel,
-        derivationState,
+        ...details,
       })
       .returning();
 
-    // Auto-create marriage if both parents exist now
-    if (BLOODLINE_TYPES.has(type)) {
-      await this.autoCreateMarriageIfBothParentsExist(treeId, type, sourceId, targetId);
-    }
+    return saved;
+  }
 
-    // Invalidate cached projection
+  async finalizeCreatedEdge(
+    treeId: string,
+    type: string,
+    edge: typeof relationships.$inferSelect,
+  ): Promise<RelationshipMutationResult> {
     projectionCache.evict(treeId);
 
     // Scan for upgrades if bloodline edge completed an asserted path
@@ -148,79 +155,120 @@ export class RelationshipService {
       conflicts = await this.scanForUpgrades(treeId);
     }
 
-    return { edge: saved, conflicts };
+    return { edge, conflicts };
   }
 
-  private async autoCreateMarriageIfBothParentsExist(
+  async update(
     treeId: string,
-    type: string,
-    parentId: string,
-    childId: string
-  ): Promise<void> {
-    let fatherId: string | null = null;
-    let motherId: string | null = null;
+    relationshipId: string,
+    command: UpdateRelationshipCommand,
+  ): Promise<RelationshipMutationResult> {
+    const existing = await this.requireRelationship(treeId, relationshipId);
+    const updates: Partial<typeof relationships.$inferInsert> = {};
 
-    if (type === "bloodline_father") {
-      fatherId = parentId;
-      const motherEdges = await db
-        .select()
-        .from(relationships)
-        .where(
-          and(
-            eq(relationships.targetId, childId),
-            eq(relationships.type, "bloodline_mother")
-          )
+    if (existing.type === "marriage") {
+      if (!command.maritalStatus || !MARITAL_STATUSES.has(command.maritalStatus)) {
+        throw ApiException.validation(
+          "maritalStatus",
+          "Marital status must be one of married, divorced, deceased.",
         );
-      if (motherEdges.length > 0) {
-        motherId = motherEdges[0].sourceId;
       }
-    } else if (type === "bloodline_mother") {
-      motherId = parentId;
-      const fatherEdges = await db
-        .select()
-        .from(relationships)
-        .where(
-          and(
-            eq(relationships.targetId, childId),
-            eq(relationships.type, "bloodline_father")
-          )
+      updates.maritalStatus = command.maritalStatus;
+    } else if (existing.type === "non_bloodline") {
+      if (!command.socialType || !SOCIAL_TYPES.has(command.socialType)) {
+        throw ApiException.validation(
+          "socialType",
+          "Social type must be one of friend, teacher, colleague.",
         );
-      if (fatherEdges.length > 0) {
-        fatherId = fatherEdges[0].sourceId;
       }
+      updates.socialType = command.socialType;
+    } else if (existing.type === "asserted") {
+      const assertedLabel = command.assertedLabel?.trim() ?? "";
+      if (assertedLabel.length < ASSERTED_LABEL_MIN || assertedLabel.length > ASSERTED_LABEL_MAX) {
+        throw ApiException.validation("assertedLabel", "Asserted label must be 1 to 50 characters.");
+      }
+      updates.assertedLabel = assertedLabel;
+      updates.derivationState = "asserted";
+    } else {
+      throw ApiException.validation(
+        "relationship",
+        "Primitive parent-child relationships do not have editable metadata.",
+      );
     }
 
-    if (fatherId && motherId) {
-      // Check if there is already a marriage edge between them
-      const marriageExists = await db
-        .select()
-        .from(relationships)
-        .where(
-          and(
-            eq(relationships.type, "marriage"),
-            or(
-              and(eq(relationships.sourceId, fatherId), eq(relationships.targetId, motherId)),
-              and(eq(relationships.sourceId, motherId), eq(relationships.targetId, fatherId))
-            )
-          )
-        )
-        .then((rows) => rows.length > 0);
-
-      if (!marriageExists) {
-        await db.insert(relationships).values({
-          treeId,
-          type: "marriage",
-          sourceId: fatherId,
-          targetId: motherId,
-          maritalStatus: "married",
-          derivationState: "derived",
-        });
-      }
-    }
+    const [edge] = await db
+      .update(relationships)
+      .set(updates)
+      .where(and(eq(relationships.id, relationshipId), eq(relationships.treeId, treeId)))
+      .returning();
+    projectionCache.evict(treeId);
+    const conflicts = existing.type === "asserted"
+      ? await this.scanForUpgrades(treeId)
+      : [];
+    return { edge, conflicts };
   }
 
-  private async requireExistingNode(treeId: string, personId: string, field: string) {
-    const exists = await db
+  async delete(treeId: string, relationshipId: string): Promise<void> {
+    await this.requireRelationship(treeId, relationshipId);
+    await db
+      .delete(relationships)
+      .where(and(eq(relationships.id, relationshipId), eq(relationships.treeId, treeId)));
+    projectionCache.evict(treeId);
+  }
+
+  private validateAndNormalizeDetails(command: CreateRelationshipCommand) {
+    let maritalStatus: string | null = null;
+    let socialType: string | null = null;
+    let assertedLabel: string | null = null;
+    let derivationState = "derived";
+
+    if (command.type === "marriage") {
+      if (!command.maritalStatus || !MARITAL_STATUSES.has(command.maritalStatus)) {
+        throw ApiException.validation(
+          "maritalStatus",
+          "Marital status must be one of married, divorced, deceased.",
+        );
+      }
+      maritalStatus = command.maritalStatus;
+    } else if (command.type === "non_bloodline") {
+      if (!command.socialType || !SOCIAL_TYPES.has(command.socialType)) {
+        throw ApiException.validation(
+          "socialType",
+          "Social type must be one of friend, teacher, colleague.",
+        );
+      }
+      socialType = command.socialType;
+    } else if (command.type === "asserted") {
+      const label = command.assertedLabel?.trim() ?? "";
+      if (label.length < ASSERTED_LABEL_MIN || label.length > ASSERTED_LABEL_MAX) {
+        throw ApiException.validation("assertedLabel", "Asserted label must be 1 to 50 characters.");
+      }
+      assertedLabel = label;
+      derivationState = "asserted";
+    }
+
+    return { maritalStatus, socialType, assertedLabel, derivationState };
+  }
+
+  private async requireRelationship(treeId: string, relationshipId: string) {
+    const relationship = await db
+      .select()
+      .from(relationships)
+      .where(and(eq(relationships.id, relationshipId), eq(relationships.treeId, treeId)))
+      .then((rows) => rows[0]);
+    if (!relationship) {
+      throw ApiException.nodeNotAccessible("The relationship is not accessible.");
+    }
+    return relationship;
+  }
+
+  private async requireExistingNode(
+    store: RelationshipMutationStore,
+    treeId: string,
+    personId: string,
+    field: string,
+  ) {
+    const exists = await store
       .select()
       .from(persons)
       .where(and(eq(persons.id, personId), eq(persons.treeId, treeId)))
@@ -234,11 +282,23 @@ export class RelationshipService {
     }
   }
 
-  private async validateBloodlineEdge(type: string, parentId: string, childId: string) {
-    const alreadyHasEdge = await db
+  private async validateBloodlineEdge(
+    store: RelationshipMutationStore,
+    treeId: string,
+    type: string,
+    parentId: string,
+    childId: string,
+  ) {
+    const alreadyHasEdge = await store
       .select()
       .from(relationships)
-      .where(and(eq(relationships.targetId, childId), eq(relationships.type, type)))
+      .where(
+        and(
+          eq(relationships.treeId, treeId),
+          eq(relationships.targetId, childId),
+          eq(relationships.type, type),
+        ),
+      )
       .then((rows) => rows.length > 0);
 
     if (alreadyHasEdge) {
@@ -249,7 +309,7 @@ export class RelationshipService {
     }
 
     // (4.9) Cycle detection
-    const isAncestor = await this.isBloodlineAncestor(childId, parentId);
+    const isAncestor = await this.isBloodlineAncestor(store, treeId, childId, parentId);
     if (isAncestor) {
       throw ApiException.cycleViolation(
         `Adding this bloodline edge would create a parent-child cycle: ${childId} is already an ancestor of ${parentId}.`
@@ -257,10 +317,10 @@ export class RelationshipService {
     }
 
     // Check gender consistency
-    const person = await db
+    const person = await store
       .select()
       .from(persons)
-      .where(eq(persons.id, parentId))
+      .where(and(eq(persons.treeId, treeId), eq(persons.id, parentId)))
       .then((rows) => rows[0]);
     if (person && person.gender) {
       if (type === "bloodline_father" && person.gender === "female") {
@@ -279,11 +339,12 @@ export class RelationshipService {
 
     // Check relationship type consistency (cannot be both a father and a mother)
     const otherEdgeType = type === "bloodline_father" ? "bloodline_mother" : "bloodline_father";
-    const hasConflictingGenderEdge = await db
+    const hasConflictingGenderEdge = await store
       .select()
       .from(relationships)
       .where(
         and(
+          eq(relationships.treeId, treeId),
           eq(relationships.sourceId, parentId),
           eq(relationships.type, otherEdgeType)
         )
@@ -299,7 +360,12 @@ export class RelationshipService {
     }
   }
 
-  private async isBloodlineAncestor(candidateAncestorId: string, startId: string): Promise<boolean> {
+  private async isBloodlineAncestor(
+    store: RelationshipMutationStore,
+    treeId: string,
+    candidateAncestorId: string,
+    startId: string,
+  ): Promise<boolean> {
     const visited = new Set<string>();
     const frontier: string[] = [startId];
 
@@ -314,11 +380,12 @@ export class RelationshipService {
       visited.add(current);
 
       // Find parents (sources of incoming bloodline edges to current)
-      const parentEdges = await db
+      const parentEdges = await store
         .select()
         .from(relationships)
         .where(
           and(
+            eq(relationships.treeId, treeId),
             eq(relationships.targetId, current),
             inArray(relationships.type, ["bloodline_father", "bloodline_mother"])
           )

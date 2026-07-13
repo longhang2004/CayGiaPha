@@ -85,6 +85,50 @@ describe("PersonForm (create)", () => {
     });
   });
 
+  it("creates the person and requested relationship atomically", async () => {
+    const fetchMock = mockFetchQueue([{
+      ok: true,
+      status: 201,
+      body: {
+        personId: "p-new",
+        relationship: {
+          id: "r-new",
+          treeId: "t1",
+          type: "bloodline_father",
+          sourceId: "p-new",
+          targetId: "p-existing",
+          derivationState: "derived",
+        },
+      },
+    }]);
+    const onSuccess = vi.fn();
+
+    render(
+      <PersonForm
+        mode="create"
+        treeId="t1"
+        persons={[{ id: "p-existing", displayName: "Người có sẵn" }]}
+        onSuccess={onSuccess}
+      />,
+    );
+    await userEvent.type(screen.getByLabelText(/Họ và tên/i), "Người mới");
+    await userEvent.click(screen.getByLabelText("Thiết lập quan hệ ngay"));
+    await userEvent.click(screen.getByRole("button", { name: "Lưu thành viên" }));
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    const [url, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
+    expect(url).toBe("/api/v1/trees/t1/relatives");
+    expect(JSON.parse(init.body as string)).toEqual({
+      person: { displayName: "Người mới", gender: "male", deathStatus: false },
+      relationship: {
+        type: "bloodline_father",
+        existingPersonId: "p-existing",
+        newPersonPosition: "source",
+      },
+    });
+    expect(onSuccess).toHaveBeenCalledWith("p-new");
+  });
+
   it("updates spouse marital status when editing a person with a spouse edge", async () => {
     const fetchMock = mockFetchQueue([
       { ok: true, status: 200, body: {} },
@@ -109,7 +153,7 @@ describe("PersonForm (create)", () => {
         treeId="t1"
         personId="p3"
         initialValues={{ displayName: "Châu", gender: "female" }}
-        spouseRelationship={{ spouseId: "p4", maritalStatus: "married" }}
+        spouseRelationship={{ relationshipId: "r1", spouseId: "p4", maritalStatus: "married" }}
       />,
     );
 
@@ -118,13 +162,10 @@ describe("PersonForm (create)", () => {
 
     expect(fetchMock).toHaveBeenCalledTimes(2);
     const [url, init] = fetchMock.mock.calls[1] as unknown as [string, RequestInit];
-    expect(url).toBe("/api/v1/relationships");
-    expect(init.method).toBe("POST");
+    expect(url).toBe("/api/v1/relationships/r1");
+    expect(init.method).toBe("PATCH");
     expect(JSON.parse(init.body as string)).toEqual({
       treeId: "t1",
-      type: "marriage",
-      sourceId: "p3",
-      targetId: "p4",
       maritalStatus: "divorced",
     });
   });

@@ -57,6 +57,35 @@ describe("AddRelativeForm", () => {
     });
   });
 
+  it("creates a new person and relationship through one atomic endpoint", async () => {
+    const fetchMock = mockFetch({
+      ok: true,
+      status: 201,
+      body: {
+        personId: "new-person",
+        relationship: { id: "r-new", type: "bloodline_father", derivationState: "derived" },
+      },
+    });
+
+    render(<AddRelativeForm treeId="t1" persons={PERSONS} />);
+    await userEvent.click(screen.getByLabelText("Thêm người thân mới vào cây"));
+    await userEvent.type(await screen.findByLabelText(/Họ và tên/), "Người mới");
+    await userEvent.click(screen.getByRole("button", { name: "Thêm thành viên mới" }));
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    const [url, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
+    expect(url).toBe("/api/v1/trees/t1/relatives");
+    expect(init.method).toBe("POST");
+    expect(JSON.parse(init.body as string)).toMatchObject({
+      person: { displayName: "Người mới", gender: "male" },
+      relationship: {
+        type: "bloodline_father",
+        existingPersonId: "a",
+        newPersonPosition: "target",
+      },
+    });
+  });
+
   it("sends type='asserted' with the label in asserted mode", async () => {
     const fetchMock = mockFetch({
       ok: true,

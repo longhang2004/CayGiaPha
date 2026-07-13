@@ -4,10 +4,11 @@ import { useState, useEffect, type FormEvent } from "react";
 import { ApiError } from "@/lib/apiClient";
 import {
   createPerson,
+  createRelativeWithPerson,
   editPerson,
   convertSolarToLunar,
   convertLunarToSolar,
-  addDerivedRelative,
+  updateRelationship,
   type CreatePersonInput,
   type EditPersonInput,
   type Gender,
@@ -60,6 +61,7 @@ interface PersonFormProps {
   persons?: PersonOption[];
   hideCancelButton?: boolean;
   spouseRelationship?: {
+    relationshipId: string;
     spouseId: string;
     maritalStatus?: MaritalStatus | string | null;
   };
@@ -202,8 +204,7 @@ export function PersonForm({
       let resolvedId = personId;
 
       if (mode === "create") {
-        const body: CreatePersonInput = {
-          treeId,
+        const personBody: Omit<CreatePersonInput, "treeId"> = {
           displayName,
           gender,
           deathStatus,
@@ -219,8 +220,35 @@ export function PersonForm({
           ...(phone.trim() ? { phone: phone.trim() } : {}),
           ...(email.trim() ? { email: email.trim() } : {}),
         };
-        const created = await createPerson(body);
-        resolvedId = created.id;
+        if (linkRelationship && relTargetId) {
+          let finalType: "bloodline_father" | "bloodline_mother" | "marriage" = "bloodline_father";
+          let newPersonPosition: "source" | "target" = "source";
+          if (derivedKind === "bloodline_father_reverse") {
+            finalType = "bloodline_father";
+            newPersonPosition = "target";
+          } else if (derivedKind === "bloodline_mother") {
+            finalType = "bloodline_mother";
+          } else if (derivedKind === "bloodline_mother_reverse") {
+            finalType = "bloodline_mother";
+            newPersonPosition = "target";
+          } else if (derivedKind === "marriage") {
+            finalType = "marriage";
+          }
+          const created = await createRelativeWithPerson({
+            treeId,
+            person: personBody,
+            relationship: {
+              type: finalType,
+              existingPersonId: relTargetId,
+              newPersonPosition,
+              ...(finalType === "marriage" ? { maritalStatus } : {}),
+            },
+          });
+          resolvedId = created.personId;
+        } else {
+          const created = await createPerson({ treeId, ...personBody });
+          resolvedId = created.id;
+        }
       } else {
         if (!personId) {
           throw new Error("personId is required to edit a person.");
@@ -242,11 +270,7 @@ export function PersonForm({
         await editPerson(personId, treeId, body);
 
         if (spouseRelationship && spouseMaritalStatus !== (spouseRelationship.maritalStatus === "divorced" ? "divorced" : "married")) {
-          await addDerivedRelative({
-            treeId,
-            type: "marriage",
-            sourceId: personId,
-            targetId: spouseRelationship.spouseId,
+          await updateRelationship(spouseRelationship.relationshipId, treeId, {
             maritalStatus: spouseMaritalStatus,
           });
         }
@@ -261,37 +285,6 @@ export function PersonForm({
           // Don't fail the whole form submit if photo fails, just warn
           alert("Lưu thông tin thành công nhưng không thể tải ảnh lên: " + (uploadErr instanceof Error ? uploadErr.message : ""));
         }
-      }
-
-      // Create relationship if requested
-      if (mode === "create" && linkRelationship && relTargetId && resolvedId) {
-        let finalType: "bloodline_father" | "bloodline_mother" | "marriage" = "bloodline_father";
-        let finalSourceId = resolvedId;
-        let finalTargetId = relTargetId;
-
-        if (derivedKind === "bloodline_father") {
-          finalType = "bloodline_father";
-        } else if (derivedKind === "bloodline_father_reverse") {
-          finalType = "bloodline_father";
-          finalSourceId = relTargetId;
-          finalTargetId = resolvedId;
-        } else if (derivedKind === "bloodline_mother") {
-          finalType = "bloodline_mother";
-        } else if (derivedKind === "bloodline_mother_reverse") {
-          finalType = "bloodline_mother";
-          finalSourceId = relTargetId;
-          finalTargetId = resolvedId;
-        } else if (derivedKind === "marriage") {
-          finalType = "marriage";
-        }
-
-        await addDerivedRelative({
-          treeId,
-          type: finalType,
-          sourceId: finalSourceId,
-          targetId: finalTargetId,
-          ...(derivedKind === "marriage" ? { maritalStatus } : {}),
-        });
       }
 
       if (resolvedId) {
@@ -342,7 +335,6 @@ export function PersonForm({
         >
           <option value="male">Nam</option>
           <option value="female">Nữ</option>
-          <option value="unknown">Không rõ</option>
         </Select>
       </FormControl>
 

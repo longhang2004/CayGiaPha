@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   invitationType,
   normalizeInvitationEmail,
+  hashInvitationCode,
   requireUsableInvitation,
   existingRequestOutcome,
 } from "./collaborationInvitation";
@@ -14,6 +15,13 @@ describe("collaboration invitation rules", () => {
 
   it("normalizes email identity before comparison", () => {
     expect(normalizeInvitationEmail(" Invitee@Example.COM ")).toBe("invitee@example.com");
+  });
+
+  it("hashes normalized invitation codes without retaining the raw value", () => {
+    const hashed = hashInvitationCode(" AbC123 ");
+    expect(hashed).toBe(hashInvitationCode("abc123"));
+    expect(hashed).toMatch(/^sha256:[A-Za-z0-9_-]{43}$/);
+    expect(hashed).not.toContain("abc123");
   });
 
   it("rejects expired and inactive invitations with one public message", () => {

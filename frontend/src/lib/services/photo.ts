@@ -249,20 +249,29 @@ export class PhotoService {
     // Check if this is the first photo (becomes primary automatically)
     const isPrimary = existingPhotos.length === 0;
 
-    const [photo] = await db
-      .insert(personPhotos)
-      .values({
-        personId,
-        objectKey,
-        contentType: image.contentType,
-        byteSize: image.bytes.length,
-        width: image.width,
-        height: image.height,
-        isPrimary,
-      })
-      .returning();
+    try {
+      const [photo] = await db
+        .insert(personPhotos)
+        .values({
+          personId,
+          objectKey,
+          contentType: image.contentType,
+          byteSize: image.bytes.length,
+          width: image.width,
+          height: image.height,
+          isPrimary,
+        })
+        .returning();
 
-    return photo;
+      return photo;
+    } catch (error) {
+      try {
+        await storageService.delete(objectKey);
+      } catch {
+        console.error("[photo-upload] Failed to compensate stored object after database error.");
+      }
+      throw error;
+    }
   }
 
   async setPrimary(
@@ -284,20 +293,20 @@ export class PhotoService {
       throw ApiException.nodeNotAccessible("The photo is not accessible.");
     }
 
-    // Clear current primary
-    await db
-      .update(personPhotos)
-      .set({ isPrimary: false })
-      .where(and(eq(personPhotos.personId, personId), eq(personPhotos.isPrimary, true)));
+    return db.transaction(async (tx) => {
+      await tx
+        .update(personPhotos)
+        .set({ isPrimary: false })
+        .where(and(eq(personPhotos.personId, personId), eq(personPhotos.isPrimary, true)));
 
-    // Set new primary
-    const [updated] = await db
-      .update(personPhotos)
-      .set({ isPrimary: true })
-      .where(eq(personPhotos.id, photoId))
-      .returning();
+      const [updated] = await tx
+        .update(personPhotos)
+        .set({ isPrimary: true })
+        .where(and(eq(personPhotos.id, photoId), eq(personPhotos.personId, personId)))
+        .returning();
 
-    return updated;
+      return updated;
+    });
   }
 
   async list(

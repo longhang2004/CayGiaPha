@@ -83,6 +83,19 @@ export interface CreatedPerson {
   id: string;
 }
 
+export interface CreateRelativeWithPersonInput {
+  treeId: string;
+  person: Omit<CreatePersonInput, "treeId">;
+  relationship: {
+    type: RelationshipType;
+    existingPersonId: string;
+    newPersonPosition: "source" | "target";
+    maritalStatus?: MaritalStatus;
+    socialType?: string;
+    assertedLabel?: string;
+  };
+}
+
 /** A single asserted-vs-derived conflict warning (Requirement 7.5). */
 export interface ConflictWarning {
   sourceId: string;
@@ -107,9 +120,24 @@ export interface RelationshipResult {
   conflicts?: ConflictWarning[];
 }
 
+export interface CreatedRelative {
+  personId: string;
+  relationship: RelationshipResult;
+}
+
 /** Create a person in the explicitly selected editable tree; resolves to the new node id (3.1). */
 export function createPerson(input: CreatePersonInput): Promise<CreatedPerson> {
   return api.post<CreatedPerson>("/persons", input);
+}
+
+/** Atomically create a new person and its primitive/asserted edge in one tree transaction. */
+export function createRelativeWithPerson(
+  input: CreateRelativeWithPersonInput,
+): Promise<CreatedRelative> {
+  return api.post<CreatedRelative>(
+    `/trees/${encodeURIComponent(input.treeId)}/relatives`,
+    { person: input.person, relationship: input.relationship },
+  );
 }
 
 /** Apply a partial edit to a person (3.3); unspecified fields are left unchanged. */
@@ -189,6 +217,23 @@ export function addAssertedRelative(
     targetId: input.targetId,
     assertedLabel: input.assertedLabel,
   });
+}
+
+export function updateRelationship(
+  relationshipId: string,
+  treeId: string,
+  input: { maritalStatus?: MaritalStatus; socialType?: string; assertedLabel?: string },
+): Promise<RelationshipResult> {
+  return api.patch<RelationshipResult>(
+    `/relationships/${encodeURIComponent(relationshipId)}`,
+    { treeId, ...input },
+  );
+}
+
+export function deleteRelationship(relationshipId: string, treeId: string): Promise<void> {
+  return api.del(
+    `/relationships/${encodeURIComponent(relationshipId)}?treeId=${encodeURIComponent(treeId)}`,
+  );
 }
 
 export interface UpcomingEvent {

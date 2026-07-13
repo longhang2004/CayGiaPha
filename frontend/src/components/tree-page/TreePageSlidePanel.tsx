@@ -119,6 +119,7 @@ export function TreePageSlidePanel() {
                 personId={selectedPerson.id}
                 initialValues={selectedInitialValues}
                 spouseRelationship={selectedSpouseId ? {
+                  relationshipId: selectedSpouseRelationship!.id,
                   spouseId: selectedSpouseId,
                   maritalStatus: selectedSpouseRelationship?.maritalStatus,
                 } : undefined}

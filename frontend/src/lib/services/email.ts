@@ -1,5 +1,14 @@
 import nodemailer from "nodemailer";
 
+export function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
 export async function sendEmail({
   to,
   subject,
@@ -13,7 +22,7 @@ export async function sendEmail({
 }): Promise<void> {
   const mailEnabled = process.env.EMAIL_ENABLED === "true";
   if (!mailEnabled) {
-    console.log(`[EMAIL-MOCK] Send email to: ${to}, subject: ${subject}`);
+    console.log("[EMAIL-MOCK] Delivery skipped because email is disabled.");
     return;
   }
 
@@ -35,8 +44,7 @@ export async function sendEmail({
       body: JSON.stringify({ from, to: [to], subject, text, html }),
     });
     if (!res.ok) {
-      const body = await res.text();
-      throw new Error(`Resend API HTTP ${res.status}: ${body.slice(0, 300)}`);
+      throw new Error(`Email provider rejected the request (HTTP ${res.status}).`);
     }
     return;
   }
@@ -72,12 +80,12 @@ export async function sendEmail({
       html,
     });
   } catch (error: any) {
-    console.error("Email send failed:", error);
+    console.error("[email] Delivery failed.");
     const msg = error?.message || String(error);
     const hint =
       /timed out|ECONNREFUSED|ETIMEDOUT|MailConnectException/i.test(msg)
         ? " Host có thể chặn SMTP. Dùng RESEND_API_KEY (HTTPS) thay vì Gmail SMTP."
         : "";
-    throw new Error(`Email sending failed: ${msg}${hint}`);
+    throw new Error(`Email sending failed.${hint}`);
   }
 }

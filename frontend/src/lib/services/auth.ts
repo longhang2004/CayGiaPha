@@ -8,6 +8,7 @@ import { consentService } from "./consent";
 import { auditService, AuditActions } from "./audit";
 import { OAuth2Client } from "google-auth-library";
 import { normalizeAndValidateDisplayName } from "../account/displayName";
+import { escapeHtml } from "./email";
 
 export type IdentifierType = "PHONE" | "EMAIL";
 
@@ -156,6 +157,9 @@ export async function deliverOtp(
 
   if (mailEnabled && identifierType === "EMAIL") {
     try {
+      const safeCode = escapeHtml(code);
+      const safeValidityMinutes = escapeHtml(validityMinutes);
+      const safeClaimUrl = claimUrl ? escapeHtml(claimUrl) : null;
       const transporter = nodemailer.createTransport({
         host: process.env.EMAIL_HOST,
         port: parseInt(process.env.EMAIL_PORT || "587"),
@@ -171,7 +175,7 @@ export async function deliverOtp(
         to: destination,
         subject: `Mã xác thực ${purposeLabel}`,
         text: `Mã xác thực của bạn là: ${code}. Mã này có hiệu lực trong ${validityMinutes} phút.${claimUrl ? ` Mở trang xác nhận: ${claimUrl}` : ""}`,
-        html: `<p>Mã xác thực của bạn là: <strong>${code}</strong>.</p><p>Mã này có hiệu lực trong ${validityMinutes} phút.</p>${claimUrl ? `<p><a href="${claimUrl}">Xác nhận đây là tôi</a></p>` : ""}`,
+        html: `<p>Mã xác thực của bạn là: <strong>${safeCode}</strong>.</p><p>Mã này có hiệu lực trong ${safeValidityMinutes} phút.</p>${safeClaimUrl ? `<p><a href="${safeClaimUrl}">Xác nhận đây là tôi</a></p>` : ""}`,
       });
     } catch {
       console.error("[Email] OTP delivery failed.");

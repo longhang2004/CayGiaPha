@@ -9,13 +9,17 @@ export interface CollaborationInvitation {
   treeId: string;
   inviterUserId: string;
   email: string | null;
-  code: string;
+  code?: string;
   status: "pending" | "approved" | "joined" | "rejected" | "expired" | "generic";
   createdAt?: string;
   expiresAt: string;
   /** Present on invite-by-email responses. */
   emailSent?: boolean;
   emailMessage?: string;
+}
+
+export interface CreatedCollaborationInvitation extends CollaborationInvitation {
+  code: string;
 }
 
 export interface InvitationView {
@@ -79,8 +83,8 @@ async function deliverInviteEmailFromFrontend(input: {
 export async function inviteCollaborator(
   treeId: string,
   email: string
-): Promise<CollaborationInvitation> {
-  const invite = await api.post<CollaborationInvitation>(
+): Promise<CreatedCollaborationInvitation> {
+  const invite = await api.post<CreatedCollaborationInvitation>(
     `/trees/${encodeURIComponent(treeId)}/collaborators/invite`,
     { email }
   );
@@ -114,8 +118,8 @@ export async function inviteCollaborator(
 
 export function createInviteLink(
   treeId: string
-): Promise<CollaborationInvitation> {
-  return api.post<CollaborationInvitation>(
+): Promise<CreatedCollaborationInvitation> {
+  return api.post<CreatedCollaborationInvitation>(
     `/trees/${encodeURIComponent(treeId)}/collaborators/invite-link`,
     {}
   );

@@ -25,6 +25,15 @@ export async function GET(
         )
       );
 
-    return Response.json(pendings);
+    return Response.json(pendings.map((invite) => ({
+      id: invite.id,
+      treeId: invite.treeId,
+      inviterUserId: invite.inviterUserId,
+      requesterUserId: invite.requesterUserId,
+      email: invite.email,
+      status: invite.status,
+      createdAt: invite.createdAt,
+      expiresAt: invite.expiresAt,
+    })));
   });
 }

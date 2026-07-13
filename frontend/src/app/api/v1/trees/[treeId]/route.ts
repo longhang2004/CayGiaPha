@@ -2,11 +2,11 @@ import { handleApiRoute } from "@/lib/services/routeHelper";
 import { getAuthContext, authorizationService, capabilitiesFor } from "@/lib/services/authorization";
 import { ApiException } from "@/lib/services/errors";
 import { db } from "@/lib/db";
-import { persons, relationships, trees, claims, treeCollaborators, collaborationInvitations, personPhotos, inAppReminders, users } from "@/lib/db/schema";
-import { eq, and, inArray } from "drizzle-orm";
-import { sendEmail } from "@/lib/services/email";
+import { persons, relationships, trees, claims } from "@/lib/db/schema";
+import { eq } from "drizzle-orm";
 import { rateLimiter } from "@/lib/services/rateLimiter";
 import { canViewMaritalStatus, projectPerson } from "@/lib/services/privacy";
+import { treeDeletionService } from "@/lib/services/treeDeletion";
 
 export async function GET(
   request: Request,
@@ -122,63 +122,7 @@ export async function DELETE(
     await rateLimiter.check(`delete-tree:${auth.userId || clientIp}`);
     await rateLimiter.check(`mutate-ip:${clientIp}`);
 
-    const tree = await db
-      .select()
-      .from(trees)
-      .where(eq(trees.id, treeId))
-      .then((rows) => rows[0]);
-
-    if (!tree) {
-      throw ApiException.validation("treeId", "Cây gia phả không tồn tại.");
-    }
-
-    // 1. Notify contributors
-    const contributors = await db
-      .select({ email: users.email })
-      .from(treeCollaborators)
-      .innerJoin(users, eq(treeCollaborators.userId, users.id))
-      .where(eq(treeCollaborators.treeId, treeId));
-
-    const pendingInvites = await db
-      .select({ email: collaborationInvitations.email })
-      .from(collaborationInvitations)
-      .where(and(eq(collaborationInvitations.treeId, treeId), eq(collaborationInvitations.status, "pending")));
-
-    const emails = new Set<string>();
-    contributors.forEach((c) => { if (c.email) emails.add(c.email); });
-    pendingInvites.forEach((i) => { if (i.email) emails.add(i.email); });
-
-    for (const email of emails) {
-      try {
-        await sendEmail({
-          to: email,
-          subject: `Thông báo: Cây gia phả "${tree.name}" đã bị xóa`,
-          text: `Chào bạn, chúng tôi xin thông báo cây gia phả "${tree.name}" mà bạn đang cộng tác tham gia đã bị xóa bởi chủ sở hữu.`,
-          html: `<p>Chào bạn,</p><p>Chúng tôi xin thông báo cây gia phả <strong>"${tree.name}"</strong> mà bạn đang cộng tác tham gia đã bị xóa bởi chủ sở hữu.</p>`
-        });
-      } catch (err) {
-        console.error(`Failed to notify ${email} of deletion`, err);
-      }
-    }
-
-    // 2. Cascade delete
-    const personRows = await db
-      .select({ id: persons.id })
-      .from(persons)
-      .where(eq(persons.treeId, treeId));
-    const personIds = personRows.map(p => p.id);
-
-    if (personIds.length > 0) {
-      await db.delete(personPhotos).where(inArray(personPhotos.personId, personIds));
-      await db.delete(claims).where(inArray(claims.personId, personIds));
-      await db.delete(inAppReminders).where(inArray(inAppReminders.personId, personIds));
-    }
-
-    await db.delete(relationships).where(eq(relationships.treeId, treeId));
-    await db.delete(persons).where(eq(persons.treeId, treeId));
-    await db.delete(treeCollaborators).where(eq(treeCollaborators.treeId, treeId));
-    await db.delete(collaborationInvitations).where(eq(collaborationInvitations.treeId, treeId));
-    await db.delete(trees).where(eq(trees.id, treeId));
+    await treeDeletionService.delete(treeId);
 
     return Response.json({ success: true });
   });

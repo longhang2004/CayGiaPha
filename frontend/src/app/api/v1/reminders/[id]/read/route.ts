@@ -16,20 +16,6 @@ export async function PATCH(
     }
 
     const reminderId = params.id;
-    if (reminderId.startsWith("mock-")) {
-      return Response.json({
-        id: reminderId,
-        userId: auth.userId,
-        personId: "p-ong-to",
-        title: "Mock Reminder",
-        content: "Mock Content",
-        daysUntil: 0,
-        anniversaryDate: new Date().toISOString().split("T")[0],
-        isRead: true,
-        createdAt: new Date().toISOString(),
-      });
-    }
-
     const [updated] = await db
       .update(inAppReminders)
       .set({ isRead: true })

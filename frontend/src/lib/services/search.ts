@@ -32,6 +32,7 @@ export interface SearchResult {
 
 export interface SearchResponse {
   results: SearchResult[];
+  noMatches: boolean;
 }
 
 const MAX_QUERY_LENGTH = 100;
@@ -39,12 +40,18 @@ const GENDERS = new Set(["male", "female"]);
 const SIDES = new Set(["paternal", "maternal"]);
 const CLAIMED_STATUSES = new Set(["claimed", "unclaimed"]);
 const RELATIONSHIP_TYPES = new Set([
-  "bloodline_father",
-  "bloodline_mother",
+  "bloodline",
   "marriage",
   "non_bloodline",
   "asserted",
 ]);
+const MAX_SEARCH_NODES = 1000;
+
+export function relationshipTypesForFilter(relType: string): string[] {
+  return relType === "bloodline"
+    ? ["bloodline_father", "bloodline_mother"]
+    : [relType];
+}
 
 export class SearchService {
   async search(
@@ -86,6 +93,12 @@ export class SearchService {
       .select()
       .from(persons)
       .where(eq(persons.treeId, treeId));
+    if (allPeople.length > MAX_SEARCH_NODES) {
+      throw ApiException.validation(
+        "treeSize",
+        "Search supports trees with up to 1,000 people.",
+      );
+    }
 
     const results: SearchResult[] = [];
     for (const person of allPeople) {
@@ -119,7 +132,12 @@ export class SearchService {
     }
 
     // Redact results
-    return this.redact(treeId, { results }, !!nameQuery, currentUserId);
+    return this.redact(
+      treeId,
+      { results, noMatches: results.length === 0 },
+      !!nameQuery,
+      currentUserId,
+    );
   }
 
   private async redact(
@@ -170,7 +188,7 @@ export class SearchService {
       }
     }
 
-    return { results: out };
+    return { results: out, noMatches: out.length === 0 };
   }
 
   private async matchesFilters(
@@ -206,7 +224,7 @@ export class SearchService {
       }
     }
     if (filters.relationshipType) {
-      const matchesR = await this.matchesRelationshipType(person.id, filters.relationshipType);
+      const matchesR = await this.matchesRelationshipType(treeId, person.id, filters.relationshipType);
       if (!matchesR) {
         return false;
       }
@@ -259,13 +277,19 @@ export class SearchService {
     return status === "claimed" ? isClaimed : !isClaimed;
   }
 
-  private async matchesRelationshipType(personId: string, relType: string): Promise<boolean> {
+  private async matchesRelationshipType(
+    treeId: string,
+    personId: string,
+    relType: string,
+  ): Promise<boolean> {
+    const types = relationshipTypesForFilter(relType);
     const rows = await db
       .select({ id: relationships.id })
       .from(relationships)
       .where(
         and(
-          eq(relationships.type, relType),
+          eq(relationships.treeId, treeId),
+          inArray(relationships.type, types),
           or(
             eq(relationships.sourceId, personId),
             eq(relationships.targetId, personId)

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
-import { sendEmail } from "@/lib/services/email";
+import { escapeHtml, sendEmail } from "@/lib/services/email";
 import { ApiException } from "@/lib/services/errors";
 import { rateLimiter } from "@/lib/services/rateLimiter";
 
@@ -139,6 +139,10 @@ export async function POST(request: Request) {
 
     const baseUrl = origin.replace(/\/$/, "");
     const inviteUrl = `${baseUrl}/invitation/${inviteId}`;
+    const safeTreeName = escapeHtml(treeName);
+    const safeEmail = escapeHtml(email);
+    const safeCode = escapeHtml(code);
+    const safeInviteUrl = escapeHtml(inviteUrl);
     const mailEnabled =
       process.env.EMAIL_ENABLED === "true" || !!process.env.RESEND_API_KEY?.trim();
     if (!mailEnabled) {
@@ -156,13 +160,13 @@ export async function POST(request: Request) {
         <div style="font-family: Arial, sans-serif; max-width: 500px; margin: 0 auto; padding: 20px; border: 1px solid #e9e9e9; border-radius: 8px;">
           <h2 style="color: #b94b34; text-align: center;">Mời Hợp Tác Gia Phả</h2>
           <p>Xin chào,</p>
-          <p>Bạn đã nhận được lời mời cộng tác xây dựng cây gia phả <strong>"${treeName}"</strong>.</p>
-          <p>Email <strong>${email}</strong> — hãy đăng nhập đúng tài khoản và mở liên kết bên dưới.</p>
+          <p>Bạn đã nhận được lời mời cộng tác xây dựng cây gia phả <strong>"${safeTreeName}"</strong>.</p>
+          <p>Email <strong>${safeEmail}</strong> — hãy đăng nhập đúng tài khoản và mở liên kết bên dưới.</p>
           <div style="text-align: center; margin: 30px 0;">
-            <a href="${inviteUrl}" style="background-color: #b94b34; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">Tham gia xây dựng cây</a>
+            <a href="${safeInviteUrl}" style="background-color: #b94b34; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">Tham gia xây dựng cây</a>
           </div>
           <p style="font-size: 0.9rem; color: #666; text-align: center;">
-            Mã mời: <strong>${code}</strong>
+            Mã mời: <strong>${safeCode}</strong>
           </p>
           <p style="font-size: 0.85rem; color: #888; text-align: center;">
             Nếu không thấy email, vui lòng kiểm tra <strong>Thư rác / Spam</strong>.

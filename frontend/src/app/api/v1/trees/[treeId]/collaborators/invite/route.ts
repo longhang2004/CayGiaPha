@@ -4,7 +4,8 @@ import { ApiException } from "@/lib/services/errors";
 import { db } from "@/lib/db";
 import { collaborationInvitations, users, trees } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
-import { sendEmail } from "@/lib/services/email";
+import { escapeHtml, sendEmail } from "@/lib/services/email";
+import { hashInvitationCode } from "@/lib/services/collaborationInvitation";
 import crypto from "crypto";
 
 export const dynamic = "force-dynamic";
@@ -41,9 +42,13 @@ async function deliverInviteEmail(opts: {
   const buttonText = opts.registered
     ? "Tham gia xây dựng cây"
     : "Đăng ký & Tham gia xây dựng cây";
+  const safeEmail = escapeHtml(opts.email);
+  const safeTreeName = escapeHtml(opts.treeName);
+  const safeCode = escapeHtml(opts.code);
+  const safeInviteUrl = escapeHtml(inviteUrl);
   const descriptionText = opts.registered
-    ? `Tài khoản với email <strong>${opts.email}</strong> đã có trên hệ thống. Hãy đăng nhập và nhấp nút dưới đây để chấp nhận lời mời:`
-    : `Email <strong>${opts.email}</strong> chưa đăng ký. Hãy nhấp nút dưới đây để đăng ký và tham gia cộng tác:`;
+    ? `Tài khoản với email <strong>${safeEmail}</strong> đã có trên hệ thống. Hãy đăng nhập và nhấp nút dưới đây để chấp nhận lời mời:`
+    : `Email <strong>${safeEmail}</strong> chưa đăng ký. Hãy nhấp nút dưới đây để đăng ký và tham gia cộng tác:`;
 
   try {
     await sendEmail({
@@ -54,13 +59,13 @@ async function deliverInviteEmail(opts: {
         <div style="font-family: Arial, sans-serif; max-width: 500px; margin: 0 auto; padding: 20px; border: 1px solid #e9e9e9; border-radius: 8px;">
           <h2 style="color: #b94b34; text-align: center;">Mời Hợp Tác Gia Phả</h2>
           <p>Xin chào,</p>
-          <p>Bạn đã nhận được lời mời cộng tác xây dựng cây gia phả <strong>"${opts.treeName}"</strong>.</p>
+          <p>Bạn đã nhận được lời mời cộng tác xây dựng cây gia phả <strong>"${safeTreeName}"</strong>.</p>
           <p>${descriptionText}</p>
           <div style="text-align: center; margin: 30px 0;">
-            <a href="${inviteUrl}" style="background-color: #b94b34; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">${buttonText}</a>
+            <a href="${safeInviteUrl}" style="background-color: #b94b34; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">${buttonText}</a>
           </div>
           <p style="font-size: 0.9rem; color: #666; text-align: center;">
-            Mã mời của bạn là: <strong>${opts.code}</strong> (dùng khi tham gia thủ công)
+            Mã mời của bạn là: <strong>${safeCode}</strong> (dùng khi tham gia thủ công)
           </p>
           <p style="font-size: 0.85rem; color: #888; text-align: center;">
             Nếu không thấy email trong hộp thư chính, vui lòng kiểm tra mục <strong>Thư rác / Spam</strong>.
@@ -179,7 +184,7 @@ export async function POST(
         treeId,
         inviterUserId: auth.userId,
         email,
-        code,
+        code: hashInvitationCode(code),
         status: "approved",
         expiresAt,
       })
@@ -199,6 +204,6 @@ export async function POST(
       registered: !!invitedUser,
     });
 
-    return Response.json({ ...invite, ...delivery });
+    return Response.json({ ...invite, code, ...delivery });
   });
 }

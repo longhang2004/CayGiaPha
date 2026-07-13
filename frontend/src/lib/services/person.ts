@@ -50,9 +50,19 @@ const BIRTH_ORDER_MAX = 99;
 const BIRTH_YEAR_MIN = 1000;
 const GENDERS = new Set(["male", "female"]);
 const VISIBILITY_VALUES = new Set(["private", "public"]);
+const DEATH_CALENDARS = new Set(["lunar", "solar"]);
+
+export type PersonMutationStore = Pick<typeof db, "insert">;
 
 export class PersonService {
   async create(request: CreatePersonRequest): Promise<string> {
+    return this.createWithStore(db, request);
+  }
+
+  async createWithStore(
+    store: PersonMutationStore,
+    request: CreatePersonRequest,
+  ): Promise<string> {
     if (!request.treeId) {
       throw ApiException.validation("treeId", "Tree id is required.");
     }
@@ -61,26 +71,32 @@ export class PersonService {
     this.validateGender(request.gender);
     this.validateBirthOrder(request.birthOrder);
     this.validateBirthYear(request.birthYear);
-    this.validateDeathDate(request.deathDay, request.deathMonth, request.deathYear);
+    this.validateDeathDate(
+      request.deathDay,
+      request.deathMonth,
+      request.deathYear,
+      request.deathCalendar,
+      request.deathLunarLeap,
+    );
 
     const isDeceased = request.deathStatus || request.deathDay != null || request.deathMonth != null;
 
-    const [saved] = await db
+    const [saved] = await store
       .insert(persons)
       .values({
         treeId: request.treeId,
         displayName: request.displayName,
         gender: request.gender,
-        birthOrder: request.birthOrder || null,
-        birthYear: request.birthYear || null,
-        phone: request.phone || null,
-        email: request.email || null,
+        birthOrder: request.birthOrder ?? null,
+        birthYear: request.birthYear ?? null,
+        phone: request.phone ?? null,
+        email: request.email ?? null,
         deathStatus: isDeceased,
-        deathDay: isDeceased ? (request.deathDay || null) : null,
-        deathMonth: isDeceased ? (request.deathMonth || null) : null,
-        deathYear: isDeceased ? (request.deathYear || null) : null,
-        deathCalendar: isDeceased ? (request.deathCalendar || "lunar") : "lunar",
-        deathLunarLeap: isDeceased ? (request.deathLunarLeap || false) : false,
+        deathDay: isDeceased ? (request.deathDay ?? null) : null,
+        deathMonth: isDeceased ? (request.deathMonth ?? null) : null,
+        deathYear: isDeceased ? (request.deathYear ?? null) : null,
+        deathCalendar: isDeceased ? (request.deathCalendar ?? "lunar") : "lunar",
+        deathLunarLeap: isDeceased ? (request.deathLunarLeap ?? false) : false,
         adoptionStatus: false, // default
         visMarital: "private",
         visAdoption: "private",
@@ -114,11 +130,19 @@ export class PersonService {
     const finalDay = request.deathDay !== undefined ? request.deathDay : person.deathDay;
     const finalMonth = request.deathMonth !== undefined ? request.deathMonth : person.deathMonth;
     const finalYear = request.deathYear !== undefined ? request.deathYear : person.deathYear;
-    this.validateDeathDate(finalDay, finalMonth, finalYear);
-
-    const isDeceased = request.deathStatus !== undefined
-      ? (request.deathStatus || finalDay != null || finalMonth != null)
-      : (person.deathStatus || finalDay != null || finalMonth != null);
+    const finalCalendar = request.deathCalendar !== undefined
+      ? request.deathCalendar
+      : person.deathCalendar;
+    const finalLunarLeap = request.deathLunarLeap !== undefined
+      ? request.deathLunarLeap
+      : person.deathLunarLeap;
+    const clearsDeathDetails = request.deathStatus === false;
+    const isDeceased = clearsDeathDetails
+      ? false
+      : request.deathStatus === true || person.deathStatus || finalDay != null || finalMonth != null;
+    if (isDeceased) {
+      this.validateDeathDate(finalDay, finalMonth, finalYear, finalCalendar, finalLunarLeap);
+    }
 
     // Apply edits
     const updates: Partial<typeof persons.$inferInsert> = {};
@@ -218,7 +242,11 @@ export class PersonService {
   }
 
   private validateBirthOrder(birthOrder?: number | null) {
-    if (birthOrder !== undefined && birthOrder !== null && (birthOrder < BIRTH_ORDER_MIN || birthOrder > BIRTH_ORDER_MAX)) {
+    if (
+      birthOrder !== undefined &&
+      birthOrder !== null &&
+      (!Number.isInteger(birthOrder) || birthOrder < BIRTH_ORDER_MIN || birthOrder > BIRTH_ORDER_MAX)
+    ) {
       throw ApiException.validation("birthOrder", "Birth order must be between 1 and 99.");
     }
   }
@@ -226,7 +254,7 @@ export class PersonService {
   private validateBirthYear(birthYear?: number | null) {
     if (birthYear !== undefined && birthYear !== null) {
       const currentYear = new Date().getUTCFullYear();
-      if (birthYear < BIRTH_YEAR_MIN || birthYear > currentYear) {
+      if (!Number.isInteger(birthYear) || birthYear < BIRTH_YEAR_MIN || birthYear > currentYear) {
         throw ApiException.validation(
           "birthYear",
           "Birth year must be between 1000 and the current year."
@@ -241,17 +269,32 @@ export class PersonService {
     }
   }
 
-  private validateDeathDate(day?: number | null, month?: number | null, year?: number | null) {
+  private validateDeathDate(
+    day?: number | null,
+    month?: number | null,
+    year?: number | null,
+    calendar?: string | null,
+    lunarLeap?: boolean | null,
+  ) {
     if (day !== undefined && day !== null && month !== undefined && month !== null) {
-      if (day < 1 || day > 31) throw ApiException.validation("deathDay", "Ngày mất phải từ 1 đến 31.");
-      if (month < 1 || month > 12) throw ApiException.validation("deathMonth", "Tháng mất phải từ 1 đến 12.");
+      if (!Number.isInteger(day) || day < 1 || day > 31) throw ApiException.validation("deathDay", "Ngày mất phải là số nguyên từ 1 đến 31.");
+      if (!Number.isInteger(month) || month < 1 || month > 12) throw ApiException.validation("deathMonth", "Tháng mất phải là số nguyên từ 1 đến 12.");
     } else if ((day !== undefined && day !== null) || (month !== undefined && month !== null)) {
       if (day === null || day === undefined) throw ApiException.validation("deathDay", "Ngày mất là bắt buộc khi có tháng mất.");
       if (month === null || month === undefined) throw ApiException.validation("deathMonth", "Tháng mất là bắt buộc khi có ngày mất.");
     }
     if (year !== undefined && year !== null) {
       const currentYear = new Date().getFullYear();
-      if (year < 1000 || year > currentYear) throw ApiException.validation("deathYear", `Năm mất phải từ 1000 đến ${currentYear}.`);
+      if (!Number.isInteger(year) || year < 1000 || year > currentYear) throw ApiException.validation("deathYear", `Năm mất phải là số nguyên từ 1000 đến ${currentYear}.`);
+    }
+    if (calendar !== undefined && calendar !== null && !DEATH_CALENDARS.has(calendar)) {
+      throw ApiException.validation("deathCalendar", "Death calendar must be one of {lunar, solar}.");
+    }
+    if (lunarLeap !== undefined && lunarLeap !== null && typeof lunarLeap !== "boolean") {
+      throw ApiException.validation("deathLunarLeap", "Death lunar leap must be a boolean.");
+    }
+    if (calendar === "solar" && lunarLeap === true) {
+      throw ApiException.validation("deathLunarLeap", "A solar death date cannot be marked as a lunar leap month.");
     }
   }
 }

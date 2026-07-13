@@ -16,10 +16,6 @@ export async function DELETE(
     }
 
     const reminderId = params.id;
-    if (reminderId.startsWith("mock-")) {
-      return new Response(null, { status: 204 });
-    }
-
     const [deleted] = await db
       .delete(inAppReminders)
       .where(and(eq(inAppReminders.id, reminderId), eq(inAppReminders.userId, auth.userId)))

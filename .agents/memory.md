@@ -126,3 +126,12 @@ Durable project knowledge for future AI agents. Keep entries short, verified, an
   subject to external legal review. `/settings` lists claimed nodes and supports JSON export,
   correction navigation, anonymize/delete, and account deletion. Relational deletion is
   transactional; photo objects are cleaned after commit with sanitized count-only error logging.
+- **Graph mutation contract (2026-07-13)**: New relatives use the atomic
+  `/api/v1/trees/[treeId]/relatives` command. Primitive/asserted edges are directed, exact
+  duplicates fail without overwriting data, co-parents do not imply marriage, and relationship
+  edits/deletes address an explicit relationship id. Asserted labels upgrade only to `verified` or
+  `conflict`; conflict never deletes or rewrites the user's label.
+- **Invitation-code storage (2026-07-13)**: Newly issued collaboration codes are stored as
+  `sha256:<base64url-digest>` and the raw code is returned only at issuance. Acceptance checks the
+  digest first and temporarily falls back to unexpired plaintext legacy rows; pending-list APIs
+  must never serialize either representation.

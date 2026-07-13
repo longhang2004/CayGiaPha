@@ -4,6 +4,7 @@ import { ApiException } from "@/lib/services/errors";
 import { db } from "@/lib/db";
 import { collaborationInvitations } from "@/lib/db/schema";
 import crypto from "crypto";
+import { hashInvitationCode } from "@/lib/services/collaborationInvitation";
 
 function generateRandomCode(): string {
   const chars = "abcdefghijkmnpqrstuvwxyz23456789";
@@ -38,12 +39,12 @@ export async function POST(
         treeId,
         inviterUserId: auth.userId,
         email: null,
-        code,
+        code: hashInvitationCode(code),
         status: "generic",
         expiresAt,
       })
       .returning();
 
-    return Response.json(invite);
+    return Response.json({ ...invite, code });
   });
 }

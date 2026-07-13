@@ -1,5 +1,5 @@
-import { randomUUID } from "crypto";
-import { and, eq } from "drizzle-orm";
+import { createHash, randomUUID } from "crypto";
+import { and, eq, or } from "drizzle-orm";
 import { db } from "../db";
 import { collaborationInvitations, treeCollaborators, users } from "../db/schema";
 import { ApiException } from "./errors";
@@ -9,6 +9,16 @@ export type InvitationType = "generic" | "email";
 
 export function normalizeInvitationEmail(email: string | null | undefined): string {
   return (email || "").trim().toLowerCase();
+}
+
+export function normalizeInvitationCode(code: string | null | undefined): string {
+  return (code || "").trim().toLowerCase();
+}
+
+export function hashInvitationCode(code: string): string {
+  return `sha256:${createHash("sha256")
+    .update(normalizeInvitationCode(code), "utf8")
+    .digest("base64url")}`;
 }
 
 export function invitationType(invite: Pick<InvitationRow, "email">): InvitationType {
@@ -107,7 +117,7 @@ async function createPendingRequest(invite: InvitationRow, userId: string, email
     requesterUserId: userId,
     sourceInvitationId: invite.id,
     email: email || null,
-    code: randomUUID().replace(/-/g, ""),
+    code: hashInvitationCode(randomUUID().replace(/-/g, "")),
     status: "pending",
     expiresAt: invite.expiresAt,
   }).onConflictDoNothing();
@@ -146,9 +156,14 @@ export async function acceptInvitation(inviteId: string, userId: string) {
 }
 
 export async function acceptInvitationCode(code: string, userId: string) {
+  const normalized = normalizeInvitationCode(code);
+  if (!normalized) throw ApiException.validation("code", "Mã mời không hợp lệ");
   const invite = await db.select({ id: collaborationInvitations.id })
     .from(collaborationInvitations)
-    .where(eq(collaborationInvitations.code, code.trim().toLowerCase()))
+    .where(or(
+      eq(collaborationInvitations.code, hashInvitationCode(normalized)),
+      eq(collaborationInvitations.code, normalized),
+    ))
     .then((rows) => rows[0]);
   if (!invite) throw ApiException.validation("code", "Mã mời không hợp lệ");
   return acceptInvitation(invite.id, userId);

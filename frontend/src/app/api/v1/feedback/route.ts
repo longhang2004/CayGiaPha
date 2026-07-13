@@ -1,7 +1,7 @@
 import { handleApiRoute } from "@/lib/services/routeHelper";
 import { getAuthContext } from "@/lib/services/authorization";
 import { rateLimiter } from "@/lib/services/rateLimiter";
-import { sendEmail } from "@/lib/services/email";
+import { escapeHtml, sendEmail } from "@/lib/services/email";
 import { auditService, AuditActions } from "@/lib/services/audit";
 import { db } from "@/lib/db";
 import { feedbackMessages } from "@/lib/db/schema";
@@ -31,13 +31,6 @@ function normalizeCategory(value: unknown): "bug" | "feature" | "other" {
   return FEEDBACK_CATEGORIES.has(candidate)
     ? (candidate as "bug" | "feature" | "other")
     : "other";
-}
-
-function escapeHtml(value: string) {
-  return value
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");
 }
 
 function parseDataUrl(input: unknown): { contentType: string; bytes: Buffer } {

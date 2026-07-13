@@ -546,7 +546,7 @@ against the active Next.js code and current tests.
       re-acceptance and lawful-basis notice; implement own-node export/erase and all-owned-tree
       account deletion with photo cleanup.
     - _Requirements: 14, 19–25_
-  - [ ] 25.4 Repair graph, search, photo, and invitation invariants
+  - [x] 25.4 Repair graph, search, photo, and invitation invariants
     - Make add-relative atomic; remove implicit edge replacement and co-parent marriage inference;
       add relationship update/delete; align search response; compensate photo failures; hash new
       invitation codes and rate-limit joins by User and IP.

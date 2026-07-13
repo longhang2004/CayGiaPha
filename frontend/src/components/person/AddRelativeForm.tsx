@@ -5,11 +5,10 @@ import { ApiError } from "@/lib/apiClient";
 import {
   addAssertedRelative,
   addDerivedRelative,
-  createPerson,
+  createRelativeWithPerson,
   convertSolarToLunar,
   convertLunarToSolar,
   type ConflictWarning as ConflictWarningData,
-  type DerivedRelativeInput,
   type MaritalStatus,
 } from "@/lib/persons";
 import { uploadPhoto } from "@/lib/photos";
@@ -198,9 +197,6 @@ export function AddRelativeForm({ treeId, persons, preselectedPersonId, onCreate
     setSubmitting(true);
 
     try {
-      let activeSourceId = sourceId;
-      let activeTargetId = targetId;
-
       if (isNewPerson) {
         if (!newDisplayName.trim()) {
           throw new Error("Vui lòng nhập họ và tên của người thân mới.");
@@ -224,60 +220,79 @@ export function AddRelativeForm({ treeId, persons, preselectedPersonId, onCreate
         const dMonth = parseOptionalInt(newDeathMonth);
         const dYear = parseOptionalInt(newDeathYear);
 
-        // 1. Create the new person
-        const created = await createPerson({
+        let finalType: "bloodline_father" | "bloodline_mother" | "marriage" | "asserted" = "asserted";
+        let reversesEndpoints = false;
+        if (mode === "derived") {
+          if (derivedKind === "bloodline_father" || derivedKind === "bloodline_father_reverse") {
+            finalType = "bloodline_father";
+          } else if (derivedKind === "bloodline_mother" || derivedKind === "bloodline_mother_reverse") {
+            finalType = "bloodline_mother";
+          } else {
+            finalType = "marriage";
+          }
+          reversesEndpoints = derivedKind === "bloodline_father_reverse" || derivedKind === "bloodline_mother_reverse";
+        }
+        const relationshipNewPersonPosition = reversesEndpoints
+          ? (newPersonPosition === "source" ? "target" : "source")
+          : newPersonPosition;
+        const existingPersonId = newPersonPosition === "source" ? targetId : sourceId;
+
+        const created = await createRelativeWithPerson({
           treeId,
-          displayName: newDisplayName.trim(),
-          gender: finalGender,
-          deathStatus: newDeathStatus,
-          ...(newDeathStatus && dDay !== undefined && dMonth !== undefined ? {
-            deathDay: dDay,
-            deathMonth: dMonth,
-            deathYear: dYear,
-            deathCalendar: newDeathCalendar,
-            deathLunarLeap: newDeathLunarLeap,
-          } : {}),
-          ...(order !== undefined ? { birthOrder: order } : {}),
-          ...(year !== undefined ? { birthYear: year } : {}),
-          ...(newPhone.trim() ? { phone: newPhone.trim() } : {}),
-          ...(newEmail.trim() ? { email: newEmail.trim() } : {}),
+          person: {
+            displayName: newDisplayName.trim(),
+            gender: finalGender,
+            deathStatus: newDeathStatus,
+            ...(newDeathStatus && dDay !== undefined && dMonth !== undefined ? {
+              deathDay: dDay,
+              deathMonth: dMonth,
+              deathYear: dYear,
+              deathCalendar: newDeathCalendar,
+              deathLunarLeap: newDeathLunarLeap,
+            } : {}),
+            ...(order !== undefined ? { birthOrder: order } : {}),
+            ...(year !== undefined ? { birthYear: year } : {}),
+            ...(newPhone.trim() ? { phone: newPhone.trim() } : {}),
+            ...(newEmail.trim() ? { email: newEmail.trim() } : {}),
+          },
+          relationship: {
+            type: finalType,
+            existingPersonId,
+            newPersonPosition: relationshipNewPersonPosition,
+            ...(finalType === "marriage" ? { maritalStatus } : {}),
+            ...(finalType === "asserted" ? { assertedLabel } : {}),
+          },
         });
 
-        // 2. Upload photo if selected
         if (newPhotoFile) {
           try {
-            await uploadPhoto(treeId, created.id, newPhotoFile);
+            await uploadPhoto(treeId, created.personId, newPhotoFile);
           } catch (uploadErr) {
             console.error("Failed to upload photo for new relative:", uploadErr);
           }
         }
-
-        // 3. Assign ID
-        if (newPersonPosition === "source") {
-          activeSourceId = created.id;
-        } else {
-          activeTargetId = created.id;
-        }
+        setConflicts(created.relationship.conflicts);
+        onCreated?.(created.relationship.id);
+        return;
       }
 
-      // 4. Create relationship
       if (mode === "derived") {
         let finalType: "bloodline_father" | "bloodline_mother" | "marriage" = "bloodline_father";
-        let finalSourceId = activeSourceId;
-        let finalTargetId = activeTargetId;
+        let finalSourceId = sourceId;
+        let finalTargetId = targetId;
 
         if (derivedKind === "bloodline_father") {
           finalType = "bloodline_father";
         } else if (derivedKind === "bloodline_father_reverse") {
           finalType = "bloodline_father";
-          finalSourceId = activeTargetId;
-          finalTargetId = activeSourceId;
+          finalSourceId = targetId;
+          finalTargetId = sourceId;
         } else if (derivedKind === "bloodline_mother") {
           finalType = "bloodline_mother";
         } else if (derivedKind === "bloodline_mother_reverse") {
           finalType = "bloodline_mother";
-          finalSourceId = activeTargetId;
-          finalTargetId = activeSourceId;
+          finalSourceId = targetId;
+          finalTargetId = sourceId;
         } else if (derivedKind === "marriage") {
           finalType = "marriage";
         }
@@ -294,8 +309,8 @@ export function AddRelativeForm({ treeId, persons, preselectedPersonId, onCreate
       } else {
         const result = await addAssertedRelative({
           treeId,
-          sourceId: activeSourceId,
-          targetId: activeTargetId,
+          sourceId,
+          targetId,
           assertedLabel,
         });
         setConflicts(result.conflicts);
