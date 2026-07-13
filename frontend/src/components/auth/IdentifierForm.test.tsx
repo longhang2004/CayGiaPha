@@ -8,7 +8,7 @@ function renderForm(onSubmit: (identifier: string) => Promise<void>) {
   return render(
     <IdentifierForm
       heading="Đăng ký"
-      description="Nhập số điện thoại hoặc email."
+      description="Nhập email."
       submitLabel="Gửi mã xác thực"
       onSubmit={onSubmit}
     />,
@@ -20,7 +20,7 @@ describe("IdentifierForm", () => {
     renderForm(vi.fn().mockResolvedValue(undefined));
 
     expect(
-      screen.getByRole("textbox", { name: "Số điện thoại hoặc email" })
+      screen.getByRole("textbox", { name: "Email" })
         .closest(".cgp-field"),
     ).toBeInTheDocument();
   });
@@ -30,7 +30,7 @@ describe("IdentifierForm", () => {
     renderForm(onSubmit);
 
     await userEvent.type(
-      screen.getByLabelText(/Số điện thoại hoặc email/i),
+      screen.getByLabelText(/Email/i),
       "  0901234567  ",
     );
     await userEvent.click(screen.getByRole("button", { name: "Gửi mã xác thực" }));
@@ -44,23 +44,23 @@ describe("IdentifierForm", () => {
       new ApiError(400, {
         code: "VALIDATION_ERROR",
         field: "identifier",
-        message: "Số điện thoại không hợp lệ.",
+        message: "Email không hợp lệ.",
       }),
     );
     renderForm(onSubmit);
 
-    const input = screen.getByLabelText(/Số điện thoại hoặc email/i);
+    const input = screen.getByLabelText(/Email/i);
     await userEvent.type(input, "abc");
     await userEvent.click(screen.getByRole("button", { name: "Gửi mã xác thực" }));
 
     const alert = await screen.findByRole("alert");
-    expect(alert).toHaveTextContent("Số điện thoại không hợp lệ.");
+    expect(alert).toHaveTextContent("Email không hợp lệ.");
     // The error is programmatically associated with the input.
     expect(input).toHaveAttribute("aria-invalid", "true");
     const describedBy = input.getAttribute("aria-describedby");
     expect(describedBy).toBeTruthy();
     expect(document.getElementById(describedBy!)).toHaveTextContent(
-      "Số điện thoại không hợp lệ.",
+      "Email không hợp lệ.",
     );
   });
 
@@ -73,12 +73,12 @@ describe("IdentifierForm", () => {
     );
     renderForm(onSubmit);
 
-    await userEvent.type(screen.getByLabelText(/Số điện thoại hoặc email/i), "0901234567");
+    await userEvent.type(screen.getByLabelText(/Email/i), "0901234567");
     await userEvent.click(screen.getByRole("button", { name: "Gửi mã xác thực" }));
 
     const alert = await screen.findByRole("alert");
     expect(alert).toHaveTextContent("Bạn đã thử quá nhiều lần.");
-    expect(screen.getByLabelText(/Số điện thoại hoặc email/i)).not.toHaveAttribute(
+    expect(screen.getByLabelText(/Email/i)).not.toHaveAttribute(
       "aria-invalid",
     );
   });

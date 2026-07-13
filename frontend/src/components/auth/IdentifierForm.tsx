@@ -26,8 +26,7 @@ interface IdentifierFormProps {
 }
 
 /**
- * First step of the sign-up / sign-in flows: collect a Vietnamese phone number
- * or email. Field-level validation errors from the backend envelope render
+ * First step of the sign-up / sign-in flows: collect an email.
  * against this input (associated via `aria-describedby`, `aria-invalid`).
  * (Requirements 1.1, 1.2, 2.1)
  */
@@ -73,7 +72,7 @@ export function IdentifierForm({
 
       <CGPTextField
         id={inputId}
-        label="Số điện thoại hoặc email"
+        label="Email"
         name="identifier"
         inputMode="email"
         autoComplete="username"

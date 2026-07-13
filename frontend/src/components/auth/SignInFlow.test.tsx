@@ -35,7 +35,7 @@ describe("SignInFlow", () => {
     );
 
     expect(
-      screen.getByRole("textbox", { name: /Số điện thoại hoặc email/i })
+      screen.getByRole("textbox", { name: /Email/i })
         .closest(".cgp-field"),
     ).toBeInTheDocument();
     expect(screen.getByLabelText(/^Mật khẩu/i)).toHaveAttribute(
@@ -65,7 +65,7 @@ describe("SignInFlow", () => {
     );
 
     await userEvent.type(
-      screen.getByLabelText(/Số điện thoại hoặc email/i),
+      screen.getByLabelText(/Email/i),
       "user@example.com",
     );
     await userEvent.type(
@@ -94,7 +94,7 @@ describe("SignInFlow", () => {
       </GoogleOAuthProvider>
     );
 
-    const input = screen.getByLabelText(/Số điện thoại hoặc email/i);
+    const input = screen.getByLabelText(/Email/i);
     await userEvent.type(input, "user@example.com");
     await userEvent.click(screen.getByRole("button", { name: "Đăng nhập" }));
 

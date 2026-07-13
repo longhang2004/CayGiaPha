@@ -79,7 +79,7 @@ export function SignInFlow({ redirectTo = "/", reason }: SignInFlowProps) {
         <div className="double-bezel-card__inner">
         <form onSubmit={handleSubmit} noValidate aria-labelledby={`${inputId}-heading`}>
         <h1 id={`${inputId}-heading`}>Đăng nhập</h1>
-        <p>Đăng nhập bằng số điện thoại/email và mật khẩu của bạn.</p>
+        <p>Đăng nhập bằng email và mật khẩu của bạn.</p>
 
       {error.form ? (
         <p id={formErrorId} role="alert" className="form-error">
@@ -89,7 +89,7 @@ export function SignInFlow({ redirectTo = "/", reason }: SignInFlowProps) {
 
       <CGPTextField
         id={inputId}
-        label="Số điện thoại hoặc email"
+        label="Email"
         name="identifier"
         inputMode="email"
         autoComplete="username"

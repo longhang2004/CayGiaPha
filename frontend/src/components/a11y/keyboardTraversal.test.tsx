@@ -61,7 +61,7 @@ describe("keyboard reachability (18.6, WCAG 2.1.1)", () => {
     );
 
     const input = getByRole("textbox", {
-      name: "Số điện thoại hoặc email",
+      name: "Email",
     });
     const submit = getByRole("button", { name: "Gửi mã" });
 
@@ -107,7 +107,7 @@ describe("keyboard reachability (18.6, WCAG 2.1.1)", () => {
 
     expect(document.body).toBe(document.activeElement);
     await user.tab();
-    expect(getByRole("textbox", { name: "Số điện thoại hoặc email" })).toBe(
+    expect(getByRole("textbox", { name: "Email" })).toBe(
       document.activeElement,
     );
   });
