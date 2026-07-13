@@ -31,6 +31,11 @@ export const PROTOTYPE_PAGES: PrototypePage[] = [
     description: "Tree list first-value checklist states",
   },
   {
+    href: "/prototype/tree-list?welcome=open",
+    label: "👋 Danh sách cây — truy cập sớm",
+    description: "Early-access welcome dialog",
+  },
+  {
     href: "/prototype/tree",
     label: "🌳 Cây gia phả (Tree — populated)",
     description: "Full tree workspace with mock persons and relationships",

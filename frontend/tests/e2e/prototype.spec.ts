@@ -6,6 +6,7 @@ const PROTOTYPE_PAGES = [
   { href: "/prototype/signup", label: "Đăng ký" },
   { href: "/prototype/forgot-password", label: "Quên mật khẩu" },
   { href: "/prototype/tree-list", label: "Danh sách cây" },
+  { href: "/prototype/tree-list?welcome=open", label: "Chào mừng truy cập sớm" },
   { href: "/prototype/tree", label: "Cây gia phả" },
   { href: "/prototype/tree?panel=settings", label: "Cây gia phả - Cài đặt" },
   { href: "/prototype/tree/empty", label: "Cây gia phả rỗng" },
@@ -44,6 +45,7 @@ test.describe("Prototype Pages — smoke tests (no auth required)", () => {
     await expect(page.locator("h1#home-title")).toContainText("Cây Gia Phả");
     await expect(page.locator('a[href="/signup"]').first()).toBeVisible();
     await expect(page.locator('a[href="/signin"]').first()).toBeVisible();
+    await expect(page.getByRole("link", { name: "Hướng dẫn sử dụng" })).toBeVisible();
   });
 
   test("home prototype — logged-in state toggle shows tree CTA", async ({
@@ -53,6 +55,14 @@ test.describe("Prototype Pages — smoke tests (no auth required)", () => {
     // Toggle to logged-in state
     await page.click('button:has-text("Đã đăng nhập")');
     await expect(page.locator('a[href="/tree"]').first()).toBeVisible();
+    await expect(page.getByRole("link", { name: "Hướng dẫn sử dụng" })).toBeVisible();
+  });
+
+  test("home prototype — help CTA opens the usage guide", async ({ page }) => {
+    await page.goto("/prototype/home");
+    await page.getByRole("link", { name: "Hướng dẫn sử dụng" }).click();
+    await expect(page).toHaveURL(/\/help$/);
+    await expect(page.getByRole("heading", { name: "Hướng dẫn sử dụng" })).toBeVisible();
   });
 
   test("signin prototype — renders form with identifier and password", async ({ page }) => {
@@ -133,6 +143,91 @@ test.describe("Prototype Pages — smoke tests (no auth required)", () => {
     await expect(page.getByRole("heading", { name: "Bắt đầu từng bước" })).toHaveCount(0);
     await page.goto("/prototype/tree-list?state=completed");
     await expect(page.getByRole("heading", { name: "Bắt đầu từng bước" })).toHaveCount(0);
+  });
+
+  test("welcome dialog supports links, Escape, and focus restoration", async ({ page }) => {
+    await page.addInitScript(() => {
+      const observer = new MutationObserver(() => {
+        const trigger = [...document.querySelectorAll("button")].find(
+          (button) => button.textContent?.trim() === "+ Thêm cây",
+        );
+        if (trigger instanceof HTMLButtonElement) {
+          trigger.focus();
+          observer.disconnect();
+        }
+      });
+      observer.observe(document, { childList: true, subtree: true });
+    });
+    await page.goto("/prototype/tree-list?welcome=open&trees=none");
+
+    const dialog = page.getByRole("dialog", {
+      name: "Chào mừng bạn đến với phiên bản truy cập sớm của Cây Gia Phả!",
+    });
+    await expect(dialog).toBeVisible();
+    await expect(dialog.getByRole("link", { name: "Feedback" })).toHaveAttribute(
+      "href",
+      "/feedback",
+    );
+    await expect(
+      dialog.getByRole("link", { name: "một vài ly cà phê" }),
+    ).toHaveAttribute("href", "/support");
+    await expect(dialog.getByRole("button", { name: "Tôi đã hiểu" })).toBeVisible();
+
+    await page.keyboard.press("Escape");
+    await expect(dialog).toHaveCount(0);
+    await expect(page.getByRole("button", { name: "+ Thêm cây" })).toBeFocused();
+  });
+
+  for (const viewport of [
+    { name: "desktop", width: 1280, height: 800 },
+    { name: "tablet", width: 768, height: 1024 },
+    { name: "mobile", width: 375, height: 667 },
+  ]) {
+    test(`welcome dialog stays within the ${viewport.name} viewport`, async ({ page }) => {
+      await page.setViewportSize({ width: viewport.width, height: viewport.height });
+      await page.goto("/prototype/tree-list?welcome=open&trees=none");
+      const dialog = page.getByRole("dialog", {
+        name: "Chào mừng bạn đến với phiên bản truy cập sớm của Cây Gia Phả!",
+      });
+      await expect(dialog).toBeVisible();
+      const box = await dialog.boundingBox();
+      expect(box).toBeTruthy();
+      expect(box!.x).toBeGreaterThanOrEqual(0);
+      expect(box!.y).toBeGreaterThanOrEqual(0);
+      expect(box!.x + box!.width).toBeLessThanOrEqual(viewport.width + 1);
+      expect(box!.y + box!.height).toBeLessThanOrEqual(viewport.height + 1);
+      expect(
+        await page.evaluate(
+          () => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1,
+        ),
+      ).toBe(false);
+    });
+  }
+
+  test("welcome dialog remains usable in dark mode at mobile 200% text", async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 667 });
+    await page.emulateMedia({ colorScheme: "dark" });
+    await page.goto("/prototype/tree-list?welcome=open&trees=none");
+    await page.evaluate(() => {
+      document.documentElement.style.fontSize = "200%";
+    });
+
+    const dialog = page.getByRole("dialog", {
+      name: "Chào mừng bạn đến với phiên bản truy cập sớm của Cây Gia Phả!",
+    });
+    await expect(dialog).toBeVisible();
+    await expect(dialog.getByRole("button", { name: "Tôi đã hiểu" })).toBeVisible();
+    const colors = await dialog.evaluate((element) => {
+      const styles = getComputedStyle(element);
+      return { background: styles.backgroundColor, foreground: styles.color };
+    });
+    expect(colors.background).not.toBe("rgba(0, 0, 0, 0)");
+    expect(colors.foreground).not.toBe(colors.background);
+    expect(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1,
+      ),
+    ).toBe(false);
   });
 
   for (const viewport of [
@@ -340,10 +435,17 @@ test.describe("Prototype Pages — smoke tests (no auth required)", () => {
     await expect(page.locator('input[id="displayName"]')).toBeVisible();
   });
 
-  test("help prototype — renders help guide", async ({ page }) => {
+  test("help prototype — renders all current topics and working anchors", async ({ page }) => {
     await page.goto("/prototype/help");
-    // HelpGuide renders a heading about the guide
-    await expect(page.locator("h1, h2").first()).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Hướng dẫn sử dụng" })).toBeVisible();
+    const inviteTopic = page.locator('a[href="#moi-va-quan-ly-cong-tac"]');
+    await expect(inviteTopic).toBeVisible();
+    await inviteTopic.click();
+    await expect(page).toHaveURL(/#moi-va-quan-ly-cong-tac$/);
+    await expect(
+      page.getByRole("heading", { name: "Mời và quản lý cộng tác" }),
+    ).toBeInViewport();
+    await expect(page.getByText(/xác nhận danh tính bằng mã/i)).toHaveCount(0);
   });
 
   test("screenshot the family tree", async ({ page }) => {

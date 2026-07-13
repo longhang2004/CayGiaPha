@@ -13,4 +13,16 @@ describe("canonical Help registry", () => {
   it("filters owner-only topics for readers", () => {
     expect(getHelpTopic("chon-vung-mien", "reader")).toBeUndefined();
   });
+  it("tracks reviewed existing topics separately from newly added topics", () => {
+    const newTopicIds = new Set([
+      "moi-va-quan-ly-cong-tac",
+      "luu-anh-ky-niem",
+      "bao-mat-va-chia-se-cay",
+      "gui-phan-hoi-va-ung-ho",
+    ]);
+    for (const topic of HELP_TOPICS) {
+      expect(topic.reviewedAt).toBe("2026-07-13");
+      expect(topic.version).toBe(newTopicIds.has(topic.id) ? 1 : 2);
+    }
+  });
 });

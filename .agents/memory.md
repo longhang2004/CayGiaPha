@@ -97,3 +97,8 @@ Durable project knowledge for future AI agents. Keep entries short, verified, an
 - **2026-07-13 CGP interaction migration complete**: HamburgerMenu, NotificationBell, SearchPanel filters, and GraphLegend use `CGPPopover`; the responsive app sidebar uses `CGPDrawer`; PersonInfoPanel uses `CGPTabs`; application notifications use the library-independent `CGPToastProvider`. Search results remain a product-owned composite, and GraphOverlayBoundary remains graph-local by design.
 - **2026-07-13 CGP cleanup**: Legacy `components/ui/Modal.tsx`, `components/ui/ToastProvider.tsx`, and their dead modal/filter/sidebar CSS were removed. Production `react-aria-components` imports remain confined to `src/components/cgp/`.
 - **2026-07-13 CGP 200% overlay rules**: Long CGP popovers need a `100dvh` max-height plus vertical scrolling. The responsive app drawer scales up to the viewport, wraps nav labels, and scrolls vertically; graph legend close targets remain at least `--min-touch-target` (48px in the current theme).
+
+## 2026-07-13
+
+- **Early-access welcome cookie**: The tree-list welcome dialog acknowledges per browser with `cgp_early_access_welcome_v1=acknowledged`, path `/`, `SameSite=Lax`, and a 365-day expiry. Cookie failure must never prevent the dialog from closing for the current page visit.
+- **Help/ClaimFlow boundary**: Runtime Help and onboarding document only currently reachable UI. Person-node ClaimFlow remains an existing Kiro Requirement 17 gap and must not be described as available or reported as fully compliant until it is mounted in the active application flow.

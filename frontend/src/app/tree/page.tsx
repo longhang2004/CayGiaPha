@@ -7,6 +7,7 @@ import { useSession } from "@/app/providers";
 import { useCGPToast } from "@/components/cgp";
 import { useConfirm } from "@/components/ui/ConfirmProvider";
 import { GuidanceChecklist } from "@/components/guidance/GuidanceChecklist";
+import { EarlyAccessWelcomeDialog } from "@/components/tree/EarlyAccessWelcomeDialog";
 import { TreeEntryModal, type CreateTreeInput, type TreeEntryResult } from "@/components/tree/TreeEntryModal";
 import { joinTreeGroup } from "@/lib/collaboration";
 
@@ -107,6 +108,7 @@ function TreeListContent() {
 
   return (
     <main className="tree-list-page">
+      <EarlyAccessWelcomeDialog />
       <GuidanceChecklist role="owner" productState={{ treeOpened: false, personCount: 0, primitiveCount: 0, addressInspected: false, viewpointChanged: false }} />
       <div className="tree-list-page__header">
         <div>

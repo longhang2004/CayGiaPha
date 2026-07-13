@@ -2,16 +2,37 @@ import { act, fireEvent, render, screen, waitFor } from "@testing-library/react"
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { GuidanceChecklist, resetDeferredGuidanceForVisit } from "./GuidanceChecklist";
 import { GUIDANCE_REOPEN_EVENT, GUIDANCE_STORAGE_KEY } from "@/lib/guidance/storage";
+import { getHelpExcerpt } from "@/content/help/helpTopics";
+import { CORE_CHECKLIST } from "@/lib/guidance/checklist";
 
 const base = { treeOpened: true, personCount: 2, primitiveCount: 0, addressInspected: false, viewpointChanged: false };
 
 describe("GuidanceChecklist", () => {
   beforeEach(() => { localStorage.clear(); resetDeferredGuidanceForVisit(); });
 
+  it("uses the reviewed copy for the five core onboarding steps", () => {
+    expect(CORE_CHECKLIST).toHaveLength(5);
+    expect(getHelpExcerpt("tao-hoac-mo-cay", "checklist", "owner")).toBe(
+      "Chọn + Thêm cây để tạo cây mới, nhập mã mời hoặc mở cây đã có.",
+    );
+    expect(getHelpExcerpt("them-nguoi-dau-tien", "checklist", "owner")).toBe(
+      "Chọn Thêm thành viên và bắt đầu với chính bạn hoặc một người thân.",
+    );
+    expect(getHelpExcerpt("them-quan-he-ro-rang", "checklist", "owner")).toBe(
+      "Chọn một người, mở Thêm kết nối, rồi thêm cha, mẹ, vợ/chồng hoặc con.",
+    );
+    expect(getHelpExcerpt("xem-thong-tin-va-xung-ho", "checklist", "owner")).toBe(
+      "Chọn một người trên sơ đồ để mở thông tin và xem cách xưng hô.",
+    );
+    expect(getHelpExcerpt("doi-diem-nhin", "checklist", "owner")).toBe(
+      "Chọn người khác trong Điểm nhìn để tính lại cách xưng hô.",
+    );
+  });
+
   it("hides editor-only actions from readers", async () => {
     render(<GuidanceChecklist role="reader" productState={base} />);
     expect(await screen.findByText("Bắt đầu từng bước")).toBeInTheDocument();
-    expect(screen.queryByText("Nối một quan hệ gần")).not.toBeInTheDocument();
+    expect(screen.queryByText("Nối cha, mẹ, vợ/chồng hoặc con")).not.toBeInTheDocument();
   });
 
   it("collapses without deferring", async () => {

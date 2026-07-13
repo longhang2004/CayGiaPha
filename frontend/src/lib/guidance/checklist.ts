@@ -7,7 +7,7 @@ const ALL: GuidanceRole[] = ["owner", "editor", "reader"];
 export const CORE_CHECKLIST: ChecklistItemDefinition[] = [
   { id: "core-tree-open", title: "Tạo, tham gia hoặc mở một cây", topicId: "tao-hoac-mo-cay", roles: ALL, eligible: () => true, complete: s => s.treeOpened },
   { id: "core-first-person", title: "Thêm người đầu tiên", topicId: "them-nguoi-dau-tien", roles: ["owner", "editor"], eligible: s => s.treeOpened && s.personCount === 0, complete: s => s.personCount > 0 },
-  { id: "core-first-primitive", title: "Nối một quan hệ gần", topicId: "them-quan-he-ro-rang", roles: ["owner", "editor"], eligible: s => s.treeOpened && s.personCount > 0 && s.primitiveCount === 0, complete: s => s.primitiveCount > 0 },
+  { id: "core-first-primitive", title: "Nối cha, mẹ, vợ/chồng hoặc con", topicId: "them-quan-he-ro-rang", roles: ["owner", "editor"], eligible: s => s.treeOpened && s.personCount > 0 && s.primitiveCount === 0, complete: s => s.primitiveCount > 0 },
   { id: "core-inspect-address", title: "Chọn một người để xem xưng hô", topicId: "xem-thong-tin-va-xung-ho", roles: ALL, eligible: s => s.treeOpened && s.personCount > 0, complete: s => s.addressInspected },
   { id: "core-viewpoint", title: "Thử đổi điểm nhìn", topicId: "doi-diem-nhin", roles: ALL, eligible: s => s.treeOpened && s.personCount >= 2, complete: s => s.viewpointChanged },
 ];

@@ -470,9 +470,31 @@
   line-height: 1.5;
 }
 
+.early-access-welcome-dialog__content {
+  display: grid;
+  gap: 1rem;
+  line-height: 1.65;
+  overflow-wrap: anywhere;
+}
+
+.early-access-welcome-dialog__content p {
+  margin: 0;
+}
+
+.early-access-welcome-dialog__content a {
+  color: var(--color-brand);
+  font-weight: 700;
+  text-decoration-thickness: 0.08em;
+  text-underline-offset: 0.18em;
+}
+
 @media (max-width: 640px) {
   .cgp-dialog__footer {
     flex-wrap: wrap;
+  }
+
+  .early-access-welcome-dialog .cgp-dialog__footer .btn {
+    width: 100%;
   }
 }
 

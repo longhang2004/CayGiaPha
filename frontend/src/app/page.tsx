@@ -13,8 +13,9 @@ export default function HomePage() {
           <p className="eyebrow home-hero__eyebrow">Gia phả Việt cho cả dòng họ</p>
           <h1 id="home-title">Cây Gia Phả</h1>
           <p className="home-hero__lead">
-            Tạo sơ đồ gia đình, mời người thân cộng tác, lưu ảnh kỷ niệm và xem
-            cách xưng hô tiếng Việt được tính tự động theo Bắc, Trung, Nam.
+            Tạo hoặc tham gia cây gia phả, cùng người thân bổ sung thành viên và
+            ảnh kỷ niệm, rồi xem cách xưng hô tiếng Việt được tính theo điểm nhìn
+            và vùng Bắc, Trung, Nam.
           </p>
 
           <div className="home-hero__actions" aria-busy={loading}>
@@ -34,6 +35,9 @@ export default function HomePage() {
                 </Link>
               </>
             )}
+            <Link href="/help" className="btn btn-secondary">
+              Hướng dẫn sử dụng
+            </Link>
           </div>
         </div>
 
@@ -48,14 +52,14 @@ export default function HomePage() {
               <div>
                 <span className="home-hero__stat">Một cây, nhiều góc nhìn</span>
                 <p className="home-hero__card-copy">
-                  Quản lý thành viên, quan hệ, ảnh và quyền cộng tác trong cùng một
-                  không gian riêng tư.
+                  Quản lý thành viên, quan hệ, ảnh, quyền cộng tác và chế độ chia
+                  sẻ trong cùng một không gian gia đình.
                 </p>
               </div>
               <div className="home-feature-grid">
-                <span>Bảo vệ thông tin người còn sống</span>
-                <span>Cộng tác theo cây gia phả</span>
-                <span>Tìm kiếm và đổi góc nhìn nhanh</span>
+                <span>Quan hệ trực tiếp hoặc tên gọi tự khai báo</span>
+                <span>Bảo vệ người còn sống và kiểm soát chia sẻ</span>
+                <span>Tìm kiếm, đổi điểm nhìn và cộng tác</span>
               </div>
             </div>
           </div>
@@ -65,22 +69,22 @@ export default function HomePage() {
           <article className="home-step">
             <span className="home-step__num">1</span>
             <div className="home-step__content">
-              <h2>Tạo cây đầu tiên</h2>
-              <p>Bắt đầu từ chính bạn hoặc người lớn tuổi nhất mà gia đình cùng biết.</p>
+              <h2>Tạo hoặc tham gia một cây</h2>
+              <p>Tạo cây mới, mở cây đã có hoặc nhập mã mời 6 ký tự từ người thân.</p>
             </div>
           </article>
           <article className="home-step">
             <span className="home-step__num">2</span>
             <div className="home-step__content">
-              <h2>Nối quan hệ cốt lõi</h2>
-              <p>Thêm cha mẹ, vợ chồng và con cái trước; các vai vế phức tạp sẽ được suy ra.</p>
+              <h2>Thêm người và nối quan hệ</h2>
+              <p>Bắt đầu với một thành viên, rồi thêm cha, mẹ, vợ/chồng hoặc con để hệ thống tính xưng hô.</p>
             </div>
           </article>
           <article className="home-step">
             <span className="home-step__num">3</span>
             <div className="home-step__content">
-              <h2>Mời người thân cùng sửa</h2>
-              <p>Cộng tác viên có thể bổ sung thông tin để cây gia phả luôn đầy đủ hơn.</p>
+              <h2>Cùng người thân hoàn thiện</h2>
+              <p>Mời cộng tác viên, bổ sung ảnh và dùng tên gọi khai báo khi thiếu người trung gian.</p>
             </div>
           </article>
         </div>
