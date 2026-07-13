@@ -3,6 +3,15 @@
   margin: 0 auto var(--space-section);
   display: grid;
   gap: 1.25rem;
+  min-width: 0;
+}
+
+/* Prevent grid blowouts by allowing items to shrink */
+.support-feedback > *,
+.support-feedback__support > *,
+.support-feedback__feedback > *,
+.support-feedback__copy > * {
+  min-width: 0;
 }
 
 .support-page {
@@ -91,6 +100,7 @@
   font-size: clamp(2rem, 5vw, 4rem);
   line-height: 1;
   letter-spacing: -0.04em;
+  word-break: break-word;
 }
 
 .support-feedback__support p {
@@ -136,6 +146,7 @@
 .support-feedback__feedback h2 {
   color: var(--color-fg);
   font-size: clamp(1.75rem, 4vw, 3rem);
+  word-break: break-word;
 }
 
 .support-feedback__feedback p {
