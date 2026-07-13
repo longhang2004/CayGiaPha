@@ -381,6 +381,12 @@ public class AuthService {
                 }
                 if (displayName != null && !displayName.isBlank()) {
                     user.setDisplayName(normalizeAndValidateDisplayName(displayName));
+                } else if (user.getDisplayName() == null || user.getDisplayName().isBlank()) {
+                    String fallbackName = googleName;
+                    if (fallbackName == null || fallbackName.isBlank()) {
+                        fallbackName = email.split("@")[0];
+                    }
+                    user.setDisplayName(normalizeAndValidateDisplayName(fallbackName));
                 }
                 userRepository.save(user);
                 return sessionService.create(user.getId());

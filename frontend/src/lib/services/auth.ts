@@ -751,11 +751,20 @@ export class AuthService {
     const user = await this.findUserByIdentifier("EMAIL", email);
 
     if (user) {
+      const updates: any = {};
       if (!user.verified) {
-        await db.update(users).set({ verified: true }).where(eq(users.id, user.id));
+        updates.verified = true;
       }
       if (displayName) {
-        await db.update(users).set({ displayName: normalizeAndValidateDisplayName(displayName) }).where(eq(users.id, user.id));
+        updates.displayName = normalizeAndValidateDisplayName(displayName);
+      } else if (!user.displayName) {
+        let fallbackName = googleName;
+        if (!fallbackName) fallbackName = email.split("@")[0];
+        updates.displayName = normalizeAndValidateDisplayName(fallbackName);
+      }
+
+      if (Object.keys(updates).length > 0) {
+        await db.update(users).set(updates).where(eq(users.id, user.id));
       }
       return sessionService.create(user.id);
     } else {
