@@ -27,8 +27,10 @@ The system is built with strict privacy controls, regional kinship dialect resol
 * **Safety & Compliance**:
   * Two-phase node deletion (Cascade vs. Neighbor-Preservation modes).
   * Password and Google authentication with hashed password verifiers, server-side identity
-    verification, HttpOnly sessions, claim-code controls, and rate limiting. Password-recovery UI
-    exists but its active Next.js Route Handlers are still pending.
+    verification, HttpOnly sessions, bounded recovery/node-linking codes, and rate limiting. New
+    accounts use email/Google; existing phone-only accounts remain a compatibility path.
+  * One initial tree per new account plus explicitly created additional owned trees, with distinct
+    Owner, Contributor, Linked, and Reader capabilities scoped to the selected tree.
   * Full audit logs for security mutations and rate-limiting to prevent abuse.
   * Terms of Service & Privacy Policy acceptance gates.
 * **Accessibility (WCAG 2.1)**:
@@ -89,3 +91,6 @@ pnpm test
 pnpm run lint
 pnpm run build
 ```
+
+Current Requirement 1–26 implementation evidence and known gaps are tracked in
+[the active conformance matrix](.kiro/specs/vietnamese-family-tree/conformance.md).

@@ -19,20 +19,21 @@ it validates, references its design **Property number**, and is tagged per the d
 `Feature: vietnamese-family-tree, Property {number}`. Each property runs ≥100 generated cases. The
 external identity/delivery providers and persistence are mocked/in-memory for property tests.
 
-All 25 requirements and all 31 correctness properties are referenced by at least one task. A checked
+All 26 requirements and all 31 correctness properties are referenced by at least one task. A checked
 box records that an implementation task landed; it is not evidence that current runtime behavior,
 documentation, prototypes, and verification remain synchronized. Current readiness must be checked
 against the active Next.js code and current tests.
 
-### Known active-runtime gaps — 2026-07-10
+### Known active-runtime gaps — 2026-07-13
 
-- Password-recovery UI/helpers exist, but the active Next.js API tree has no
-  `/api/v1/auth/password-reset/request` or `/confirm` Route Handlers while `USE_BACKEND=false`.
-  Recovery must not be reported complete until active handlers and end-to-end verification exist.
-- `/prototype/tree` still mounts the real upcoming-events client and may log 401 under mock session.
-- Production and prototype invitation pages begin with `h2` and have no page-level `h1`.
-- The post-audit UI status is maintained in `frontend/docs/ui/AUDIT.md`; historical findings must
-  be revalidated before creating work.
+- The active authorization context still carries a first-owned-tree fallback and does not expose the
+  finalized Owner/Contributor/Linked/Reader capability model.
+- Password-recovery UI/helpers exist, but the active Next.js request/confirm handlers are missing.
+- Claim verification is not yet mounted as a production recipient journey and is not yet bound to
+  the authenticated account identity.
+- Privacy projection, account deletion, relationship replacement, photo cleanup, search response,
+  and prototype isolation require the remediation tasks below. Current evidence is maintained in
+  `conformance.md`; checked historical tasks are not readiness evidence.
 
 ## Tasks
 
@@ -261,20 +262,21 @@ against the active Next.js code and current tests.
     - _Validates: Requirements 2.7, 11.5, 25.1_
 
   - [x] 6.4 Write property test for identifier validation
-    - **Property 3: Identifier validation** — sign-up accepted iff the identifier is a valid VN phone
-      or valid email; invalid identifiers rejected with the offending field named and no account
-      created.
+    - **Property 3: Identifier validation** — new sign-up accepts valid email only; valid VN phone is
+      retained solely for existing legacy-account sign-in/recovery.
     - Tag: `Feature: vietnamese-family-tree, Property 3`
     - _Validates: Requirements 1.1, 1.2, 1.7_
 
   - [x] 6.5 Implement password/Google sign-up and initial tree journey
     - Create a verified user after password or Google validation and current consent; establish a
-      session and make the single-tree creation journey available (default region Bắc).
+      session and create one initial tree (default region Bắc); later trees are created only by an
+      explicit authenticated request.
     - _Requirements: 1.1–1.9, 9.2, 13.1, 13.2, 13.3_
 
-  - [x] 6.6 Write property test for at-most-one tree per user
-    - **Property 19: At most one tree per user** — for any sequence of sign-up/tree-creation
-      events, the user owns exactly one tree.
+  - [ ] 6.6 Replace the obsolete single-tree property with explicit multi-tree isolation
+    - **Property 19: Initial-tree creation and multi-tree isolation** — sign-up creates one initial
+      tree; every later explicit create adds one tree; every operation affects only its supplied
+      `treeId`.
     - Tag: `Feature: vietnamese-family-tree, Property 19`
     - _Validates: Requirements 13.2_
 
@@ -298,8 +300,8 @@ against the active Next.js code and current tests.
     - _Requirements: 11.6, 13.4, 13.5_
 
   - [x] 7.2 Write property test for mutation authorization
-    - **Property 18: Mutation authorization** — a mutation is permitted iff the user is the owner or
-      the linked claimed-node user editing their own node; all others rejected, contents unchanged.
+    - **Property 18: Mutation authorization** — enforce the Owner/Contributor/Linked/Reader
+      capability matrix against the explicit target tree/node; denied operations change nothing.
     - Tag: `Feature: vietnamese-family-tree, Property 18`
     - _Validates: Requirements 11.6, 13.4, 13.5_
 
@@ -310,8 +312,8 @@ against the active Next.js code and current tests.
     - _Requirements: 14.1, 14.2, 14.3, 14.4, 14.5_
 
   - [x] 7.4 Write property test for the sensitive-field privacy filter
-    - **Property 20: Sensitive-field privacy filter** — a private sensitive field is included iff the
-      viewer is the owner or linked claimed-node user; non-private fields always included.
+    - **Property 20: Sensitive-field privacy filter** — private fields are included for Owner,
+      Contributor, or the linked subject of that node; other viewers receive projected fields.
     - Tag: `Feature: vietnamese-family-tree, Property 20`
     - _Validates: Requirements 14.3, 14.4, 14.5_
 
@@ -517,9 +519,9 @@ against the active Next.js code and current tests.
 - [ ] 23. Account display names (CGP-USER-001)
   - [ ] 23.1 Add nullable account display-name persistence and validation
     - Add forward migration V25, Drizzle/Java mappings, normalized Unicode validation, and legacy-null compatibility without syncing Person names.
-  - [ ] 23.2 Extend signup, Google, session, and self-profile contracts
+  - [x] 23.2 Extend signup, Google, session, and self-profile contracts
     - Require display name for new password/Google accounts, preserve existing Google names, expose it in session, and add self-only `PATCH /me/profile`.
-  - [ ] 23.3 Present account identities and protect the collaboration roster
+  - [x] 23.3 Present account identities and protect the collaboration roster
     - Update settings, invitation, tree settings, roster UI/prototypes; return owner plus contributors only to active tree members and never use UUID labels.
 
 - [x] 24. Reusable collaboration invitation links (CGP-COLLAB-001)
@@ -529,6 +531,30 @@ against the active Next.js code and current tests.
     - Share validation and acceptance logic, use requester IDs for approval, return safe invitation views, apply uniform invalid-link errors, and rate-limit joins.
   - [x] 24.3 Add invitation/auth/copy-link UI and synchronized prototypes
     - Preserve internal return paths across sign-in/sign-up, show invitation reason toast, add request/cancel/pending states, and expose copy controls for both code and link.
+
+- [ ] 25. Active Next.js business-conformance remediation (CGP-CONFORMANCE-001)
+  - [ ] 25.1 Make authorization explicitly multi-tree and capability-based
+    - Remove first-owned-tree fallback state; return tree `accessRole` and per-person capabilities;
+      enforce Owner/Contributor/Linked/Reader permissions on every active Route Handler.
+    - _Requirements: 3, 11, 13, 14, 19, 20, 21, 24_
+  - [ ] 25.2 Complete password recovery and authenticated node linking
+    - Implement hashed, single-use, attempt-limited reset codes; revoke old sessions and create one
+      fresh session. Mount “Xác nhận đây là tôi” and bind verification to session identity.
+    - _Requirements: 2, 11, 17, 25_
+  - [ ] 25.3 Centralize privacy projection, consent v2, and data rights
+    - Reuse one Living_Person/privacy projector across every read surface; add legal v2
+      re-acceptance and lawful-basis notice; implement own-node export/erase and all-owned-tree
+      account deletion with photo cleanup.
+    - _Requirements: 14, 19–25_
+  - [ ] 25.4 Repair graph, search, photo, and invitation invariants
+    - Make add-relative atomic; remove implicit edge replacement and co-parent marriage inference;
+      add relationship update/delete; align search response; compensate photo failures; hash new
+      invitation codes and rate-limit joins by User and IP.
+    - _Requirements: 3–7, 12, 15, 16, 24–26_
+  - [ ] 25.5 Synchronize production UI, Help, prototypes, and conformance evidence
+    - Expose only capability-permitted actions; add claim/settings/consent/data-rights prototypes;
+      keep prototype data isolated; run targeted/full tests and the three-viewport UI audit.
+    - _Requirements: 11, 17, 18, 22, 23_
 
 ## Notes
 

@@ -173,6 +173,10 @@ Prototype pages render each main functional page with mock data — no login req
 | `/prototype/tree` | `src/app/tree/[id]/page.tsx` — populated workspace |
 | `/prototype/tree?panel=settings` | `src/app/tree/[id]/page.tsx` — settings modal open |
 | `/prototype/tree/empty` | `src/app/tree/[id]/page.tsx` — empty/onboarding state |
+| `/prototype/tree-list` | `src/app/tree/page.tsx` — tree list and onboarding |
+| `/prototype/tree-list?welcome=open` | `src/app/tree/page.tsx` — early-access welcome open without persistence |
+| `/prototype/claim/[personId]` | `src/app/claim/[personId]/page.tsx` — authenticated node-linking flow |
+| `/prototype/settings` | `src/app/settings/page.tsx` — profile, consent, and data rights |
 | `/prototype/help` | `src/app/help/page.tsx` |
 
 ### Mandatory Sync Rule

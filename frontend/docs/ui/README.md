@@ -141,6 +141,14 @@ not automatically page-overflow bugs.
 8. Check light, explicit dark, system dark, reduced motion, keyboard, and 200%
    text-size behavior for shared primitives.
 
+## Authorization-driven UI
+
+Tree responses are the source of `accessRole` and per-person capabilities. Production and
+prototype scenarios cover Owner, Contributor, Linked, and Reader. Contributor may edit people,
+relationships, and photos but never tree settings, sharing, collaborators, claim invitations, or
+visibility. Linked controls only their own linked node and receives projected data elsewhere.
+Session identity does not contain a default tree.
+
 ## UI change checklist
 
 Before editing:

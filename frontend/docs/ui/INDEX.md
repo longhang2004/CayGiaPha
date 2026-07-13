@@ -17,10 +17,12 @@ For historical findings, read [AUDIT.md](./AUDIT.md) only when relevant.
 | `/login` | Bare/focused legacy placeholder | none |
 | `/tree` | In-app | `/prototype/tree-list` |
 | `/tree/[id]` | In-app/full canvas | `/prototype/tree`, `/prototype/tree/empty`, `?panel=settings` |
-| `/person` | In-app harness | none |
+| `/claim/[personId]` | Focused | `/prototype/claim/[personId]` |
+| `/person` | Legacy redirect to explicit tree workspace | none |
 | `/invitation/[id]` | Bare/focused | `/prototype/invitation/[id]` |
 | `/help` | Marketing | `/prototype/help` |
-| `/support`, `/feedback`, `/settings`, `/admin` | In-app | none |
+| `/support`, `/feedback`, `/admin` | In-app | none |
+| `/settings` | In-app | `/prototype/settings` |
 | `/legal/tos`, `/legal/privacy` | Focused | none |
 
 Prototype discovery is driven by `src/lib/prototype/manifest.ts`.
@@ -37,6 +39,8 @@ Prototype discovery is driven by `src/lib/prototype/manifest.ts`.
 - Use standard `<img>`, never `next/image`.
 - Preserve living-person redaction, keyboard accessibility, visible focus,
   minimum touch targets, dark mode, and reduced motion.
+- Consume server-provided tree/person capabilities for role-dependent actions. UI code must never
+  infer Owner status from a session-level tree id or from the collaborator roster.
 
 ## Styling ownership
 

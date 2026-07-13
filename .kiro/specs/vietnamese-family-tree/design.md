@@ -2,7 +2,7 @@
 
 ## Overview
 
-The Vietnamese Family Tree system lets a single user build, own, and visualize a clan as a
+The Vietnamese Family Tree system lets a user build, own, collaborate on, and visualize one or more clans as a
 relationship graph, with the defining feature being automatic computation of the correct
 Vietnamese form of address (cách xưng hô) between any two persons. Address computation accounts
 for paternal-vs-maternal side, gender, birth order/age, and regional dialect (Bắc/Trung/Nam).
@@ -21,9 +21,10 @@ The active system is built on this stack:
   synchronization and domain reference, but `USE_BACKEND=false` means it is not the production-
   priority runtime. New product behavior must be implemented in the Next.js application first.
 
-> **Architecture decision record — 2026-07-10.** Password and Google authentication are the active
-> sign-up/sign-in contract. OTP-only authentication is legacy behavior. Verification codes remain
-> bounded to flows that explicitly need them, such as password recovery or person-node claiming.
+> **Architecture decision record — 2026-07-13.** Email/password and Google are the active
+> registration contract. Existing phone-only accounts retain password sign-in and SMS recovery
+> compatibility, but new phone registrations are disabled. Verification codes remain bounded to
+> password recovery and authenticated person-node linking.
 
 ### Design Goals and Key Decisions
 
@@ -44,10 +45,13 @@ The active system is built on this stack:
    table keyed by `(region, canonical_relation)`. The resolver computes a canonical relation from
    a path, then looks up the term for the tree's region. Adding or correcting a dialect is a data
    change, not a code change. (Requirement 9)
-5. **Password or Google authentication.** A user signs up or signs in using a validated phone/email
-   identifier and password, or a verified Google identity. Password verifiers are hashed; Google
-   credentials are verified server-side; sessions last 30 days. Short-lived codes are retained only
-   for recovery/claim flows that require them. (Requirements 1, 2, 11)
+5. **Email/password or Google registration.** New users register with email/password or Google.
+   Existing phone-only accounts remain compatible with password sign-in and SMS recovery when a
+   provider is configured. Password verifiers are hashed, Google credentials are verified
+   server-side, and sessions last 30 days. (Requirements 1, 2, 11)
+6. **Explicit multi-tree scope.** Sign-up creates one initial tree, after which a User may explicitly
+   create more. Every tree-scoped command carries a target `treeId`; no authorization decision may
+   fall back to the first owned tree. (Requirement 13)
 
 ## Architecture
 
@@ -79,7 +83,7 @@ graph TB
 ### Request Flow Summary
 
 - **Authenticated requests** carry the `SESSION` cookie. Next.js Route Handlers resolve the session
-  and apply owner, collaborator, linked-claimed-user, read-sharing, and privacy checks before
+  and apply Owner, Contributor, Linked_User, Reader, sharing, and privacy checks before
   returning or mutating family data.
 - **Kinship computation** is read-only and runs against an in-memory projection of the tree's
   primitive graph loaded per request (or cached per tree, invalidated on edge mutation).
@@ -110,7 +114,7 @@ not the active request path.
   and the public entry portion of invitation/claim flows are reachable without a session; these
   endpoints are rate-limited or otherwise bounded as appropriate.
   Every other endpoint requires an authenticated session, and all mutations additionally enforce
-  the ownership / claimed-node authorization model (Property 18). Avoid leaking whether an
+  the explicit role/capability model (Property 18). Avoid leaking whether an
   identifier exists beyond what Requirement 2.4 mandates.
 - **Privacy enforcement server-side**: sensitive-field filtering (Property 20) is applied in the
   API, never relying on the client to hide private fields.
@@ -118,8 +122,22 @@ not the active request path.
 ## Components and Interfaces
 
 Active endpoints are implemented as Next.js Route Handlers under `/api/v1`. Family-data mutations
-require an authenticated session and enforce the applicable owner, collaborator, or claimed-node
-authority. Responses are JSON. Error responses use the envelope described in **Error Handling**.
+require an authenticated session and enforce an explicit target-tree capability. Responses are
+JSON. Error responses use the envelope described in **Error Handling**.
+
+### Authorization contracts
+
+`AuthContext` contains authenticated account identity only: `{ userId, isAuthenticated }`. It does
+not contain a default or owned tree. Tree authorization classifies the explicit target as
+`OWNER`, `CONTRIBUTOR`, `LINKED`, `READER`, or `NONE`. `SessionUser` exposes identity and
+`consentRequired`, never a singular `treeId`. Tree list/detail responses expose `accessRole`; tree
+detail additionally exposes per-person capabilities so the client does not infer authority.
+
+- Owner: full read, content, visibility, claim, collaboration, sharing, configuration, and deletion.
+- Contributor: full trusted read and person/relationship/photo content editing; no visibility,
+  claim, collaboration, sharing, configuration, rename, or tree deletion.
+- Linked: full read/edit/photo/visibility for the linked node and privacy-projected read elsewhere.
+- Reader: privacy-projected read only.
 
 ### Auth_Service
 
@@ -127,18 +145,18 @@ Handles password/Google sign-up, sign-in, recovery, and session lifecycle. (Requ
 
 | Method | Path | Purpose |
 |---|---|---|
-| `POST` | `/auth/signup` | Create a verified phone/email account with password, Region, and current consents; establish a 30-day session. (Requirement 1) |
+| `POST` | `/auth/signup` | Create a verified email account with password, Region, and current consents; establish a 30-day session. (Requirement 1) |
 | `POST` | `/auth/signin` | Verify identifier + password and establish a 30-day session. (Requirement 2) |
 | `POST` | `/auth/google` | Verify a Google credential; sign in or create a consented email account; establish a session. (Requirements 1, 2) |
 | `POST` | `/auth/signout` | Terminate the current session. (2.8) |
-| `GET` | `/auth/session` | Resolve the current account including nullable account display name. |
+| `GET` | `/auth/session` | Resolve identity, nullable display name, and `consentRequired`; no default tree id. |
 | `PATCH` | `/me/profile` | Update only the authenticated account's display name. |
-| `POST` | `/auth/password-reset/request` | Required recovery endpoint; active Next.js Route Handler is currently missing. (2.6) |
-| `POST` | `/auth/password-reset/confirm` | Required recovery endpoint; active Next.js Route Handler is currently missing. (2.6) |
+| `POST` | `/auth/password-reset/request` | Issue a non-enumerating, hashed, single-use 15-minute email or legacy-phone recovery code. (2.6) |
+| `POST` | `/auth/password-reset/confirm` | Consume the code, revoke prior sessions, and establish one fresh 30-day session. (2.6, 2.7) |
 
 Key behaviors:
-- Identifier validation: VN phone (`0` + 9 digits, or `+84` + 9 digits) or email (≤254 chars,
-  `local-part@domain`).
+- Registration identifier validation: email only (≤254 chars, `local-part@domain`). Existing VN
+  phone identities (`0` + 9 digits, or `+84` + 9 digits) remain valid for legacy sign-in/recovery.
 - Password policy: 8–128 characters with at least one ASCII letter and one digit; bcrypt-compatible
   one-way hash storage in the active implementation.
 - Unknown identifier and wrong password use the same failure message to reduce enumeration.
@@ -151,8 +169,9 @@ Sends and validates bounded recovery/claim codes; manages node claiming. (Requir
 
 | Method | Path | Purpose |
 |---|---|---|
-| `POST` | `/persons/{personId}/invite` | Owner invites a phone/email to claim a node (code valid 15 min). (11.1, 11.7) |
-| `POST` | `/persons/{personId}/claim/verify` | Recipient submits code to claim the node. (11.2–11.5) |
+| `POST` | `/persons/{personId}/invite` | Owner sends a destination-bound claim invitation for the explicit tree (15-minute code). (11.1, 11.7) |
+| `GET` | `/claim/{personId}` | Public entry metadata; unauthenticated recipients continue through auth with a safe return path. |
+| `POST` | `/persons/{personId}/claim/verify` | Authenticated recipient submits `{ code }`; server matches session identity to the stored destination. (11.2–11.5) |
 
 Recovery and claim code rules are flow-specific: codes are hashed at rest, expire, are single-use,
 and enforce attempt/rate limits. Collaboration invitation links/codes are a separate mechanism and
@@ -165,13 +184,15 @@ authorization. (Requirements 3, 4, 5, 6, 7, 12, 13, 14, 15)
 
 | Method | Path | Purpose |
 |---|---|---|
-| `POST` | `/persons` | Create a person in the owner's tree. (3.1, 3.2, 3.6) |
+| `POST` | `/persons` | Create a person in the explicit body `treeId`, authorized for Owner/Contributor. (3.1, 3.2, 3.6) |
 | `PATCH` | `/persons/{id}` | Edit person fields (partial update). (3.3, 3.6, 11.6) |
 | `GET` | `/persons/{id}` | Read a person with privacy filtering applied. (14.3–14.5) |
 | `DELETE` | `/persons/{id}` | Begin deletion; returns the two-option choice (no mutation yet). (3.4, 15.1, 15.10) |
 | `POST` | `/persons/{id}/delete` | Execute deletion with chosen strategy `cascade` or `preserve`. (15.3–15.9) |
 | `POST` | `/relationships` | Create a typed edge (bloodline / marriage / non-bloodline / asserted). (4.x, 5.x, 6.x, 12.x) |
-| `DELETE` | `/relationships/{id}` | Remove an edge (owner only). (13.4) |
+| `POST` | `/trees/{treeId}/relatives` | Atomically create a Person and its validated primitive/asserted edge. (5.x, 6.x) |
+| `PATCH` | `/relationships/{id}` | Update type-specific relationship fields without implicit replacement. (4.x) |
+| `DELETE` | `/relationships/{id}` | Remove an edge for Owner/Contributor. (13.4) |
 | `PATCH` | `/persons/{id}/visibility` | Set per-field visibility (private/public). (14.1, 14.2) |
 
 Key behaviors:
@@ -179,7 +200,8 @@ Key behaviors:
   father/mother (4.4), no parent-child cycle (4.9), marital status enum (4.5), social type enum
   (12.1, 12.2), asserted label length 1–50 (6.1, 6.2).
 - After creating bloodline edges, runs the **asserted-upgrade scan** (Requirement 7).
-- Enforces authorization: only owner mutates; linked user may edit their claimed node. (13.4, 13.5, 11.6)
+- Enforces the Owner/Contributor content capability and Linked_User own-node capability. Tree
+  administration and visibility remain Owner/linked-subject operations as defined above.
 
 ### Kinship_Resolver
 
@@ -248,8 +270,9 @@ erDiagram
 | `created_at` | `timestamptz` | |
 
 Constraint: at least one of `phone`/`email` present. Partial unique indexes on `phone` and
-`email` where not null. Legacy rows may keep `display_name = NULL`; new password/Google accounts
-must supply it. Existing Google sign-in never overwrites it.
+`email` where not null. New password/Google accounts always have email; phone-only rows are legacy
+compatibility records and are never created by active sign-up. Legacy rows may keep
+`display_name = NULL`; new accounts must supply it. Existing Google sign-in never overwrites it.
 
 ### Account identity and collaboration roster
 
@@ -275,7 +298,7 @@ with the uniform authorization response.
 | Column | Type | Notes |
 |---|---|---|
 | `id` | `uuid` PK | |
-| `owner_user_id` | `uuid` FK → users, unique | exactly one tree per user (13.1, 13.2) |
+| `owner_user_id` | `uuid` FK → users | one initial tree plus explicitly created additional trees (13.1, 13.2) |
 | `region` | `text` not null default 'Bac' | one of {Bac, Trung, Nam} (9.1, 9.2, 9.6) |
 | `created_at` | `timestamptz` | |
 
@@ -339,8 +362,9 @@ Constraints and indexes:
 | `claimed_at` | `timestamptz` | |
 
 `Person` vs `User`: a `Person` is a graph node that may or may not correspond to a login account;
-a `Claimed_Node` is a `Person` linked to a `User` via a `claims` row. Editing a claimed node is
-permitted to the linked user and the tree owner. (11.6, 13.4)
+a `Claimed_Node` is linked to a `User` via `claims`. One node links to at most one User, while one
+User may be linked to their own node in multiple trees. The Owner and Contributors may edit its
+content; only the linked User and Owner may change its visibility. (11.6, 13.4)
 
 ### `verification_codes`
 
@@ -350,7 +374,7 @@ permitted to the linked user and the tree owner. (11.6, 13.4)
 | `purpose` | `text` not null | active uses include password recovery and claim; legacy rows may contain signup/signin |
 | `user_id` | `uuid` nullable | for account-bound recovery/legacy codes |
 | `person_id` | `uuid` nullable | for claim invitations |
-| `destination` | `text` not null | phone or email the code was sent to |
+| `destination` | `text` not null | normalized email or verified legacy phone; claim verification must match the authenticated account |
 | `code_hash` | `text` not null | hash of the flow-specific code (never stored in plaintext) |
 | `issued_at` | `timestamptz` not null | |
 | `expires_at` | `timestamptz` not null | flow-specific bounded validity window |
@@ -544,16 +568,18 @@ create neither an account nor a session and do not reveal account existence.
 
 *For any* recovery or person-node claim code, it is accepted **if and only if** it matches the
 issued code, is inside the flow's validity window, has not been consumed, and has not exceeded its
-attempt/rate limit.
+attempt/rate limit. A claim additionally succeeds **if and only if** its stored normalized
+destination matches the authenticated recipient account; the client never supplies a replacement
+identifier during verification.
 
 **Validates: Requirements 2.6, 2.7, 11.2–11.5**
 
 ### Property 3: Identifier validation
 
-*For any* string submitted as an identifier, password sign-up is accepted only when the string is
-a valid Vietnamese phone number (10 digits beginning with 0, or +84 followed by 9 digits) or a
-valid email (≤254 chars, `local-part@domain`), and every other required field is valid; invalid
-identifiers are rejected with the offending field identified and no account created.
+*For any* string submitted for password sign-up, registration is accepted only when it is a valid
+email (≤254 chars, `local-part@domain`) and every other required field is valid. A phone string is
+always rejected for new registration; separately, a valid VN phone remains accepted only when it
+identifies an existing legacy account during sign-in or recovery.
 
 **Validates: Requirements 1.1, 1.2, 1.7**
 
@@ -679,23 +705,27 @@ unchanged, and a warning exposes both values.
 ### Property 18: Mutation authorization
 
 *For any* user and *any* create/edit/delete operation, the operation is permitted **if and only if**
-the user is the tree owner, or the user is the linked `Claimed_Node` user editing their own node;
-all other mutations are rejected with the tree contents unchanged.
+the explicit target grants the capability: Owner for every operation; Contributor for person,
+relationship, and photo content; Linked_User for their own node/photo/visibility; Reader for none.
+Tree administration, collaboration, sharing, and claim invitations remain Owner-only. All denied
+mutations leave tree contents unchanged.
 
-**Validates: Requirements 11.6, 13.4, 13.5**
+**Validates: Requirements 11.6, 13.4–13.6**
 
-### Property 19: At most one tree per user
+### Property 19: Initial-tree creation and multi-tree isolation
 
-*For any* sequence of sign-up/tree-creation events for a single user, the user owns exactly one
-tree (never more).
+*For any* sequence of sign-up and explicit tree-creation events, sign-up creates exactly one initial
+owned tree and each later explicit create creates exactly one additional tree. Every operation
+affects only its supplied `treeId`; no operation is redirected to another owned tree.
 
 **Validates: Requirements 13.2**
 
 ### Property 20: Sensitive-field privacy filter
 
 *For any* person with arbitrary per-field visibility settings and *any* requesting viewer, the
-response includes each private sensitive field **if and only if** the viewer is the tree owner or
-the linked `Claimed_Node` user, while every non-private field is always included.
+response includes each private sensitive field **if and only if** the viewer is the tree Owner,
+an active Contributor, or the linked User viewing their own node, while every permitted public
+field is included for other authorized viewers.
 
 **Validates: Requirements 14.3, 14.4, 14.5**
 
@@ -837,19 +867,14 @@ checks verify the machine-verifiable thresholds only.
 
 This section extends the existing authorization and privacy model (Requirements 13, 14) with
 tree-level read control, living-person protection, broader field visibility, data-subject rights,
-consent capture, person photos, and abuse/audit controls. It builds on the existing
-`AuthorizationService` (owner / linked-claimed-user / neither classification), the server-side
-`PersonResponse` privacy filter, and the `AuthenticationFilter` that binds an `AuthContext` per
-request.
+consent capture, person photos, and abuse/audit controls. Active authorization uses explicit target
+tree classification (`OWNER`, `CONTRIBUTOR`, `LINKED`, `READER`, `NONE`) and a shared server-side
+privacy projector; session context carries account identity, not an owned-tree fallback.
 
 ### Read-authorization model (Requirement 19, 20)
 
-Today reads are gated only at the field level; tree-level read access is not enforced. The design
-closes this:
-
-- A new `ReadAuthorizationService` (or an extension of `AuthorizationService`) computes a
-  `ReadAccess` decision for `(viewer, tree, shareToken)`:
-  - **private** → allow only `OWNER` or `LINKED_CLAIMED_USER`.
+`AuthorizationService` computes a read decision for `(viewer, tree, shareToken)`:
+  - **private** → allow `OWNER`, `CONTRIBUTOR`, or `LINKED`.
   - **link** → additionally allow a requester presenting a valid, non-revoked share token.
   - **public** → allow any authenticated user.
 - Every read endpoint (`GET /persons/{id}`, the tree view, search, viewpoint addresses, photo
@@ -861,7 +886,7 @@ closes this:
   the share-link route; the token is matched against `tree_share_tokens` (hashed at rest).
 - **Living-person redaction** is a viewer-dependent projection applied after read access is granted.
   `Person` gains no living flag column; "living" is derived: `death_status = false` AND
-  (`birth_year` is null OR `birth_year > currentYear - 100`). When the viewer is non-privileged and
+  (`birth_year` is null OR `birth_year >= currentYear - 100`). When the viewer is non-privileged and
   the tree's `living_redaction` is enabled, the projection drops birth year/order and replaces the
   display name with a placeholder (e.g. "Người thân còn sống" / "Living relative"), unless the
   corresponding field visibility is `public`. Node identity and edges are still returned so the
@@ -881,8 +906,8 @@ The proven per-field mechanism (`vis_marital` / `vis_adoption` / `vis_death`) is
 Requirement 20's redaction); the more sensitive primary photo defaults to `private`. The
 `PersonResponse` projection is extended so that, for a non-privileged viewer, a `private` `vis_name` yields the
 placeholder, a `private` `vis_birth_year` omits the year, and a `private` `vis_photo` omits the
-primary-photo reference. Privileged viewers (owner / linked user) always see all fields (matches the
-existing `forPrivilegedViewer` path). Living-person redaction and per-field `private` settings
+primary-photo reference. Owner and Contributor are privileged for the whole tree; Linked_User is
+privileged only for their own node. Living-person redaction and per-field `private` settings
 compose by union (a field hidden by either rule is hidden).
 
 ### Data-subject rights (Requirement 22)
@@ -893,18 +918,22 @@ compose by union (a field hidden by either rule is hidden).
 - `POST /me/nodes/{personId}/erase` with `{ "strategy": "delete" | "anonymize" }` — `delete` reuses
   the Requirement 15 two-phase deletion; `anonymize` overwrites identifying fields with neutral
   placeholders and detaches the claim. The request is recorded in the audit log.
-- `DELETE /me/account` — deletes/anonymizes the user, cascades the owned tree (persons, edges,
-  images), and revokes sessions, in one transaction.
+- `DELETE /me/account` — deletes/anonymizes the user, cascades every owned tree (persons, edges,
+  invitations, tokens, images), removes Contributor memberships, detaches claims according to the
+  selected strategy, and revokes sessions.
 
 ### Terms of Service and consent (Requirement 23)
 
-- Static ToS and Privacy Policy pages served by Next.js, reachable without auth.
+- Canonical ToS and Privacy Policy v2 content is served by Next.js and persisted in
+  `legal_documents`; both public pages are reachable without auth and render the same version.
 - `legal_documents` holds the current version per document; `user_consents` records
   `(user_id, document, version, accepted_at)`.
 - Sign-up verification requires an `acceptedTos`/`acceptedPrivacy` acknowledgement; the
   active password/Google sign-up flow records consent before creating the account/session and
   refuses account creation without it (23.2, 23.3). A version bump forces re-acceptance, enforced as a
-  pre-mutation check in the authorization layer (23.4).
+  pre-mutation check in the authorization layer (23.4). Session exposes `consentRequired`, and an
+  accessible re-acceptance dialog records both current document versions so the gate cannot become
+  a permanent lockout.
 
 ### Person photos (Requirement 24)
 
@@ -975,8 +1004,8 @@ convention and running ≥100 generated cases.
 
 *For any* tree sharing mode, viewer role, and optional share token, a read of the tree's nodes/edges
 is permitted **if and only if** the (mode, role, token-validity) triple is one of the allowed
-combinations of Requirement 19 (private→owner/linked; link→owner/linked/valid-token; public→any
-authenticated), and a denied read returns no node or edge data.
+combinations of Requirement 19 (private→Owner/Contributor/Linked; link→those roles or valid-token;
+public→any authenticated), and a denied read returns no node or edge data.
 
 **Validates: Requirements 19.3, 19.4, 19.6, 19.7**
 
@@ -985,15 +1014,18 @@ authenticated), and a denied read returns no node or edge data.
 *For any* person and viewer, when redaction is enabled and the viewer is non-privileged, the
 person's birth year/order are omitted and the name is the placeholder **iff** the person is a
 Living_Person (per the derived rule) and the respective field visibility is not `public`; a
-not-living person is never redacted by this rule.
+not-living person is never redacted by this rule. Owner and Contributor are tree-wide privileged;
+Linked_User is privileged only for their own node. A birth year exactly 100 years before the
+current year remains Living_Person.
 
 **Validates: Requirements 20.1, 20.2, 20.3**
 
 ### Property 28: Extended field-visibility filter
 
 *For any* person with arbitrary `vis_name`/`vis_birth_year`/`vis_photo` settings and *any* viewer, a
-governed field is included **iff** the viewer is privileged or that field's visibility is `public`;
-a `private` name is replaced by the placeholder for non-privileged viewers.
+governed field is included **iff** the viewer is Owner, Contributor, the linked subject of that
+node, or the field is `public`; a `private` name is replaced by the placeholder for every other
+viewer.
 
 **Validates: Requirements 21.3, 21.4**
 

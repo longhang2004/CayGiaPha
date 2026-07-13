@@ -5,6 +5,11 @@ application. This is the production-priority full-stack runtime: it renders the
 product and implements the active `/api/v1` Route Handlers, TypeScript domain
 services, authorization, and PostgreSQL persistence through Drizzle ORM.
 
+The active business contract is email/Google registration, legacy-phone sign-in/recovery
+compatibility, explicit multi-tree scoping, and Owner/Contributor/Linked/Reader capabilities. Do
+not derive an active tree from the session or the first owned tree; every tree operation must carry
+and authorize its target `treeId`.
+
 ## Stack
 
 - **Next.js 14** (App Router) + **React 18** + **TypeScript**
@@ -54,3 +59,6 @@ Before changing a page, component, layout, or style, start with
 components/styles/prototypes, and
 [`docs/ui/AUDIT.md`](docs/ui/AUDIT.md) preserves the original audit snapshot and a post-audit
 revalidation table. Recheck a finding against current code before turning it into a task.
+
+The Requirement 1–26 runtime status is maintained in
+[`../.kiro/specs/vietnamese-family-tree/conformance.md`](../.kiro/specs/vietnamese-family-tree/conformance.md).

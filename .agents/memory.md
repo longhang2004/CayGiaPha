@@ -102,3 +102,15 @@ Durable project knowledge for future AI agents. Keep entries short, verified, an
 
 - **Early-access welcome cookie**: The tree-list welcome dialog acknowledges per browser with `cgp_early_access_welcome_v1=acknowledged`, path `/`, `SameSite=Lax`, and a 365-day expiry. Cookie failure must never prevent the dialog from closing for the current page visit.
 - **Help/ClaimFlow boundary**: Runtime Help and onboarding document only currently reachable UI. Person-node ClaimFlow remains an existing Kiro Requirement 17 gap and must not be described as available or reported as fully compliant until it is mounted in the active application flow.
+- **Business model authority (2026-07-13)**: New accounts register with email/password or Google;
+  existing phone-only accounts retain sign-in/SMS-recovery compatibility. Sign-up creates one
+  initial tree and Users may explicitly create more. Tree operations never fall back to the first
+  owned tree. Roles are Owner, Contributor (trusted read + content/photo editor, no administration
+  or visibility), Linked (own-node/photo/visibility only), and Reader (projected read only).
+- **Person-node linking contract (2026-07-13)**: The user-facing name is “Xác nhận đây là tôi”. A
+  claim code is bound to the Person and normalized destination, verification requires a signed-in
+  account with the matching identity, and the client submits only the code. This is distinct from
+  reusable collaboration invitations.
+- **Conformance source (2026-07-13)**: `.kiro/specs/vietnamese-family-tree/conformance.md` maps
+  Requirements 1–26 to active Next.js routes/services/UI/tests. Checked historical tasks are not
+  readiness evidence; update the matrix after each remediation batch.
