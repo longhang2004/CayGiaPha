@@ -18,5 +18,6 @@ public record SignUpRequest(
         String password,
         String region,
         boolean acceptedTos,
-        boolean acceptedPrivacy) {
+        boolean acceptedPrivacy,
+        String displayName) {
 }

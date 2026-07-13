@@ -159,10 +159,11 @@ export function SignUpFlow({ redirectTo = "/", reason }: SignUpFlowProps) {
 
       <CGPTextField
         id={inputId}
-        label="Số điện thoại hoặc email"
+        label="Email"
         name="identifier"
+        type="email"
         inputMode="email"
-        autoComplete="username"
+        autoComplete="email"
         value={identifier}
         onChange={setIdentifier}
         errorMessage={identifierError}

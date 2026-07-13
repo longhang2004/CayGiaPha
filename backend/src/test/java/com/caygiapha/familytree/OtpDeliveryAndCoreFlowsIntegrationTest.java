@@ -106,7 +106,7 @@ class OtpDeliveryAndCoreFlowsIntegrationTest {
     @Test
     @DisplayName("Sign-up delivers a 6-digit code to the provided destination (1.3)")
     void signUpDeliversSixDigitCodeToDestination() {
-        authService.signUp(OWNER_PHONE);
+        authService.signUp(OWNER_PHONE, "Nguyễn Văn A");
 
         assertThat(otpProvider.deliveryCount()).isEqualTo(1);
         RecordingOtpDeliveryProvider.Delivery delivery =
@@ -153,7 +153,7 @@ class OtpDeliveryAndCoreFlowsIntegrationTest {
     @Test
     @DisplayName("A sign-up code is accepted within its 300s validity window (1.4)")
     void codeAcceptedWithinValidityWindow() {
-        authService.signUp(OWNER_PHONE);
+        authService.signUp(OWNER_PHONE, "Nguyễn Văn A");
         String code = otpProvider.lastDelivery(VerificationPurpose.SIGNUP).orElseThrow().code();
 
         clock.advance(Duration.ofSeconds(299)); // still inside the 300s window
@@ -167,7 +167,7 @@ class OtpDeliveryAndCoreFlowsIntegrationTest {
     @Test
     @DisplayName("A sign-up code is rejected once past its 300s validity window (1.4)")
     void codeRejectedAfterValidityWindow() {
-        authService.signUp(OWNER_PHONE);
+        authService.signUp(OWNER_PHONE, "Nguyễn Văn A");
         String code = otpProvider.lastDelivery(VerificationPurpose.SIGNUP).orElseThrow().code();
 
         clock.advance(Duration.ofSeconds(301)); // just past the 300s window
@@ -185,7 +185,7 @@ class OtpDeliveryAndCoreFlowsIntegrationTest {
     @Test
     @DisplayName("Sign-up -> verify creates exactly one tree with the default region Bac")
     void endToEndSignUpVerifyCreatesSingleTreeWithDefaultRegion() {
-        authService.signUp(OWNER_PHONE);
+        authService.signUp(OWNER_PHONE, "Nguyễn Văn A");
         String code = otpProvider.lastDelivery(VerificationPurpose.SIGNUP).orElseThrow().code();
 
         var response = authService.verifySignUp(OWNER_PHONE, code);
@@ -231,7 +231,7 @@ class OtpDeliveryAndCoreFlowsIntegrationTest {
     void providerFailureOnSignUpPersistsNothing() {
         otpProvider.failNextDelivery();
 
-        assertThatThrownBy(() -> authService.signUp(OWNER_PHONE))
+        assertThatThrownBy(() -> authService.signUp(OWNER_PHONE, "Nguyễn Văn A"))
                 .isInstanceOf(OtpDeliveryProvider.OtpDeliveryException.class);
 
         // The @Mutation transaction rolled the whole sign-up back: nothing persisted.
@@ -266,12 +266,12 @@ class OtpDeliveryAndCoreFlowsIntegrationTest {
     @DisplayName("After a failed delivery, a retry succeeds and persists exactly one code")
     void retryAfterProviderFailureSucceeds() {
         otpProvider.failNextDelivery();
-        assertThatThrownBy(() -> authService.signUp(OWNER_PHONE))
+        assertThatThrownBy(() -> authService.signUp(OWNER_PHONE, "Nguyễn Văn A"))
                 .isInstanceOf(OtpDeliveryProvider.OtpDeliveryException.class);
         assertThat(verificationCodeRepository.count()).isZero();
 
         otpProvider.resumeDelivery();
-        authService.signUp(OWNER_PHONE);
+        authService.signUp(OWNER_PHONE, "Nguyễn Văn A");
 
         assertThat(userRepository.count()).isEqualTo(1);
         assertThat(verificationCodeRepository.count()).isEqualTo(1);
@@ -282,7 +282,7 @@ class OtpDeliveryAndCoreFlowsIntegrationTest {
 
     /** Drive a full sign-up + verification so the identifier becomes a verified account. */
     private void verifiedAccount(String identifier) {
-        authService.signUp(identifier);
+        authService.signUp(identifier, "Nguyễn Văn A");
         String code = otpProvider.lastDelivery(VerificationPurpose.SIGNUP).orElseThrow().code();
         authService.verifySignUp(identifier, code);
     }

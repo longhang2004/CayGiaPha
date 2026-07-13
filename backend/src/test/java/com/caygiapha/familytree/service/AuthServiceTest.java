@@ -96,7 +96,7 @@ class AuthServiceTest {
         when(duplicateChecker.check(IdentifierType.PHONE, PHONE))
                 .thenReturn(DuplicateIdentifierChecker.Result.AVAILABLE);
 
-        SignUpResponse response = service.signUp(PHONE);
+        SignUpResponse response = service.signUp(PHONE, "Nguyễn Văn A");
 
         assertThat(response.verified()).isFalse(); // 1.5
         assertThat(response.userId()).isNotNull();
@@ -117,7 +117,7 @@ class AuthServiceTest {
         when(duplicateChecker.check(IdentifierType.EMAIL, EMAIL))
                 .thenReturn(DuplicateIdentifierChecker.Result.AVAILABLE);
 
-        service.signUp(EMAIL);
+        service.signUp(EMAIL, "Nguyễn Văn A");
 
         var captor = org.mockito.ArgumentCaptor.forClass(User.class);
         verify(userRepository).save(captor.capture());
@@ -130,7 +130,7 @@ class AuthServiceTest {
         when(duplicateChecker.check(IdentifierType.PHONE, PHONE))
                 .thenReturn(DuplicateIdentifierChecker.Result.TAKEN);
 
-        assertThatThrownBy(() -> service.signUp(PHONE))
+        assertThatThrownBy(() -> service.signUp(PHONE, "Nguyễn Văn A"))
                 .isInstanceOfSatisfying(ApiException.class, ex -> {
                     assertThat(ex.code()).isEqualTo(ErrorCode.IDENTIFIER_TAKEN); // 1.6
                     assertThat(ex.field()).isEqualTo("identifier");
@@ -147,7 +147,7 @@ class AuthServiceTest {
         when(duplicateChecker.check(IdentifierType.PHONE, PHONE))
                 .thenReturn(DuplicateIdentifierChecker.Result.UNDETERMINED);
 
-        SignUpResponse response = service.signUp(PHONE);
+        SignUpResponse response = service.signUp(PHONE, "Nguyễn Văn A");
 
         assertThat(response.verified()).isFalse();
         verify(userRepository).save(any(User.class));
@@ -157,7 +157,7 @@ class AuthServiceTest {
 
     @Test
     void signUpRejectsInvalidIdentifierWithoutCreatingAnAccount() {
-        assertThatThrownBy(() -> service.signUp("not-an-identifier"))
+        assertThatThrownBy(() -> service.signUp("not-an-identifier", "Nguyễn Văn A"))
                 .isInstanceOfSatisfying(ApiException.class, ex -> {
                     assertThat(ex.code()).isEqualTo(ErrorCode.VALIDATION_ERROR); // 1.7
                     assertThat(ex.field()).isEqualTo("identifier");
@@ -423,7 +423,7 @@ class AuthServiceTest {
         when(sessionService.create(any())).thenReturn(session);
 
         AuthService.PasswordSignUpResult result =
-                service.signUpWithPassword(EMAIL, "strong-password1", "Nam", true, true);
+                service.signUpWithPassword(EMAIL, "strong-password1", "Nam", true, true, "Nguyễn Văn A");
 
         assertThat(result.session()).isSameAs(session);
         assertThat(result.response().treeId()).isNotNull();
@@ -435,7 +435,7 @@ class AuthServiceTest {
 
     @Test
     void signUpWithPasswordRequiresPassword() {
-        assertThatThrownBy(() -> service.signUpWithPassword(EMAIL, "", "Bac", true, true))
+        assertThatThrownBy(() -> service.signUpWithPassword(EMAIL, "", "Bac", true, true, "Nguyễn Văn A"))
                 .isInstanceOfSatisfying(ApiException.class, ex -> {
                     assertThat(ex.code()).isEqualTo(ErrorCode.VALIDATION_ERROR);
                     assertThat(ex.field()).isEqualTo("password");

@@ -99,7 +99,8 @@ public class AuthController {
                     request.password(),
                     request.region(),
                     request.acceptedTos(),
-                    request.acceptedPrivacy());
+                    request.acceptedPrivacy(),
+                    request.displayName());
             auditService.recordAs(result.session().getUserId(), AuditService.SIGN_UP_VERIFIED, "user",
                     result.session().getUserId(), null); // 25.2
             return ResponseEntity.status(HttpStatus.CREATED)
@@ -108,7 +109,7 @@ public class AuthController {
                             sessionCookieFactory.create(result.session().getRawToken()).toString())
                     .body(result.response());
         }
-        return ResponseEntity.status(HttpStatus.CREATED).body(authService.signUp(request.identifier()));
+        return ResponseEntity.status(HttpStatus.CREATED).body(authService.signUp(request.identifier(), request.displayName()));
     }
 
     @PostMapping("/signup/verify")
@@ -182,7 +183,7 @@ public class AuthController {
 
     @PostMapping("/google")
     public ResponseEntity<SignInVerifyResponse> verifyGoogleAuth(@RequestBody GoogleAuthRequest request) {
-        Session session = authService.verifyGoogleAuth(request.idToken(), request.region(), request.acceptedTos(), request.acceptedPrivacy());
+        Session session = authService.verifyGoogleAuth(request.idToken(), request.region(), request.acceptedTos(), request.acceptedPrivacy(), request.displayName());
         auditService.recordAs(session.getUserId(), AuditService.SIGN_IN, "user",
                 session.getUserId(), "google"); // Or another audit action
         return ResponseEntity.ok()

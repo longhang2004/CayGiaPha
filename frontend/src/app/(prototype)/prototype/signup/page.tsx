@@ -64,11 +64,11 @@ export default function PrototypeSignUpPage() {
 
         <CGPTextField
           id={inputId}
-          label="Số điện thoại hoặc email"
+          label="Email"
           name="identifier"
-          type="text"
+          type="email"
           inputMode="email"
-          autoComplete="username"
+          autoComplete="email"
           value={identifier}
           onChange={setIdentifier}
           isRequired

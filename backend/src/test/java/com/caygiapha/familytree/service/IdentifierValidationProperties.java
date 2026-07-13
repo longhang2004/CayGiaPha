@@ -130,13 +130,13 @@ class IdentifierValidationProperties {
         boolean expectedValid = oracleIsValid(candidate);
 
         if (expectedValid) {
-            SignUpResponse response = service.signUp(candidate);
+            SignUpResponse response = service.signUp(candidate, "Nguyễn Văn A");
             assertThat(response.userId()).isNotNull();
             assertThat(response.verified()).isFalse();
             // Exactly one account created for a valid identifier.
             verify(userRepository).save(any(User.class));
         } else {
-            assertThatThrownBy(() -> service.signUp(candidate))
+            assertThatThrownBy(() -> service.signUp(candidate, "Nguyễn Văn A"))
                     .isInstanceOfSatisfying(ApiException.class, ex -> {
                         assertThat(ex.code()).isEqualTo(ErrorCode.VALIDATION_ERROR); // 1.7
                         assertThat(ex.field()).isEqualTo("identifier"); // offending field named

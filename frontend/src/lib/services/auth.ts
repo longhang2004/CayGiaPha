@@ -598,11 +598,15 @@ export class AuthService {
 
     const type = identifierValidator.requireValid("identifier", identifier);
 
+    if (type === "PHONE") {
+      throw ApiException.validation("identifier", "Hệ thống hiện chỉ hỗ trợ đăng ký bằng email.");
+    }
+
     const dupResult = await duplicateIdentifierChecker.check(type, identifier);
     if (dupResult === "TAKEN") {
       throw ApiException.identifierTaken(
         "identifier",
-        "Số điện thoại hoặc email này đã được đăng ký."
+        "Email này đã được đăng ký."
       );
     }
 
@@ -620,11 +624,7 @@ export class AuthService {
     // Insert new user (verified = true, since no OTP is needed)
     const [saved] = await db
       .insert(users)
-      .values(
-        type === "PHONE"
-          ? { phone: identifier, email: null, displayName: normalizedDisplayName, verified: true, passwordHash }
-          : { phone: null, email: identifier, displayName: normalizedDisplayName, verified: true, passwordHash }
-      )
+      .values({ phone: null, email: identifier, displayName: normalizedDisplayName, verified: true, passwordHash })
       .returning();
 
     // Record consent

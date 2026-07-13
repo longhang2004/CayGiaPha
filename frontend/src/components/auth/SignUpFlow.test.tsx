@@ -39,8 +39,8 @@ async function fillRequiredFields(options?: { displayName?: string; skipDisplayN
     );
   }
   await userEvent.type(
-    screen.getByLabelText(/Số điện thoại hoặc email/i),
-    "0901234567",
+    screen.getByLabelText(/Email/i),
+    "test@example.com",
   );
   await userEvent.type(
     screen.getByLabelText(/^Mật khẩu/i),
@@ -58,7 +58,7 @@ describe("SignUpFlow", () => {
 
     expect(screen.getByRole("textbox", { name: /Tên hiển thị/i }).closest(".cgp-field"))
       .toBeInTheDocument();
-    expect(screen.getByRole("textbox", { name: /Số điện thoại hoặc email/i }).closest(".cgp-field"))
+    expect(screen.getByRole("textbox", { name: /Email/i }).closest(".cgp-field"))
       .toBeInTheDocument();
     expect(screen.getByLabelText(/^Mật khẩu/i).closest(".cgp-password-field"))
       .toBeInTheDocument();
@@ -114,7 +114,7 @@ describe("SignUpFlow", () => {
     await userEvent.click(screen.getByRole("button", { name: "Đăng ký" }));
 
     expect(signUp).toHaveBeenCalledWith(
-      "0901234567",
+      "test@example.com",
       "password123",
       "Bac",
       true,
@@ -160,7 +160,7 @@ describe("SignUpFlow", () => {
     await userEvent.click(screen.getByRole("button", { name: "Đăng ký" }));
 
     expect(signUp).toHaveBeenCalledWith(
-      "0901234567",
+      "test@example.com",
       "password123",
       "Nam",
       true,
@@ -174,7 +174,7 @@ describe("SignUpFlow", () => {
       new ApiError(409, {
         code: "IDENTIFIER_TAKEN",
         field: "identifier",
-        message: "Số điện thoại đã được đăng ký.",
+        message: "Email đã được đăng ký.",
       }),
     );
 
@@ -188,8 +188,8 @@ describe("SignUpFlow", () => {
     await userEvent.click(screen.getByRole("button", { name: "Đăng ký" }));
 
     const alert = await screen.findByRole("alert");
-    expect(alert).toHaveTextContent("Số điện thoại đã được đăng ký.");
-    expect(screen.getByLabelText(/Số điện thoại hoặc email/i)).toHaveAttribute("aria-invalid", "true");
+    expect(alert).toHaveTextContent("Email đã được đăng ký.");
+    expect(screen.getByLabelText(/Email/i)).toHaveAttribute("aria-invalid", "true");
   });
 
   it("shows a displayName field error from the envelope", async () => {

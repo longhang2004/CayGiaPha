@@ -91,7 +91,7 @@ public class AuthService {
      *     {@code IDENTIFIER_TAKEN} when the identifier is already registered (1.6)
      */
     @Mutation
-    public SignUpResponse signUp(String identifier) {
+    public SignUpResponse signUp(String identifier, String displayName) {
         IdentifierType type = identifierValidator.requireValid("identifier", identifier);
 
         DuplicateIdentifierChecker.Result result =
@@ -106,6 +106,7 @@ public class AuthService {
         User user = type == IdentifierType.PHONE
                 ? User.withPhone(identifier)
                 : User.withEmail(identifier);
+        user.setDisplayName(normalizeAndValidateDisplayName(displayName));
         User saved = userRepository.save(user);
 
         // 1.3 — issue and deliver the sign-up verification code.
@@ -126,7 +127,8 @@ public class AuthService {
             String password,
             String region,
             boolean acceptedTos,
-            boolean acceptedPrivacy) {
+            boolean acceptedPrivacy,
+            String displayName) {
         consentService.requireConsent(acceptedTos, acceptedPrivacy);
         PasswordPolicy.requireValid(password);
 
@@ -145,6 +147,7 @@ public class AuthService {
                 : User.withEmail(identifier);
         user.setVerified(true);
         user.setPasswordHash(BCrypt.hashpw(password, BCrypt.gensalt()));
+        user.setDisplayName(normalizeAndValidateDisplayName(displayName));
         User saved = userRepository.save(user);
 
         consentService.recordConsent(saved.getId());
@@ -357,7 +360,7 @@ public class AuthService {
      * If the account doesn't exist, create it (requiring consents).
      */
     @Mutation
-    public Session verifyGoogleAuth(String idTokenString, String region, boolean acceptedTos, boolean acceptedPrivacy) {
+    public Session verifyGoogleAuth(String idTokenString, String region, boolean acceptedTos, boolean acceptedPrivacy, String displayName) {
         try {
             GoogleIdToken idToken = googleIdTokenVerifier.verify(idTokenString);
             if (idToken == null) {
@@ -374,8 +377,9 @@ public class AuthService {
                 User user = optionalUser.get();
                 if (!user.isVerified()) {
                     user.setVerified(true);
-                    userRepository.save(user);
                 }
+                user.setDisplayName(normalizeAndValidateDisplayName(displayName));
+                userRepository.save(user);
                 return sessionService.create(user.getId());
             } else {
                 // New user via Google Auth
@@ -383,6 +387,7 @@ public class AuthService {
 
                 User user = User.withEmail(email);
                 user.setVerified(true);
+                user.setDisplayName(normalizeAndValidateDisplayName(displayName));
                 User saved = userRepository.save(user);
 
                 consentService.recordConsent(saved.getId());
@@ -432,6 +437,22 @@ public class AuthService {
             return "$2a$" + passwordHash.substring(4);
         }
         return passwordHash;
+    }
+
+    private String normalizeAndValidateDisplayName(String raw) {
+        if (raw == null || raw.isBlank()) {
+            throw ApiException.validation("displayName", "Vui lòng nhập tên hiển thị.");
+        }
+        String normalized = raw.trim().replaceAll("\\s+", " ");
+        if (normalized.length() < 1 || normalized.length() > 100) {
+            throw ApiException.validation("displayName", "Tên hiển thị phải từ 1 đến 100 ký tự.");
+        }
+        for (int i = 0; i < normalized.length(); i++) {
+            if (Character.isISOControl(normalized.charAt(i))) {
+                throw ApiException.validation("displayName", "Tên hiển thị không hợp lệ.");
+            }
+        }
+        return normalized;
     }
 
     public record PasswordSignUpResult(Session session, SignUpVerifyResponse response) {}
