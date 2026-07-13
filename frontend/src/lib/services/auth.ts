@@ -762,6 +762,7 @@ export class AuthService {
       consentService.requireConsent(!!acceptedTos, !!acceptedPrivacy);
       let finalDisplayName = displayName;
       if (!finalDisplayName) finalDisplayName = googleName;
+      if (!finalDisplayName) finalDisplayName = email.split("@")[0];
       const normalizedDisplayName = normalizeAndValidateDisplayName(finalDisplayName);
 
       const [saved] = await db
