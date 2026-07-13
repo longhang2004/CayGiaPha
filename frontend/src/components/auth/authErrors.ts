@@ -37,10 +37,19 @@ export function toAuthErrorState(error: unknown): AuthErrorState {
   return { form: GENERIC_MESSAGE };
 }
 
-/** Return the message for `fieldName` when the current error targets it. */
 export function fieldErrorFor(
   state: AuthErrorState,
   fieldName: string,
 ): string | undefined {
   return state.field?.name === fieldName ? state.field.message : undefined;
+}
+
+export function unmappedFieldError(
+  state: AuthErrorState,
+  knownFields: string[],
+): string | undefined {
+  if (state.field && !knownFields.includes(state.field.name)) {
+    return state.field.message;
+  }
+  return undefined;
 }

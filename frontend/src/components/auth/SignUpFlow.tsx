@@ -13,7 +13,7 @@ import {
   CGPSelect,
   CGPTextField,
 } from "@/components/cgp";
-import { toAuthErrorState, fieldErrorFor, type AuthErrorState } from "./authErrors";
+import { toAuthErrorState, fieldErrorFor, unmappedFieldError, type AuthErrorState } from "./authErrors";
 import { buildAuthHref } from "@/lib/authRedirect";
 
 interface SignUpFlowProps {
@@ -47,6 +47,8 @@ export function SignUpFlow({ redirectTo = "/", reason }: SignUpFlowProps) {
   const displayNameError = fieldErrorFor(error, "displayName");
   const identifierError = fieldErrorFor(error, "identifier");
   const passwordError = fieldErrorFor(error, "password");
+  const unmappedError = unmappedFieldError(error, ["displayName", "identifier", "password"]);
+  const formError = error.form || unmappedError;
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -136,9 +138,9 @@ export function SignUpFlow({ redirectTo = "/", reason }: SignUpFlowProps) {
         <h1 id={`${inputId}-heading`}>Đăng ký</h1>
         <p>Tạo tài khoản cây gia phả mới của bạn.</p>
 
-      {error.form ? (
+      {formError ? (
         <p id={formErrorId} role="alert" className="form-error">
-          {error.form}
+          {formError}
         </p>
       ) : null}
 

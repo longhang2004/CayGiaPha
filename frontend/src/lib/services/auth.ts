@@ -721,6 +721,7 @@ export class AuthService {
     displayName?: string,
   ) {
     let email: string;
+    let googleName: string | undefined;
     try {
       // First try verifying as an ID Token
       const ticket = await this.googleClient.verifyIdToken({
@@ -730,6 +731,7 @@ export class AuthService {
       const payload = ticket.getPayload();
       if (!payload || !payload.email) throw new Error("No email in idToken");
       email = payload.email;
+      googleName = payload.name;
     } catch (e) {
       // Fallback: If verification fails, it might be an access token
       try {
@@ -740,6 +742,7 @@ export class AuthService {
         const data = await response.json();
         if (!data || !data.email) throw new Error("No email in userinfo response");
         email = data.email;
+        googleName = data.name;
       } catch (fallbackError) {
         throw ApiException.validation("idToken", "Lỗi xác thực Google Token.");
       }
@@ -751,10 +754,15 @@ export class AuthService {
       if (!user.verified) {
         await db.update(users).set({ verified: true }).where(eq(users.id, user.id));
       }
+      if (displayName) {
+        await db.update(users).set({ displayName: normalizeAndValidateDisplayName(displayName) }).where(eq(users.id, user.id));
+      }
       return sessionService.create(user.id);
     } else {
       consentService.requireConsent(!!acceptedTos, !!acceptedPrivacy);
-      const normalizedDisplayName = normalizeAndValidateDisplayName(displayName);
+      let finalDisplayName = displayName;
+      if (!finalDisplayName) finalDisplayName = googleName;
+      const normalizedDisplayName = normalizeAndValidateDisplayName(finalDisplayName);
 
       const [saved] = await db
         .insert(users)

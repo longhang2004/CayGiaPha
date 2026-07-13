@@ -371,6 +371,7 @@ public class AuthService {
             if (email == null) {
                 throw ApiException.validation("idToken", "ID token does not contain an email.");
             }
+            String googleName = (String) payload.get("name");
 
             java.util.Optional<User> optionalUser = findByIdentifier(IdentifierType.EMAIL, email);
             if (optionalUser.isPresent()) {
@@ -378,7 +379,9 @@ public class AuthService {
                 if (!user.isVerified()) {
                     user.setVerified(true);
                 }
-                user.setDisplayName(normalizeAndValidateDisplayName(displayName));
+                if (displayName != null && !displayName.isBlank()) {
+                    user.setDisplayName(normalizeAndValidateDisplayName(displayName));
+                }
                 userRepository.save(user);
                 return sessionService.create(user.getId());
             } else {
@@ -387,7 +390,11 @@ public class AuthService {
 
                 User user = User.withEmail(email);
                 user.setVerified(true);
-                user.setDisplayName(normalizeAndValidateDisplayName(displayName));
+                String finalDisplayName = displayName;
+                if (finalDisplayName == null || finalDisplayName.isBlank()) {
+                    finalDisplayName = googleName;
+                }
+                user.setDisplayName(normalizeAndValidateDisplayName(finalDisplayName));
                 User saved = userRepository.save(user);
 
                 consentService.recordConsent(saved.getId());

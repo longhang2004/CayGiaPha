@@ -7,7 +7,7 @@ import { signIn, signInWithGoogle } from "@/lib/auth";
 import { Button } from "@/components/Button";
 import { GoogleLogin, type CredentialResponse } from "@react-oauth/google";
 import { CGPPasswordField, CGPTextField } from "@/components/cgp";
-import { toAuthErrorState, fieldErrorFor, type AuthErrorState } from "./authErrors";
+import { toAuthErrorState, fieldErrorFor, unmappedFieldError, type AuthErrorState } from "./authErrors";
 import { buildAuthHref } from "@/lib/authRedirect";
 
 interface SignInFlowProps {
@@ -33,6 +33,8 @@ export function SignInFlow({ redirectTo = "/", reason }: SignInFlowProps) {
 
   const identifierError = fieldErrorFor(error, "identifier");
   const passwordError = fieldErrorFor(error, "password");
+  const unmappedError = unmappedFieldError(error, ["identifier", "password"]);
+  const formError = error.form || unmappedError;
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -81,9 +83,9 @@ export function SignInFlow({ redirectTo = "/", reason }: SignInFlowProps) {
         <h1 id={`${inputId}-heading`}>Đăng nhập</h1>
         <p>Đăng nhập bằng email và mật khẩu của bạn.</p>
 
-      {error.form ? (
+      {formError ? (
         <p id={formErrorId} role="alert" className="form-error">
-          {error.form}
+          {formError}
         </p>
       ) : null}
 
