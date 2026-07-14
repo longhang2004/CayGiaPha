@@ -295,6 +295,8 @@ Tree merging and cross-tree graph traversal are deferred to a later version.
 4. WHERE the application is operated on a touch device, THE Renderer SHALL render each interactive touch target with a size of at least 44 by 44 CSS pixels.
 5. THE Family_Tree_System SHALL expose every interactive control and informational element with a programmatically determinable name, role, and value compatible with screen readers, aligned with WCAG 2.1 success criterion 4.1.2.
 6. THE Family_Tree_System SHALL provide keyboard-only navigation that reaches every interactive control, aligned with WCAG 2.1 success criterion 2.1.1.
+7. THE Family_Tree_System SHALL provide clearly labelled buttons for all core actions (e.g., zoom, pan, focus) instead of relying solely on icon-only buttons.
+8. THE Family_Tree_System SHALL ensure all touch or gesture-based interactions have non-gesture, visible button equivalents.
 
 > Note: The acceptance criteria above target machine-verifiable, WCAG-aligned thresholds (scalable text, contrast ratios, touch-target size, programmatic names/roles, keyboard reachability). Full accessibility conformance cannot be confirmed by automated checks alone; it additionally requires manual testing with assistive technologies (for example screen readers) and expert accessibility review.
 

@@ -1,0 +1,284 @@
+[
+  {
+    "route": "tree-list-empty",
+    "viewport": "mobile-320",
+    "horizontalOverflow": false,
+    "minimumTarget": {
+      "width": 48,
+      "height": 48
+    },
+    "targetsBelow44": []
+  },
+  {
+    "route": "tree-owner",
+    "viewport": "mobile-320",
+    "horizontalOverflow": false,
+    "minimumTarget": {
+      "width": 44,
+      "height": 44
+    },
+    "targetsBelow44": []
+  },
+  {
+    "route": "tree-empty",
+    "viewport": "mobile-320",
+    "horizontalOverflow": false,
+    "minimumTarget": {
+      "width": 48,
+      "height": 48
+    },
+    "targetsBelow44": []
+  },
+  {
+    "route": "help",
+    "viewport": "mobile-320",
+    "horizontalOverflow": false,
+    "minimumTarget": {
+      "width": 40,
+      "height": 24
+    },
+    "targetsBelow44": [
+      {
+        "label": "Cây Gia Phả",
+        "tag": "a",
+        "width": 40,
+        "height": 24
+      }
+    ]
+  },
+  {
+    "route": "tree-list-empty",
+    "viewport": "mobile-375",
+    "horizontalOverflow": false,
+    "minimumTarget": {
+      "width": 48,
+      "height": 48
+    },
+    "targetsBelow44": []
+  },
+  {
+    "route": "tree-owner",
+    "viewport": "mobile-375",
+    "horizontalOverflow": false,
+    "minimumTarget": {
+      "width": 44,
+      "height": 44
+    },
+    "targetsBelow44": []
+  },
+  {
+    "route": "tree-empty",
+    "viewport": "mobile-375",
+    "horizontalOverflow": false,
+    "minimumTarget": {
+      "width": 48,
+      "height": 48
+    },
+    "targetsBelow44": []
+  },
+  {
+    "route": "help",
+    "viewport": "mobile-375",
+    "horizontalOverflow": false,
+    "minimumTarget": {
+      "width": 40,
+      "height": 24
+    },
+    "targetsBelow44": [
+      {
+        "label": "Cây Gia Phả",
+        "tag": "a",
+        "width": 40,
+        "height": 24
+      }
+    ]
+  },
+  {
+    "route": "tree-list-empty",
+    "viewport": "mobile-430",
+    "horizontalOverflow": false,
+    "minimumTarget": {
+      "width": 48,
+      "height": 48
+    },
+    "targetsBelow44": []
+  },
+  {
+    "route": "tree-owner",
+    "viewport": "mobile-430",
+    "horizontalOverflow": false,
+    "minimumTarget": {
+      "width": 44,
+      "height": 44
+    },
+    "targetsBelow44": []
+  },
+  {
+    "route": "tree-empty",
+    "viewport": "mobile-430",
+    "horizontalOverflow": false,
+    "minimumTarget": {
+      "width": 48,
+      "height": 39.7
+    },
+    "targetsBelow44": [
+      {
+        "label": "Chính sách quyền riêng tư",
+        "tag": "a",
+        "width": 323.6,
+        "height": 39.7
+      }
+    ]
+  },
+  {
+    "route": "help",
+    "viewport": "mobile-430",
+    "horizontalOverflow": false,
+    "minimumTarget": {
+      "width": 40,
+      "height": 24
+    },
+    "targetsBelow44": [
+      {
+        "label": "Cây Gia Phả",
+        "tag": "a",
+        "width": 40,
+        "height": 24
+      }
+    ]
+  },
+  {
+    "route": "tree-list-empty",
+    "viewport": "tablet",
+    "horizontalOverflow": false,
+    "minimumTarget": {
+      "width": 48,
+      "height": 48
+    },
+    "targetsBelow44": []
+  },
+  {
+    "route": "tree-owner",
+    "viewport": "tablet",
+    "horizontalOverflow": false,
+    "minimumTarget": {
+      "width": 44,
+      "height": 44
+    },
+    "targetsBelow44": []
+  },
+  {
+    "route": "tree-empty",
+    "viewport": "tablet",
+    "horizontalOverflow": false,
+    "minimumTarget": {
+      "width": 48,
+      "height": 39.7
+    },
+    "targetsBelow44": [
+      {
+        "label": "Chính sách quyền riêng tư",
+        "tag": "a",
+        "width": 471.3,
+        "height": 39.7
+      }
+    ]
+  },
+  {
+    "route": "help",
+    "viewport": "tablet",
+    "horizontalOverflow": false,
+    "minimumTarget": {
+      "width": 44,
+      "height": 24
+    },
+    "targetsBelow44": [
+      {
+        "label": "Cây Gia Phả",
+        "tag": "a",
+        "width": 44,
+        "height": 24
+      }
+    ]
+  },
+  {
+    "route": "tree-list-empty",
+    "viewport": "desktop",
+    "horizontalOverflow": false,
+    "minimumTarget": {
+      "width": 24,
+      "height": 24
+    },
+    "targetsBelow44": [
+      {
+        "label": "Cây Gia Phả",
+        "tag": "a",
+        "width": 24,
+        "height": 24
+      }
+    ]
+  },
+  {
+    "route": "tree-owner",
+    "viewport": "desktop",
+    "horizontalOverflow": false,
+    "minimumTarget": {
+      "width": 24,
+      "height": 18.2
+    },
+    "targetsBelow44": [
+      {
+        "label": "Cây Gia Phả",
+        "tag": "a",
+        "width": 24,
+        "height": 24
+      },
+      {
+        "label": "Cây Gia Phả Mẫu",
+        "tag": "a",
+        "width": 116.9,
+        "height": 18.2
+      }
+    ]
+  },
+  {
+    "route": "tree-empty",
+    "viewport": "desktop",
+    "horizontalOverflow": false,
+    "minimumTarget": {
+      "width": 24,
+      "height": 24
+    },
+    "targetsBelow44": [
+      {
+        "label": "Cây Gia Phả",
+        "tag": "a",
+        "width": 24,
+        "height": 24
+      },
+      {
+        "label": "Chính sách quyền riêng tư",
+        "tag": "a",
+        "width": 471.3,
+        "height": 39.7
+      }
+    ]
+  },
+  {
+    "route": "help",
+    "viewport": "desktop",
+    "horizontalOverflow": false,
+    "minimumTarget": {
+      "width": 44,
+      "height": 24
+    },
+    "targetsBelow44": [
+      {
+        "label": "Cây Gia Phả",
+        "tag": "a",
+        "width": 44,
+        "height": 24
+      }
+    ]
+  }
+]

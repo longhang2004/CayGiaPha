@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { render, screen, within } from "@testing-library/react";
+import { act, render, screen, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { HelpGuide } from "./HelpGuide";
 import { getActiveHelpTopics } from "@/content/help/helpTopics";
 
@@ -26,23 +27,79 @@ describe("HelpGuide", () => {
     expect(topics.map((topic) => topic.id)).toEqual(EXPECTED_ACTIVE_TOPIC_IDS);
   });
 
-  it("lists only active canonical topics", () => {
+  it("lists active canonical topics in the nav", () => {
     render(<HelpGuide />);
     const links = within(screen.getByTestId("help-nav")).getAllByTestId("help-nav-link");
     expect(links).toHaveLength(topics.length);
-    for (const topic of topics) expect(within(screen.getByTestId("help-nav")).getByRole("link", { name: topic.title })).toHaveAttribute("href", `#${topic.id}`);
-    expect(screen.getByRole("link", { name: "Xác nhận đây là tôi" })).toHaveAttribute("href", "#xac-nhan-day-la-toi");
-    expect(screen.getByText(/chỉ gửi mã xác nhận/i)).toBeInTheDocument();
-    expect(screen.queryByText(/ngày giỗ/i)).not.toBeInTheDocument();
-  });
-  it("renders task-oriented sections", () => {
-    const { container } = render(<HelpGuide />);
     for (const topic of topics) {
-      const heading = screen.getByRole("heading", { level: 2, name: topic.title });
-      const section = heading.closest("section") as HTMLElement;
-      expect(container.querySelector(`#${topic.id}`)).toHaveAttribute("data-testid", "help-section");
-      expect(within(section).getByText(topic.purpose)).toBeInTheDocument();
-      expect(within(section).getByText(topic.success, { exact: false })).toBeInTheDocument();
+      expect(within(screen.getByTestId("help-nav")).getByRole("button", { name: topic.title })).toBeInTheDocument();
     }
+  });
+
+  it("renders one task-oriented section at a time when selected", async () => {
+    const user = userEvent.setup();
+    const { container } = render(<HelpGuide />);
+
+    // Initially no section is rendered
+    expect(screen.getByText(/Chọn một mục lục để xem chi tiết/i)).toBeInTheDocument();
+
+    const topic = topics[0];
+    await user.click(screen.getByRole("button", { name: topic.title }));
+
+    const heading = screen.getByRole("heading", { level: 2, name: topic.title });
+    const section = heading.closest("section") as HTMLElement;
+    expect(container.querySelector(`#${topic.id}`)).toHaveAttribute("data-testid", "help-section");
+    expect(within(section).getByText(topic.purpose)).toBeInTheDocument();
+    expect(within(section).getByText(topic.success, { exact: false })).toBeInTheDocument();
+
+    // Check that privacy note shows up if selected
+    const privacyTopic = topics.find(t => t.id === "bao-mat-va-chia-se-cay")!;
+    await user.click(screen.getByRole("button", { name: privacyTopic.title }));
+    expect(screen.getAllByText(/ẩn thông tin người còn sống/i)[0]).toBeInTheDocument();
+  });
+
+  it("restores focus to the selected section heading after render", async () => {
+    const user = userEvent.setup();
+    render(<HelpGuide />);
+
+    const topic = topics[0];
+    await user.click(screen.getByRole("button", { name: topic.title }));
+
+    // Wait for the deferred focus effect
+    await vi.waitFor(() => {
+      const heading = screen.getByRole("heading", { level: 2, name: topic.title });
+      expect(document.activeElement).toBe(heading);
+    });
+  });
+
+  it("proves that hash change selects the topic, focus goes to the heading, and popstate handles back state coherently", async () => {
+    window.location.hash = "";
+    render(<HelpGuide />);
+
+    expect(screen.getByText(/Chọn một mục lục để xem chi tiết/i)).toBeInTheDocument();
+
+    const topic = topics[1];
+    await act(async () => {
+      window.location.hash = `#${topic.id}`;
+      window.dispatchEvent(new HashChangeEvent("hashchange"));
+    });
+
+    await vi.waitFor(() => {
+      expect(screen.getByRole("heading", { level: 2, name: topic.title })).toBeInTheDocument();
+    });
+
+    await vi.waitFor(() => {
+      const heading = screen.getByRole("heading", { level: 2, name: topic.title });
+      expect(document.activeElement).toBe(heading);
+    });
+
+    await act(async () => {
+      window.location.hash = "";
+      window.dispatchEvent(new PopStateEvent("popstate"));
+    });
+
+    await vi.waitFor(() => {
+      expect(screen.getByText(/Chọn một mục lục để xem chi tiết/i)).toBeInTheDocument();
+    });
   });
 });

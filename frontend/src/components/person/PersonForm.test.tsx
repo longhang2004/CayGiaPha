@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, act, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { PersonForm } from "./PersonForm";
 
@@ -47,6 +47,7 @@ describe("PersonForm (create)", () => {
 
     await userEvent.type(screen.getByLabelText(/Họ và tên/i), "Anh");
     await userEvent.click(screen.getByRole("button", { name: "Lưu thành viên" }));
+    await userEvent.click(screen.getByRole("button", { name: "Xác nhận lưu" }));
 
     // Default visibility stays private, so exactly one request is made.
     expect(fetchMock).toHaveBeenCalledTimes(1);
@@ -73,6 +74,7 @@ describe("PersonForm (create)", () => {
     await userEvent.type(screen.getByLabelText(/Năm sinh/), "1990");
     await userEvent.click(screen.getByLabelText(/Đã qua đời/));
     await userEvent.click(screen.getByRole("button", { name: "Lưu thành viên" }));
+    await userEvent.click(screen.getByRole("button", { name: "Xác nhận lưu" }));
 
     const [, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
     expect(JSON.parse(init.body as string)).toEqual({
@@ -114,6 +116,7 @@ describe("PersonForm (create)", () => {
     await userEvent.type(screen.getByLabelText(/Họ và tên/i), "Người mới");
     await userEvent.click(screen.getByLabelText("Thiết lập quan hệ ngay"));
     await userEvent.click(screen.getByRole("button", { name: "Lưu thành viên" }));
+    await userEvent.click(screen.getByRole("button", { name: "Xác nhận lưu" }));
 
     expect(fetchMock).toHaveBeenCalledTimes(1);
     const [url, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
@@ -159,6 +162,7 @@ describe("PersonForm (create)", () => {
 
     await userEvent.selectOptions(screen.getByLabelText(/Tình trạng hôn nhân/i), "divorced");
     await userEvent.click(screen.getByRole("button", { name: "Cập nhật thông tin" }));
+    await userEvent.click(screen.getByRole("button", { name: "Xác nhận lưu" }));
 
     expect(fetchMock).toHaveBeenCalledTimes(2);
     const [url, init] = fetchMock.mock.calls[1] as unknown as [string, RequestInit];
@@ -185,9 +189,21 @@ describe("PersonForm (create)", () => {
 
     await userEvent.type(screen.getByLabelText(/Họ và tên/i), "X");
     await userEvent.click(screen.getByRole("button", { name: "Lưu thành viên" }));
+    await userEvent.click(screen.getByRole("button", { name: "Xác nhận lưu" }));
 
     expect(await screen.findByText("Tên quá dài")).toBeInTheDocument();
     expect(screen.getByLabelText(/Họ và tên/i)).toHaveAttribute("aria-invalid", "true");
+  });
+
+  it("prevents native form submission", async () => {
+    render(<PersonForm mode="create" treeId="t1" />);
+    const form = screen.getByRole("form");
+    const submitEvent = new Event("submit", { cancelable: true, bubbles: true });
+    vi.spyOn(submitEvent, "preventDefault");
+    act(() => {
+      form.dispatchEvent(submitEvent);
+    });
+    expect(submitEvent.preventDefault).toHaveBeenCalled();
   });
 });
 
@@ -208,6 +224,7 @@ describe("PersonForm (edit)", () => {
     await userEvent.clear(nameInput);
     await userEvent.type(nameInput, "Mới");
     await userEvent.click(screen.getByRole("button", { name: "Cập nhật thông tin" }));
+    await userEvent.click(screen.getByRole("button", { name: "Xác nhận lưu" }));
 
     const [url, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
     expect(url).toBe("/api/v1/persons/p9?treeId=t9");
@@ -216,5 +233,53 @@ describe("PersonForm (edit)", () => {
       displayName: "Mới",
       gender: "male",
     });
+  });
+
+  it("prevents multiple mutations on rapid double clicks of the confirmation button and disables controls while pending", async () => {
+    let resolveFetch: any;
+    const pendingPromise = new Promise((resolve) => {
+      resolveFetch = resolve;
+    });
+    const fetchMock = vi.fn().mockImplementation(async () => {
+      const res = await pendingPromise;
+      return res;
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<PersonForm mode="create" treeId="t1" />);
+
+    await userEvent.type(screen.getByLabelText(/Họ và tên/i), "Anh");
+    await userEvent.click(screen.getByRole("button", { name: "Lưu thành viên" }));
+
+    // Now rapid double-click the confirmation button
+    const confirmBtn = screen.getByRole("button", { name: "Xác nhận lưu" });
+    const backBtn = screen.getByRole("button", { name: "Quay lại chỉnh sửa" });
+
+    expect(confirmBtn).not.toBeDisabled();
+    expect(backBtn).not.toBeDisabled();
+
+    const submitPromise = userEvent.click(confirmBtn);
+
+    // Assert controls are disabled while pending
+    await waitFor(() => {
+      expect(confirmBtn).toBeDisabled();
+      expect(backBtn).toBeDisabled();
+    });
+
+    // Try clicking again
+    await userEvent.click(confirmBtn);
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+
+    if (resolveFetch) {
+      resolveFetch({
+        ok: true,
+        status: 201,
+        text: async () => JSON.stringify({ id: "p1" }),
+      } as Response);
+    }
+
+    await submitPromise;
+    expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 });

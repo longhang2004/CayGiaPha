@@ -3,10 +3,14 @@ import { SearchPanel } from "@/components/search/SearchPanel";
 import { ViewpointSelector } from "@/components/graph/ViewpointSelector";
 import { GraphLegend } from "@/components/graph/GraphLegend";
 import { CollaborationIcon, LightbulbIcon, PlusIcon } from "@/components/ui/Icons";
-import { GUIDANCE_REOPEN_EVENT } from "@/lib/guidance/storage";
 import { useTreeContext } from "./TreeContext";
 
-export function TreePageHeader() {
+export interface TreePageHeaderProps {
+  treeListHref?: string;
+  helpHref?: string;
+}
+
+export function TreePageHeader({ treeListHref = "/tree", helpHref = "/help" }: TreePageHeaderProps) {
   const { user } = useSession();
   const {
     activeTreeId,
@@ -27,13 +31,13 @@ export function TreePageHeader() {
   } = useTreeContext();
 
   return (
-    <div className="tree-page-header" data-graph-safe-exclude="bottom">
+    <div className="tree-page-header" data-graph-safe-exclude="auto-y">
       <div className="tree-page-header__row-one">
         {/* Brand — hidden on tablet/mobile via CSS */}
         <div className="tree-page-header__brand">
           <img src="/logo.svg" alt="Logo Cây Gia Phả" className="tree-page-header__logo" />
           <div className="tree-page-header__title-container">
-            <h1 className="tree-page-header__title">{treeName}</h1>
+            <a href={treeListHref} className="tree-page-header__title" style={{ textDecoration: "none", color: "inherit" }}>{treeName}</a>
             <span className="tree-page-header__count">{persons.length} thành viên</span>
           </div>
         </div>
@@ -67,16 +71,26 @@ export function TreePageHeader() {
         {/* Actions */}
         <div className="tree-page-header__actions">
           <span data-guidance-anchor="graph-legend"><GraphLegend /></span>
-          <button
-            type="button"
+          <a
+            href={treeListHref}
             className="btn btn-secondary"
-            onClick={() => window.dispatchEvent(new Event(GUIDANCE_REOPEN_EVENT))}
+            title="Danh sách cây"
+            aria-label="Danh sách cây"
+            style={{ textDecoration: "none", display: "flex", alignItems: "center", gap: "0.25rem" }}
+          >
+            <span>🌳</span>
+            <span style={{ fontSize: "0.8125rem" }}>Cây</span>
+          </a>
+          <a
+            href={helpHref}
+            className="btn btn-secondary"
             title="Hướng dẫn"
             aria-label="Mở hướng dẫn"
+            style={{ textDecoration: "none", display: "flex", alignItems: "center", gap: "0.25rem" }}
           >
             <LightbulbIcon size={18} />
-            <span className="hide-on-tablet hide-on-mobile">Hướng dẫn</span>
-          </button>
+            <span style={{ fontSize: "0.8125rem" }}>Hướng dẫn</span>
+          </a>
           {user && capabilities.manageCollaboration && (
             <button
               type="button"
@@ -84,9 +98,10 @@ export function TreePageHeader() {
               onClick={() => setIsCollaborationOpen(true)}
               title="Cộng tác"
               aria-label="Cộng tác"
+              style={{ display: "flex", alignItems: "center", gap: "0.25rem" }}
             >
               <CollaborationIcon size={18} />
-              <span className="hide-on-tablet hide-on-mobile">Cộng tác</span>
+              <span style={{ fontSize: "0.8125rem" }}>Cộng tác</span>
             </button>
           )}
           {canEdit && (
@@ -102,9 +117,10 @@ export function TreePageHeader() {
               title="Thêm thành viên"
               aria-label="Thêm thành viên"
               data-guidance-anchor="graph-add-person"
+              style={{ display: "flex", alignItems: "center", gap: "0.25rem" }}
             >
               <PlusIcon size={18} />
-              <span className="hide-on-tablet hide-on-mobile">Thêm thành viên</span>
+              <span style={{ fontSize: "0.8125rem" }}>Thêm</span>
             </button>
           )}
         </div>

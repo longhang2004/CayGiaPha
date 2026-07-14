@@ -16,7 +16,7 @@ interface Props {
   initialChecklistPresentation?: "expanded" | "collapsed" | "deferred";
 }
 
-export function GuidanceOrchestrator({ role, productState, contextualTopicId, initialTourTopicId = null, tourAnchorOverride, initialChecklistPresentation = "expanded" }: Props) {
+export function GuidanceOrchestrator({ role, productState, contextualTopicId, initialTourTopicId = null, tourAnchorOverride, initialChecklistPresentation = "deferred" }: Props) {
   const [tourTopicId, setTourTopicId] = useState<string | null>(initialTourTopicId);
   const [checklistVisible, setChecklistVisible] = useState(true);
   const closeTour = useCallback(() => setTourTopicId(null), []);

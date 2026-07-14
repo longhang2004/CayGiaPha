@@ -2,6 +2,7 @@
 
 import { useEffect, useId, useRef, useState } from "react";
 import { CGPDialog } from "@/components/cgp";
+import { trackUxEvent, getUxViewportClass } from "@/lib/analytics/uxEvents";
 
 export type TreeEntryMode = "choose" | "create" | "join";
 export type TreeEntryResult = { kind: "ready"; treeId: string } | { kind: "pending" };
@@ -87,10 +88,14 @@ export function TreeEntryModal({
     if (!name.trim() || busy) return;
     setBusy("create");
     setError(null);
+    trackUxEvent("ux_core_flow_start", { flow: "create_tree", surface: "tree_list", viewportClass: getUxViewportClass(), accessRole: "unknown", outcome: "started" });
     try {
-      resolveResult(await onCreate({ name: name.trim(), region }));
+      const result = await onCreate({ name: name.trim(), region });
+      resolveResult(result);
+      trackUxEvent("ux_core_flow_complete", { flow: "create_tree", surface: "tree_list", viewportClass: getUxViewportClass(), accessRole: "unknown", outcome: "completed" });
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "Không thể tạo cây gia phả.");
+      trackUxEvent("ux_core_flow_error", { flow: "create_tree", surface: "tree_list", viewportClass: getUxViewportClass(), accessRole: "unknown", outcome: "request_error" });
     } finally {
       setBusy(null);
     }
@@ -102,10 +107,14 @@ export function TreeEntryModal({
     if (!inviteCodeValid || busy) return;
     setBusy("join");
     setError(null);
+    trackUxEvent("ux_core_flow_start", { flow: "join_tree", surface: "tree_list", viewportClass: getUxViewportClass(), accessRole: "unknown", outcome: "started" });
     try {
-      resolveResult(await onJoin(normalizedCode));
+      const result = await onJoin(normalizedCode);
+      resolveResult(result);
+      trackUxEvent("ux_core_flow_complete", { flow: "join_tree", surface: "tree_list", viewportClass: getUxViewportClass(), accessRole: "unknown", outcome: "completed" });
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "Mã mời không hợp lệ.");
+      trackUxEvent("ux_core_flow_error", { flow: "join_tree", surface: "tree_list", viewportClass: getUxViewportClass(), accessRole: "unknown", outcome: "request_error" });
     } finally {
       setBusy(null);
     }

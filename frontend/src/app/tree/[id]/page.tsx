@@ -5,7 +5,7 @@ import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { TreeGraph } from "@/components/graph/TreeGraph";
 import { PersonForm } from "@/components/person/PersonForm";
 import { TreeGraphSkeleton } from "@/components/graph/TreeGraphSkeleton";
-import { ContextNote } from "@/components/guidance/ContextNote";
+import { GuidanceChecklist } from "@/components/guidance/GuidanceChecklist";
 import { GraphOverlayBoundary } from "@/components/guidance/GraphOverlayBoundary";
 import { GuidanceOrchestrator } from "@/components/guidance/GuidanceOrchestrator";
 import { Card } from "@/components/ui/Card";
@@ -17,6 +17,7 @@ import { TreeContext } from "@/components/tree-page/TreeContext";
 import { useTreePageState } from "@/components/tree-page/useTreePageState";
 import { TreePageHeader } from "@/components/tree-page/TreePageHeader";
 import { TreePageSlidePanel } from "@/components/tree-page/TreePageSlidePanel";
+import { TreeWorkspaceSurface } from "@/components/tree-page/TreeWorkspaceSurface";
 
 interface TreePageProps {
   params: {
@@ -48,7 +49,9 @@ function TreePageContent({ params, searchParams }: TreePageProps) {
     addressesReady,
     selectedAddress,
     addresses,
+    addressLoading,
     error,
+    addressError,
     treeName,
     region,
     livingRedaction,
@@ -62,11 +65,7 @@ function TreePageContent({ params, searchParams }: TreePageProps) {
     setEditMode,
     setAddRelativeMode,
     setCreateMode,
-    setSelectedAddress,
-    setSelectedEgo,
     setEgoId,
-    setAddressLoading,
-    handleAddressesLoaded,
     setFocusId,
     refreshTree,
     setIsSettingsOpen,
@@ -188,15 +187,18 @@ function TreePageContent({ params, searchParams }: TreePageProps) {
             để bắt đầu.
           </p>
         </div>
-        <ContextNote topicId="them-nguoi-dau-tien" role={guidanceRole}>
-          <div className="onboarding-strip onboarding-strip--guidance" aria-label="Các bước gợi ý">
-            <span>1. Nhập tên</span>
-            <span aria-hidden="true">—</span>
-            <span>2. Chọn giới tính</span>
-            <span aria-hidden="true">—</span>
-            <span>3. Bấm lưu</span>
-          </div>
-        </ContextNote>
+        <div style={{ marginBottom: "2rem", textAlign: "left" }}>
+          <GuidanceChecklist
+            role={guidanceRole}
+            productState={{
+              treeOpened: true,
+              personCount: 0,
+              primitiveCount: 0,
+              addressInspected: false,
+              viewpointChanged: false
+            }}
+          />
+        </div>
         {capabilities.editContent ? (
           <Card className="empty-tree__form" style={{ padding: "2rem", textAlign: "left" }}>
             <PersonForm
@@ -241,34 +243,49 @@ function TreePageContent({ params, searchParams }: TreePageProps) {
           overlay={<GuidanceOrchestrator role={guidanceRole} productState={guidanceProductState} contextualTopicId={selectedId ? "doi-diem-nhin" : "dieu-huong-so-do"} />}
         >
 
-          <TreePageHeader />
-
           <div className="tree-workspace__main">
-            <div className="tree-workspace__graph">
-              <TreeGraph
-                treeId={activeTreeId}
-                persons={persons}
-                relationships={relationships}
-                selectedId={selectedId}
-                onSelectId={(id) => {
-                  setSelectedId(id);
-                  setEditMode(false);
-                  setAddRelativeMode(false);
-                  setCreateMode(false);
-                }}
-                onSelectAddress={setSelectedAddress}
-                onSelectEgo={setSelectedEgo}
-                egoId={egoId}
-                onEgoChange={setEgoId}
-                onAddressLoading={setAddressLoading}
-                onAddressesLoaded={handleAddressesLoaded}
-                hideViewpointSelector={true}
-                addressRefreshKey={addressRefreshKey}
-                focusId={focusId}
-                onFocusChange={setFocusId}
-                showBirthYears={showBirthYears}
-              />
-            </div>
+            <TreePageHeader />
+            <TreeWorkspaceSurface
+              persons={persons}
+              relationships={relationships}
+              addresses={addresses}
+              egoId={egoId}
+              selectedId={selectedId}
+              onSelectPerson={(id) => {
+                setSelectedId(id);
+                setEditMode(false);
+                setAddRelativeMode(false);
+                setCreateMode(false);
+              }}
+              onChangeEgo={setEgoId}
+              addressLoading={addressLoading}
+              graphContent={
+                <div className="tree-workspace__graph">
+                  <TreeGraph
+                    treeId={activeTreeId}
+                    persons={persons}
+                    relationships={relationships}
+                    selectedId={selectedId}
+                    onSelectId={(id) => {
+                      setSelectedId(id);
+                      setEditMode(false);
+                      setAddRelativeMode(false);
+                      setCreateMode(false);
+                    }}
+                    egoId={egoId}
+                    onEgoChange={setEgoId}
+                    addresses={addresses}
+                    addressLoading={addressLoading}
+                    addressError={addressError}
+                    hideViewpointSelector={true}
+                    addressRefreshKey={addressRefreshKey}
+                    focusId={focusId}
+                    onFocusChange={setFocusId}
+                    showBirthYears={showBirthYears}
+                  />
+                </div>
+              }
+            />
           </div>
 
           <TreePageSlidePanel />

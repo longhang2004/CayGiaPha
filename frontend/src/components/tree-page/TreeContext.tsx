@@ -34,6 +34,7 @@ export interface TreeContextType {
   selectedEgo: Person | null;
   focusId: string | null;
   addressRefreshKey: number;
+  addressError: string | null;
 
   // Modals & Panels State
   editMode: boolean;
@@ -53,16 +54,12 @@ export interface TreeContextType {
   // Actions
   setEgoId: (id: string) => void;
   setSelectedId: (id: string | null) => void;
-  setSelectedAddress: (addr: Address | undefined) => void;
-  setSelectedEgo: (person: Person | null) => void;
   setFocusId: (id: string | null) => void;
   setEditMode: (mode: boolean) => void;
   setAddRelativeMode: (mode: boolean) => void;
   setCreateMode: (mode: boolean) => void;
   setIsSettingsOpen: (open: boolean) => void;
   setIsCollaborationOpen: (open: boolean) => void;
-  setAddressLoading: (loading: boolean) => void;
-  handleAddressesLoaded: (loaded: Map<string, Address>) => void;
   refreshTree: () => void;
   claimInviteAction?: (destination: string) => Promise<void>;
   upcomingEventsLoader?: (treeId: string) => Promise<UpcomingEvent[]>;

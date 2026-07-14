@@ -6,6 +6,7 @@ import type { Person, Relationship, Address, Capabilities, TreeAccessRole } from
 import type { Region } from "@/lib/region";
 import { getCollaborators, type TreeCollaborator } from "@/lib/collaboration";
 import type { TreeContextType } from "./TreeContext";
+import { useViewpointAddresses } from "./useViewpointAddresses";
 
 export function useTreePageState(
   activeTreeId: string,
@@ -35,22 +36,28 @@ export function useTreePageState(
   });
 
   const [loadingData, setLoadingData] = useState(true);
-  const [addressesReady, setAddressesReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [authError, setAuthError] = useState(false);
 
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [selectedAddress, setSelectedAddress] = useState<Address | undefined>(undefined);
-  const [addresses, setAddresses] = useState<Map<string, Address>>(new Map());
-  const [selectedEgo, setSelectedEgo] = useState<Person | null>(null);
   const [editMode, setEditMode] = useState(false);
   const [addRelativeMode, setAddRelativeMode] = useState(false);
   const [createMode, setCreateMode] = useState(false);
 
-  const [addressLoading, setAddressLoading] = useState(false);
   const [egoId, setEgoId] = useState<string>("");
   const [addressRefreshKey, setAddressRefreshKey] = useState(0);
   const [focusId, setFocusId] = useState<string | null>(null);
+
+  const { addresses, loading: addressLoading, ready: addressesReady, error: addressError } = useViewpointAddresses({
+    treeId: activeTreeId,
+    egoId,
+    persons,
+    relationships,
+    refreshKey: addressRefreshKey
+  });
+
+  const selectedAddress = selectedId ? addresses.get(selectedId) : undefined;
+  const selectedEgo = egoId ? persons.find((p) => p.id === egoId) || null : null;
 
   const [shareToken, setShareToken] = useState<string | null>(initialShareToken);
 
@@ -64,12 +71,6 @@ export function useTreePageState(
       setEgoId(persons[0].id);
     }
   }, [persons, egoId]);
-
-  useEffect(() => {
-    if (egoId) {
-      setAddressesReady(false);
-    }
-  }, [egoId]);
 
   useEffect(() => {
     let cancelled = false;
@@ -98,7 +99,6 @@ export function useTreePageState(
 
   const loadTree = useCallback(async (id: string, token?: string) => {
     setLoadingData(true);
-    setAddressesReady(false);
     setError(null);
     try {
       const data = await api.get<{
@@ -172,11 +172,6 @@ export function useTreePageState(
     }
   }, [activeTreeId, shareToken, loadTree]);
 
-  const handleAddressesLoaded = useCallback((loaded: Map<string, Address>) => {
-    setAddresses(loaded);
-    setAddressesReady(true);
-  }, []);
-
   const isOwner = accessRole === "OWNER";
   const isCollaborator = accessRole === "CONTRIBUTOR";
   const canEdit = capabilities.editContent;
@@ -201,6 +196,7 @@ export function useTreePageState(
     addressesReady,
     addressLoading,
     error,
+    addressError,
     egoId,
     selectedId,
     selectedAddress,
@@ -220,16 +216,12 @@ export function useTreePageState(
     guidanceRole,
     setEgoId,
     setSelectedId,
-    setSelectedAddress,
-    setSelectedEgo,
     setFocusId,
     setEditMode,
     setAddRelativeMode,
     setCreateMode,
     setIsSettingsOpen,
     setIsCollaborationOpen,
-    setAddressLoading,
-    handleAddressesLoaded,
     refreshTree,
     setTreeName,
     setRegionState,

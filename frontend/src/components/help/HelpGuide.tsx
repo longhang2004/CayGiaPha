@@ -2,34 +2,81 @@
 
 import { HelpNav } from "./HelpNav";
 import { HelpSection } from "./HelpSection";
-import { useEffect } from "react";
-import { getActiveHelpTopics, getHelpTopic } from "@/content/help/helpTopics";
+import { useEffect, useState } from "react";
+import { searchHelpTopics, CATEGORY_LABELS, type HelpTopicCategory } from "@/content/help/helpTopics";
 import { Card } from "@/components/ui/Card";
+import { SearchIcon } from "@/components/ui/Icons";
+import { trackUxEvent, getUxViewportClass } from "@/lib/analytics/uxEvents";
 
-/**
- * The full in-application usage guide (Requirement 17).
- *
- * Renders the Help_System entry content: a table of contents (HelpNav) that
- * links to one section per required topic (17.2), followed by every topic
- * section. All content is static and synchronous, so the guide renders well
- * within the 2-second budget (17.3); every topic is reachable from the entry
- * point (17.4, 17.5).
- */
 export function HelpGuide() {
-  const topics = getActiveHelpTopics();
+  const [query, setQuery] = useState("");
+  const [category, setCategory] = useState<HelpTopicCategory | "all">("all");
+  const [selectedTopicId, setSelectedTopicId] = useState<string | null>(null);
+
   useEffect(() => {
-    const requested = decodeURIComponent(window.location.hash.slice(1));
-    if (!requested) return;
-    const topic = getHelpTopic(requested);
-    const heading = topic ? document.getElementById(`${topic.id}-heading`) : null;
-    if (topic && requested !== topic.id) window.history.replaceState(null, "", `#${topic.id}`);
-    window.requestAnimationFrame(() => heading?.focus());
+    trackUxEvent("ux_help_open", {
+      flow: "open_help",
+      surface: "help",
+      viewportClass: getUxViewportClass(),
+      accessRole: "unknown",
+      outcome: "completed",
+    });
   }, []);
+
+  const topics = searchHelpTopics(query, category);
+
+  useEffect(() => {
+    const handleHashChange = () => {
+      const requested = decodeURIComponent(window.location.hash.slice(1));
+      if (!requested) {
+        setSelectedTopicId(null);
+        return;
+      }
+      const found = searchHelpTopics("", "all").find(
+        (t) => t.id === requested || t.aliases?.includes(requested)
+      );
+      if (found) {
+        setSelectedTopicId(found.id);
+        if (requested !== found.id) {
+          window.history.replaceState(null, "", `#${found.id}`);
+        }
+      }
+    };
+
+    handleHashChange();
+
+    window.addEventListener("hashchange", handleHashChange);
+    window.addEventListener("popstate", handleHashChange);
+    return () => {
+      window.removeEventListener("hashchange", handleHashChange);
+      window.removeEventListener("popstate", handleHashChange);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (selectedTopicId) {
+      const timer = setTimeout(() => {
+        const heading = document.getElementById(`${selectedTopicId}-heading`);
+        if (heading) {
+          heading.focus();
+        }
+      }, 0);
+      return () => clearTimeout(timer);
+    }
+  }, [selectedTopicId]);
+
+  const handleSelectTopic = (id: string) => {
+    setSelectedTopicId(id);
+    window.history.pushState(null, "", `#${id}`);
+  };
 
   const returnToTask = () => {
     if (window.history.length > 1 && document.referrer.startsWith(window.location.origin)) window.history.back();
     else window.location.assign("/tree");
   };
+
+  const selectedTopic = selectedTopicId ? searchHelpTopics("", "all").find(t => t.id === selectedTopicId) : null;
+
   return (
     <main className="help-guide" aria-labelledby="help-guide-heading">
       <div className="help-guide__header">
@@ -44,16 +91,67 @@ export function HelpGuide() {
       </div>
 
       <Card className="help-guide__nav-card">
-        <h2 className="help-guide__nav-title">
-          Mục lục tra cứu
+        <h2 className="help-guide__nav-title" style={{ marginBottom: "1rem" }}>
+          Tra cứu hướng dẫn
         </h2>
-        <HelpNav />
+
+        <div className="help-guide__search-bar" style={{ display: "flex", gap: "0.5rem", marginBottom: "1rem" }}>
+          <div style={{ position: "relative", flex: 1 }}>
+            <div style={{ position: "absolute", left: "0.75rem", top: "50%", transform: "translateY(-50%)", color: "var(--color-muted)" }}>
+              <SearchIcon size={18} />
+            </div>
+            <input
+              type="text"
+              className="input"
+              style={{ width: "100%", paddingLeft: "2.5rem" }}
+              placeholder="Tìm kiếm hướng dẫn..."
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              aria-label="Tìm kiếm hướng dẫn"
+            />
+          </div>
+          {(query || category !== "all") && (
+            <button
+              type="button"
+              className="btn btn-secondary"
+              onClick={() => { setQuery(""); setCategory("all"); setSelectedTopicId(null); }}
+            >
+              Xóa tìm kiếm
+            </button>
+          )}
+        </div>
+
+        <div className="help-guide__categories" style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap", marginBottom: "1.5rem" }}>
+          <button
+            type="button"
+            className={`btn ${category === "all" ? "btn-primary btn-terracotta" : "btn-secondary"}`}
+            onClick={() => setCategory("all")}
+          >
+            Tất cả
+          </button>
+          {Object.entries(CATEGORY_LABELS).map(([cat, label]) => (
+            <button
+              key={cat}
+              type="button"
+              className={`btn ${category === cat ? "btn-primary btn-terracotta" : "btn-secondary"}`}
+              onClick={() => setCategory(cat as HelpTopicCategory)}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+
+        <HelpNav topics={topics} selectedTopicId={selectedTopicId} onSelectTopic={handleSelectTopic} />
       </Card>
 
       <div className="help-guide__content">
-        {topics.map((topic) => (
-          <HelpSection key={topic.id} topic={topic} />
-        ))}
+        {selectedTopic ? (
+          <HelpSection topic={selectedTopic} />
+        ) : (
+          <div className="help-guide__empty-state" style={{ padding: "4rem 2rem", textAlign: "center", color: "var(--color-muted)", background: "var(--color-surface-sunken)", borderRadius: "var(--radius-lg)" }}>
+            <p>Chọn một mục lục để xem chi tiết hướng dẫn.</p>
+          </div>
+        )}
       </div>
     </main>
   );

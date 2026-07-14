@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect, type FormEvent } from "react";
+import { useState, useEffect, useRef, type FormEvent } from "react";
 import { ApiError } from "@/lib/apiClient";
+import { trackUxEvent, getUxViewportClass } from "@/lib/analytics/uxEvents";
 import {
   addAssertedRelative,
   addDerivedRelative,
@@ -68,7 +69,7 @@ export function AddRelativeForm({ treeId, persons, preselectedPersonId, onCreate
   const [mode, setMode] = useState<Mode>("derived");
   const [derivedKind, setDerivedKind] = useState<DerivedKind>("bloodline_father");
   const [maritalStatus, setMaritalStatus] = useState<EditableMaritalStatus>("married");
-  
+
   const [sourceId, setSourceId] = useState("");
   const [targetId, setTargetId] = useState("");
   const [assertedLabel, setAssertedLabel] = useState("");
@@ -77,7 +78,7 @@ export function AddRelativeForm({ treeId, persons, preselectedPersonId, onCreate
   useEffect(() => {
     const initialSource = preselectedPersonId ?? persons[0]?.id ?? "";
     setSourceId(initialSource);
-    
+
     const initialTarget = persons.find((p) => p.id !== initialSource)?.id ?? initialSource;
     setTargetId(initialTarget);
   }, [preselectedPersonId, persons]);
@@ -154,6 +155,54 @@ export function AddRelativeForm({ treeId, persons, preselectedPersonId, onCreate
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [formError, setFormError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const isSubmittingRef = useRef(false);
+  const [showSubmitReview, setShowSubmitReview] = useState(false);
+  const [showDiscardConfirm, setShowDiscardConfirm] = useState(false);
+
+  const defaultSourceId = preselectedPersonId ?? persons[0]?.id ?? "";
+  const defaultTargetId = persons.find((p) => p.id !== defaultSourceId)?.id ?? defaultSourceId;
+
+  const getExpectedGender = (): "male" | "female" => {
+    if (mode === "derived") {
+      if (newPersonPosition === "source") {
+        if (derivedKind === "bloodline_father") return "male";
+        if (derivedKind === "bloodline_mother") return "female";
+      } else {
+        if (derivedKind === "bloodline_father_reverse") return "male";
+        if (derivedKind === "bloodline_mother_reverse") return "female";
+        if (derivedKind === "marriage") {
+          const sourcePerson = persons.find((p) => p.id === sourceId);
+          if (sourcePerson?.gender) {
+            return sourcePerson.gender === "male" ? "female" : "male";
+          }
+        }
+      }
+    }
+    return "male";
+  };
+
+  const isDirty =
+    mode !== "derived" ||
+    derivedKind !== "bloodline_father" ||
+    maritalStatus !== "married" ||
+    sourceId !== defaultSourceId ||
+    targetId !== defaultTargetId ||
+    assertedLabel !== "" ||
+    isNewPerson !== false ||
+    newPersonPosition !== "target" ||
+    newDisplayName !== "" ||
+    newGender !== getExpectedGender() ||
+    newBirthOrder !== "" ||
+    newBirthYear !== "" ||
+    newPhone !== "" ||
+    newEmail !== "" ||
+    newDeathStatus !== false ||
+    newDeathDay !== "" ||
+    newDeathMonth !== "" ||
+    newDeathYear !== "" ||
+    newDeathCalendar !== "lunar" ||
+    newDeathLunarLeap !== false ||
+    newPhotoFile !== null;
 
   // Auto gender-assignment based on relationship type
   useEffect(() => {
@@ -189,12 +238,26 @@ export function AddRelativeForm({ treeId, persons, preselectedPersonId, onCreate
     }
   }, [isNewPerson, mode, derivedKind, newPersonPosition, sourceId, targetId, persons]);
 
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    setShowSubmitReview(true);
+  }
+
+  async function handleConfirmSubmit() {
+    if (isSubmittingRef.current) return;
+    isSubmittingRef.current = true;
     setFieldErrors({});
     setFormError(null);
     setConflicts(undefined);
     setSubmitting(true);
+
+    trackUxEvent("ux_core_flow_start", {
+      flow: "add_relative",
+      surface: "relative_form",
+      viewportClass: getUxViewportClass(),
+      accessRole: "unknown",
+      outcome: "started",
+    });
 
     try {
       if (isNewPerson) {
@@ -271,7 +334,15 @@ export function AddRelativeForm({ treeId, persons, preselectedPersonId, onCreate
             console.error("Failed to upload photo for new relative.");
           }
         }
+        setShowSubmitReview(false);
         setConflicts(created.relationship.conflicts);
+        trackUxEvent("ux_core_flow_complete", {
+          flow: "add_relative",
+          surface: "relative_form",
+          viewportClass: getUxViewportClass(),
+          accessRole: "unknown",
+          outcome: "completed",
+        });
         onCreated?.(created.relationship.id);
         return;
       }
@@ -304,7 +375,15 @@ export function AddRelativeForm({ treeId, persons, preselectedPersonId, onCreate
           targetId: finalTargetId,
           ...(derivedKind === "marriage" ? { maritalStatus } : {}),
         });
+        setShowSubmitReview(false);
         setConflicts(result.conflicts);
+        trackUxEvent("ux_core_flow_complete", {
+          flow: "add_relative",
+          surface: "relative_form",
+          viewportClass: getUxViewportClass(),
+          accessRole: "unknown",
+          outcome: "completed",
+        });
         onCreated?.(result.id);
       } else {
         const result = await addAssertedRelative({
@@ -313,10 +392,19 @@ export function AddRelativeForm({ treeId, persons, preselectedPersonId, onCreate
           targetId,
           assertedLabel,
         });
+        setShowSubmitReview(false);
         setConflicts(result.conflicts);
+        trackUxEvent("ux_core_flow_complete", {
+          flow: "add_relative",
+          surface: "relative_form",
+          viewportClass: getUxViewportClass(),
+          accessRole: "unknown",
+          outcome: "completed",
+        });
         onCreated?.(result.id);
       }
     } catch (error) {
+      setShowSubmitReview(false);
       if (error instanceof ApiError && error.field) {
         setFieldErrors({ [error.field]: error.message });
       } else if (error instanceof Error) {
@@ -324,8 +412,31 @@ export function AddRelativeForm({ treeId, persons, preselectedPersonId, onCreate
       } else {
         setFormError("Không thể thêm quan hệ. Vui lòng thử lại.");
       }
+      trackUxEvent("ux_core_flow_error", {
+        flow: "add_relative",
+        surface: "relative_form",
+        viewportClass: getUxViewportClass(),
+        accessRole: "unknown",
+        outcome: error instanceof ApiError && error.field ? "validation_error" : "request_error",
+      });
     } finally {
+      isSubmittingRef.current = false;
       setSubmitting(false);
+    }
+  }
+
+  function handleCancelClick() {
+    trackUxEvent("ux_core_flow_error", {
+      flow: "add_relative",
+      surface: "relative_form",
+      viewportClass: getUxViewportClass(),
+      accessRole: "unknown",
+      outcome: "cancelled"
+    });
+    if (isDirty && !showDiscardConfirm) {
+      setShowDiscardConfirm(true);
+    } else {
+      onCancel?.();
     }
   }
 
@@ -337,7 +448,86 @@ export function AddRelativeForm({ treeId, persons, preselectedPersonId, onCreate
      (newPersonPosition === "target" &&
       (derivedKind === "bloodline_father_reverse" || derivedKind === "bloodline_mother_reverse")));
 
-  return (
+
+  if (showDiscardConfirm) {
+    return (
+      <div className="person-form-discard-confirm" style={{ padding: "1.5rem" }}>
+        <h3 style={{ marginTop: 0 }}>Hủy bỏ thay đổi?</h3>
+        <p>Các thông tin bạn vừa nhập sẽ không được lưu lại.</p>
+        <div style={{ display: "flex", gap: "1rem", marginTop: "1rem" }}>
+          <button type="button" className="btn btn-secondary" onClick={() => {
+            trackUxEvent("ux_recovery_used", { flow: "add_relative", surface: "relative_form", viewportClass: getUxViewportClass(), accessRole: "unknown", outcome: "retry" });
+            setShowDiscardConfirm(false);
+          }}>Tiếp tục chỉnh sửa</button>
+          <button type="button" className="btn btn-primary btn-terracotta" onClick={() => onCancel?.()}>Xác nhận hủy</button>
+        </div>
+      </div>
+    );
+  }
+
+  if (showSubmitReview) {
+    let reviewMessage = "";
+    let subReviewMessage = "";
+
+    const getRelationText = () => {
+      if (mode === "asserted") return assertedLabel;
+      switch (derivedKind) {
+        case "bloodline_father":
+        case "bloodline_father_reverse": return "Cha";
+        case "bloodline_mother":
+        case "bloodline_mother_reverse": return "Mẹ";
+        case "marriage": return "Vợ/Chồng";
+        default: return "Quan hệ";
+      }
+    };
+
+    if (isNewPerson) {
+      reviewMessage = `Bạn đang thêm thành viên mới: ${newDisplayName}.`;
+
+      const relationLabel =
+        mode === "asserted"
+          ? `${newDisplayName} có quan hệ xưng hô là "${assertedLabel}" với ${persons.find(p => p.id === (newPersonPosition === "source" ? targetId : sourceId))?.displayName || "..."}`
+          : derivedKind === "bloodline_father" ? `${newDisplayName} là CHA của ${targetName}` :
+            derivedKind === "bloodline_father_reverse" ? `${newDisplayName} là CON của ${targetName} (${targetName} là CHA)` :
+            derivedKind === "bloodline_mother" ? `${newDisplayName} là MẸ của ${targetName}` :
+            derivedKind === "bloodline_mother_reverse" ? `${newDisplayName} là CON của ${targetName} (${targetName} là MẸ)` :
+            derivedKind === "marriage" ? `${newDisplayName} và ${newPersonPosition === "source" ? targetName : sourceName} là VỢ CHỒNG` : "";
+      subReviewMessage = `Thiết lập quan hệ: ${relationLabel}`;
+    } else {
+      reviewMessage = `Bạn đang thiết lập quan hệ giữa hai thành viên sẵn có.`;
+
+      const sourcePersonName = persons.find(p => p.id === sourceId)?.displayName || "Người 1";
+      const targetPersonName = persons.find(p => p.id === targetId)?.displayName || "Người 2";
+      const relationLabel =
+        mode === "asserted"
+          ? `${sourcePersonName} có quan hệ xưng hô là "${assertedLabel}" với ${targetPersonName}`
+          : derivedKind === "bloodline_father" ? `${sourcePersonName} là CHA của ${targetPersonName}` :
+            derivedKind === "bloodline_father_reverse" ? `${sourcePersonName} là CON của ${targetPersonName} (${targetPersonName} là CHA)` :
+            derivedKind === "bloodline_mother" ? `${sourcePersonName} là MẸ của ${targetPersonName}` :
+            derivedKind === "bloodline_mother_reverse" ? `${sourcePersonName} là CON của ${targetPersonName} (${targetPersonName} là MẸ)` :
+            derivedKind === "marriage" ? `${sourcePersonName} và ${targetPersonName} là VỢ CHỒNG` : "";
+      subReviewMessage = `Chi tiết quan hệ: ${relationLabel}`;
+    }
+
+    return (
+      <div className="person-form-review" style={{ padding: "1.5rem" }}>
+        <h3 style={{ marginTop: 0 }}>Xác nhận lưu thông tin</h3>
+        <p>{reviewMessage}</p>
+        {subReviewMessage && <p><strong>{subReviewMessage}</strong></p>}
+        <div style={{ display: "flex", gap: "1rem", marginTop: "1rem" }}>
+          <button type="button" className="btn btn-secondary" disabled={submitting} onClick={() => {
+            trackUxEvent("ux_recovery_used", { flow: "add_relative", surface: "relative_form", viewportClass: getUxViewportClass(), accessRole: "unknown", outcome: "retry" });
+            setShowSubmitReview(false);
+          }}>Quay lại chỉnh sửa</button>
+          <button type="button" className="btn btn-primary btn-terracotta" disabled={submitting} onClick={handleConfirmSubmit}>
+            {submitting ? "Đang lưu..." : "Xác nhận lưu"}
+          </button>
+        </div>
+        {formError && <p className="form-error" style={{ marginTop: "1rem", color: "var(--color-terracotta)" }}>{formError}</p>}
+      </div>
+    );
+  }
+return (
     <form onSubmit={handleSubmit} aria-label="Thêm người thân">
       {formError ? (
         <p role="alert" data-testid="form-error" className="form-error">
@@ -358,6 +548,7 @@ export function AddRelativeForm({ treeId, persons, preselectedPersonId, onCreate
               value="derived"
               checked={mode === "derived"}
               onChange={() => setMode("derived")}
+              disabled={submitting}
             />
             {" Quan hệ trực tiếp — cha/mẹ, con, vợ/chồng"}
           </label>
@@ -369,6 +560,7 @@ export function AddRelativeForm({ treeId, persons, preselectedPersonId, onCreate
               value="asserted"
               checked={mode === "asserted"}
               onChange={() => setMode("asserted")}
+              disabled={submitting}
             />
             {" Quan hệ khác — cần tự điền tên gọi"}
           </label>
@@ -382,6 +574,7 @@ export function AddRelativeForm({ treeId, persons, preselectedPersonId, onCreate
             type="checkbox"
             checked={isNewPerson}
             onChange={(e) => setIsNewPerson(e.target.checked)}
+            disabled={submitting}
           />
           <span>Thêm người thân mới vào cây</span>
         </label>
@@ -394,6 +587,7 @@ export function AddRelativeForm({ treeId, persons, preselectedPersonId, onCreate
             id="newPersonPosition"
             value={newPersonPosition}
             onChange={(e) => setNewPersonPosition(e.target.value as "source" | "target")}
+            disabled={submitting}
           >
             <option value="target">Con cái / Vai vế thấp hơn (ví dụ: thêm Con)</option>
             <option value="source">Cha mẹ / Vai vế cao hơn (ví dụ: thêm Cha, Mẹ)</option>
@@ -408,6 +602,7 @@ export function AddRelativeForm({ treeId, persons, preselectedPersonId, onCreate
             name="sourceId"
             value={sourceId}
             onChange={(e) => setSourceId(e.target.value)}
+            disabled={submitting}
           >
             {persons.map((p) => (
               <option key={p.id} value={p.id}>
@@ -425,6 +620,7 @@ export function AddRelativeForm({ treeId, persons, preselectedPersonId, onCreate
             name="targetId"
             value={targetId}
             onChange={(e) => setTargetId(e.target.value)}
+            disabled={submitting}
           >
             {persons.map((p) => (
               <option key={p.id} value={p.id}>
@@ -443,6 +639,7 @@ export function AddRelativeForm({ treeId, persons, preselectedPersonId, onCreate
               name="derivedKind"
               value={derivedKind}
               onChange={(e) => setDerivedKind(e.target.value as DerivedKind)}
+              disabled={submitting}
             >
               <option value="bloodline_father">{sourceName} là CHA của {targetName}</option>
               <option value="bloodline_father_reverse">{sourceName} là CON của {targetName} ({targetName} là CHA)</option>
@@ -458,6 +655,7 @@ export function AddRelativeForm({ treeId, persons, preselectedPersonId, onCreate
                 name="maritalStatus"
                 value={maritalStatus}
                 onChange={(e) => setMaritalStatus(e.target.value as EditableMaritalStatus)}
+                disabled={submitting}
               >
                 <option value="married">Đã kết hôn</option>
                 <option value="divorced">Đã ly dị</option>
@@ -476,6 +674,7 @@ export function AddRelativeForm({ treeId, persons, preselectedPersonId, onCreate
             maxLength={50}
             error={fieldErrors.assertedLabel}
             onChange={(e) => setAssertedLabel(e.target.value)}
+            disabled={submitting}
           />
         </FormControl>
       )}
@@ -491,6 +690,7 @@ export function AddRelativeForm({ treeId, persons, preselectedPersonId, onCreate
               value={newDisplayName}
               onChange={(e) => setNewDisplayName(e.target.value)}
               required
+              disabled={submitting}
             />
           </FormControl>
 
@@ -535,6 +735,7 @@ export function AddRelativeForm({ treeId, persons, preselectedPersonId, onCreate
               max={99}
               value={newBirthOrder}
               onChange={(e) => setNewBirthOrder(e.target.value)}
+              disabled={submitting}
             />
             <p className="field-hint" style={{ fontSize: "0.75rem", marginTop: "4px" }}>
               Số 1 = con đầu lòng (miền Nam gọi là Anh/Chị Hai).
@@ -548,6 +749,7 @@ export function AddRelativeForm({ treeId, persons, preselectedPersonId, onCreate
               min={1000}
               value={newBirthYear}
               onChange={(e) => setNewBirthYear(e.target.value)}
+              disabled={submitting}
             />
           </FormControl>
 
@@ -557,6 +759,7 @@ export function AddRelativeForm({ treeId, persons, preselectedPersonId, onCreate
               type="tel"
               value={newPhone}
               onChange={(e) => setNewPhone(e.target.value)}
+              disabled={submitting}
             />
           </FormControl>
 
@@ -566,6 +769,7 @@ export function AddRelativeForm({ treeId, persons, preselectedPersonId, onCreate
               type="email"
               value={newEmail}
               onChange={(e) => setNewEmail(e.target.value)}
+              disabled={submitting}
             />
           </FormControl>
 
@@ -575,6 +779,7 @@ export function AddRelativeForm({ treeId, persons, preselectedPersonId, onCreate
               type="file"
               accept="image/jpeg,image/png"
               className="photo-upload-input"
+              disabled={submitting}
               onChange={(e) => {
                 const file = e.target.files?.[0];
                 if (file) {
@@ -610,6 +815,7 @@ export function AddRelativeForm({ treeId, persons, preselectedPersonId, onCreate
                 type="checkbox"
                 checked={newDeathStatus}
                 onChange={(e) => setNewDeathStatus(e.target.checked)}
+                disabled={submitting}
               />
               <span>Đã mất</span>
             </label>
@@ -637,6 +843,7 @@ export function AddRelativeForm({ treeId, persons, preselectedPersonId, onCreate
                       value="lunar"
                       checked={newDeathCalendar === "lunar"}
                       onChange={() => setNewDeathCalendar("lunar")}
+                      disabled={submitting}
                     />
                     <span>Âm lịch</span>
                   </label>
@@ -648,6 +855,7 @@ export function AddRelativeForm({ treeId, persons, preselectedPersonId, onCreate
                       value="solar"
                       checked={newDeathCalendar === "solar"}
                       onChange={() => setNewDeathCalendar("solar")}
+                      disabled={submitting}
                     />
                     <span>Dương lịch</span>
                   </label>
@@ -665,6 +873,7 @@ export function AddRelativeForm({ treeId, persons, preselectedPersonId, onCreate
                     value={newDeathDay}
                     error={fieldErrors.newDeathDay}
                     onChange={(e) => setNewDeathDay(e.target.value)}
+                    disabled={submitting}
                   />
                 </FormControl>
 
@@ -678,6 +887,7 @@ export function AddRelativeForm({ treeId, persons, preselectedPersonId, onCreate
                     value={newDeathMonth}
                     error={fieldErrors.newDeathMonth}
                     onChange={(e) => setNewDeathMonth(e.target.value)}
+                    disabled={submitting}
                   />
                 </FormControl>
 
@@ -690,6 +900,7 @@ export function AddRelativeForm({ treeId, persons, preselectedPersonId, onCreate
                     value={newDeathYear}
                     error={fieldErrors.newDeathYear}
                     onChange={(e) => setNewDeathYear(e.target.value)}
+                    disabled={submitting}
                   />
                 </FormControl>
               </div>
@@ -703,6 +914,7 @@ export function AddRelativeForm({ treeId, persons, preselectedPersonId, onCreate
                       type="checkbox"
                       checked={newDeathLunarLeap}
                       onChange={(e) => setNewDeathLunarLeap(e.target.checked)}
+                      disabled={submitting}
                     />
                     <span>Tháng nhuận</span>
                   </label>
@@ -732,7 +944,7 @@ export function AddRelativeForm({ treeId, persons, preselectedPersonId, onCreate
           <Button
             type="button"
             className="btn-secondary"
-            onClick={onCancel}
+            onClick={handleCancelClick}
             disabled={submitting}
             style={{ flex: 1 }}
           >

@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, act, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { AddRelativeForm } from "./AddRelativeForm";
 
@@ -45,6 +45,7 @@ describe("AddRelativeForm", () => {
 
     render(<AddRelativeForm treeId="t1" persons={PERSONS} />);
     await userEvent.click(screen.getByRole("button", { name: "Thêm kết nối" }));
+    await userEvent.click(screen.getByRole("button", { name: "Xác nhận lưu" }));
 
     const [url, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
     expect(url).toBe("/api/v1/relationships");
@@ -71,6 +72,7 @@ describe("AddRelativeForm", () => {
     await userEvent.click(screen.getByLabelText("Thêm người thân mới vào cây"));
     await userEvent.type(await screen.findByLabelText(/Họ và tên/), "Người mới");
     await userEvent.click(screen.getByRole("button", { name: "Thêm thành viên mới" }));
+    await userEvent.click(screen.getByRole("button", { name: "Xác nhận lưu" }));
 
     expect(fetchMock).toHaveBeenCalledTimes(1);
     const [url, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
@@ -98,6 +100,7 @@ describe("AddRelativeForm", () => {
     await userEvent.click(screen.getByLabelText(/tự điền tên gọi/));
     await userEvent.type(screen.getByLabelText(/Nhãn xưng hô/), "bác");
     await userEvent.click(screen.getByRole("button", { name: "Thêm kết nối" }));
+    await userEvent.click(screen.getByRole("button", { name: "Xác nhận lưu" }));
 
     const [url, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
     expect(url).toBe("/api/v1/relationships");
@@ -126,6 +129,7 @@ describe("AddRelativeForm", () => {
 
     render(<AddRelativeForm treeId="t1" persons={PERSONS} />);
     await userEvent.click(screen.getByRole("button", { name: "Thêm kết nối" }));
+    await userEvent.click(screen.getByRole("button", { name: "Xác nhận lưu" }));
 
     const alert = await screen.findByRole("alert");
     expect(alert).toBeInTheDocument();
@@ -146,7 +150,90 @@ describe("AddRelativeForm", () => {
     await userEvent.click(screen.getByLabelText(/tự điền tên gọi/));
     await userEvent.type(screen.getByLabelText(/Nhãn xưng hô/), "x");
     await userEvent.click(screen.getByRole("button", { name: "Thêm kết nối" }));
+    await userEvent.click(screen.getByRole("button", { name: "Xác nhận lưu" }));
 
     expect(await screen.findByText("Nhãn không hợp lệ")).toBeInTheDocument();
+  });
+
+  it("prevents native form submission", async () => {
+    render(<AddRelativeForm treeId="t1" persons={PERSONS} />);
+    const form = screen.getByRole("form");
+    const submitEvent = new Event("submit", { cancelable: true, bubbles: true });
+    vi.spyOn(submitEvent, "preventDefault");
+    act(() => {
+      form.dispatchEvent(submitEvent);
+    });
+    expect(submitEvent.preventDefault).toHaveBeenCalled();
+  });
+
+  it("shows discard confirmation on cancel when new person gender has been modified", async () => {
+    const onCancelMock = vi.fn();
+    render(<AddRelativeForm treeId="t1" persons={PERSONS} onCancel={onCancelMock} />);
+
+    // Enable isNewPerson
+    await userEvent.click(screen.getByLabelText("Thêm người thân mới vào cây"));
+
+    // Select Nữ (female) gender radio button
+    const femaleRadio = screen.getByLabelText("Nữ");
+    await userEvent.click(femaleRadio);
+
+    // Click Hủy (cancel) button
+    const cancelBtn = screen.getByRole("button", { name: "Hủy" });
+    await userEvent.click(cancelBtn);
+
+    // Expect discard confirmation screen to be shown
+    expect(screen.getByText("Hủy bỏ thay đổi?")).toBeInTheDocument();
+    expect(onCancelMock).not.toHaveBeenCalled();
+
+    // Click Xác nhận hủy
+    const confirmCancelBtn = screen.getByRole("button", { name: "Xác nhận hủy" });
+    await userEvent.click(confirmCancelBtn);
+    expect(onCancelMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("prevents multiple mutations on rapid double clicks of the confirmation button and disables controls while pending", async () => {
+    let resolveFetch: any;
+    const pendingPromise = new Promise((resolve) => {
+      resolveFetch = resolve;
+    });
+    const fetchMock = vi.fn().mockImplementation(async () => {
+      const res = await pendingPromise;
+      return res;
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<AddRelativeForm treeId="t1" persons={PERSONS} />);
+    await userEvent.click(screen.getByRole("button", { name: "Thêm kết nối" }));
+
+    // Now rapid double-click the confirmation button
+    const confirmBtn = screen.getByRole("button", { name: "Xác nhận lưu" });
+    const backBtn = screen.getByRole("button", { name: "Quay lại chỉnh sửa" });
+
+    expect(confirmBtn).not.toBeDisabled();
+    expect(backBtn).not.toBeDisabled();
+
+    const submitPromise = userEvent.click(confirmBtn);
+
+    // Assert controls are disabled while pending
+    await waitFor(() => {
+      expect(confirmBtn).toBeDisabled();
+      expect(backBtn).toBeDisabled();
+    });
+
+    // Try clicking again
+    await userEvent.click(confirmBtn);
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+
+    if (resolveFetch) {
+      resolveFetch({
+        ok: true,
+        status: 201,
+        text: async () => JSON.stringify({ id: "r1", type: "bloodline_father", derivationState: "derived" }),
+      } as Response);
+    }
+
+    await submitPromise;
+    expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 });

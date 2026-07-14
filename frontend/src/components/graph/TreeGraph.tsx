@@ -41,6 +41,9 @@ export interface TreeGraphProps {
   focusId?: string | null;
   onFocusChange?: (id: string | null) => void;
   showBirthYears?: boolean;
+  addresses?: Map<string, Address>;
+  addressLoading?: boolean;
+  addressError?: string | null;
 }
 
 export function TreeGraph({
@@ -62,6 +65,9 @@ export function TreeGraph({
   focusId,
   onFocusChange,
   showBirthYears = true,
+  addresses: controlledAddresses,
+  addressLoading: controlledAddressLoading,
+  addressError: controlledAddressError,
 }: TreeGraphProps) {
   const firstId = persons[0]?.id ?? "";
   const [internalEgoId, setInternalEgoId] = useState<string>(initialEgoId ?? firstId);
@@ -71,17 +77,21 @@ export function TreeGraph({
   const [internalSelectedId, setInternalSelectedId] = useState<string | null>(null);
   const activeSelectedId = selectedId !== undefined ? selectedId : internalSelectedId;
   const activeSetSelectedId = onSelectId ?? setInternalSelectedId;
-  const [addresses, setAddresses] = useState<Map<string, Address>>(new Map());
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [internalAddresses, setInternalAddresses] = useState<Map<string, Address>>(new Map());
+  const [internalLoading, setInternalLoading] = useState(false);
+  const [internalError, setInternalError] = useState<string | null>(null);
+
+  const activeAddresses = controlledAddresses ?? internalAddresses;
+  const activeLoading = controlledAddressLoading ?? internalLoading;
+  const activeError = controlledAddressError ?? internalError;
 
   const [internalFocusId, setInternalFocusId] = useState<string | null>(null);
   const activeFocusId = focusId !== undefined ? focusId : internalFocusId;
   const activeSetFocusId = onFocusChange ?? setInternalFocusId;
 
   useEffect(() => {
-    onAddressLoading?.(loading);
-  }, [loading, onAddressLoading]);
+    onAddressLoading?.(activeLoading);
+  }, [activeLoading, onAddressLoading]);
 
   useEffect(() => {
     if (activeFocusId && !persons.some((p) => p.id === activeFocusId)) {
@@ -138,15 +148,18 @@ export function TreeGraph({
 
   const requestRef = useRef(0);
   useEffect(() => {
+    if (controlledAddresses !== undefined) {
+      return;
+    }
     if (!activeEgoId) {
-      setAddresses(new Map());
+      setInternalAddresses(new Map());
       onAddressesLoadedRef.current?.(new Map());
       return;
     }
     const requestId = ++requestRef.current;
     const controller = new AbortController();
-    setLoading(true);
-    setError(null);
+    setInternalLoading(true);
+    setInternalError(null);
 
     fetchAddresses(treeId, activeEgoId, controller.signal)
       .then((result) => {
@@ -154,7 +167,7 @@ export function TreeGraph({
           return;
         }
         const indexed = indexAddresses(result);
-        setAddresses(indexed);
+        setInternalAddresses(indexed);
         onAddressesLoadedRef.current?.(indexed);
       })
       .catch((err: unknown) => {
@@ -164,24 +177,24 @@ export function TreeGraph({
         if (err instanceof DOMException && err.name === "AbortError") {
           return;
         }
-        setError("Không tải được cách xưng hô cho góc nhìn này.");
-        setAddresses(new Map());
+        setInternalError("Không tải được cách xưng hô cho góc nhìn này.");
+        setInternalAddresses(new Map());
         onAddressesLoadedRef.current?.(new Map());
       })
       .finally(() => {
         if (requestId === requestRef.current) {
-          setLoading(false);
+          setInternalLoading(false);
         }
       });
 
     return () => {
       controller.abort();
     };
-  }, [treeId, activeEgoId, fetchAddresses, treeStructureVersion, addressRefreshKey]);
+  }, [treeId, activeEgoId, fetchAddresses, treeStructureVersion, addressRefreshKey, controlledAddresses]);
 
   useEffect(() => {
-    onSelectAddress?.(activeSelectedId ? addresses.get(activeSelectedId) : undefined);
-  }, [addresses, activeSelectedId, onSelectAddress]);
+    onSelectAddress?.(activeSelectedId ? activeAddresses.get(activeSelectedId) : undefined);
+  }, [activeAddresses, activeSelectedId, onSelectAddress]);
 
   const ego = activeEgoId ? personById.get(activeEgoId) ?? null : null;
 
@@ -199,8 +212,8 @@ export function TreeGraph({
         hideViewpointSelector={hideViewpointSelector}
         persons={persons}
         activeEgoId={activeEgoId}
-        loading={loading}
-        error={error}
+        loading={activeLoading}
+        error={activeError}
         onSelectViewpoint={handleSelectViewpoint}
         onFocusChange={onFocusChange}
         activeSelectedId={activeSelectedId}
@@ -279,21 +292,21 @@ export function TreeGraph({
                 if (!pos) {
                   return null;
                 }
-                const address = addresses.get(person.id);
+                const address = activeAddresses.get(person.id);
                 const isEgo = person.id === activeEgoId;
                 const isSelected = person.id === activeSelectedId;
                 const label = isEgo
                   ? "Bản thân"
-                  : loading || addresses.size === 0
+                  : activeLoading || activeAddresses.size === 0
                   ? ""
                   : capitalize(contextualAddressLabel({
                       targetId: person.id,
                       egoId: activeEgoId,
                       persons: filteredData.persons,
                       relationships: filteredData.relationships,
-                      addresses,
+                      addresses: activeAddresses,
                     }));
-                const unresolved = !isEgo && !loading && addresses.size > 0 && isUnresolved(address);
+                const unresolved = !isEgo && !activeLoading && activeAddresses.size > 0 && isUnresolved(address);
                 const isRedacted = person.displayName === "Người thân còn sống";
                 const hasCollapsedBranch = filteredData.collapsedBranchRoots.has(person.id);
                 const nodeWidth = nodeWidthById.get(person.id) ?? 220; // NODE_MIN_WIDTH
@@ -311,7 +324,7 @@ export function TreeGraph({
                     unresolved={unresolved}
                     isRedacted={isRedacted}
                     hasCollapsedBranch={hasCollapsedBranch}
-                    loading={loading}
+                    loading={activeLoading}
                     showBirthYears={showBirthYears}
                     onSelect={activeSetSelectedId}
                   />

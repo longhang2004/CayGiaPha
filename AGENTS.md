@@ -51,11 +51,16 @@ Plan mode → clarify only material unknowns → approve plan
 ```
 
 - Codex/Heavy owns technical discovery, architecture, planning, high-risk implementation, integration, review, verification, and commit readiness.
-- Prefer attached Antigravity for implementation-ready Medium/Light tasks because the user has more Antigravity usage, but only when scope, contracts, file ownership, and verification are clear.
+- Prefer small, implementation-ready Antigravity patch tasks for Medium/Light work. When available, use `gemini-3.5-flash` for these bounded workers; reserve a stronger worker or Codex/Heavy for ambiguous, coupled, or risk-sensitive work.
 - Codex/Heavy implements directly when work is tightly coupled, ambiguous, cross-layer, privacy/auth/security-sensitive, migration-related, kinship-critical, or cheaper to implement than delegate and review.
 - PO/BA and UI/UX Designer are optional specialists, not default gates. Use PO/BA for product strategy, market research, roadmap, or genuinely unresolved product intent. Use Designer for major flows, redesigns, information architecture, or unresolved interaction direction.
 - For ordinary tasks, Plan mode handles product/design clarity with a compact checklist and asks the user only about material decisions.
 - Every delegated task uses an Execution Prompt and must return a Review Prompt. Codex verifies the repository rather than trusting worker claims.
+- Split delegable work into atomic patch packets: one outcome, explicit acceptance criteria, and normally no more than 1–3 implementation files plus their directly related tests/prototype mirror. Do not give one worker a broad feature, a whole redesign, or discovery plus implementation plus integration.
+- Group independent packets into batches of 2–4. Parallel work is allowed for read-only discovery/review or isolated worktrees with disjoint ownership. In this shared checkout, patch writers run one at a time; Codex reviews and integrates each accepted patch before the next writer starts.
+- When Antigravity is delegated through the local CLI, use `.agents/bin/agy-delegate` as the canonical entry point. It defaults to `--mode plan`; use `--agent gemini-3.5-flash` for eligible patch tasks and `--mode accept-edits` only for a bounded task with explicit file ownership and a required Codex diff review.
+- The CLI launcher is a worker transport, not an authority boundary: Codex remains the orchestrator, integration owner, and verifier. Do not run concurrent writers against the same checkout.
+- Nested delegation is optional: pass `--nested` only for a batch of genuinely independent, bounded sub-questions. Nested workers must be read-only by default, use the same packet limits, and consolidate evidence; do not create unbounded chains or concurrent writers.
 - Do not create extra sessions, micro-plans, design documents, worktrees, subagents, or commits merely because a plugin supports them.
 
 Read `.agents/multi-model-playbook.md` only when delegation is selected. Read `.agents/product-delivery-workflow.md` only when the user explicitly requests PO/BA or Designer involvement.

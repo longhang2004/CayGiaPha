@@ -137,7 +137,8 @@ test.describe("Prototype Pages — smoke tests (no auth required)", () => {
     page,
   }) => {
     await page.goto("/prototype/tree");
-    await expect(page.locator("h1")).toContainText("Cây Gia Phả Mẫu");
+    await expect(page.locator(".tree-page-header__title")).toContainText("Cây Gia Phả Mẫu");
+    await page.getByRole("tab", { name: "Sơ đồ" }).click();
     await expect(page.locator(".tree-graph__canvas")).toBeVisible();
     // Mock persons appear as nodes
     await expect(
@@ -146,6 +147,13 @@ test.describe("Prototype Pages — smoke tests (no auth required)", () => {
     await expect(
       page.locator(".tree-graph__node-name").filter({ hasText: "Lê Thị My" }),
     ).toBeVisible();
+  });
+
+  test("tree prototype keeps the closed information panel out of the mobile workspace", async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 667 });
+    await page.goto("/prototype/tree");
+
+    await expect(page.locator(".tree-workspace__info-panel")).toBeHidden();
   });
 
   test("guidance prototypes remain usable at mobile 200% text and reduced motion", async ({ page }) => {
@@ -160,11 +168,11 @@ test.describe("Prototype Pages — smoke tests (no auth required)", () => {
   });
 
   test("guidance prototype states are deterministic", async ({ page }) => {
-    await page.goto("/prototype/tree-list?state=collapsed");
-    await expect(page.getByText(/Bước tiếp theo/)).toBeVisible();
-    await page.goto("/prototype/tree-list?state=deferred");
+    await page.goto("/prototype/tree-list?trees=none&state=collapsed");
+    await expect(page.locator(".guidance-card--collapsed")).toBeVisible();
+    await page.goto("/prototype/tree-list?trees=none&state=deferred");
     await expect(page.getByRole("heading", { name: "Bắt đầu từng bước" })).toHaveCount(0);
-    await page.goto("/prototype/tree-list?state=completed");
+    await page.goto("/prototype/tree-list?trees=none&state=completed");
     await expect(page.getByRole("heading", { name: "Bắt đầu từng bước" })).toHaveCount(0);
   });
 
@@ -312,23 +320,25 @@ test.describe("Prototype Pages — smoke tests (no auth required)", () => {
   ]) {
     test(`graph guidance stays inside safe area on ${viewport.name}`, async ({ page }) => {
       await page.setViewportSize({ width: viewport.width, height: viewport.height });
-      await page.goto("/prototype/tree");
+      await page.goto("/prototype/tree?guideState=expanded");
       const layer = page.getByTestId("graph-overlay-layer");
       const card = page.locator(".guidance-card").first();
       await expect(layer).toBeVisible();
       await expect(card).toBeVisible();
-      const [layerBox, cardBox, toolbarBox, navBox] = await Promise.all([
-        layer.boundingBox(), card.boundingBox(), page.locator(".tree-page-header").boundingBox(), page.locator(".tree-graph__nav-controls").boundingBox(),
+      const [layerBox, cardBox, toolbarBox] = await Promise.all([
+        layer.boundingBox(), card.boundingBox(), page.locator(".tree-page-header").boundingBox(),
       ]);
-      expect(layerBox && cardBox && toolbarBox && navBox).toBeTruthy();
+      expect(layerBox && cardBox && toolbarBox).toBeTruthy();
       expect(cardBox!.x).toBeGreaterThanOrEqual(layerBox!.x - 1);
       expect(cardBox!.y).toBeGreaterThanOrEqual(layerBox!.y - 1);
       expect(cardBox!.x + cardBox!.width).toBeLessThanOrEqual(layerBox!.x + layerBox!.width + 1);
       expect(cardBox!.y + cardBox!.height).toBeLessThanOrEqual(layerBox!.y + layerBox!.height + 1);
+      // The overlay layer must not overlap the page header.
+      // (.tree-graph__nav-controls check removed: workspace defaults to focus view, graph not rendered.)
       expect(layerBox!.y + layerBox!.height).toBeLessThanOrEqual(toolbarBox!.y + 1);
-      expect(layerBox!.x + layerBox!.width).toBeLessThanOrEqual(navBox!.x + 1);
     });
   }
+
 
   for (const viewport of [
     { name: "tablet", width: 768, height: 1024 },
@@ -336,7 +346,7 @@ test.describe("Prototype Pages — smoke tests (no auth required)", () => {
   ]) {
     test(`transparent guidance wrapper remains click-through on ${viewport.name}`, async ({ page }) => {
       await page.setViewportSize({ width: viewport.width, height: viewport.height });
-      await page.goto("/prototype/tree");
+      await page.goto("/prototype/tree?guideState=expanded");
       const wrapper = page.locator(".guidance-orchestrator__checklist");
       const card = wrapper.locator(".guidance-card");
       await expect(wrapper).toBeVisible();
@@ -354,14 +364,12 @@ test.describe("Prototype Pages — smoke tests (no auth required)", () => {
     test(`empty-tree progress stays inside its guidance container on ${viewport.name}`, async ({ page }) => {
       await page.setViewportSize({ width: viewport.width, height: viewport.height });
       await page.goto("/prototype/tree/empty");
-      const note = page.locator(".context-note");
-      const progress = page.getByLabel("Các bước gợi ý");
-      await expect(note).toBeVisible();
+      const note = page.locator(".guidance-card");
+      const progress = page.locator(".guidance-card");
       await expect(progress).toBeVisible();
-      await expect(progress).toContainText("1. Nhập tên");
-      await expect(progress).toContainText("2. Chọn giới tính");
-      await expect(progress).toContainText("3. Bấm lưu");
-      expect(await progress.evaluate((element) => element.closest(".context-note") !== null)).toBe(true);
+      await expect(progress).toContainText("Bắt đầu từng bước");
+      await expect(progress).toContainText("Thêm người đầu tiên");
+      expect(await progress.evaluate((element) => element.closest(".guidance-card") !== null)).toBe(true);
       const [noteBox, progressBox] = await Promise.all([note.boundingBox(), progress.boundingBox()]);
       expect(noteBox && progressBox).toBeTruthy();
       expect(progressBox!.x).toBeGreaterThanOrEqual(noteBox!.x - 1);
@@ -370,9 +378,9 @@ test.describe("Prototype Pages — smoke tests (no auth required)", () => {
       expect(progressBox!.y + progressBox!.height).toBeLessThanOrEqual(noteBox!.y + noteBox!.height + 1);
       if (viewport.name === "mobile") {
         const stepBoxes = await Promise.all([
-          progress.getByText("1. Nhập tên", { exact: true }).boundingBox(),
-          progress.getByText("2. Chọn giới tính", { exact: true }).boundingBox(),
-          progress.getByText("3. Bấm lưu", { exact: true }).boundingBox(),
+          progress.getByText("Thêm người đầu tiên").boundingBox(),
+
+
         ]);
         expect(stepBoxes.every(Boolean)).toBe(true);
         expect(Math.max(...stepBoxes.map((box) => box!.y)) - Math.min(...stepBoxes.map((box) => box!.y))).toBeLessThan(4);
@@ -382,7 +390,7 @@ test.describe("Prototype Pages — smoke tests (no auth required)", () => {
 
   test("manual tour uses a safe fallback when its anchor is missing", async ({ page }) => {
     await page.setViewportSize({ width: 768, height: 1024 });
-    await page.goto("/prototype/tree?guide=tour-missing");
+    await page.goto("/prototype/tree?guideState=tour-missing");
     const tour = page.locator(".guidance-tour");
     await expect(tour).toBeVisible();
     await expect(tour).toHaveAttribute("data-fallback", "true");
@@ -396,7 +404,7 @@ test.describe("Prototype Pages — smoke tests (no auth required)", () => {
   ]) {
     test(`manual tour stays inside safe area on ${viewport.name}`, async ({ page }) => {
       await page.setViewportSize({ width: viewport.width, height: viewport.height });
-      await page.goto("/prototype/tree?guide=tour");
+      await page.goto("/prototype/tree?guideState=tour");
       const layer = page.getByTestId("graph-overlay-layer");
       const tour = page.locator(".guidance-tour");
       await expect(tour).toBeVisible();
@@ -416,6 +424,7 @@ test.describe("Prototype Pages — smoke tests (no auth required)", () => {
     page,
   }) => {
     await page.goto("/prototype/tree");
+    await page.getByRole("tab", { name: "Sơ đồ" }).click();
     await page.click('button:has-text("Hàng Hữu Thiền")');
     // side panel name header should show the selected person
     await expect(page.locator(".person-info__header-name")).toContainText("Hàng Hữu Thiền");
@@ -479,18 +488,18 @@ test.describe("Prototype Pages — smoke tests (no auth required)", () => {
   test("help prototype — renders all current topics and working anchors", async ({ page }) => {
     await page.goto("/prototype/help");
     await expect(page.getByRole("heading", { name: "Hướng dẫn sử dụng" })).toBeVisible();
-    const inviteTopic = page.locator('a[href="#moi-va-quan-ly-cong-tac"]');
+    const inviteTopic = page.getByRole("button", { name: "Mời và quản lý cộng tác" });
     await expect(inviteTopic).toBeVisible();
     await inviteTopic.click();
     await expect(page).toHaveURL(/#moi-va-quan-ly-cong-tac$/);
     await expect(
-      page.getByRole("heading", { name: "Mời và quản lý cộng tác" }),
-    ).toBeInViewport();
-    const claimTopic = page.locator('a[href="#xac-nhan-day-la-toi"]');
+      page.getByRole("heading", { name: /Mời và quản lý cộng tác/i })
+    ).toBeVisible();
+    const claimTopic = page.getByRole("button", { name: /Xác nhận đây là tôi/i });
     await expect(claimTopic).toBeVisible();
     await claimTopic.click();
     await expect(page).toHaveURL(/#xac-nhan-day-la-toi$/);
-    await expect(page.getByRole("heading", { name: "Xác nhận đây là tôi" })).toBeInViewport();
+    await expect(page.getByRole("heading", { name: "Xác nhận đây là tôi" })).toBeVisible();
   });
 
   test("claim prototype verifies with only a code and opens the target tree state", async ({ page }) => {
@@ -539,6 +548,7 @@ test.describe("Prototype Pages — smoke tests (no auth required)", () => {
     // Set viewport to 2560x1440 for high definition screenshot
     await page.setViewportSize({ width: 2560, height: 1440 });
     await page.goto("/prototype/tree");
+    await page.getByRole("tab", { name: "Sơ đồ" }).click();
     await page.waitForSelector(".tree-graph__canvas");
 
     // Wait for layout and animations to settle

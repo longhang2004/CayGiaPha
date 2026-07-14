@@ -42,6 +42,8 @@ import { GuidanceOrchestrator } from "@/components/guidance/GuidanceOrchestrator
 import { TreeContext, type TreeContextType } from "@/components/tree-page/TreeContext";
 import { TreePageHeader } from "@/components/tree-page/TreePageHeader";
 import { TreePageSlidePanel } from "@/components/tree-page/TreePageSlidePanel";
+import { useViewpointAddresses } from "@/components/tree-page/useViewpointAddresses";
+import { TreeWorkspaceSurface } from "@/components/tree-page/TreeWorkspaceSurface";
 
 /** Stub fetchAddresses that resolves immediately with no addresses. */
 async function mockFetchAddresses(
@@ -135,7 +137,7 @@ function PrototypeTreeContent() {
         : "OWNER";
   const capabilities = useMemo(() => prototypeCapabilities(accessRole), [accessRole]);
   const guidanceRole = accessRole === "OWNER" ? "owner" : accessRole === "CONTRIBUTOR" ? "editor" : "reader";
-  const guideState = searchParams.get("guide");
+  const guideState = searchParams.get("guideState");
   const persons = useMemo<Person[]>(() => MOCK_PERSONS.map((person) => ({
     ...person,
     capabilities: accessRole === "LINKED"
@@ -148,19 +150,27 @@ function PrototypeTreeContent() {
   const [sharing, setSharing] = useState("private");
   const [treeName, setTreeName] = useState("Cây Gia Phả Mẫu");
 
-  const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [selectedAddress, setSelectedAddress] = useState<Address | undefined>(undefined);
-  const [addresses, setAddresses] = useState<Map<string, Address>>(new Map());
-  const [selectedEgo, setSelectedEgo] = useState<Person | null>(null);
-
   const [editMode, setEditMode] = useState(false);
   const [addRelativeMode, setAddRelativeMode] = useState(false);
   const [createMode, setCreateMode] = useState(false);
 
-  const [addressLoading, setAddressLoading] = useState(false);
   const [egoId, setEgoId] = useState<string>(MOCK_PERSONS[0].id);
   const [addressRefreshKey, setAddressRefreshKey] = useState(0);
   const [focusId, setFocusId] = useState<string | null>(null);
+
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+
+  const { addresses, loading: addressLoading, ready: addressesReady, error: addressError } = useViewpointAddresses({
+    treeId: PROTOTYPE_TREE_ID,
+    egoId,
+    persons,
+    relationships,
+    refreshKey: addressRefreshKey,
+    fetchAddresses: mockFetchAddresses,
+  });
+
+  const selectedAddress = selectedId ? addresses.get(selectedId) : undefined;
+  const selectedEgo = egoId ? persons.find((p) => p.id === egoId) || null : null;
 
   const [shareToken, setShareToken] = useState<string | null>(null);
 
@@ -168,10 +178,6 @@ function PrototypeTreeContent() {
   const [isCollaborationOpen, setIsCollaborationOpen] = useState(false);
   const [showBirthYears, setShowBirthYears] = useState(true);
   const [collaborators, setCollaborators] = useState<TreeCollaborator[]>([]);
-
-  const handleAddressesLoaded = useCallback((loaded: Map<string, Address>) => {
-    setAddresses(loaded);
-  }, []);
 
   const refreshTree = useCallback(() => {
     /* no-op in prototype */
@@ -242,7 +248,6 @@ function PrototypeTreeContent() {
   }, []);
 
   const primitiveCount = relationships.filter((relationship) => relationship.type === "bloodline_father" || relationship.type === "bloodline_mother" || relationship.type === "marriage").length;
-  const addressesReady = true;
 
   const guidanceProductState = {
     treeOpened: true,
@@ -282,9 +287,10 @@ function PrototypeTreeContent() {
     sharing,
     showBirthYears,
     loadingData: false,
-    addressesReady: true,
+    addressesReady,
     addressLoading,
     error: null,
+    addressError,
     egoId,
     selectedId,
     selectedAddress,
@@ -302,16 +308,12 @@ function PrototypeTreeContent() {
     guidanceRole,
     setEgoId,
     setSelectedId,
-    setSelectedAddress,
-    setSelectedEgo,
     setFocusId,
     setEditMode,
     setAddRelativeMode,
     setCreateMode,
     setIsSettingsOpen,
     setIsCollaborationOpen,
-    setAddressLoading,
-    handleAddressesLoaded,
     refreshTree,
     setTreeName,
     setRegionState,
@@ -334,39 +336,53 @@ function PrototypeTreeContent() {
             contextualTopicId={selectedId ? "doi-diem-nhin" : "dieu-huong-so-do"}
             initialTourTopicId={guideState === "tour" || guideState === "tour-missing" ? "doi-diem-nhin" : null}
             tourAnchorOverride={guideState === "tour-missing" ? "missing-anchor" : undefined}
-            initialChecklistPresentation={guideState === "collapsed" ? "collapsed" : guideState === "deferred" ? "deferred" : "expanded"}
+            initialChecklistPresentation={guideState === "expanded" ? "expanded" : guideState === "collapsed" ? "collapsed" : "deferred"}
           />}
         >
 
-          <TreePageHeader />
-
           <div className="tree-workspace__main">
-            <div className="tree-workspace__graph">
-              <TreeGraph
-                treeId={PROTOTYPE_TREE_ID}
-                persons={persons}
-                relationships={relationships}
-                selectedId={selectedId}
-                onSelectId={(id) => {
-                  setSelectedId(id);
-                  setEditMode(false);
-                  setAddRelativeMode(false);
-                  setCreateMode(false);
-                }}
-                onSelectAddress={setSelectedAddress}
-                onSelectEgo={setSelectedEgo}
-                egoId={egoId}
-                onEgoChange={setEgoId}
-                onAddressLoading={setAddressLoading}
-                onAddressesLoaded={handleAddressesLoaded}
-                hideViewpointSelector={true}
-                addressRefreshKey={addressRefreshKey}
-                fetchAddresses={mockFetchAddresses}
-                focusId={focusId}
-                onFocusChange={setFocusId}
-                showBirthYears={showBirthYears}
-              />
-            </div>
+            <TreePageHeader treeListHref="/prototype/tree-list" helpHref="/prototype/help" />
+            <TreeWorkspaceSurface
+              persons={persons}
+              relationships={relationships}
+              addresses={addresses}
+              egoId={egoId}
+              selectedId={selectedId}
+              onSelectPerson={(id) => {
+                setSelectedId(id);
+                setEditMode(false);
+                setAddRelativeMode(false);
+                setCreateMode(false);
+              }}
+              onChangeEgo={setEgoId}
+              addressLoading={addressLoading}
+              graphContent={
+                <div className="tree-workspace__graph">
+                  <TreeGraph
+                    treeId={PROTOTYPE_TREE_ID}
+                    persons={persons}
+                    relationships={relationships}
+                    selectedId={selectedId}
+                    onSelectId={(id) => {
+                      setSelectedId(id);
+                      setEditMode(false);
+                      setAddRelativeMode(false);
+                      setCreateMode(false);
+                    }}
+                    egoId={egoId}
+                    onEgoChange={setEgoId}
+                    addresses={addresses}
+                    addressLoading={addressLoading}
+                    addressError={addressError}
+                    hideViewpointSelector={true}
+                    addressRefreshKey={addressRefreshKey}
+                    focusId={focusId}
+                    onFocusChange={setFocusId}
+                    showBirthYears={showBirthYears}
+                  />
+                </div>
+              }
+            />
           </div>
 
           <TreePageSlidePanel />

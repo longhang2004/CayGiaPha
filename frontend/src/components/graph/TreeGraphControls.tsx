@@ -129,14 +129,18 @@ export function TreeGraphNavControls({
           style={{
             minWidth: "48px",
             minHeight: "48px",
-            padding: 0,
-            fontSize: "1.25rem",
+            padding: "0 0.5rem",
+            fontSize: "1rem",
             borderRadius: "8px",
             boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
+            display: "flex",
+            alignItems: "center",
+            gap: "0.25rem",
           }}
           title="Phóng to"
         >
-          +
+          <span style={{ fontSize: "1.25rem" }}>+</span>
+          <span style={{ fontSize: "0.75rem" }}>Phóng to</span>
         </button>
         <button
           type="button"
@@ -145,14 +149,18 @@ export function TreeGraphNavControls({
           style={{
             minWidth: "48px",
             minHeight: "48px",
-            padding: 0,
-            fontSize: "1.25rem",
+            padding: "0 0.5rem",
+            fontSize: "1rem",
             borderRadius: "8px",
             boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
+            display: "flex",
+            alignItems: "center",
+            gap: "0.25rem",
           }}
           title="Thu nhỏ"
         >
-          −
+          <span style={{ fontSize: "1.25rem" }}>−</span>
+          <span style={{ fontSize: "0.75rem" }}>Thu nhỏ</span>
         </button>
 
         {/* Target Center selection button */}
@@ -164,14 +172,18 @@ export function TreeGraphNavControls({
             style={{
               minWidth: "48px",
               minHeight: "48px",
-              padding: 0,
+              padding: "0 0.5rem",
               fontSize: "1rem",
               borderRadius: "8px",
               boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
+              display: "flex",
+              alignItems: "center",
+              gap: "0.25rem",
             }}
             title="Căn giữa người được chọn"
           >
-            🎯
+            <span>🎯</span>
+            <span style={{ fontSize: "0.75rem" }}>Căn giữa</span>
           </button>
         )}
 
@@ -182,14 +194,18 @@ export function TreeGraphNavControls({
           style={{
             minWidth: "48px",
             minHeight: "48px",
-            padding: 0,
+            padding: "0 0.5rem",
             fontSize: "1rem",
             borderRadius: "8px",
             boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
+            display: "flex",
+            alignItems: "center",
+            gap: "0.25rem",
           }}
           title="Đặt lại góc nhìn"
         >
           <CenterIcon size={18} />
+          <span style={{ fontSize: "0.75rem" }}>Đặt lại</span>
         </button>
 
         <button

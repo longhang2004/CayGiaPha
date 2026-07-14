@@ -1,10 +1,42 @@
 # Multi-Model Planning Playbook
 
-This document applies only after `.agents/execution-routing-harness.md` selects delegation or the user explicitly requests multiple models. It is not the default workflow for ordinary tasks. Models are identified by capability tier—heavy, medium, or light—not by vendor or product name.
+This document applies only after `.agents/execution-routing-harness.md` selects delegation or the user explicitly requests multiple models. It is not the default workflow for ordinary tasks. Models are identified by capability tier—heavy, medium, or light—not by vendor or product name, except that this repository prefers `gemini-3.5-flash` for eligible light patch workers when the transport offers it.
 
 When work originates from the product workflow, the Orchestrator must also read `.agents/product-delivery-workflow.md` and treat the PO/BA-approved task document, design package, and orchestration prompt as its input contract.
 
-For implementation planning, apply `.agents/execution-routing-harness.md` before creating Worker prompts. Prefer attached Antigravity for implementation-ready Medium/Light work; direct Heavy implementation remains the safe route for ambiguous, coupled, high-risk, or delegation-negative work.
+For implementation planning, apply `.agents/execution-routing-harness.md` before creating Worker prompts. Prefer Antigravity through `.agents/bin/agy-delegate` for implementation-ready Medium/Light work; direct Heavy implementation remains the safe route for ambiguous, coupled, high-risk, or delegation-negative work.
+
+## CLI Dispatch
+
+The canonical invocation is:
+
+```bash
+.agents/bin/agy-delegate --agent gemini-3.5-flash --mode accept-edits --cwd "$PWD" \
+  "Role: <backend | frontend | logic | test engineer>
+Task: <one bounded outcome>
+Knowledge: <relevant paths, specs, symbols>
+Success: <observable acceptance criteria and exact checks>
+Constraints: <allowed files>; do not change unrelated files; preserve privacy/security"
+```
+
+For a batch with independent sub-questions, optionally add `--nested`:
+
+```bash
+.agents/bin/agy-delegate --mode plan --nested \
+  "Break the bounded review into independent read-only checks when useful."
+```
+
+This is an opportunistic capability, not a required execution stage. The launcher instructs the parent worker to cap nesting at one level, avoid concurrent writers, and consolidate child evidence. If the current `agy` session has no subagent capability, the parent continues directly.
+
+Use `--mode plan` for discovery or review. Use `accept-edits` only for a worker whose exact ownership and verification are already approved. The launcher is intentionally not an MCP server and does not bypass CLI permissions. If `agy` cannot start because its environment needs access to its log directory or localhost listener, run the launcher in the approved host environment and report that fact; do not weaken the permission flags.
+
+## Patch Batches
+
+The default delegated unit is a **patch packet**, not a feature. It has one verifiable outcome, exact allowed files, and normally no more than 1–3 implementation files plus the directly related test and required prototype mirror. Separate discovery, contract decisions, implementation, and integration when combining them would make the prompt broad or ambiguous.
+
+The lead may create multiple batches. A batch contains 2–4 packets that are independent and have disjoint ownership. Run read-only packets in parallel where the transport permits. This checkout must never have concurrent writers: either dispatch `accept-edits` packets sequentially or use isolated worktrees. Review the actual diff and targeted evidence after every packet; terminate or re-plan a batch if a packet alters a shared contract or fails its gate.
+
+For light, mechanical packets, invoke the transport with `--agent gemini-3.5-flash` unless the available agent list proves that name is unavailable. Escalate a single packet—not the entire batch—to a stronger worker when it touches an unstable contract, needs broad context, or fails one corrective cycle.
 
 ## Operating Model
 
@@ -28,7 +60,7 @@ For every non-trivial planning request:
 4. Identify shared contracts first: types, APIs, state shape, database schema, design tokens, privacy rules, and domain invariants.
 5. Build a dependency graph and find genuinely independent workstreams.
 6. Decide whether delegation saves time after including briefing, review, merge-conflict, and verification costs.
-7. Assign one owner per file or clearly separated region. Avoid concurrent edits to the same file.
+7. Split each delegated workstream into patch packets, assign one owner per file or clearly separated region, and avoid concurrent edits to the same file.
 8. Order integration and name the checks that prove the combined result.
 
 ## Delegate or Keep with the Lead
@@ -58,19 +90,19 @@ A multi-model plan must include:
 1. **Goal and success criteria** — observable behavior and required checks.
 2. **Known constraints** — relevant specs, domain/privacy rules, prototype sync, and non-goals.
 3. **Dependency order** — contracts or prerequisite decisions before implementation tasks.
-4. **Task table** — task ID, owner, scope/files, dependencies, deliverable, verification, and risk.
+4. **Patch-batch table** — batch/task ID, owner/model, scope/files, dependencies, deliverable, verification, and risk. Mark each packet read-only parallel-safe, isolated-writer parallel-safe, or shared-checkout sequential.
 5. **Prompts** — one self-contained execution prompt per delegated task.
 6. **Integration plan** — merge/order strategy, conflict boundaries, lead review, and combined verification.
 7. **Fallback** — what the lead/heavy model should absorb if a delegated result is incomplete, incompatible, or unverifiable.
 
-Do not present tasks as parallel when dependencies make them sequential. Explicitly mark tasks as parallel-safe or blocked by another task.
+Do not present tasks as parallel when dependencies make them sequential. Explicitly mark tasks as parallel-safe or blocked by another task. Never give a worker an entire feature merely to reduce the number of prompts.
 
 ## Delegated Prompt Contract
 
 All cross-model communication uses a two-way prompt handoff:
 
 1. The lead/heavy model writes a self-contained execution prompt for the medium/light model.
-2. The medium/light model performs the task and writes a self-contained review prompt back to the lead/heavy model.
+2. The medium/light model, invoked via `.agents/bin/agy-delegate`, performs the task and writes a self-contained review prompt back to the lead/heavy model.
 3. The lead/heavy model uses that return prompt to inspect the actual artifacts, verify claims, request corrections when needed, and integrate the result.
 
 The execution prompt must explicitly tell the worker to produce the return review prompt. A prose summary alone is not a valid handoff.

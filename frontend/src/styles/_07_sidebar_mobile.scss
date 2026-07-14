@@ -2,6 +2,7 @@
 .inapp-layout {
   --app-sidebar-width: clamp(260px, 16.25rem, 22rem);
   --app-sidebar-collapsed-width: 72px;
+  --mobile-top-bar-height: 60px;
   display: flex;
   height: 100vh;
   height: 100dvh;
@@ -212,7 +213,7 @@ html.dark .global-sidebar__brand img {
   top: 0;
   left: 0;
   width: 100%;
-  height: 60px;
+  height: var(--mobile-top-bar-height);
   background-color: var(--color-surface-card);
   border-bottom: 1px solid var(--color-hairline);
   align-items: center;
@@ -249,7 +250,7 @@ html.dark .global-sidebar__brand img {
     margin-left: 0 !important;
     width: 100% !important;
     max-width: 100% !important;
-    padding-top: calc(60px + var(--space-md)) !important;
+    padding-top: calc(var(--mobile-top-bar-height) + var(--space-md)) !important;
   }
 
   .inapp-content.inapp-content--no-padding {

@@ -1,0 +1,125 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd -P)
+REPO_ROOT=$(CDPATH= cd -- "$SCRIPT_DIR/../.." && pwd -P)
+
+MODE="plan"
+TIMEOUT="10m"
+CWD="$REPO_ROOT"
+AGENT=""
+NESTED="0"
+
+usage() {
+  cat <<'EOF'
+Usage: .agents/bin/agy-delegate [options] "prompt"
+
+Run a bounded Antigravity CLI task for this repository.
+
+Options:
+  --cwd PATH              Workspace directory inside this repository (default: repo root)
+  --mode MODE             plan (default) or accept-edits
+  --timeout DURATION      agy print timeout (default: 10m)
+  --agent NAME            Optional agy agent name
+  --nested                Allow agy to use bounded subagents when available
+  -h, --help              Show this help
+
+The launcher never enables --dangerously-skip-permissions. Use accept-edits only
+for one small patch packet with explicit file ownership and Codex review of its diff.
+EOF
+}
+
+die() {
+  printf 'agy-delegate: %s\n' "$1" >&2
+  exit 2
+}
+
+while (($# > 0)); do
+  case "$1" in
+    --cwd)
+      (($# >= 2)) || die "--cwd requires a path"
+      CWD="$2"
+      shift 2
+      ;;
+    --mode)
+      (($# >= 2)) || die "--mode requires plan or accept-edits"
+      MODE="$2"
+      shift 2
+      ;;
+    --timeout)
+      (($# >= 2)) || die "--timeout requires a duration"
+      TIMEOUT="$2"
+      shift 2
+      ;;
+    --agent)
+      (($# >= 2)) || die "--agent requires a name"
+      AGENT="$2"
+      shift 2
+      ;;
+    --nested)
+      NESTED="1"
+      shift
+      ;;
+    -h|--help)
+      usage
+      exit 0
+      ;;
+    --)
+      shift
+      break
+      ;;
+    -* )
+      die "unknown option: $1"
+      ;;
+    *)
+      break
+      ;;
+  esac
+done
+
+(($# == 1)) || die 'exactly one quoted prompt is required'
+
+case "$MODE" in
+  plan|accept-edits) ;;
+  *) die "unsupported mode '$MODE'; use plan or accept-edits" ;;
+esac
+
+AGY_BIN=$(command -v agy || true)
+[[ -n "$AGY_BIN" ]] || die "agy was not found on PATH"
+
+[[ -d "$CWD" ]] || die "workspace directory does not exist: $CWD"
+CWD=$(CDPATH= cd -- "$CWD" && pwd -P)
+case "$CWD" in
+  "$REPO_ROOT"|"$REPO_ROOT"/*) ;;
+  *) die "workspace must be inside repository: $REPO_ROOT" ;;
+esac
+
+PROMPT="$1"
+[[ -n "$PROMPT" ]] || die 'prompt must not be empty'
+
+EFFECTIVE_PROMPT="$PROMPT"
+if [[ "$NESTED" == "1" ]]; then
+  EFFECTIVE_PROMPT="${PROMPT}
+
+Nested delegation policy:
+- You may use subagents only for a batch of 2–4 bounded, independent patch packets when that capability is available.
+- Limit nesting to one level below this worker; do not create subagents of subagents.
+- Each packet must have one verifiable outcome, exact file ownership, and normally at most 1–3 implementation files plus directly related tests/prototype mirror.
+- Keep nested subagents read-only by default. If an edit is necessary, assign disjoint files and run sequentially in this shared checkout.
+- Do not let any nested worker modify secrets, generated files, unrelated paths, or this checkout concurrently.
+- Return per-packet findings and verification evidence in the consolidated Review Prompt for the Codex orchestrator.
+- If subagents are unavailable, continue the task yourself without treating that as a failure."
+fi
+
+ARGS=(
+  --print-timeout "$TIMEOUT"
+  --mode "$MODE"
+  --add-dir "$CWD"
+  --print "$EFFECTIVE_PROMPT"
+)
+if [[ -n "$AGENT" ]]; then
+  ARGS=(--agent "$AGENT" "${ARGS[@]}")
+fi
+
+exec "$AGY_BIN" "${ARGS[@]}"

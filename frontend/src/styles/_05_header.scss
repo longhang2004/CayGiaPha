@@ -150,4 +150,21 @@ html.dark .app-nav__brand img {
   .app-nav__brand {
     min-width: 2.5rem;
   }
+
+  html[data-text-scale="200"] .app-header {
+    position: static;
+  }
+
+  html[data-text-scale="200"] .app-nav {
+    flex-wrap: wrap;
+    min-width: 0;
+    padding-inline: 0.5rem;
+  }
+
+  html[data-text-scale="200"] .app-nav__actions {
+    width: 100%;
+    min-width: 0;
+    flex-wrap: wrap;
+    justify-content: space-between;
+  }
 }

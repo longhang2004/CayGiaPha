@@ -116,7 +116,6 @@ function TreeListContent() {
   return (
     <main className="tree-list-page">
       <EarlyAccessWelcomeDialog />
-      <GuidanceChecklist role="owner" productState={{ treeOpened: false, personCount: 0, primitiveCount: 0, addressInspected: false, viewpointChanged: false }} />
       <div className="tree-list-page__header">
         <div>
           <p className="eyebrow tree-list-page__eyebrow">Không gian gia đình</p>
@@ -146,12 +145,16 @@ function TreeListContent() {
       <div className="tree-list-page__grid">
         {treesList.length === 0 ? (
           <div className="surface-card tree-list-page__empty">
+            <h2 style={{ marginTop: 0 }}>Chào mừng bạn đến với Cây Gia Phả</h2>
             <p>
               Bạn chưa sở hữu hoặc tham gia cộng tác bất kỳ cây gia phả nào.
             </p>
             <p>
               Chọn Thêm cây để tạo cây mới hoặc tham gia cây của người thân bằng mã mời.
             </p>
+            <div style={{ marginTop: "1.5rem" }}>
+              <GuidanceChecklist role="owner" productState={{ treeOpened: false, personCount: 0, primitiveCount: 0, addressInspected: false, viewpointChanged: false }} />
+            </div>
           </div>
         ) : (
           treesList.map((tree) => (

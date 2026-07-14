@@ -394,6 +394,13 @@ main {
 .empty-tree {
   max-width: 44rem;
   margin: 4rem auto;
+  overflow-y: visible !important;
+}
+
+body:has(.empty-tree),
+html:has(.empty-tree) {
+  overflow-y: auto !important;
+  height: auto !important;
 }
 
 .empty-tree__intro p {
@@ -442,9 +449,32 @@ main {
 
 /* Help Guide Styles */
 .help-guide {
-  max-width: 65ch; /* Improve readability line length */
+  max-width: min(65ch, 100%);
   margin: 3rem auto;
   padding: 0 1.5rem;
+  box-sizing: border-box;
+}
+
+.help-guide button {
+  white-space: normal !important;
+  height: auto !important;
+  min-height: 44px;
+  padding-block: 0.5rem;
+}
+
+.help-guide__search-bar {
+  flex-wrap: wrap;
+}
+
+.help-guide__search-bar > div {
+  min-width: 0;
+  width: 100%;
+}
+
+.help-guide__search-bar input {
+  box-sizing: border-box;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .help-guide__header {
@@ -514,6 +544,7 @@ main {
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
+  min-width: 0;
 }
 
 .help-nav__link {
@@ -543,3 +574,23 @@ main {
 .help-topic__body p, .help-topic__body ul, .help-topic__body ol { margin: 0; }
 .help-topic__body h3 { margin: .5rem 0 0; color: var(--color-fg); font-size: 1.05rem; }
 .help-topic__success { padding: 1rem; border-left: 4px solid var(--color-brand); background: var(--color-surface-card); }
+
+@media (max-width: 600px) {
+  .help-guide {
+    padding: 0 1rem;
+    margin: 1.5rem auto;
+  }
+  .help-guide__nav-card {
+    padding: 1rem;
+    margin-bottom: 2rem;
+  }
+  .help-guide__title {
+    font-size: 1.8rem;
+  }
+  .help-guide__header {
+    margin-bottom: 1.5rem;
+  }
+  .help-guide__content {
+    gap: 2rem;
+  }
+}

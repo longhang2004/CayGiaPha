@@ -3,12 +3,23 @@ export type GuidanceRole = "owner" | "editor" | "reader";
 export type HelpTopicStatus = "active" | "conditional" | "retired";
 export type HelpExcerptKey = "overview" | "checklist" | "contextual";
 
+export type HelpTopicCategory = "bat-dau" | "nguoi-va-quan-he" | "tim-va-xung-ho" | "quyen-va-rieng-tu" | "tuy-chinh-va-ho-tro";
+
+export const CATEGORY_LABELS: Record<HelpTopicCategory, string> = {
+  "bat-dau": "Bắt đầu",
+  "nguoi-va-quan-he": "Người và quan hệ",
+  "tim-va-xung-ho": "Tìm và xưng hô",
+  "quyen-va-rieng-tu": "Quyền và riêng tư",
+  "tuy-chinh-va-ho-tro": "Tùy chỉnh và hỗ trợ"
+};
 export interface HelpTopic {
   id: string;
   aliases?: string[];
   version: number;
   status: HelpTopicStatus;
   roles: GuidanceRole[];
+  category: HelpTopicCategory;
+  keywords: string[];
   title: string;
   summary: string;
   purpose: string;
@@ -27,6 +38,7 @@ const ALL_ROLES: GuidanceRole[] = ["owner", "editor", "reader"];
 export const HELP_TOPICS: HelpTopic[] = [
   {
     id: "tao-hoac-mo-cay", version: 2, status: "active", roles: ALL_ROLES,
+    category: "bat-dau", keywords: ["tạo", "mở", "mã mời", "tham gia"],
     title: "Tạo, tham gia hoặc mở một cây", summary: "Tạo cây mới, nhập mã mời 6 ký tự hoặc mở cây bạn đã có quyền xem.",
     purpose: "Đi vào không gian gia đình để bắt đầu ghi lại, xem và cùng hoàn thiện các mối quan hệ.",
     prerequisites: ["Bạn đã đăng nhập."],
@@ -38,6 +50,7 @@ export const HELP_TOPICS: HelpTopic[] = [
   },
   {
     id: "them-nguoi-dau-tien", version: 2, status: "active", roles: ["owner", "editor"],
+    category: "bat-dau", keywords: ["thêm người", "bản thân", "bắt đầu"],
     title: "Thêm người đầu tiên", summary: "Bắt đầu cây bằng chính bạn hoặc một người thân.",
     purpose: "Tạo điểm bắt đầu để sau đó nối thêm cha, mẹ, vợ/chồng hoặc con.",
     prerequisites: ["Cây đang trống.", "Bạn có quyền chỉnh sửa cây."],
@@ -48,6 +61,7 @@ export const HELP_TOPICS: HelpTopic[] = [
   },
   {
     id: "them-quan-he-ro-rang", aliases: ["them-nguoi-than", "duong-net-lien-va-net-dut"], version: 2, status: "active", roles: ["owner", "editor"],
+    category: "nguoi-va-quan-he", keywords: ["cha", "mẹ", "vợ", "chồng", "con", "thêm người thân"],
     title: "Thêm quan hệ trực tiếp hoặc tên gọi tự khai báo", summary: "Nối cha, mẹ, con, vợ/chồng hoặc tự điền tên gọi khi chưa đủ người trung gian.",
     purpose: "Quan hệ trực tiếp giúp hệ thống tính cách xưng hô; tên gọi tự khai báo giữ lại thông tin khi đường quan hệ chưa đầy đủ.",
     prerequisites: ["Cây có ít nhất một người.", "Bạn có quyền chỉnh sửa cây."],
@@ -59,6 +73,7 @@ export const HELP_TOPICS: HelpTopic[] = [
   },
   {
     id: "xem-thong-tin-va-xung-ho", aliases: ["cach-tinh-xung-ho"], version: 2, status: "active", roles: ALL_ROLES,
+    category: "tim-va-xung-ho", keywords: ["xưng hô", "thông tin", "cách gọi", "vai vế"],
     title: "Xem thông tin và cách xưng hô", summary: "Chọn một người để xem thông tin và cách gọi từ điểm nhìn hiện tại.",
     purpose: "Hiểu một người là ai và nên xưng hô thế nào theo đường quan hệ, điểm nhìn và vùng miền của cây.",
     prerequisites: ["Cây có ít nhất một người."],
@@ -70,6 +85,7 @@ export const HELP_TOPICS: HelpTopic[] = [
   },
   {
     id: "doi-diem-nhin", version: 2, status: "active", roles: ALL_ROLES,
+    category: "tim-va-xung-ho", keywords: ["điểm nhìn", "góc nhìn", "đổi", "xưng hô"],
     title: "Đổi điểm nhìn", summary: "Xem cách xưng hô khi nhìn từ một người khác trong cây.",
     purpose: "Cách gọi thay đổi theo người đang được chọn làm điểm nhìn.",
     prerequisites: ["Cây có ít nhất hai người."],
@@ -80,6 +96,7 @@ export const HELP_TOPICS: HelpTopic[] = [
   },
   {
     id: "dieu-huong-so-do", aliases: ["tim-duong-di"], version: 2, status: "active", roles: ALL_ROLES,
+    category: "tim-va-xung-ho", keywords: ["tìm kiếm", "kéo", "thu phóng", "di chuyển", "sơ đồ"],
     title: "Tìm người và di chuyển trên sơ đồ", summary: "Tìm kiếm, kéo, thu phóng và đi nhanh tới một người thân.",
     purpose: "Khám phá cây mà không làm thay đổi dữ liệu.", prerequisites: ["Cây đã có thành viên."],
     steps: ["Nhập tên hoặc cách xưng hô vào ô tìm kiếm để chọn nhanh một người.", "Kéo vùng trống để di chuyển sơ đồ.", "Dùng nút thu phóng hoặc cuộn chuột; trên màn hình cảm ứng, dùng hai ngón tay."],
@@ -89,6 +106,7 @@ export const HELP_TOPICS: HelpTopic[] = [
   },
   {
     id: "doc-duong-quan-he", version: 2, status: "active", roles: ALL_ROLES,
+    category: "nguoi-va-quan-he", keywords: ["đường", "nét liền", "nét đứt", "chú thích"],
     title: "Đọc đường quan hệ", summary: "Phân biệt đường quan hệ rõ ràng và quan hệ được khai báo.",
     purpose: "Hiểu ý nghĩa của các kiểu đường nối trên sơ đồ.", prerequisites: ["Cây có quan hệ giữa các thành viên."],
     steps: ["Mở Chú thích trên sơ đồ.", "Đường liền biểu diễn quan hệ trực tiếp mà hệ thống có thể dùng để tính xưng hô.", "Đường nét đứt biểu diễn tên gọi tự khai báo khi chưa đủ người trung gian."],
@@ -97,6 +115,7 @@ export const HELP_TOPICS: HelpTopic[] = [
   },
   {
     id: "chon-vung-mien", aliases: ["chon-vung-mien-va-bao-mat"], version: 2, status: "active", roles: ["owner"],
+    category: "tuy-chinh-va-ho-tro", keywords: ["vùng miền", "bắc", "trung", "nam", "cách gọi"],
     title: "Chọn vùng miền", summary: "Dùng cách gọi phù hợp với gia đình ở miền Bắc, Trung hoặc Nam.",
     purpose: "Điều chỉnh từ xưng hô mà hệ thống hiển thị.", prerequisites: ["Bạn là chủ cây."],
     steps: ["Mở Cài đặt trong cây.", "Chọn Miền Bắc, Miền Trung hoặc Miền Nam.", "Đóng cửa sổ cài đặt sau khi hệ thống cập nhật."], success: "Cách xưng hô được tính lại theo vùng đã chọn.",
@@ -104,6 +123,7 @@ export const HELP_TOPICS: HelpTopic[] = [
   },
   {
     id: "dieu-chinh-hien-thi", aliases: ["ca-nhan-hoa-giao-dien"], version: 2, status: "active", roles: ALL_ROLES,
+    category: "tuy-chinh-va-ho-tro", keywords: ["giao diện", "sáng", "tối", "cỡ chữ", "hiển thị"],
     title: "Điều chỉnh giao diện để dễ đọc", summary: "Đổi giao diện, tăng cỡ chữ và tùy chọn thông tin hiển thị trên cây.",
     purpose: "Giúp mọi thành viên trong gia đình đọc và thao tác thoải mái hơn.", prerequisites: [],
     steps: ["Mở Cài đặt để chọn giao diện Sáng, Tối hoặc Theo hệ thống.", "Chọn cỡ chữ từ 100% đến 200%.", "Trong Cài đặt cây, bật hoặc tắt năm sinh/năm mất trên các thành viên nếu cần."], success: "Giao diện thay đổi nhưng nội dung và nút thao tác vẫn đầy đủ.",
@@ -111,6 +131,7 @@ export const HELP_TOPICS: HelpTopic[] = [
   },
   {
     id: "moi-va-quan-ly-cong-tac", version: 1, status: "active", roles: ["owner"],
+    category: "quyen-va-rieng-tu", keywords: ["mời", "cộng tác", "chia sẻ", "quyền"],
     title: "Mời và quản lý cộng tác viên", summary: "Mời qua email, mã hoặc liên kết và duyệt người muốn cùng chỉnh sửa cây.",
     purpose: "Cho phép người thân cùng bổ sung thông tin trong đúng cây gia phả.",
     prerequisites: ["Bạn là chủ cây.", "Cây đã được tạo."],
@@ -122,6 +143,7 @@ export const HELP_TOPICS: HelpTopic[] = [
   },
   {
     id: "luu-anh-ky-niem", version: 1, status: "active", roles: ALL_ROLES,
+    category: "nguoi-va-quan-he", keywords: ["ảnh", "kỷ niệm", "thư viện", "đại diện"],
     title: "Lưu ảnh kỷ niệm cho thành viên", summary: "Xem ảnh theo năm và, khi có quyền, tải ảnh hoặc chọn ảnh đại diện.",
     purpose: "Lưu lại hình ảnh gắn với từng thành viên trong gia đình.",
     prerequisites: ["Cây có ít nhất một người.", "Chủ cây và cộng tác viên quản lý ảnh của mọi người; thành viên đã xác nhận quản lý ảnh của chính mình."],
@@ -133,6 +155,7 @@ export const HELP_TOPICS: HelpTopic[] = [
   },
   {
     id: "bao-mat-va-chia-se-cay", version: 1, status: "active", roles: ["owner"],
+    category: "quyen-va-rieng-tu", keywords: ["bảo mật", "riêng tư", "chia sẻ", "ẩn", "công khai"],
     title: "Bảo vệ thông tin và chia sẻ cây", summary: "Ẩn thông tin người còn sống và chọn phạm vi riêng tư, liên kết hoặc công khai.",
     purpose: "Kiểm soát ai có thể xem cây và giảm thông tin nhạy cảm hiển thị về người còn sống.",
     prerequisites: ["Bạn là chủ cây."],
@@ -144,6 +167,7 @@ export const HELP_TOPICS: HelpTopic[] = [
   },
   {
     id: "gui-phan-hoi-va-ung-ho", version: 1, status: "active", roles: ALL_ROLES,
+    category: "tuy-chinh-va-ho-tro", keywords: ["phản hồi", "lỗi", "ủng hộ", "đóng góp"],
     title: "Gửi phản hồi và ủng hộ dự án", summary: "Báo lỗi, đề xuất tính năng hoặc hỗ trợ chi phí duy trì website.",
     purpose: "Giúp phiên bản truy cập sớm được cải thiện dựa trên trải nghiệm thực tế.",
     prerequisites: [],
@@ -155,6 +179,7 @@ export const HELP_TOPICS: HelpTopic[] = [
   },
   {
     id: "xac-nhan-day-la-toi", version: 1, status: "active", roles: ALL_ROLES,
+    category: "quyen-va-rieng-tu", keywords: ["xác nhận", "hồ sơ", "chính mình", "liên kết"],
     title: "Xác nhận đây là tôi", summary: "Liên kết đúng hồ sơ trong cây với tài khoản đã đăng nhập bằng mã xác nhận.",
     purpose: "Cho phép bạn quản lý thông tin và ảnh của chính mình mà không cấp quyền chỉnh sửa toàn bộ cây.",
     prerequisites: ["Chủ cây đã gửi lời mời xác nhận từ đúng hồ sơ của bạn.", "Bạn đăng nhập hoặc đăng ký bằng đúng email nhận lời mời; số điện thoại chỉ dùng cho tài khoản cũ đã được xác minh."],
@@ -176,4 +201,22 @@ export function getHelpTopic(id: string, role?: GuidanceRole) {
 
 export function getHelpExcerpt(topicId: string, key: HelpExcerptKey, role?: GuidanceRole) {
   return getHelpTopic(topicId, role)?.excerpts[key];
+}
+
+import { normalizeName } from "@/lib/nameNormalize";
+
+export function searchHelpTopics(query: string, category: HelpTopicCategory | "all" = "all", role?: GuidanceRole) {
+  const topics = getActiveHelpTopics(role);
+  let filtered = topics;
+  if (category !== "all") {
+    filtered = filtered.filter(t => t.category === category);
+  }
+  const q = normalizeName(query);
+  if (!q) return filtered;
+
+  return filtered.filter(t => {
+    return normalizeName(t.title).includes(q) ||
+           normalizeName(t.summary).includes(q) ||
+           t.keywords.some(k => normalizeName(k).includes(q));
+  });
 }

@@ -27,4 +27,14 @@ describe("canonical Help registry", () => {
       expect(topic.version).toBe(newTopicIds.has(topic.id) ? 1 : 2);
     }
   });
+  it("has valid category and normalized keywords", () => {
+    const validCategories = ["bat-dau", "nguoi-va-quan-he", "tim-va-xung-ho", "quyen-va-rieng-tu", "tuy-chinh-va-ho-tro"];
+    for (const topic of HELP_TOPICS) {
+      expect(validCategories).toContain(topic.category);
+      expect(Array.isArray(topic.keywords)).toBe(true);
+      for (const keyword of topic.keywords) {
+        expect(keyword).toBe(keyword.toLowerCase());
+      }
+    }
+  });
 });

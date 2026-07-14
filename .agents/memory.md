@@ -74,6 +74,8 @@ Durable project knowledge for future AI agents. Keep entries short, verified, an
 - **Cross-model prompt handoff**: Model communication is prompt-based in both directions. Heavy writes an explicit execution prompt for Medium/Light and must require the worker to return a standardized review prompt containing artifacts, evidence, verification, risks, and focused review instructions. Corrections use a new execution-prompt/review-prompt cycle.
 - **Product/design specialist sessions are optional**: Do not route ordinary work through PO/BA or Designer. Use `.agents/product-delivery-workflow.md` only for explicit product strategy/market/roadmap work, major design work, or material authority gaps that Plan mode cannot resolve efficiently with the user.
 - **Execution routing default**: Follow `.agents/execution-routing-harness.md` in Plan mode. Codex owns planning, architecture, review, verification, integration, and high-risk implementation. Prefer attached Antigravity for safely bounded Medium/Light implementation because the user has more Antigravity usage; Codex implements directly when work is ambiguous, coupled, privacy/security/domain-sensitive, or cheaper than delegation plus review.
+- **Antigravity CLI** (2026-07-13): Use `.agents/bin/agy-delegate` for repository-local Antigravity delegation. It defaults to read-only `plan` mode; `accept-edits` requires explicit bounded ownership and Codex diff/test verification. The `agy` process may need a host environment that permits its log directory and localhost listener; never use `--dangerously-skip-permissions`.
+- **Patch-batch delegation** (2026-07-14): Use 2–4 narrowly scoped patch packets rather than delegating a broad feature to one worker. Prefer `gemini-3.5-flash` for eligible light packets; freeze contracts and ownership first, run shared-checkout writers sequentially, and require a diff plus targeted evidence for every packet. See `.agents/execution-routing-harness.md` and `.agents/multi-model-playbook.md`.
 - **Superpowers Lite**: Follow `.agents/superpowers-lite.md`. Use systematic debugging, proportionate planning/TDD/review, and mandatory fresh verification; do not automatically require full brainstorming, design-doc commits, micro-plans, worktrees, per-task subagents, or frequent commits.
 - **Prototype UI audit routing**: Full `.agents/skills/prototype-ui-audit/SKILL.md` is reserved for broad redesigns, shared shell/style/navigation work, major responsive/modal changes, cross-page work, release audits, or suspected systemic drift. Use targeted Playwright/screenshots for ordinary isolated UI changes.
 - **Active architecture/auth baseline**: The production-priority runtime is Next.js full-stack with Route Handlers, TypeScript services, Drizzle, and PostgreSQL. Spring Boot is an inactive reference/future synchronization target. Password and Google are the active sign-up/sign-in methods; OTP-only auth is legacy. Bounded codes remain for password recovery and person-node claiming.
@@ -105,6 +107,19 @@ Durable project knowledge for future AI agents. Keep entries short, verified, an
 - **2026-07-13 CGP 200% overlay rules**: Long CGP popovers need a `100dvh` max-height plus vertical scrolling. The responsive app drawer scales up to the viewport, wraps nav labels, and scrolls vertically; graph legend close targets remain at least `--min-touch-target` (48px in the current theme).
 
 ## 2026-07-13
+
+- **Older-adult mobile UX research**: Evidence-backed pre-plan research for elderly and low-confidence
+  technology users lives at `docs/research/2026-07-13-older-adult-mobile-ux.md`. Technical WCAG
+  conformance is only the floor; future UI planning should prioritize visible labeled actions,
+  non-gesture alternatives, contextual Help backed by canonical topic IDs, safe error recovery, and
+  moderated mobile testing with Vietnamese users 60+. Keep the existing 44 CSS-px floor/48px intent;
+  WCAG 2.2 AA's 24px minimum is not the product target.
+- **Older-adult UX baseline audit**: The 2026-07-13 evidence and round-1 protocol live under
+  `docs/research/ux-baseline-2026-07-13/`. At 100% text the four target prototypes have no page-level
+  horizontal overflow and most visible core targets meet 44px, but mobile guidance obscures the
+  graph, core toolbar labels disappear, and Help is a long sequential document. At 200% text,
+  tree-list/tree workspaces remain locked to the viewport and Help expands to 571px wide; production
+  redesign stays gated on three visual directions plus moderated testing.
 
 - **Early-access welcome cookie**: The tree-list welcome dialog acknowledges per browser with `cgp_early_access_welcome_v1=acknowledged`, path `/`, `SameSite=Lax`, and a 365-day expiry. Cookie failure must never prevent the dialog from closing for the current page visit.
 - **Help/ClaimFlow boundary**: Person-node ClaimFlow is mounted at `/claim/[personId]`, requires an

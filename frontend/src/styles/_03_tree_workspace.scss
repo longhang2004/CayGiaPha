@@ -436,8 +436,6 @@ html.dark .tree-page-header__logo {
   }
 
 }
-
-/* ---- Mobile (≤539px) ---- */
 @media (max-width: 539px) {
   .tree-page-header {
     display: grid;
@@ -449,6 +447,8 @@ html.dark .tree-page-header__logo {
     border-radius: 0.875rem;
     padding: 0.45rem;
   }
+
+/* ---- Mobile (≤539px) ---- */
 
   .tree-page-header__row-one {
     display: contents;
@@ -483,9 +483,9 @@ html.dark .tree-page-header__logo {
 
   .tree-page-header__actions .btn,
   .tree-page-header__actions button {
-    width: 44px;
+    width: auto;
     min-width: 44px;
-    padding-inline: 0;
+    padding-inline: 0.5rem;
   }
 
   .tree-page-header__actions .btn .hide-on-tablet,
@@ -573,6 +573,7 @@ html.dark .tree-page-header__logo {
   width: 100%;
   height: 100%;
   min-width: 0;
+  position: relative;
 }
 
 .tree-workspace__graph {
@@ -604,23 +605,24 @@ html.dark .tree-page-header__logo {
 
 /* Floating Slide-in Info Panel */
 .tree-workspace__info-panel {
-  position: absolute;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  width: 420px;
+  position: static;
+  width: 320px;
+  min-width: 320px;
   background-color: var(--color-surface-card);
-  border-left: 1px solid var(--color-hairline);
-  box-shadow: -10px 0 35px rgba(38, 37, 30, 0.08);
-  transform: translateX(100%);
-  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-  z-index: 80;
+  border-right: 1px solid var(--color-hairline);
+  box-shadow: none;
+  z-index: 10;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
+  transform: none !important;
 }
 
-/* Floating Zoom & Pan Controls */
+.tree-workspace__layout {
+  display: flex;
+  flex-direction: row;
+}
+
 .tree-graph__nav-controls {
   position: absolute;
   top: 50%;
@@ -633,8 +635,9 @@ html.dark .tree-page-header__logo {
   z-index: 10;
 }
 
-.tree-workspace__info-panel--open {
-  transform: translateX(0);
+/* On desktop, info panel is always visible but only shows content when active */
+.tree-workspace__info-panel:empty {
+  display: none;
 }
 
 .side-panel {
@@ -764,18 +767,27 @@ html.dark .double-bezel-card {
   }
 
   .tree-workspace__info-panel {
+    display: none;
     position: absolute;
-    top: auto;
+    top: 6.5rem;
     left: 0;
-    bottom: 0;
-    width: 100%;
-    height: 60vh;
+    bottom: auto !important;
+    width: 100% !important;
+    height: min(40dvh, 20rem) !important;
     border-left: none;
+    border-right: none;
     border-top: 1px solid var(--color-hairline);
-    border-radius: 20px 20px 0 0;
+    border-bottom: 1px solid var(--color-hairline);
+    border-radius: 20px;
     box-shadow: 0 -10px 30px rgba(38, 37, 30, 0.1);
-    transform: translateY(100%);
+    transform: none !important;
     z-index: 100;
+  }
+
+  @media (max-width: 600px) {
+    .tree-workspace__info-panel {
+      height: min(40dvh, 18rem) !important;
+    }
   }
 
   .tree-graph__nav-controls {
@@ -785,7 +797,81 @@ html.dark .double-bezel-card {
   }
 
   .tree-workspace__info-panel--open {
+    display: flex;
     transform: translateY(0) !important;
+  }
+
+  html[data-text-scale="200"] .tree-workspace__info-panel {
+    height: min(28dvh, 13rem) !important;
+  }
+
+  html[data-text-scale="200"] .tree-workspace__info-panel--open {
+    transform: translateY(0) !important;
+  }
+
+  html[data-text-scale="200"] .tree-workspace {
+    height: auto;
+    min-height: 100dvh;
+    overflow: visible;
+  }
+
+  html[data-text-scale="200"] .tree-workspace__layout {
+    flex-direction: column;
+    height: auto;
+    min-height: 100dvh;
+    overflow: visible;
+  }
+
+  html[data-text-scale="200"] .tree-workspace__main {
+    display: flex;
+    flex-direction: column;
+    height: auto;
+    min-height: 0;
+  }
+
+  html[data-text-scale="200"] .tree-page-header {
+    position: static;
+    order: 0;
+    width: calc(100% - 1.5rem);
+    margin: calc(var(--mobile-top-bar-height, 60px) + 0.75rem) 0.75rem 0.75rem;
+    transform: none;
+  }
+
+  html[data-text-scale="200"] .tree-workspace-surface {
+    order: 1;
+    height: auto !important;
+  }
+
+  html[data-text-scale="200"] .tree-workspace-surface__header {
+    position: static;
+    width: calc(100% - 2rem);
+    margin: 1rem;
+    transform: none;
+  }
+
+  html[data-text-scale="200"] .tree-workspace-surface__content {
+    flex: 0 0 auto !important;
+    overflow: visible !important;
+    padding-top: 0 !important;
+  }
+
+  html[data-text-scale="200"] .tree-focus-view,
+  html[data-text-scale="200"] .tree-people-list {
+    height: auto !important;
+    overflow: visible !important;
+  }
+
+  html[data-text-scale="200"] .tree-workspace__graph {
+    height: 60dvh;
+  }
+
+  html[data-text-scale="200"] .tree-workspace__info-panel {
+    position: static;
+    width: 100% !important;
+    height: auto !important;
+    max-height: none;
+    overflow: visible;
+    border-radius: 0;
   }
 
   .home-steps {
@@ -1114,4 +1200,53 @@ textarea {
 
 @media (prefers-reduced-motion: reduce) {
   .guidance-card, .context-note { animation: none !important; transition: none !important; }
+}
+
+
+.tree-workspace-surface__header {
+  position: absolute;
+  top: 1rem;
+  left: 1rem;
+  z-index: 90;
+}
+
+.view-switcher {
+  display: flex;
+  gap: 0.25rem;
+  width: fit-content;
+  max-width: 100%;
+  padding: 0.25rem;
+  border-radius: 999px;
+  background: var(--color-surface-soft);
+}
+
+.view-switcher > .btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 0.5rem 1.25rem;
+  border-radius: 999px;
+  line-height: 1.2;
+}
+
+@media (max-width: 539px) {
+  .tree-workspace-surface__header {
+    top: 1rem;
+    bottom: auto;
+    left: 50%;
+    width: calc(100% - 2rem);
+    transform: translateX(-50%);
+  }
+
+  .view-switcher {
+    width: 100%;
+  }
+
+  .view-switcher > .btn {
+    flex: 1 1 0;
+    min-width: 0;
+    padding-inline: 0.5rem;
+    white-space: normal;
+  }
 }

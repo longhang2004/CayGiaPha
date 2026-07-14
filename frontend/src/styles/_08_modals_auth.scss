@@ -1035,7 +1035,6 @@ html.dark .full-screen-loader__spinner {
 
 .onboarding-popup {
   width: 420px;
-  height: 520px;
   background-color: var(--color-bg);
   border: 1px solid var(--color-hairline);
   border-radius: 20px;
@@ -1045,7 +1044,6 @@ html.dark .full-screen-loader__spinner {
   flex-direction: column;
   justify-content: space-between;
   position: relative;
-  overflow: hidden;
   animation: scale-up 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 

@@ -19,7 +19,7 @@ import { PersonForm } from "@/components/person/PersonForm";
 import { MockSessionProvider } from "@/lib/prototype/mockSession";
 import { PROTOTYPE_TREE_ID } from "@/lib/prototype/mockData";
 import { Card } from "@/components/ui/Card";
-import { ContextNote } from "@/components/guidance/ContextNote";
+import { GuidanceChecklist } from "@/components/guidance/GuidanceChecklist";
 
 function PrototypeEmptyTreeContent() {
   return (
@@ -32,15 +32,18 @@ function PrototypeEmptyTreeContent() {
           để bắt đầu.
         </p>
       </div>
-      <ContextNote topicId="them-nguoi-dau-tien" role="owner" manual>
-        <div className="onboarding-strip onboarding-strip--guidance" aria-label="Các bước gợi ý">
-          <span>1. Nhập tên</span>
-          <span aria-hidden="true">—</span>
-          <span>2. Chọn giới tính</span>
-          <span aria-hidden="true">—</span>
-          <span>3. Bấm lưu</span>
-        </div>
-      </ContextNote>
+      <div style={{ marginBottom: "2rem", textAlign: "left" }}>
+        <GuidanceChecklist
+          role="owner"
+          productState={{
+            treeOpened: true,
+            personCount: 0,
+            primitiveCount: 0,
+            addressInspected: false,
+            viewpointChanged: false
+          }}
+        />
+      </div>
       <Card className="empty-tree__form" style={{ padding: "2rem", textAlign: "left" }}>
         <PersonForm
           mode="create"

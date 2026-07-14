@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, type FormEvent } from "react";
+import { useState, useEffect, useRef, type FormEvent } from "react";
 import { ApiError } from "@/lib/apiClient";
 import {
   createPerson,
@@ -19,6 +19,7 @@ import { Button } from "@/components/Button";
 import { uploadPhoto } from "@/lib/photos";
 import { FormControl, Input, Select } from "@/components/ui/FormControls";
 import { LawfulBasisNotice } from "./LawfulBasisNotice";
+import { trackUxEvent, getUxViewportClass } from "@/lib/analytics/uxEvents";
 
 /**
  * Create/edit form for a Person node (Requirements 3.1, 3.3) with per-field
@@ -179,17 +180,67 @@ export function PersonForm({
   }, [deathStatus, deathDay, deathMonth, deathYear, deathCalendar, deathLunarLeap]);
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [photoPreviewUrl, setPhotoPreviewUrl] = useState<string | null>(null);
-
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [formError, setFormError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const isSubmittingRef = useRef(false);
+  const [showSubmitReview, setShowSubmitReview] = useState(false);
+  const [showDiscardConfirm, setShowDiscardConfirm] = useState(false);
+  const isFirstPerson = mode === "create" && persons.length === 0;
+  const flowName = mode === "edit" ? "edit_person" : isFirstPerson ? "add_first_person" : "add_relative";
+  const surface = isFirstPerson ? "tree_empty" : "person_form";
+
+  const isDirty =
+    displayName !== (initialValues?.displayName ?? "") ||
+    gender !== (initialValues?.gender ?? "male") ||
+    birthOrder !== (initialValues?.birthOrder != null ? String(initialValues.birthOrder) : "") ||
+    birthYear !== (initialValues?.birthYear != null ? String(initialValues.birthYear) : "") ||
+    phone !== (initialValues?.phone ?? "") ||
+    email !== (initialValues?.email ?? "") ||
+    deathStatus !== (initialValues?.deathStatus ?? false) ||
+    deathDay !== (initialValues?.deathDay != null ? String(initialValues.deathDay) : "") ||
+    deathMonth !== (initialValues?.deathMonth != null ? String(initialValues.deathMonth) : "") ||
+    deathYear !== (initialValues?.deathYear != null ? String(initialValues.deathYear) : "") ||
+    deathCalendar !== (initialValues?.deathCalendar ?? "lunar") ||
+    deathLunarLeap !== (initialValues?.deathLunarLeap ?? false) ||
+    photoFile !== null ||
+    (mode === "create" && (
+      linkRelationship !== false ||
+      relTargetId !== (persons[0]?.id ?? "") ||
+      derivedKind !== "bloodline_father" ||
+      maritalStatus !== "married"
+    )) ||
+    (mode === "edit" && spouseRelationship && (
+      spouseMaritalStatus !== (spouseRelationship?.maritalStatus === "divorced" ? "divorced" : "married")
+    ));
+
+  function handleCancelClick() {
+    trackUxEvent("ux_core_flow_error", {
+      flow: flowName,
+      surface,
+      viewportClass: getUxViewportClass(),
+      accessRole: "unknown",
+      outcome: "cancelled"
+    });
+    if (isDirty && !showDiscardConfirm) {
+      setShowDiscardConfirm(true);
+    } else {
+      onCancel?.();
+    }
+  }
 
   function describedBy(field: string): string | undefined {
     return fieldErrors[field] ? `${field}-error` : undefined;
   }
 
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    setShowSubmitReview(true);
+  }
+
+  async function handleConfirmSubmit() {
+    if (isSubmittingRef.current) return;
+    isSubmittingRef.current = true;
     setFieldErrors({});
     setFormError(null);
     setSubmitting(true);
@@ -199,6 +250,8 @@ export function PersonForm({
     const dDay = parseOptionalInt(deathDay);
     const dMonth = parseOptionalInt(deathMonth);
     const dYear = parseOptionalInt(deathYear);
+
+    trackUxEvent("ux_core_flow_start", { flow: flowName, surface, viewportClass: getUxViewportClass(), accessRole: "unknown", outcome: "started" });
 
     try {
       let resolvedId = personId;
@@ -287,10 +340,13 @@ export function PersonForm({
         }
       }
 
+      setShowSubmitReview(false);
+      trackUxEvent("ux_core_flow_complete", { flow: flowName, surface, viewportClass: getUxViewportClass(), accessRole: "unknown", outcome: "completed" });
       if (resolvedId) {
         onSuccess?.(resolvedId);
       }
     } catch (error) {
+      setShowSubmitReview(false);
       if (error instanceof ApiError && error.field) {
         setFieldErrors({ [error.field]: error.message });
       } else if (error instanceof ApiError) {
@@ -298,12 +354,74 @@ export function PersonForm({
       } else {
         setFormError("Không thể lưu. Vui lòng thử lại.");
       }
+      trackUxEvent("ux_core_flow_error", { flow: flowName, surface, viewportClass: getUxViewportClass(), accessRole: "unknown", outcome: "request_error" });
     } finally {
+      isSubmittingRef.current = false;
       setSubmitting(false);
     }
   }
 
-  return (
+
+  if (showDiscardConfirm) {
+    return (
+      <div className="person-form-discard-confirm">
+        <h3>Hủy bỏ thay đổi?</h3>
+        <p>Các thông tin bạn vừa nhập sẽ không được lưu lại.</p>
+        <div style={{ display: "flex", gap: "1rem", marginTop: "1rem" }}>
+          <button type="button" className="btn btn-secondary" onClick={() => {
+            trackUxEvent("ux_recovery_used", { flow: flowName, surface, viewportClass: getUxViewportClass(), accessRole: "unknown", outcome: "retry" });
+            setShowDiscardConfirm(false);
+          }}>Tiếp tục chỉnh sửa</button>
+          <button type="button" className="btn btn-primary btn-terracotta" onClick={() => onCancel?.()}>Xác nhận hủy</button>
+        </div>
+      </div>
+    );
+  }
+
+  if (showSubmitReview) {
+    const isFirstPerson = mode === "create" && persons.length === 0;
+
+    let reviewMessage = "";
+    let subReviewMessage = "";
+    if (mode === "edit") {
+      reviewMessage = `Bạn đang cập nhật thông tin của ${displayName}.`;
+      if (spouseRelationship && spouseMaritalStatus !== (spouseRelationship.maritalStatus === "divorced" ? "divorced" : "married")) {
+        reviewMessage += ` Tình trạng hôn nhân sẽ được thay đổi thành: ${spouseMaritalStatus === "divorced" ? "Đã ly dị" : "Đã kết hôn"}.`;
+      }
+    } else if (isFirstPerson) {
+      reviewMessage = `Bạn đang tạo người đầu tiên trong cây gia phả: ${displayName}.`;
+    } else {
+      reviewMessage = `Bạn đang thêm thành viên mới: ${displayName}.`;
+      if (linkRelationship && relTargetId) {
+        const relationLabel =
+          derivedKind === "bloodline_father" ? `${displayName} là CHA của ${targetName}` :
+          derivedKind === "bloodline_father_reverse" ? `${displayName} là CON của ${targetName} (${targetName} là CHA)` :
+          derivedKind === "bloodline_mother" ? `${displayName} là MẸ của ${targetName}` :
+          derivedKind === "bloodline_mother_reverse" ? `${displayName} là CON của ${targetName} (${targetName} là MẸ)` :
+          derivedKind === "marriage" ? `${displayName} và ${targetName} là VỢ CHỒNG` : "";
+        subReviewMessage = `Thiết lập quan hệ: ${relationLabel}`;
+      }
+    }
+
+    return (
+      <div className="person-form-review">
+        <h3>Xác nhận lưu thông tin</h3>
+        <p>{reviewMessage}</p>
+        {subReviewMessage && <p><strong>{subReviewMessage}</strong></p>}
+        <div style={{ display: "flex", gap: "1rem", marginTop: "1rem" }}>
+          <button type="button" className="btn btn-secondary" disabled={submitting} onClick={() => {
+            trackUxEvent("ux_recovery_used", { flow: flowName, surface, viewportClass: getUxViewportClass(), accessRole: "unknown", outcome: "retry" });
+            setShowSubmitReview(false);
+          }}>Quay lại chỉnh sửa</button>
+          <button type="button" className="btn btn-primary btn-terracotta" disabled={submitting} onClick={handleConfirmSubmit}>
+            {submitting ? "Đang lưu..." : "Xác nhận lưu"}
+          </button>
+        </div>
+        {formError && <p className="form-error" style={{ marginTop: "1rem" }}>{formError}</p>}
+      </div>
+    );
+  }
+return (
     <form onSubmit={handleSubmit} aria-label={mode === "create" ? "Thêm thành viên mới" : "Chỉnh sửa thông tin thành viên"}>
       {formError ? (
         <p id="person-form-error" role="alert" className="form-error" style={{ marginBottom: "1rem" }}>
@@ -322,6 +440,7 @@ export function PersonForm({
           error={fieldErrors.displayName}
           onChange={(e) => setDisplayName(e.target.value)}
           required
+          disabled={submitting}
         />
       </FormControl>
 
@@ -332,6 +451,7 @@ export function PersonForm({
           value={gender}
           error={fieldErrors.gender}
           onChange={(e) => setGender(e.target.value as Gender)}
+          disabled={submitting}
         >
           <option value="male">Nam</option>
           <option value="female">Nữ</option>
@@ -347,6 +467,7 @@ export function PersonForm({
           value={birthYear}
           error={fieldErrors.birthYear}
           onChange={(e) => setBirthYear(e.target.value)}
+          disabled={submitting}
         />
       </FormControl>
 
@@ -360,6 +481,7 @@ export function PersonForm({
           value={birthOrder}
           error={fieldErrors.birthOrder}
           onChange={(e) => setBirthOrder(e.target.value)}
+          disabled={submitting}
         />
         <p className="field-hint" style={{ fontSize: "0.75rem", marginTop: "4px" }}>
           Số 1 = con đầu lòng (miền Nam gọi là Anh/Chị Hai).
@@ -374,6 +496,7 @@ export function PersonForm({
             type="checkbox"
             checked={deathStatus}
             onChange={(e) => setDeathStatus(e.target.checked)}
+            disabled={submitting}
           />
           <span>Đã qua đời</span>
         </label>
@@ -401,6 +524,7 @@ export function PersonForm({
                   value="lunar"
                   checked={deathCalendar === "lunar"}
                   onChange={() => setDeathCalendar("lunar")}
+                  disabled={submitting}
                 />
                 <span>Âm lịch</span>
               </label>
@@ -412,6 +536,7 @@ export function PersonForm({
                   value="solar"
                   checked={deathCalendar === "solar"}
                   onChange={() => setDeathCalendar("solar")}
+                  disabled={submitting}
                 />
                 <span>Dương lịch</span>
               </label>
@@ -429,6 +554,7 @@ export function PersonForm({
                 value={deathDay}
                 error={fieldErrors.deathDay}
                 onChange={(e) => setDeathDay(e.target.value)}
+                disabled={submitting}
               />
             </FormControl>
 
@@ -442,6 +568,7 @@ export function PersonForm({
                 value={deathMonth}
                 error={fieldErrors.deathMonth}
                 onChange={(e) => setDeathMonth(e.target.value)}
+                disabled={submitting}
               />
             </FormControl>
 
@@ -454,6 +581,7 @@ export function PersonForm({
                 value={deathYear}
                 error={fieldErrors.deathYear}
                 onChange={(e) => setDeathYear(e.target.value)}
+                disabled={submitting}
               />
             </FormControl>
           </div>
@@ -488,6 +616,7 @@ export function PersonForm({
           type="tel"
           value={phone}
           onChange={(e) => setPhone(e.target.value)}
+          disabled={submitting}
         />
       </FormControl>
 
@@ -498,6 +627,7 @@ export function PersonForm({
           type="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
+          disabled={submitting}
         />
       </FormControl>
 
@@ -508,6 +638,7 @@ export function PersonForm({
           type="file"
           accept="image/jpeg,image/png"
           className="photo-upload-input"
+          disabled={submitting}
           onChange={(e) => {
             const file = e.target.files?.[0];
             if (file) {
@@ -548,6 +679,7 @@ export function PersonForm({
                 type="checkbox"
                 checked={linkRelationship}
                 onChange={(e) => setLinkRelationship(e.target.checked)}
+                disabled={submitting}
               />
               <span>Thiết lập quan hệ ngay</span>
             </label>
@@ -560,6 +692,7 @@ export function PersonForm({
                   id="relTargetId"
                   value={relTargetId}
                   onChange={(e) => setRelTargetId(e.target.value)}
+                  disabled={submitting}
                 >
                   {persons.map((p) => (
                     <option key={p.id} value={p.id}>
@@ -574,6 +707,7 @@ export function PersonForm({
                   id="relDerivedKind"
                   value={derivedKind}
                   onChange={(e) => setDerivedKind(e.target.value as "bloodline_father" | "bloodline_father_reverse" | "bloodline_mother" | "bloodline_mother_reverse" | "marriage")}
+                  disabled={submitting}
                 >
                   <option value="bloodline_father">{sourceName} là CHA của {targetName}</option>
                   <option value="bloodline_father_reverse">{sourceName} là CON của {targetName} ({targetName} là CHA)</option>
@@ -589,6 +723,7 @@ export function PersonForm({
                     id="relMaritalStatus"
                     value={maritalStatus}
                     onChange={(e) => setMaritalStatus(e.target.value as EditableMaritalStatus)}
+                    disabled={submitting}
                   >
                     <option value="married">Đã kết hôn</option>
                     <option value="divorced">Đã ly dị</option>
@@ -606,6 +741,7 @@ export function PersonForm({
             id="spouseMaritalStatus"
             value={spouseMaritalStatus}
             onChange={(e) => setSpouseMaritalStatus(e.target.value as EditableMaritalStatus)}
+            disabled={submitting}
           >
             <option value="married">Đã kết hôn</option>
             <option value="divorced">Đã ly dị</option>
@@ -626,7 +762,7 @@ export function PersonForm({
           <Button
             type="button"
             className="btn-secondary"
-            onClick={onCancel}
+            onClick={handleCancelClick}
             disabled={submitting}
             style={{ flex: 1 }}
           >

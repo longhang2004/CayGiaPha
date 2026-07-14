@@ -69,6 +69,13 @@ export function GraphOverlayBoundary({ className, children, overlay }: BoundaryP
       if (side === "bottom") bottom = Math.min(bottom, rect.top - rootRect.top - padding);
       if (side === "left") left = Math.max(left, rect.right - rootRect.left + padding);
       if (side === "right") right = Math.min(right, rect.left - rootRect.left - padding);
+      if (side === "auto-y") {
+        if (rect.top - rootRect.top < rootRect.height / 2) {
+          top = Math.max(top, rect.bottom - rootRect.top + padding);
+        } else {
+          bottom = Math.min(bottom, rect.top - rootRect.top - padding);
+        }
+      }
       if (side === "panel") {
         if (rect.width > rootRect.width * 0.7) bottom = Math.min(bottom, rect.top - rootRect.top - padding);
         else right = Math.min(right, rect.left - rootRect.left - padding);
