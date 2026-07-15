@@ -247,16 +247,6 @@ function PrototypeTreeContent() {
     };
   }, []);
 
-  const primitiveCount = relationships.filter((relationship) => relationship.type === "bloodline_father" || relationship.type === "bloodline_mother" || relationship.type === "marriage").length;
-
-  const guidanceProductState = {
-    treeOpened: true,
-    personCount: persons.length,
-    primitiveCount,
-    addressInspected: Boolean(selectedId && addressesReady && (selectedAddress || addresses.has(selectedId))),
-    viewpointChanged: Boolean(egoId && egoId !== persons[0]?.id && addressesReady),
-  };
-
   const treeState: TreeContextType = {
     activeTreeId: PROTOTYPE_TREE_ID,
     shareToken,
@@ -332,11 +322,9 @@ function PrototypeTreeContent() {
           className="tree-workspace__layout"
           overlay={<GuidanceOrchestrator
             role={guidanceRole}
-            productState={guidanceProductState}
-            contextualTopicId={selectedId ? "doi-diem-nhin" : "dieu-huong-so-do"}
             initialTourTopicId={guideState === "tour" || guideState === "tour-missing" ? "doi-diem-nhin" : null}
             tourAnchorOverride={guideState === "tour-missing" ? "missing-anchor" : undefined}
-            initialChecklistPresentation={guideState === "expanded" ? "expanded" : guideState === "collapsed" ? "collapsed" : "deferred"}
+            helpHref="/prototype/help"
           />}
         >
 
@@ -348,14 +336,13 @@ function PrototypeTreeContent() {
               addresses={addresses}
               egoId={egoId}
               selectedId={selectedId}
+              accessRole={accessRole}
               onSelectPerson={(id) => {
                 setSelectedId(id);
                 setEditMode(false);
                 setAddRelativeMode(false);
                 setCreateMode(false);
               }}
-              onChangeEgo={setEgoId}
-              addressLoading={addressLoading}
               graphContent={
                 <div className="tree-workspace__graph">
                   <TreeGraph
@@ -379,6 +366,7 @@ function PrototypeTreeContent() {
                     focusId={focusId}
                     onFocusChange={setFocusId}
                     showBirthYears={showBirthYears}
+                    helpHref="/prototype/help"
                   />
                 </div>
               }

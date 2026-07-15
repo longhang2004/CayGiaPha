@@ -7,6 +7,7 @@ import { ArrowLeftIcon, ArrowRightIcon, MinusIcon, CloseIcon } from "@/component
 import {
   GUIDANCE_REOPEN_EVENT,
   GUIDANCE_RESET_EVENT,
+  DEFAULT_GUIDANCE_STATE,
   readGuidanceState,
   resetGuidanceState,
   writeGuidanceState,
@@ -36,7 +37,7 @@ export function GuidanceChecklist({
   onVisibilityChange,
   initialPresentation = "expanded",
 }: Props) {
-  const [state, setState] = useState<GuidanceState>(() => ({ schemaVersion: 3, completed: [], dismissedTopicVersions: {}, onboardingSkipped: false }));
+  const [state, setState] = useState<GuidanceState>(() => ({ ...DEFAULT_GUIDANCE_STATE }));
   const [ready, setReady] = useState(false);
   const [collapsed, setCollapsed] = useState(initialPresentation === "collapsed");
   const [deferred, setDeferred] = useState(initialPresentation === "deferred" || deferredForCurrentVisit);
@@ -101,7 +102,7 @@ export function GuidanceChecklist({
     };
     const reset = () => {
       resetGuidanceState(resolvedStorage);
-      setState({ schemaVersion: 3, completed: [], dismissedTopicVersions: {}, onboardingSkipped: false });
+      setState({ ...DEFAULT_GUIDANCE_STATE });
       reopen();
     };
     window.addEventListener(GUIDANCE_REOPEN_EVENT, reopen);
@@ -145,7 +146,7 @@ export function GuidanceChecklist({
 
   const handleSkip = () => {
     skipGuidance(resolvedStorage);
-    setState(s => ({ ...s, onboardingSkipped: true }));
+    setState(s => ({ ...s, onboardingSkipped: true, workspaceCoach: { version: 1, status: "skipped" } }));
     setManualReview(false);
     setDeferred(true);
   };

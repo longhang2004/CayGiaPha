@@ -44,6 +44,7 @@ export interface TreeGraphProps {
   addresses?: Map<string, Address>;
   addressLoading?: boolean;
   addressError?: string | null;
+  helpHref?: string;
 }
 
 export function TreeGraph({
@@ -68,6 +69,7 @@ export function TreeGraph({
   addresses: controlledAddresses,
   addressLoading: controlledAddressLoading,
   addressError: controlledAddressError,
+  helpHref = "/help",
 }: TreeGraphProps) {
   const firstId = persons[0]?.id ?? "";
   const [internalEgoId, setInternalEgoId] = useState<string>(initialEgoId ?? firstId);
@@ -139,7 +141,13 @@ export function TreeGraph({
     handleCenterOnNode,
     handleToggleFullscreen,
     handleExportSVG,
-  } = useTreeGraphZoom(svgWidth, svgHeight, filteredData.persons.length, positions);
+  } = useTreeGraphZoom(
+    svgWidth,
+    svgHeight,
+    filteredData.persons.length,
+    positions,
+    activeEgoId,
+  );
 
   const onAddressesLoadedRef = useRef(onAddressesLoaded);
   useEffect(() => {
@@ -343,6 +351,8 @@ export function TreeGraph({
           onExportSVG={handleExportSVG}
           isFullscreen={isFullscreen}
           activeSelectedId={activeSelectedId}
+          activeEgoId={activeEgoId}
+          helpHref={helpHref}
         />
       </div>
     </div>

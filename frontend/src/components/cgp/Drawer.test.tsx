@@ -76,7 +76,9 @@ describe("CGPDrawer", () => {
     render(<ModalDrawerHarness />);
 
     await user.click(screen.getByRole("button", { name: "Mở menu" }));
-    await user.click(screen.getByRole("button", { name: "Đóng menu ứng dụng" }));
+    const closeButton = screen.getByRole("button", { name: "Đóng menu ứng dụng" });
+    expect(closeButton.querySelector("svg")).toBeInTheDocument();
+    await user.click(closeButton);
 
     expect(screen.queryByRole("dialog", { name: "Menu ứng dụng" })).not.toBeInTheDocument();
   });
@@ -94,6 +96,7 @@ describe("CGP drawer implementation ownership", () => {
     expect(DRAWER_SCSS).toMatch(/\.cgp-drawer--left/);
     expect(DRAWER_SCSS).toMatch(/overflow-y:\s*auto/);
     expect(DRAWER_SCSS).toMatch(/overscroll-behavior:\s*contain/);
+    expect(DRAWER_SCSS).toMatch(/\.cgp-drawer--modal\s*\{[^}]*background:\s*var\(--color-surface-card\)/s);
     expect(DRAWER_SCSS).toMatch(/safe-area-inset/);
     expect(DRAWER_SCSS).toMatch(/prefers-reduced-motion:\s*reduce/);
   });

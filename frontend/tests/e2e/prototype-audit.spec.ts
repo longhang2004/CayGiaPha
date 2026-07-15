@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page, type TestInfo } from "@playwright/test";
 
 const VIEWPORTS = [
   { name: "desktop", width: 1280, height: 800 },
@@ -25,6 +25,42 @@ const AUDIT_ROUTES = [
   { name: "legal-privacy", href: "/prototype/legal/privacy" },
 ] as const;
 
+async function captureWorkspaceScreenshot(
+  page: Page,
+  testInfo: TestInfo,
+  filename: string,
+  options: { flattenGraphTrack?: boolean } = {},
+) {
+  const screenshotStyle = options.flattenGraphTrack
+    ? `
+      @media (max-width: 959px) {
+        .tree-workspace-surface[data-view-mode="graph"] .tree-workspace-surface__panels {
+          width: 100% !important;
+          transform: none !important;
+          transition: none !important;
+        }
+        .tree-workspace-surface[data-view-mode="graph"] .tree-workspace-surface__panel--list {
+          display: none !important;
+        }
+        .tree-workspace-surface[data-view-mode="graph"] .tree-workspace-surface__panel--graph {
+          flex: 0 0 100% !important;
+        }
+      }
+    `
+    : undefined;
+  // Prime Chromium's composited workspace layers; the first capture from a
+  // freshly transitioned panel can otherwise contain transient black tiles.
+  await page.screenshot({ fullPage: false, style: screenshotStyle });
+  await page.evaluate(() => new Promise<void>((resolve) => {
+    requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
+  }));
+  await page.screenshot({
+    path: testInfo.outputPath(filename),
+    fullPage: false,
+    style: screenshotStyle,
+  });
+}
+
 test.describe("prototype UI audit", () => {
   for (const viewport of VIEWPORTS) {
     for (const route of AUDIT_ROUTES) {
@@ -48,5 +84,186 @@ test.describe("prototype UI audit", () => {
         });
       });
     }
+  }
+
+  for (const viewport of VIEWPORTS) {
+    test(`tree workspace list baseline at ${viewport.name}`, async ({ page }) => {
+      await page.addInitScript(() => {
+        localStorage.setItem("cgp_guidance_v2", JSON.stringify({
+          schemaVersion: 4,
+          completed: [],
+          dismissedTopicVersions: {},
+          onboardingSkipped: false,
+          workspaceCoach: { version: 1, status: "completed" },
+        }));
+        localStorage.setItem("cgp_tree_workspace_view_v2", "list");
+      });
+      await page.setViewportSize(viewport);
+      await page.goto("/prototype/tree");
+      await page.evaluate(() => document.fonts.ready);
+      await expect(page.locator(".tree-page-header")).toBeVisible();
+      await expect(page.getByRole("button", { name: "Chọn Hàng Hữu Phương" })).toBeVisible();
+      if (viewport.name === "desktop") {
+        await expect(page.locator(".tree-workspace-surface")).toHaveAttribute("data-layout", "split");
+        await expect(page.getByRole("tablist", { name: "Chọn chế độ xem" })).toHaveCount(0);
+        await expect(page.getByRole("button", { name: "Điều khiển sơ đồ" })).toBeVisible();
+        const footerBox = await page.locator(".tree-workspace-actions").boundingBox();
+        const listBox = await page.locator(".tree-workspace-surface__panel--list").boundingBox();
+        expect(footerBox).not.toBeNull();
+        expect(listBox).not.toBeNull();
+        expect(Math.abs(footerBox!.width - listBox!.width)).toBeLessThanOrEqual(2);
+      }
+      await page.locator(".tree-workspace-surface__panels").evaluate(async (element) => {
+        await Promise.all(element.getAnimations().map((animation) => animation.finished.catch(() => undefined)));
+      });
+      await captureWorkspaceScreenshot(
+        page,
+        test.info(),
+        `${viewport.name}-tree-workspace-list.png`,
+      );
+    });
+
+    test(`tree workspace graph baseline at ${viewport.name}`, async ({ page }) => {
+      await page.addInitScript(() => {
+        localStorage.setItem("cgp_guidance_v2", JSON.stringify({
+          schemaVersion: 4,
+          completed: [],
+          dismissedTopicVersions: {},
+          onboardingSkipped: false,
+          workspaceCoach: { version: 1, status: "completed" },
+        }));
+        localStorage.setItem("cgp_tree_workspace_view_v2", "graph");
+      });
+      await page.setViewportSize(viewport);
+      await page.goto("/prototype/tree");
+      await page.evaluate(() => document.fonts.ready);
+      if (viewport.name !== "desktop") {
+        await expect(page.getByRole("button", { name: "Mở menu ứng dụng" })).toBeVisible();
+      }
+      const graphTab = page.getByRole("tab", { name: "Sơ đồ" });
+      if (await graphTab.isVisible()) {
+        await expect(graphTab).toHaveAttribute("aria-selected", "true");
+        await expect(page.locator("#panel-graph")).not.toHaveAttribute("inert", "");
+      }
+      await page.locator(".tree-workspace-surface__panels").evaluate(async (element) => {
+        await Promise.all(element.getAnimations().map((animation) => animation.finished.catch(() => undefined)));
+      });
+      await expect(page.locator(".tree-graph__canvas")).toBeVisible();
+      if (viewport.name === "mobile") {
+        const controlsToggle = page.getByRole("button", { name: "Điều khiển sơ đồ" });
+        await expect(controlsToggle).toBeVisible();
+        const egoNodeBox = await page.locator('.tree-graph__node[data-ego="true"]').boundingBox();
+        const canvasBox = await page.locator(".tree-graph__canvas").boundingBox();
+        const controlsBox = await controlsToggle.boundingBox();
+        const footerBox = await page.locator(".tree-workspace-actions").boundingBox();
+        expect(egoNodeBox).not.toBeNull();
+        expect(canvasBox).not.toBeNull();
+        expect(controlsBox).not.toBeNull();
+        expect(footerBox).not.toBeNull();
+        expect(controlsBox!.x).toBeGreaterThanOrEqual(canvasBox!.x);
+        expect(controlsBox!.x + controlsBox!.width).toBeLessThanOrEqual(canvasBox!.x + canvasBox!.width + 1);
+        expect(controlsBox!.y).toBeGreaterThanOrEqual(canvasBox!.y);
+        expect(controlsBox!.y + controlsBox!.height).toBeLessThanOrEqual(footerBox!.y + 1);
+        expect(egoNodeBox!.width).toBeGreaterThanOrEqual(140);
+        expect(egoNodeBox!.x + egoNodeBox!.width).toBeGreaterThan(canvasBox!.x);
+        expect(egoNodeBox!.x).toBeLessThan(canvasBox!.x + canvasBox!.width);
+      }
+      await captureWorkspaceScreenshot(
+        page,
+        test.info(),
+        `${viewport.name}-tree-workspace-graph.png`,
+        { flattenGraphTrack: true },
+      );
+    });
+
+    test(`tree workspace action drawer at ${viewport.name}`, async ({ page }) => {
+      await page.addInitScript(() => localStorage.setItem("cgp_guidance_v2", JSON.stringify({
+        schemaVersion: 4,
+        completed: [],
+        dismissedTopicVersions: {},
+        onboardingSkipped: false,
+        workspaceCoach: { version: 1, status: "completed" },
+      })));
+      await page.setViewportSize(viewport);
+      await page.goto("/prototype/tree");
+      await page.getByRole("button", { name: "Thao tác khác" }).click();
+      const dialog = page.getByRole("dialog", { name: "Thao tác khác" });
+      await expect(dialog).toBeVisible();
+      await dialog.evaluate(async (element) => {
+        await Promise.all(element.getAnimations().map((animation) => animation.finished.catch(() => undefined)));
+      });
+      expect(await dialog.evaluate((element) => getComputedStyle(element).backgroundColor))
+        .not.toBe("rgba(0, 0, 0, 0)");
+      const closeButton = page.getByRole("button", { name: "Đóng thao tác khác" });
+      const closeBox = await closeButton.boundingBox();
+      expect(closeBox).not.toBeNull();
+      expect(closeBox!.width).toBeGreaterThanOrEqual(44);
+      expect(closeBox!.height).toBeGreaterThanOrEqual(44);
+      await expect(closeButton.locator("svg")).toBeVisible();
+      const dialogBox = await dialog.boundingBox();
+      expect(dialogBox).not.toBeNull();
+      const addMemberAction = dialog.getByRole("button", { name: "Thêm thành viên khác" });
+      if (await addMemberAction.isVisible()) {
+        await addMemberAction.hover();
+        const hoverColors = await addMemberAction.evaluate((element) => {
+          const probe = document.createElement("div");
+          probe.style.backgroundColor = "var(--color-brand-active)";
+          document.body.appendChild(probe);
+          const colors = {
+            background: getComputedStyle(element).backgroundColor,
+            brandActive: getComputedStyle(probe).backgroundColor,
+          };
+          probe.remove();
+          return colors;
+        });
+        expect(hoverColors.background).not.toBe(hoverColors.brandActive);
+        await page.mouse.move(0, 0);
+      }
+      if (viewport.name === "desktop") {
+        expect(Math.abs(dialogBox!.x + dialogBox!.width - viewport.width)).toBeLessThanOrEqual(2);
+      } else {
+        expect(dialogBox!.x).toBeGreaterThanOrEqual(-1);
+        expect(dialogBox!.width).toBeGreaterThanOrEqual(viewport.width - 2);
+        expect(dialogBox!.y).toBeGreaterThan(60);
+        expect(Math.abs(dialogBox!.y + dialogBox!.height - viewport.height)).toBeLessThanOrEqual(2);
+      }
+      await captureWorkspaceScreenshot(
+        page,
+        test.info(),
+        `${viewport.name}-tree-workspace-actions.png`,
+      );
+    });
+
+    test(`tree workspace Coach mark at ${viewport.name}`, async ({ page }) => {
+      await page.addInitScript(() => {
+        localStorage.removeItem("cgp_guidance_v2");
+        localStorage.setItem("cgp_tree_workspace_view_v2", "list");
+      });
+      await page.setViewportSize(viewport);
+      await page.goto("/prototype/tree");
+      await page.evaluate(() => document.fonts.ready);
+      const coach = page.getByRole("dialog", { name: "Hướng dẫn nhanh" });
+      await expect(coach).toBeVisible();
+      const [coachBox, headerBox, footerBox] = await Promise.all([
+        coach.boundingBox(),
+        page.locator(".tree-page-header").boundingBox(),
+        page.locator(".tree-workspace-actions").boundingBox(),
+      ]);
+      expect(coachBox && headerBox && footerBox).toBeTruthy();
+      expect(coachBox!.y).toBeGreaterThanOrEqual(headerBox!.y + headerBox!.height - 1);
+      expect(coachBox!.y + coachBox!.height).toBeLessThanOrEqual(footerBox!.y + 1);
+      const tabs = page.getByRole("tablist", { name: "Chọn chế độ xem" });
+      if (await tabs.isVisible()) {
+        const tabsBox = await tabs.boundingBox();
+        expect(tabsBox).not.toBeNull();
+        expect(coachBox!.y).toBeGreaterThanOrEqual(tabsBox!.y + tabsBox!.height - 1);
+      }
+      await captureWorkspaceScreenshot(
+        page,
+        test.info(),
+        `${viewport.name}-tree-workspace-coach.png`,
+      );
+      await coach.getByRole("button", { name: /Tiếp theo|Hoàn tất/ }).click();
+    });
   }
 });

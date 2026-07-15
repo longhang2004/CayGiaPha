@@ -8,6 +8,7 @@ import {
 } from "react-aria-components";
 import type { CGPDrawerProps } from "./contracts";
 import { CGPIconButton } from "./Button";
+import { CloseIcon } from "@/components/ui/Icons";
 
 const DEFAULT_DISMISS_POLICY = {
   escape: true,
@@ -87,7 +88,7 @@ function ModalCGPDrawer(
             size="sm"
             variant="quiet"
           >
-            <span aria-hidden="true">×</span>
+            <CloseIcon size={20} />
           </CGPIconButton>
           {props.children}
         </Dialog>

@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
-import { trackUxEvent, getUxViewportClass, type UxEventPayload } from "./uxEvents";
+import { trackUxEvent, getUxAccessRole, getUxViewportClass, type UxEventPayload } from "./uxEvents";
 import * as vercelAnalytics from "@vercel/analytics/react";
 
 vi.mock("@vercel/analytics/react", () => ({
@@ -49,6 +49,14 @@ describe("uxEvents", () => {
     window.innerWidth = 375;
     expect(getUxViewportClass(undefined)).toBe("mobile");
     window.innerWidth = originalInnerWidth;
+  });
+
+  it("normalizes server access roles before telemetry", () => {
+    expect(getUxAccessRole("OWNER")).toBe("owner");
+    expect(getUxAccessRole("CONTRIBUTOR")).toBe("contributor");
+    expect(getUxAccessRole("LINKED")).toBe("linked");
+    expect(getUxAccessRole("READER")).toBe("reader");
+    expect(getUxAccessRole("NONE")).toBe("unknown");
   });
 
   it("tracks ux_help_open, ux_recovery_used, find_person and change_viewpoint safely without sensitive data", () => {

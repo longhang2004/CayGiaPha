@@ -3,7 +3,11 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { GraphOverlayBoundary, useGraphOverlay } from "./GraphOverlayBoundary";
 
 class MockResizeObserver { observe() {} disconnect() {} }
-class MockMutationObserver { observe() {} disconnect() {} }
+const mutationObserve = vi.fn();
+class MockMutationObserver {
+  observe(_target: Node, options?: MutationObserverInit) { mutationObserve(options); }
+  disconnect() {}
+}
 
 function Probe() {
   const { safeRect } = useGraphOverlay();
@@ -12,6 +16,7 @@ function Probe() {
 
 describe("GraphOverlayBoundary", () => {
   beforeEach(() => {
+    mutationObserve.mockClear();
     vi.stubGlobal("ResizeObserver", MockResizeObserver);
     vi.stubGlobal("MutationObserver", MockMutationObserver);
     vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockImplementation(function (this: HTMLElement) {
@@ -34,5 +39,19 @@ describe("GraphOverlayBoundary", () => {
     await waitFor(() => expect(screen.getByTestId("safe-rect")).toHaveTextContent('"right":908'));
     expect(screen.getByTestId("safe-rect")).toHaveTextContent('"bottom":688');
     expect(screen.getByTestId("safe-rect")).toHaveTextContent('"top":72');
+  });
+
+  it("remeasures when responsive safe-area exclusions mount after hydration", () => {
+    render(
+      <GraphOverlayBoundary className="root" overlay={<Probe />}>
+        <div>Workspace</div>
+      </GraphOverlayBoundary>,
+    );
+
+    expect(mutationObserve).toHaveBeenCalledWith(expect.objectContaining({
+      attributes: true,
+      childList: true,
+      subtree: true,
+    }));
   });
 });

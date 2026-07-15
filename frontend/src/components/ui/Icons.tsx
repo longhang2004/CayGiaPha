@@ -44,6 +44,15 @@ export const MenuIcon = icon(
   </>
 );
 
+/** Horizontal more-actions menu */
+export const MoreHorizontalIcon = icon(
+  <>
+    <circle cx="5" cy="12" r="1" fill="currentColor" stroke="none" />
+    <circle cx="12" cy="12" r="1" fill="currentColor" stroke="none" />
+    <circle cx="19" cy="12" r="1" fill="currentColor" stroke="none" />
+  </>
+);
+
 /** × Close */
 export const CloseIcon = icon(
   <>
@@ -75,6 +84,14 @@ export const ArrowRightIcon = icon(
   <>
     <line x1="5" y1="12" x2="19" y2="12" />
     <polyline points="12 5 19 12 12 19" />
+  </>
+);
+
+/** Pencil / edit */
+export const EditIcon = icon(
+  <>
+    <path d="M12 20h9" />
+    <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" />
   </>
 );
 

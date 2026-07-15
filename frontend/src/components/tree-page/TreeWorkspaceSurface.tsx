@@ -1,9 +1,7 @@
-import { ReactNode, useEffect, useState } from "react";
-import { Person, Relationship } from "@/lib/graph";
-import { Address } from "@/lib/graph";
+import { ReactNode, useEffect, useRef, useState } from "react";
+import { Address, Person, Relationship, TreeAccessRole } from "@/lib/graph";
 import { TreeWorkspaceViewMode, readTreeWorkspaceViewMode, writeTreeWorkspaceViewMode } from "@/lib/tree-workspace/viewMode";
 import { TreeWorkspaceViewSwitcher } from "./TreeWorkspaceViewSwitcher";
-import { TreeFocusView } from "./TreeFocusView";
 import { TreePeopleListView } from "./TreePeopleListView";
 
 export interface TreeWorkspaceSurfaceProps {
@@ -13,8 +11,7 @@ export interface TreeWorkspaceSurfaceProps {
   egoId: string;
   selectedId: string | null;
   onSelectPerson: (id: string) => void;
-  onChangeEgo: (id: string) => void;
-  addressLoading?: boolean;
+  accessRole: TreeAccessRole;
   graphContent: ReactNode; // We pass the TreeGraph as a prop to keep it decoupled
 }
 
@@ -25,17 +22,28 @@ export function TreeWorkspaceSurface({
   egoId,
   selectedId,
   onSelectPerson,
-  onChangeEgo,
-  addressLoading,
+  accessRole,
   graphContent,
 }: TreeWorkspaceSurfaceProps) {
-  const [viewMode, setViewMode] = useState<TreeWorkspaceViewMode>("focus");
+  const surfaceRef = useRef<HTMLDivElement>(null);
+  const [viewMode, setViewMode] = useState<TreeWorkspaceViewMode>("list");
+  const [isSplitView, setIsSplitView] = useState(false);
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    setViewMode(readTreeWorkspaceViewMode(undefined, "focus"));
+    setViewMode(readTreeWorkspaceViewMode(undefined, "list"));
     setMounted(true);
   }, []);
+
+  useEffect(() => {
+    const surface = surfaceRef.current;
+    if (!surface || typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver(([entry]) => {
+      setIsSplitView(entry.contentRect.width >= 960);
+    });
+    observer.observe(surface);
+    return () => observer.disconnect();
+  }, [mounted]);
 
   const handleChangeView = (mode: TreeWorkspaceViewMode) => {
     setViewMode(mode);
@@ -44,53 +52,53 @@ export function TreeWorkspaceSurface({
 
   // Only render switcher and content after mount to avoid hydration mismatch
   if (!mounted) {
-    return <div className="tree-workspace-surface" style={{ height: "100%", width: "100%", position: "relative" }} />;
+    return <div className="tree-workspace-surface" />;
   }
 
   return (
-    <div className="tree-workspace-surface" style={{ height: "100%", width: "100%", position: "relative", display: "flex", flexDirection: "column" }}>
-      <div className="tree-workspace-surface__header">
-        <TreeWorkspaceViewSwitcher currentView={viewMode} onChangeView={handleChangeView} />
-      </div>
+    <div
+      ref={surfaceRef}
+      className="tree-workspace-surface"
+      data-view-mode={viewMode}
+      data-layout={isSplitView ? "split" : "tabs"}
+    >
+      {!isSplitView ? (
+        <div className="tree-workspace-surface__header" data-graph-safe-exclude="auto-y">
+          <TreeWorkspaceViewSwitcher currentView={viewMode} onChangeView={handleChangeView} />
+        </div>
+      ) : null}
 
-      <div
-        className="tree-workspace-surface__content"
-        id={`panel-${viewMode}`}
-        role="tabpanel"
-        aria-labelledby={`tab-${viewMode}`}
-        style={{ flex: 1, minHeight: 0, overflow: "hidden", paddingTop: "6.5rem" }}
-      >
-        {viewMode === "focus" && (
-          <TreeFocusView
+      <div className="tree-workspace-surface__panels">
+        <section
+          className="tree-workspace-surface__panel tree-workspace-surface__panel--list"
+          id="panel-list"
+          role={isSplitView ? "region" : "tabpanel"}
+          aria-label={isSplitView ? "Danh sách thành viên" : undefined}
+          aria-labelledby={isSplitView ? undefined : "tab-list"}
+          aria-hidden={!isSplitView && viewMode !== "list" ? true : undefined}
+          inert={!isSplitView && viewMode !== "list" ? ("" as unknown as boolean) : undefined}
+        >
+          <TreePeopleListView
             persons={persons}
             relationships={relationships}
             addresses={addresses}
             egoId={egoId}
             selectedId={selectedId}
             onSelectPerson={onSelectPerson}
-            onChangeEgo={onChangeEgo}
-            addressLoading={addressLoading}
+            accessRole={accessRole}
           />
-        )}
-        {viewMode === "list" && (
-          <TreePeopleListView
-            persons={persons}
-            addresses={addresses}
-            egoId={egoId}
-            selectedId={selectedId}
-            onSelectPerson={(id) => {
-              onSelectPerson(id);
-              handleChangeView("focus"); // Automatically switch to focus mode
-            }}
-            onChangeEgo={onChangeEgo}
-            addressLoading={addressLoading}
-          />
-        )}
-        {viewMode === "graph" && (
-          <div style={{ height: "100%", width: "100%" }}>
-            {graphContent}
-          </div>
-        )}
+        </section>
+        <section
+          className="tree-workspace-surface__panel tree-workspace-surface__panel--graph"
+          id="panel-graph"
+          role={isSplitView ? "region" : "tabpanel"}
+          aria-label={isSplitView ? "Sơ đồ gia phả" : undefined}
+          aria-labelledby={isSplitView ? undefined : "tab-graph"}
+          aria-hidden={!isSplitView && viewMode !== "graph" ? true : undefined}
+          inert={!isSplitView && viewMode !== "graph" ? ("" as unknown as boolean) : undefined}
+        >
+          {graphContent}
+        </section>
       </div>
     </div>
   );

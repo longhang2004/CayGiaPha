@@ -24,8 +24,8 @@ generic SaaS dashboard:
 - Warm beige canvas, warm ink text, white paper surfaces, and terracotta accent.
 - Large, low-weight display headings; compact labels; generous macro spacing.
 - Rounded paper cards, double-bezel containers, hairlines, and restrained shadows.
-- A full-screen family-tree workspace: graph as canvas, navigation as
-  sidebar/drawer, commands in a floating bottom island.
+- A task-first populated family-tree workspace: list is the mobile/tablet default, graph is an
+  equivalent labelled tab, and wide containers show a list–graph split view.
 - Light/dark themes based on semantic variables. Gender and relationship cues
   combine color with text, shape, or dash patterns.
 - Older-user accessibility intent: 48 CSS-px targets, text scaling from
@@ -97,6 +97,7 @@ without adding both definitions and an undefined-token check.
 
 Current behavioral thresholds:
 
+- Container `>= 960px`: populated tree workspace becomes a split list–graph view.
 - `<= 1024px`: workspace compacts panels/actions.
 - `<= 900px`: sidebar becomes drawer; graph controls stack.
 - `<= 860px`: support/admin grids collapse.
@@ -122,6 +123,12 @@ not automatically page-overflow bugs.
 - Relationship types must remain distinguishable by line style and color.
 - `prefers-reduced-motion` must disable non-essential motion.
 - Help topics under `src/content/help/` are the canonical guidance source. Overview, checklist and contextual notes reference topic IDs and excerpt keys; do not duplicate explanatory copy in components.
+- The populated workspace uses one-time Coach marks sourced from canonical Help topics. Tree-list
+  and empty-tree states retain the short checklist. Completion, Skip, and Escape are persisted;
+  Settings and the action tray can replay the Coach marks explicitly.
+- Populated workspace actions are distributed between a compact context bar, a stable footer, and
+  a capability-filtered action drawer. Mobile/tablet use `list`/`graph` tabs with inert inactive
+  content; wide containers use the same mounted panels in split view.
 - Guidance content is reviewed with each relevant feature release and quarterly for runtime accuracy.
 
 ## Non-negotiable editing rules

@@ -556,6 +556,23 @@ against the active Next.js code and current tests.
       keep prototype data isolated; run targeted/full tests and the three-viewport UI audit.
     - _Requirements: 11, 17, 18, 22, 23_
 
+- [x] 26. Populated tree workspace mobile UX migration (CGP-WORKSPACE-UX-001)
+  - [x] 26.1 Replace focus/list/graph composition with responsive list/graph modes
+    - Persist the versioned two-mode preference, keep both tab panels mounted and inert the inactive
+      panel, and use a container-query split workspace on wide containers.
+  - [x] 26.2 Add compact context, complete viewpoint picker, and capability action tray
+    - Keep every projected person searchable without diacritics; target add-relative at the selected
+      person or ego; expose sensitive actions only through server-provided capabilities.
+  - [x] 26.3 Reformat graph surfaces and expose non-gesture controls
+    - Retain the existing graph engine/privacy/edge semantics while applying semantic visual tokens
+      and labelled mobile, tablet, and desktop control presentations.
+  - [x] 26.4 Replace populated-workspace checklist/tour with schema-4 Coach marks
+    - Resolve copy from canonical Help topics, skip unavailable anchors, persist completed/skipped,
+      migrate earlier guidance state, and allow an explicit manual replay.
+  - [x] 26.5 Synchronize `/prototype/tree`, remove the standalone mobile concept, and verify roles
+    - Cover Owner, Contributor, Linked, and Reader; update targeted component/Playwright contracts;
+      run the broad three-viewport prototype audit before visual polish.
+
 ## Notes
 
 - Tasks marked with `*` are optional test sub-tasks and can be skipped for a faster MVP; core

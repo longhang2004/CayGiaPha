@@ -1,6 +1,18 @@
-import { ViewpointSelector } from "./ViewpointSelector";
-import { CenterIcon, DownloadIcon, MaximizeIcon, MinimizeIcon } from "@/components/ui/Icons";
+import { useState } from "react";
+import {
+  CenterIcon,
+  DownloadIcon,
+  LightbulbIcon,
+  MaximizeIcon,
+  MinimizeIcon,
+  MinusIcon,
+  PlusIcon,
+  ResetViewIcon,
+  SettingsIcon,
+} from "@/components/ui/Icons";
 import { type Person } from "@/lib/graph";
+import { GraphLegend } from "./GraphLegend";
+import { ViewpointSelector } from "./ViewpointSelector";
 
 export interface TreeGraphHeaderProps {
   hideViewpointSelector: boolean;
@@ -9,7 +21,6 @@ export interface TreeGraphHeaderProps {
   loading: boolean;
   error: string | null;
   onSelectViewpoint: (id: string) => void;
-
   onFocusChange?: (id: string | null) => void;
   activeSelectedId: string | null;
   activeFocusId: string | null;
@@ -42,59 +53,23 @@ export function TreeGraphHeader({
         {loading ? "Đang tính cách xưng hô…" : error ?? ""}
       </p>
 
-      {/* Branch Focus Mode Controls (only shown if not controlled externally by parent) */}
-      {!onFocusChange && activeSelectedId && (
+      {!onFocusChange && activeSelectedId ? (
         <button
           type="button"
           className={`btn btn-secondary tree-graph__focus-toggle-btn ${activeFocusId === activeSelectedId ? "tree-graph__focus-toggle-btn--active" : ""}`}
           onClick={() => onSetFocusId(activeFocusId === activeSelectedId ? null : activeSelectedId)}
-          style={{
-            marginLeft: "auto",
-            fontSize: "0.8125rem",
-            padding: "0.25rem 0.75rem",
-            minHeight: "36px",
-            display: "flex",
-            alignItems: "center",
-            gap: "0.25rem",
-            border: activeFocusId === activeSelectedId ? "1px solid var(--color-brand)" : undefined
-          }}
         >
-          {activeFocusId === activeSelectedId ? (
-            <>
-              <span>✕</span> Hiện toàn bộ cây
-            </>
-          ) : (
-            <>
-              <span>👁</span> Xem riêng nhánh này
-            </>
-          )}
+          {activeFocusId === activeSelectedId ? "Hiện toàn bộ cây" : "Xem riêng nhánh này"}
         </button>
-      )}
-      {!onFocusChange && activeFocusId && !activeSelectedId && (
-        <div
-          className="tree-graph__focus-badge-container"
-          style={{
-            marginLeft: "auto",
-            display: "flex",
-            alignItems: "center",
-            gap: "0.5rem",
-            fontSize: "0.8125rem",
-            color: "var(--color-brand)",
-            fontWeight: 600
-          }}
-        >
+      ) : null}
+      {!onFocusChange && activeFocusId && !activeSelectedId ? (
+        <div className="tree-graph__focus-badge-container">
           <span>Đang xem một nhánh</span>
-          <button
-            type="button"
-            className="btn btn-secondary"
-            style={{ padding: "0 0.5rem", minHeight: "28px", minWidth: "28px" }}
-            onClick={() => onSetFocusId(null)}
-            title="Hiện toàn bộ cây"
-          >
-            ✕
+          <button type="button" className="btn btn-secondary" onClick={() => onSetFocusId(null)}>
+            Hiện toàn bộ cây
           </button>
         </div>
-      )}
+      ) : null}
     </div>
   );
 }
@@ -108,6 +83,8 @@ export interface TreeGraphNavControlsProps {
   onExportSVG: () => void;
   isFullscreen: boolean;
   activeSelectedId: string | null;
+  activeEgoId: string;
+  helpHref?: string;
 }
 
 export function TreeGraphNavControls({
@@ -119,128 +96,96 @@ export function TreeGraphNavControls({
   onExportSVG,
   isFullscreen,
   activeSelectedId,
+  activeEgoId,
+  helpHref = "/help",
 }: TreeGraphNavControlsProps) {
-  return (
-      <div className="tree-graph__nav-controls" data-graph-safe-exclude="right" data-guidance-anchor="graph-navigation">
-        <button
-          type="button"
-          onClick={onZoomIn}
-          className="btn btn-secondary"
-          style={{
-            minWidth: "48px",
-            minHeight: "48px",
-            padding: "0 0.5rem",
-            fontSize: "1rem",
-            borderRadius: "8px",
-            boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
-            display: "flex",
-            alignItems: "center",
-            gap: "0.25rem",
-          }}
-          title="Phóng to"
-        >
-          <span style={{ fontSize: "1.25rem" }}>+</span>
-          <span style={{ fontSize: "0.75rem" }}>Phóng to</span>
-        </button>
-        <button
-          type="button"
-          onClick={onZoomOut}
-          className="btn btn-secondary"
-          style={{
-            minWidth: "48px",
-            minHeight: "48px",
-            padding: "0 0.5rem",
-            fontSize: "1rem",
-            borderRadius: "8px",
-            boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
-            display: "flex",
-            alignItems: "center",
-            gap: "0.25rem",
-          }}
-          title="Thu nhỏ"
-        >
-          <span style={{ fontSize: "1.25rem" }}>−</span>
-          <span style={{ fontSize: "0.75rem" }}>Thu nhỏ</span>
-        </button>
+  const [isExpanded, setIsExpanded] = useState(false);
 
-        {/* Target Center selection button */}
-        {activeSelectedId && (
+  return (
+    <div
+      className="tree-graph__nav-shell"
+      data-expanded={isExpanded ? "true" : "false"}
+      data-graph-safe-exclude="right"
+      data-guidance-anchor="graph-navigation"
+    >
+      <button
+        type="button"
+        className="tree-graph__nav-toggle"
+        aria-expanded={isExpanded}
+        aria-controls="tree-graph-navigation-controls"
+        onClick={() => setIsExpanded((current) => !current)}
+      >
+        <SettingsIcon />
+        <span>Điều khiển sơ đồ</span>
+      </button>
+
+      <div id="tree-graph-navigation-controls" className="tree-graph__nav-controls">
+        <button type="button" onClick={onZoomIn} className="tree-graph__nav-button" title="Phóng to" aria-label="Phóng to">
+          <PlusIcon size={18} />
+          <span>Phóng to</span>
+        </button>
+        <button type="button" onClick={onZoomOut} className="tree-graph__nav-button" title="Thu nhỏ" aria-label="Thu nhỏ">
+          <MinusIcon size={18} />
+          <span>Thu nhỏ</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => onCenterOnNode(activeEgoId)}
+          className="tree-graph__nav-button"
+          title="Căn giữa người đang xem"
+          aria-label="Căn giữa người đang xem"
+        >
+          <CenterIcon size={18} />
+          <span>Về người đang xem</span>
+        </button>
+        {activeSelectedId ? (
           <button
             type="button"
             onClick={() => onCenterOnNode(activeSelectedId)}
-            className="btn btn-secondary"
-            style={{
-              minWidth: "48px",
-              minHeight: "48px",
-              padding: "0 0.5rem",
-              fontSize: "1rem",
-              borderRadius: "8px",
-              boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
-              display: "flex",
-              alignItems: "center",
-              gap: "0.25rem",
-            }}
+            className="tree-graph__nav-button"
             title="Căn giữa người được chọn"
+            aria-label="Căn giữa người được chọn"
           >
-            <span>🎯</span>
-            <span style={{ fontSize: "0.75rem" }}>Căn giữa</span>
+            <CenterIcon size={18} />
+            <span>Căn giữa người chọn</span>
           </button>
-        )}
-
+        ) : null}
         <button
           type="button"
           onClick={onResetZoom}
-          className="btn btn-secondary"
-          style={{
-            minWidth: "48px",
-            minHeight: "48px",
-            padding: "0 0.5rem",
-            fontSize: "1rem",
-            borderRadius: "8px",
-            boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
-            display: "flex",
-            alignItems: "center",
-            gap: "0.25rem",
-          }}
+          className="tree-graph__nav-button"
           title="Đặt lại góc nhìn"
+          aria-label="Đặt lại góc nhìn"
         >
-          <CenterIcon size={18} />
-          <span style={{ fontSize: "0.75rem" }}>Đặt lại</span>
+          <ResetViewIcon size={18} />
+          <span>Đặt lại</span>
         </button>
-
         <button
           type="button"
           onClick={onExportSVG}
-          className="btn btn-secondary"
-          style={{
-            minWidth: "48px",
-            minHeight: "48px",
-            padding: 0,
-            fontSize: "1rem",
-            borderRadius: "8px",
-            boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
-          }}
+          className="tree-graph__nav-button"
           title="Tải ảnh sơ đồ (SVG)"
+          aria-label="Tải SVG"
         >
           <DownloadIcon size={18} />
+          <span>Tải SVG</span>
         </button>
-
         <button
           type="button"
           onClick={onToggleFullscreen}
-          className="btn btn-secondary"
-          style={{
-            minWidth: "48px",
-            minHeight: "48px",
-            padding: 0,
-            fontSize: "1rem",
-            borderRadius: "8px",
-            boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
-          }}
+          className="tree-graph__nav-button"
           title={isFullscreen ? "Thoát toàn màn hình" : "Toàn màn hình"}
+          aria-label={isFullscreen ? "Thoát toàn màn hình" : "Toàn màn hình"}
         >
           {isFullscreen ? <MinimizeIcon size={18} /> : <MaximizeIcon size={18} />}
+          <span>{isFullscreen ? "Thoát toàn màn hình" : "Toàn màn hình"}</span>
         </button>
+        <GraphLegend />
+        <a href={helpHref} className="tree-graph__nav-button" aria-label="Hướng dẫn sơ đồ">
+          <LightbulbIcon size={18} />
+          <span>Hướng dẫn</span>
+        </a>
       </div>
+    </div>
   );
 }

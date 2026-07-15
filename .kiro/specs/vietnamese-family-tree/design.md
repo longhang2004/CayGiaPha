@@ -139,6 +139,46 @@ detail additionally exposes per-person capabilities so the client does not infer
 - Linked: full read/edit/photo/visibility for the linked node and privacy-projected read elsewhere.
 - Reader: privacy-projected read only.
 
+### Populated tree workspace UI contract
+
+The populated `/tree/{id}` workspace is task-first and keeps the server-projected person and
+relationship graph as its only data source. It has two persisted view modes:
+
+- `list` is the default on mobile and tablet. The list groups only direct primitive relationships
+  as “Người thân gần”; all remaining projected people appear under “Các thành viên khác”.
+- `graph` uses the existing `TreeGraph` engine, layout, privacy projection, edge semantics, and
+  pan/pinch behavior. Every gesture has a labelled button equivalent.
+
+The browser preference key is `cgp_tree_workspace_view_v2`. Legacy `focus` and `list` values migrate
+to `list`; `graph` remains `graph`; unknown values fall back to `list`. On containers below 960 CSS
+px both panels remain mounted, the inactive panel is `inert`, and the tab change uses a reduced-
+motion-safe translate. At 960 CSS px and above, container queries present a split workspace with a
+`clamp(320px, 34%, 420px)` list rail and graph canvas.
+
+The workspace header is a compact context bar containing a stable route back to the tree list,
+“Đang xem từ [Tên]”, and a labelled viewpoint picker. The shared picker receives the already loaded
+`persons` and `addresses`, supports Vietnamese diacritic-insensitive search, traps focus, restores
+focus to its trigger, and does not request a new API. Selecting a person opens the existing detail
+surface as a bottom sheet on narrow containers and a side panel on wide containers.
+
+The footer is capability-driven. “Thêm người thân” targets `selectedId ?? egoId` only when that
+person's server capability permits relationship editing. Search, viewpoint change, quick guidance,
+and canonical Help remain available to all readable roles; editing, settings, and collaboration
+actions appear only when the corresponding server capability is true. Client role labels never
+grant authority.
+
+Graph controls are compact on wide containers and collapse behind the labelled “Điều khiển sơ đồ”
+button on mobile/tablet. Zoom, centre, reset, fullscreen, SVG download, legend, and Help remain
+keyboard/tap reachable with a minimum 44 CSS-px target. Graph node, canvas, and control colours use
+semantic tokens in light, dark, and system themes; line style as well as colour identifies edges.
+
+The populated-workspace onboarding is a one-time Coach mark sequence. Steps resolve their content
+from canonical Help topic IDs and skip missing anchors by viewport/capability. Completion, Skip, or
+Escape writes schema-4 `GuidanceState.workspaceCoach = { version: 1, status }`; legacy
+`onboardingSkipped: true` migrates to a skipped coach while existing checklist state is retained.
+The action tray and Settings can dispatch the shared reopen event without clearing progress. Tree
+list and empty-tree onboarding continue to use the existing checklist.
+
 ### Auth_Service
 
 Handles password/Google sign-up, sign-in, recovery, and session lifecycle. (Requirements 1, 2, 13)

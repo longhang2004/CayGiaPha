@@ -619,6 +619,143 @@ html.dark .tree-graph__node-tooltip {
   border: 1px solid var(--color-hairline) !important;
 }
 
+/* Workspace v2 graph surface and labelled controls. */
+.tree-graph__canvas {
+  background:
+    linear-gradient(var(--color-hairline-soft) 1px, transparent 1px),
+    linear-gradient(90deg, var(--color-hairline-soft) 1px, transparent 1px),
+    var(--color-bg);
+  background-size: 32px 32px;
+}
+
+.tree-graph__node--male .tree-graph__node-button,
+.tree-graph__node--female .tree-graph__node-button,
+.tree-graph__node--unknown .tree-graph__node-button,
+.tree-graph__node--deceased .tree-graph__node-button {
+  color: var(--color-fg);
+  border-color: var(--color-hairline-strong);
+  background: var(--color-surface-card);
+  opacity: 1;
+}
+
+.tree-graph__node--male .tree-graph__node-button:hover,
+.tree-graph__node--female .tree-graph__node-button:hover {
+  background: color-mix(in srgb, var(--color-brand) 8%, var(--color-surface-card));
+}
+
+.tree-graph__node--male .tree-graph__node-avatar {
+  color: var(--color-fg);
+  border-color: color-mix(in srgb, var(--color-timeline-read) 60%, var(--color-hairline));
+  background: color-mix(in srgb, var(--color-timeline-read) 42%, var(--color-surface-card));
+}
+
+.tree-graph__node--female .tree-graph__node-avatar {
+  color: var(--color-fg);
+  border-color: color-mix(in srgb, var(--color-brand) 45%, var(--color-hairline));
+  background: color-mix(in srgb, var(--color-brand) 22%, var(--color-surface-card));
+}
+
+.tree-graph__node[data-selected="true"] .tree-graph__node-button {
+  outline-color: var(--color-brand);
+  box-shadow: 0 8px 22px color-mix(in srgb, var(--color-brand) 22%, transparent);
+}
+
+.tree-graph__nav-shell {
+  position: absolute;
+  right: 0.75rem;
+  bottom: 5.75rem;
+  z-index: 30;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.5rem;
+}
+
+.tree-graph__nav-toggle,
+.tree-graph__nav-button {
+  display: inline-flex;
+  min-width: 48px;
+  min-height: 48px;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.6rem 0.75rem;
+  color: var(--color-fg);
+  border: 1px solid var(--color-hairline-strong);
+  border-radius: 0.75rem;
+  background: var(--color-surface-card);
+  box-shadow: 0 6px 18px color-mix(in srgb, var(--color-fg) 12%, transparent);
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 750;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.tree-graph__nav-controls {
+  position: static;
+  display: none;
+  width: min(21rem, calc(100vw - 1.5rem));
+  max-height: min(64dvh, 32rem);
+  overflow-y: auto;
+  flex-direction: column;
+  gap: 0.4rem;
+  padding: 0.55rem;
+  transform: none;
+  border: 1px solid var(--color-hairline);
+  border-radius: 0.9rem;
+  background: var(--color-surface-card);
+  box-shadow: 0 16px 36px color-mix(in srgb, var(--color-fg) 18%, transparent);
+}
+
+.tree-graph__nav-shell[data-expanded="true"] .tree-graph__nav-controls {
+  display: flex;
+}
+
+.tree-graph__nav-controls .tree-graph__nav-button,
+.tree-graph__nav-controls > button {
+  width: 100%;
+  justify-content: flex-start;
+  box-shadow: none;
+}
+
+.tree-graph__nav-controls > button[aria-label="Hiện chú giải sơ đồ"] {
+  min-width: 48px;
+  min-height: 48px;
+  justify-content: flex-start;
+  padding: 0.6rem 0.75rem;
+  border-radius: 0.75rem;
+}
+
+.tree-graph__nav-glyph {
+  width: 18px;
+  font-size: 1.25rem;
+  line-height: 1;
+  text-align: center;
+}
+
+@container tree-surface (min-width: 960px) {
+  .tree-graph__nav-shell {
+    top: 0.75rem;
+    right: 0.75rem;
+    bottom: auto;
+  }
+
+  .tree-graph__nav-toggle {
+    display: inline-flex;
+  }
+
+  .tree-graph__nav-controls {
+    width: min(21rem, calc(100cqw - 1.5rem));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tree-graph__node-button {
+    transition: none;
+  }
+}
+
 html.dark .tree-graph__node-tooltip::after {
   border-color: var(--color-hairline) transparent transparent transparent !important;
 }
@@ -787,4 +924,13 @@ html.dark .graph-legend__node--deceased {
   background-color: #242722;
   border-color: #4b4a42;
   color: #d7d2c7;
+}
+
+.tree-workspace-surface .tree-graph,
+.tree-workspace-surface .tree-graph__canvas {
+  min-height: 0;
+}
+
+.tree-workspace-surface .tree-graph__canvas {
+  height: auto !important;
 }

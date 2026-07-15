@@ -1,10 +1,14 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 
+const MIN_ZOOM = 0.05;
+const MAX_ZOOM = 3;
+
 export function useTreeGraphZoom(
   svgWidth: number,
   svgHeight: number,
   personsLength: number,
-  positions: Map<string, { x: number; y: number }>
+  positions: Map<string, { x: number; y: number }>,
+  initialCenterId?: string | null,
 ) {
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
@@ -20,7 +24,30 @@ export function useTreeGraphZoom(
 
   const containerRef = useRef<HTMLDivElement>(null);
   const fullscreenRef = useRef<HTMLDivElement>(null);
+  const initializedLayoutRef = useRef<string | null>(null);
+  const containerSizeRef = useRef<{ width: number; height: number } | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
+
+  const initialPosition = initialCenterId ? positions.get(initialCenterId) : undefined;
+  const initializationKey = [
+    personsLength,
+    positions.size,
+    svgWidth,
+    svgHeight,
+    initialCenterId ?? "",
+    initialPosition?.x ?? "",
+    initialPosition?.y ?? "",
+  ].join(":");
+
+  const calculateFitZoom = useCallback((containerWidth: number, containerHeight: number) => {
+    if (containerWidth <= 0 || containerHeight <= 0 || svgWidth <= 0 || svgHeight <= 0) {
+      return null;
+    }
+
+    const horizontalFit = (containerWidth - 40) / svgWidth;
+    const verticalFit = (containerHeight - 40) / svgHeight;
+    return Math.max(MIN_ZOOM, Math.min(1, horizontalFit, verticalFit));
+  }, [svgHeight, svgWidth]);
 
   useEffect(() => {
     const handleFullscreenChange = () => {
@@ -47,18 +74,87 @@ export function useTreeGraphZoom(
     if (containerRef.current) {
       const containerWidth = containerRef.current.clientWidth;
       const containerHeight = containerRef.current.clientHeight;
-      const paddingX = 40;
-      const calculatedZoom = Math.min(1, (containerWidth - paddingX) / svgWidth);
+      const calculatedZoom = calculateFitZoom(containerWidth, containerHeight);
+      if (calculatedZoom === null) return;
       const initialPanX = (containerWidth - svgWidth * calculatedZoom) / 2;
-      const initialPanY = Math.max(20, (containerHeight - svgHeight * calculatedZoom) / 2);
+      const initialPanY = (containerHeight - svgHeight * calculatedZoom) / 2;
       setPan({ x: initialPanX, y: initialPanY });
       setZoom(calculatedZoom);
     }
-  }, [svgWidth, svgHeight]);
+  }, [calculateFitZoom, svgWidth, svgHeight]);
+
+  const handleReadableInitialView = useCallback(() => {
+    const container = containerRef.current;
+    if (!container) return;
+    const containerWidth = container.clientWidth;
+    const containerHeight = container.clientHeight;
+    const fitZoom = calculateFitZoom(containerWidth, containerHeight);
+    if (fitZoom === null) return false;
+    containerSizeRef.current = { width: containerWidth, height: containerHeight };
+
+    if (!initialPosition || fitZoom >= 0.75) {
+      const initialPanX = (containerWidth - svgWidth * fitZoom) / 2;
+      const initialPanY = (containerHeight - svgHeight * fitZoom) / 2;
+      setPan({ x: initialPanX, y: initialPanY });
+      setZoom(fitZoom);
+      return true;
+    }
+
+    const readableZoom = 0.75;
+    setZoom(readableZoom);
+    setPan({
+      x: containerWidth / 2 - initialPosition.x * readableZoom,
+      y: containerHeight / 2 - initialPosition.y * readableZoom,
+    });
+    return true;
+  }, [calculateFitZoom, initialPosition, svgHeight, svgWidth]);
 
   useEffect(() => {
-    handleReset();
-  }, [handleReset, personsLength]);
+    if (initializedLayoutRef.current === initializationKey) return;
+    if (handleReadableInitialView()) {
+      initializedLayoutRef.current = initializationKey;
+    }
+  }, [handleReadableInitialView, initializationKey]);
+
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container || typeof ResizeObserver === "undefined") return;
+
+    let animationFrame = 0;
+    const observer = new ResizeObserver((entries) => {
+      cancelAnimationFrame(animationFrame);
+      animationFrame = requestAnimationFrame(() => {
+        const entry = entries[0];
+        const nextWidth = entry?.contentRect.width || container.clientWidth;
+        const nextHeight = entry?.contentRect.height || container.clientHeight;
+        if (nextWidth <= 0 || nextHeight <= 0) return;
+
+        const previousSize = containerSizeRef.current;
+        containerSizeRef.current = { width: nextWidth, height: nextHeight };
+        if (!previousSize || initializedLayoutRef.current !== initializationKey) {
+          if (handleReadableInitialView()) {
+            initializedLayoutRef.current = initializationKey;
+          }
+          return;
+        }
+
+        const deltaX = (nextWidth - previousSize.width) / 2;
+        const deltaY = (nextHeight - previousSize.height) / 2;
+        if (deltaX !== 0 || deltaY !== 0) {
+          setPan((currentPan) => ({
+            x: currentPan.x + deltaX,
+            y: currentPan.y + deltaY,
+          }));
+        }
+      });
+    });
+    observer.observe(container);
+
+    return () => {
+      observer.disconnect();
+      cancelAnimationFrame(animationFrame);
+    };
+  }, [handleReadableInitialView, initializationKey]);
 
   const handleMouseDown = useCallback((e: React.MouseEvent<SVGSVGElement>) => {
     if (e.button !== 0) return;
@@ -93,7 +189,7 @@ export function useTreeGraphZoom(
     y: (touches[0].clientY + touches[1].clientY) / 2,
   });
 
-  const clampZoom = (value: number) => Math.max(0.3, Math.min(3, value));
+  const clampZoom = (value: number) => Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, value));
 
   const handleTouchStart = useCallback((e: React.TouchEvent<SVGSVGElement>) => {
     const target = e.target as SVGElement;
@@ -163,8 +259,8 @@ export function useTreeGraphZoom(
     setZoom(clampZoom(nextZoom));
   }, [zoom]);
 
-  const handleZoomIn = useCallback(() => setZoom((z) => Math.min(3, z * 1.2)), []);
-  const handleZoomOut = useCallback(() => setZoom((z) => Math.max(0.3, z / 1.2)), []);
+  const handleZoomIn = useCallback(() => setZoom((z) => Math.min(MAX_ZOOM, z * 1.2)), []);
+  const handleZoomOut = useCallback(() => setZoom((z) => Math.max(MIN_ZOOM, z / 1.2)), []);
 
   const handleCenterOnNode = useCallback((nodeId: string) => {
     const pos = positions.get(nodeId);

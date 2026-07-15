@@ -20,6 +20,7 @@ import { FilterIcon, PlusIcon, SearchIcon } from "@/components/ui/Icons";
  */
 
 interface SearchPanelProps {
+  presentation?: "toolbar" | "drawer";
   treeId: string;
   persons?: Person[];
   addresses?: Map<string, Address>;
@@ -51,6 +52,7 @@ function parseOptionalInt(value: string): number | undefined {
 }
 
 export function SearchPanel({
+  presentation = "toolbar",
   treeId,
   persons,
   addresses,
@@ -353,7 +355,7 @@ export function SearchPanel({
   }
 
   return (
-    <div className="search-panel-toolbar" ref={toolbarRef}>
+    <div className={`search-panel-toolbar search-panel-toolbar--${presentation}`} ref={toolbarRef}>
       <section aria-label="Tìm kiếm và lọc">
         <form onSubmit={handleSubmit} aria-label="Tìm kiếm">
           {formError ? (

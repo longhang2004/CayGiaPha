@@ -7,6 +7,7 @@ import { trackUxEvent } from "@/lib/analytics/uxEvents";
 vi.mock("@/lib/analytics/uxEvents", () => ({
   trackUxEvent: vi.fn(),
   getUxViewportClass: vi.fn(() => "desktop"),
+  getUxAccessRole: vi.fn((role: string) => role.toLowerCase()),
 }));
 
 const PERSONS = [
@@ -26,16 +27,22 @@ describe("TreePeopleListView", () => {
 
   it("renders list and tracks find_person when selecting a person", async () => {
     const onSelectPerson = vi.fn();
-    const onChangeEgo = vi.fn();
 
     render(
       <TreePeopleListView
         persons={PERSONS}
+        relationships={[{
+          id: "father-edge",
+          type: "bloodline_father",
+          sourceId: "father",
+          targetId: "ego",
+          derivationState: "verified",
+        }]}
         addresses={ADDRESSES}
         egoId="ego"
         selectedId="ego"
         onSelectPerson={onSelectPerson}
-        onChangeEgo={onChangeEgo}
+        accessRole="OWNER"
       />
     );
 
@@ -47,7 +54,7 @@ describe("TreePeopleListView", () => {
       flow: "find_person",
       surface: "workspace_list",
       viewportClass: "desktop",
-      accessRole: "unknown",
+      accessRole: "owner",
       outcome: "completed",
     });
 
@@ -63,58 +70,28 @@ describe("TreePeopleListView", () => {
     }
   });
 
-  it("tracks change_viewpoint when changing the viewpoint", async () => {
-    const onSelectPerson = vi.fn();
-    const onChangeEgo = vi.fn();
-
+  it("groups only primitive direct relationships as close relatives", () => {
     render(
       <TreePeopleListView
         persons={PERSONS}
+        relationships={[{
+          id: "father-edge",
+          type: "bloodline_father",
+          sourceId: "father",
+          targetId: "ego",
+          derivationState: "verified",
+        }]}
         addresses={ADDRESSES}
         egoId="ego"
         selectedId="ego"
-        onSelectPerson={onSelectPerson}
-        onChangeEgo={onChangeEgo}
+        onSelectPerson={vi.fn()}
+        accessRole="READER"
       />
     );
 
-    const changeEgoBtn = screen.getByRole("button", { name: /Đổi người làm góc nhìn/i });
-    await userEvent.click(changeEgoBtn);
-
-    expect(onChangeEgo).toHaveBeenCalledWith("father");
-    expect(trackUxEvent).toHaveBeenCalledWith("ux_core_flow_complete", {
-      flow: "change_viewpoint",
-      surface: "workspace_list",
-      viewportClass: "desktop",
-      accessRole: "unknown",
-      outcome: "completed",
-    });
-  });
-
-  it("tracks find_person started when search input is focused/typed into", async () => {
-    const onSelectPerson = vi.fn();
-    const onChangeEgo = vi.fn();
-
-    render(
-      <TreePeopleListView
-        persons={PERSONS}
-        addresses={ADDRESSES}
-        egoId="ego"
-        selectedId="ego"
-        onSelectPerson={onSelectPerson}
-        onChangeEgo={onChangeEgo}
-      />
-    );
-
-    const searchInput = screen.getByPlaceholderText(/Tìm kiếm theo tên hoặc vai vế.../i);
-    await userEvent.type(searchInput, "M");
-
-    expect(trackUxEvent).toHaveBeenCalledWith("ux_core_flow_start", {
-      flow: "find_person",
-      surface: "workspace_list",
-      viewportClass: "desktop",
-      accessRole: "unknown",
-      outcome: "started",
-    });
+    const closeGroup = screen.getByRole("region", { name: "Người thân gần" });
+    expect(closeGroup).toHaveTextContent("My Father");
+    expect(closeGroup).toHaveTextContent("Cha");
+    expect(screen.getByRole("region", { name: "Các thành viên khác" })).toHaveTextContent("Me");
   });
 });

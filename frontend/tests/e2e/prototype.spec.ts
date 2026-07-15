@@ -1,5 +1,8 @@
 import { test, expect } from "@playwright/test";
 
+// Keep this in sync with MOCK_PERSONS; a count change should force the picker contract to be reviewed.
+const MOCK_PERSON_COUNT = 43;
+
 const PROTOTYPE_PAGES = [
   { href: "/prototype/home", label: "Trang chủ" },
   { href: "/prototype/signin", label: "Đăng nhập" },
@@ -43,6 +46,139 @@ test.describe("Prototype Pages — smoke tests (no auth required)", () => {
       const response = await page.goto(p.href);
       expect(response?.status()).toBe(200);
       await expect(page.locator("body")).toBeVisible();
+    });
+  }
+
+  test("populated workspace exposes tabs, capability actions, search, and graph controls", async ({ page }) => {
+    await page.addInitScript(() => {
+      localStorage.setItem("cgp_guidance_v2", JSON.stringify({
+        schemaVersion: 4,
+        firstValue: { status: "completed", dismissedAt: null },
+        contextual: { dismissedTopicIds: [] },
+        onboardingSkipped: false,
+        workspaceCoach: { version: 1, status: "completed" },
+      }));
+    });
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto("/prototype/tree");
+
+    const listTab = page.getByRole("tab", { name: "Danh sách" });
+    const graphTab = page.getByRole("tab", { name: "Sơ đồ" });
+    await expect(listTab).toHaveAttribute("aria-selected", "true");
+    await graphTab.click();
+    await expect(graphTab).toHaveAttribute("aria-selected", "true");
+    await expect(page.locator("#panel-graph")).not.toHaveAttribute("inert", "");
+    await page.getByRole("button", { name: "Điều khiển sơ đồ" }).click();
+    for (const control of ["Phóng to", "Thu nhỏ", "Căn giữa người đang xem", "Đặt lại góc nhìn", "Toàn màn hình", "Tải SVG"]) {
+      await expect(page.getByRole("button", { name: control })).toBeVisible();
+    }
+    await listTab.click();
+    await expect(listTab).toHaveAttribute("aria-selected", "true");
+    await expect(page.locator("#panel-graph")).toHaveAttribute("inert", "");
+
+    await page.getByRole("button", { name: "Thêm người thân" }).click();
+    await expect(page.getByRole("form", { name: "Thêm người thân" })).toBeVisible();
+    await page.getByRole("button", { name: "Bỏ chọn" }).click();
+    await page.getByRole("button", { name: "Bỏ chọn" }).click();
+    await expect(page.locator(".tree-workspace__info-panel")).toBeHidden();
+
+    const otherActions = page.getByRole("button", { name: "Thao tác khác" });
+    await otherActions.click();
+    await page.getByRole("button", { name: "Tìm người" }).click();
+    const searchDialog = page.getByRole("dialog", { name: "Tìm người" });
+    await expect(searchDialog.getByPlaceholder("Tìm tên hoặc cách xưng hô…")).toBeVisible();
+    await searchDialog.getByRole("button", { name: "Đóng tìm người" }).click();
+    await expect(otherActions).toBeFocused();
+
+    await otherActions.click();
+    await page.getByRole("button", { name: "Đổi góc nhìn" }).click();
+    const viewpointDialog = page.getByRole("dialog", { name: "Chọn người làm góc nhìn" });
+    await viewpointDialog.getByRole("button", { name: "Xem từ Nguyễn Thị Minh" }).click();
+    await expect(page.locator(".tree-page-header")).toContainText("Nguyễn Thị Minh");
+  });
+
+  test("populated workspace reflows at 320px with 200 percent text", async ({ page }) => {
+    await page.addInitScript(() => localStorage.setItem("cgp_guidance_v2", JSON.stringify({
+      schemaVersion: 4,
+      firstValue: { status: "completed", dismissedAt: null },
+      contextual: { dismissedTopicIds: [] },
+      onboardingSkipped: false,
+      workspaceCoach: { version: 1, status: "completed" },
+    })));
+    await page.setViewportSize({ width: 320, height: 568 });
+    await page.goto("/prototype/tree");
+    await page.evaluate(() => {
+      document.documentElement.style.fontSize = "200%";
+    });
+
+    const geometry = await page.evaluate(() => ({
+      clientWidth: document.documentElement.clientWidth,
+      scrollWidth: document.documentElement.scrollWidth,
+      footerRight: document.querySelector("footer")?.getBoundingClientRect().right,
+    }));
+
+    expect(geometry.scrollWidth).toBeLessThanOrEqual(geometry.clientWidth);
+    expect(geometry.footerRight).toBeLessThanOrEqual(geometry.clientWidth);
+    await expect(page.getByRole("button", { name: "Thêm người thân" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Thao tác khác" })).toBeVisible();
+  });
+
+  test("workspace viewpoint picker covers every mock person and searches without diacritics", async ({ page }) => {
+    await page.addInitScript(() => localStorage.setItem("cgp_guidance_v2", JSON.stringify({
+      schemaVersion: 4,
+      firstValue: { status: "completed", dismissedAt: null },
+      contextual: { dismissedTopicIds: [] },
+      onboardingSkipped: false,
+      workspaceCoach: { version: 1, status: "completed" },
+    })));
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto("/prototype/tree");
+
+    await page.getByRole("button", { name: "Đổi người" }).click();
+    const dialog = page.getByRole("dialog", { name: "Chọn người làm góc nhìn" });
+    const choices = dialog.getByRole("button", { name: /^Xem từ / });
+    await expect(dialog.getByRole("status")).toHaveText(`Tìm thấy ${MOCK_PERSON_COUNT} người.`);
+    await expect(choices).toHaveCount(MOCK_PERSON_COUNT);
+
+    await dialog.getByRole("searchbox", { name: "Tìm người làm góc nhìn" }).fill("nhut tien");
+    await expect(dialog.getByRole("status")).toHaveText("Tìm thấy 1 người.");
+    await expect(choices).toHaveCount(1);
+    await dialog.getByRole("button", { name: "Xem từ Hàng Nhựt Tiến" }).click();
+
+    await expect(page.locator(".tree-page-header")).toContainText("Hàng Nhựt Tiến");
+  });
+
+  for (const viewport of [
+    { name: "tablet", width: 768, height: 1024 },
+    { name: "desktop", width: 1280, height: 800 },
+  ]) {
+    test(`populated workspace keeps compact header and full-width rows on ${viewport.name}`, async ({ page }) => {
+      await page.addInitScript(() => localStorage.setItem("cgp_guidance_v2", JSON.stringify({
+        schemaVersion: 4,
+        firstValue: { status: "completed", dismissedAt: null },
+        contextual: { dismissedTopicIds: [] },
+        onboardingSkipped: false,
+        workspaceCoach: { version: 1, status: "completed" },
+      })));
+      await page.setViewportSize({ width: viewport.width, height: viewport.height });
+      await page.goto("/prototype/tree");
+
+      const headerBox = await page.locator(".tree-page-header").boundingBox();
+      expect(headerBox).toBeTruthy();
+      expect(headerBox!.height).toBeLessThanOrEqual(96);
+      expect(
+        await page.evaluate(
+          () => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1,
+        ),
+      ).toBe(false);
+      const relativeRow = page.getByRole("button", { name: /Chọn Hàng Hữu Phương/ });
+      const groupBox = await page.getByRole("region", { name: "Người thân gần" }).boundingBox();
+      const rowBox = await relativeRow.boundingBox();
+      expect(rowBox).toBeTruthy();
+      expect(groupBox).toBeTruthy();
+      expect(rowBox!.width).toBeGreaterThanOrEqual(groupBox!.width - 2);
+      await relativeRow.hover();
+      await expect(relativeRow).toHaveCSS("border-radius", "0px");
     });
   }
 
@@ -137,8 +273,7 @@ test.describe("Prototype Pages — smoke tests (no auth required)", () => {
     page,
   }) => {
     await page.goto("/prototype/tree");
-    await expect(page.locator(".tree-page-header__title")).toContainText("Cây Gia Phả Mẫu");
-    await page.getByRole("tab", { name: "Sơ đồ" }).click();
+    await expect(page.locator(".tree-page-header")).toHaveAttribute("title", "Cây Gia Phả Mẫu");
     await expect(page.locator(".tree-graph__canvas")).toBeVisible();
     // Mock persons appear as nodes
     await expect(
@@ -318,43 +453,56 @@ test.describe("Prototype Pages — smoke tests (no auth required)", () => {
     { name: "tablet", width: 768, height: 1024 },
     { name: "mobile", width: 375, height: 667 },
   ]) {
-    test(`graph guidance stays inside safe area on ${viewport.name}`, async ({ page }) => {
+    test(`workspace Coach mark stays inside the usable area on ${viewport.name}`, async ({ page }) => {
+      await page.addInitScript(() => localStorage.removeItem("cgp_guidance_v2"));
       await page.setViewportSize({ width: viewport.width, height: viewport.height });
-      await page.goto("/prototype/tree?guideState=expanded");
-      const layer = page.getByTestId("graph-overlay-layer");
-      const card = page.locator(".guidance-card").first();
-      await expect(layer).toBeVisible();
-      await expect(card).toBeVisible();
-      const [layerBox, cardBox, toolbarBox] = await Promise.all([
-        layer.boundingBox(), card.boundingBox(), page.locator(".tree-page-header").boundingBox(),
+      await page.goto("/prototype/tree");
+      const coach = page.locator(".workspace-coach");
+      await expect(coach).toBeVisible();
+      const [coachBox, headerBox, footerBox] = await Promise.all([
+        coach.boundingBox(),
+        page.locator(".tree-page-header").boundingBox(),
+        page.locator(".tree-workspace-actions").boundingBox(),
       ]);
-      expect(layerBox && cardBox && toolbarBox).toBeTruthy();
-      expect(cardBox!.x).toBeGreaterThanOrEqual(layerBox!.x - 1);
-      expect(cardBox!.y).toBeGreaterThanOrEqual(layerBox!.y - 1);
-      expect(cardBox!.x + cardBox!.width).toBeLessThanOrEqual(layerBox!.x + layerBox!.width + 1);
-      expect(cardBox!.y + cardBox!.height).toBeLessThanOrEqual(layerBox!.y + layerBox!.height + 1);
-      // The overlay layer must not overlap the page header.
-      // (.tree-graph__nav-controls check removed: workspace defaults to focus view, graph not rendered.)
-      expect(layerBox!.y + layerBox!.height).toBeLessThanOrEqual(toolbarBox!.y + 1);
+      expect(coachBox && headerBox && footerBox).toBeTruthy();
+      expect(coachBox!.x).toBeGreaterThanOrEqual(0);
+      expect(coachBox!.y).toBeGreaterThanOrEqual(headerBox!.y + headerBox!.height - 1);
+      expect(coachBox!.x + coachBox!.width).toBeLessThanOrEqual(viewport.width + 1);
+      expect(coachBox!.y + coachBox!.height).toBeLessThanOrEqual(footerBox!.y + 1);
     });
   }
 
+  test("workspace Coach mark persists Escape and can be reopened from the action tray", async ({ page }) => {
+    await page.addInitScript(() => localStorage.removeItem("cgp_guidance_v2"));
+    await page.setViewportSize({ width: 375, height: 667 });
+    await page.goto("/prototype/tree");
+    const coach = page.locator(".workspace-coach");
+    await expect(coach).toBeVisible();
+    await page.keyboard.press("Escape");
+    await expect(coach).toHaveCount(0);
+    expect(await page.evaluate(() => JSON.parse(localStorage.getItem("cgp_guidance_v2") ?? "{}").workspaceCoach?.status)).toBe("skipped");
 
-  for (const viewport of [
-    { name: "tablet", width: 768, height: 1024 },
-    { name: "mobile", width: 375, height: 667 },
-  ]) {
-    test(`transparent guidance wrapper remains click-through on ${viewport.name}`, async ({ page }) => {
-      await page.setViewportSize({ width: viewport.width, height: viewport.height });
-      await page.goto("/prototype/tree?guideState=expanded");
-      const wrapper = page.locator(".guidance-orchestrator__checklist");
-      const card = wrapper.locator(".guidance-card");
-      await expect(wrapper).toBeVisible();
-      await expect(card).toBeVisible();
-      expect(await wrapper.evaluate((element) => getComputedStyle(element).pointerEvents)).toBe("none");
-      expect(await card.evaluate((element) => getComputedStyle(element).pointerEvents)).toBe("auto");
-    });
-  }
+    await page.getByRole("button", { name: "Thao tác khác" }).click();
+    await page.getByRole("button", { name: "Mở hướng dẫn nhanh" }).click();
+    await expect(coach).toBeVisible();
+  });
+
+  test("workspace Coach mark waits for the mobile person sheet to close", async ({ page }) => {
+    await page.addInitScript(() => localStorage.removeItem("cgp_guidance_v2"));
+    await page.setViewportSize({ width: 375, height: 667 });
+    await page.goto("/prototype/tree?guideState=tour&person=ego");
+
+    const panel = page.locator(".tree-workspace__info-panel--open");
+    const coach = page.locator(".workspace-coach");
+    await expect(panel).toBeVisible();
+    await expect(coach).toHaveCount(0);
+
+    await page.getByRole("button", { name: "Bỏ chọn" }).click();
+    await expect(panel).toHaveCount(0);
+    await expect(coach).toBeVisible();
+    await page.getByRole("button", { name: /Tiếp theo|Hoàn tất/ }).click();
+    await expect(coach).toHaveCount(0);
+  });
 
   for (const viewport of [
     { name: "desktop", width: 1280, height: 800 },
@@ -388,35 +536,34 @@ test.describe("Prototype Pages — smoke tests (no auth required)", () => {
     });
   }
 
-  test("manual tour uses a safe fallback when its anchor is missing", async ({ page }) => {
+  test("workspace Coach mark skips an unavailable explicit anchor", async ({ page }) => {
     await page.setViewportSize({ width: 768, height: 1024 });
     await page.goto("/prototype/tree?guideState=tour-missing");
-    const tour = page.locator(".guidance-tour");
-    await expect(tour).toBeVisible();
-    await expect(tour).toHaveAttribute("data-fallback", "true");
-    await page.keyboard.press("Escape");
-    await expect(tour).toHaveCount(0);
+    const coach = page.locator(".workspace-coach");
+    await expect(coach).toHaveCount(0);
+    await page.waitForTimeout(120);
+    await expect(coach).toHaveCount(0);
   });
 
   for (const viewport of [
     { name: "tablet", width: 768, height: 1024 },
     { name: "mobile", width: 375, height: 667 },
   ]) {
-    test(`manual tour stays inside safe area on ${viewport.name}`, async ({ page }) => {
+    test(`explicit workspace Coach mark stays inside safe area on ${viewport.name}`, async ({ page }) => {
       await page.setViewportSize({ width: viewport.width, height: viewport.height });
       await page.goto("/prototype/tree?guideState=tour");
-      const layer = page.getByTestId("graph-overlay-layer");
-      const tour = page.locator(".guidance-tour");
-      await expect(tour).toBeVisible();
-      const [layerBox, tourBox, toolbarBox] = await Promise.all([
-        layer.boundingBox(), tour.boundingBox(), page.locator(".tree-page-header").boundingBox(),
+      const coach = page.locator(".workspace-coach");
+      await expect(coach).toBeVisible();
+      const [coachBox, headerBox, footerBox] = await Promise.all([
+        coach.boundingBox(),
+        page.locator(".tree-page-header").boundingBox(),
+        page.locator(".tree-workspace-actions").boundingBox(),
       ]);
-      expect(layerBox && tourBox && toolbarBox).toBeTruthy();
-      expect(tourBox!.x).toBeGreaterThanOrEqual(layerBox!.x - 1);
-      expect(tourBox!.y).toBeGreaterThanOrEqual(layerBox!.y - 1);
-      expect(tourBox!.x + tourBox!.width).toBeLessThanOrEqual(layerBox!.x + layerBox!.width + 1);
-      expect(tourBox!.y + tourBox!.height).toBeLessThanOrEqual(layerBox!.y + layerBox!.height + 1);
-      expect(tourBox!.y + tourBox!.height).toBeLessThanOrEqual(toolbarBox!.y + 1);
+      expect(coachBox && headerBox && footerBox).toBeTruthy();
+      expect(coachBox!.x).toBeGreaterThanOrEqual(0);
+      expect(coachBox!.y).toBeGreaterThanOrEqual(headerBox!.y + headerBox!.height - 1);
+      expect(coachBox!.x + coachBox!.width).toBeLessThanOrEqual(viewport.width + 1);
+      expect(coachBox!.y + coachBox!.height).toBeLessThanOrEqual(footerBox!.y + 1);
     });
   }
 
@@ -424,27 +571,34 @@ test.describe("Prototype Pages — smoke tests (no auth required)", () => {
     page,
   }) => {
     await page.goto("/prototype/tree");
-    await page.getByRole("tab", { name: "Sơ đồ" }).click();
-    await page.click('button:has-text("Hàng Hữu Thiền")');
+    await page.getByRole("button", { name: "Chọn Hàng Hữu Thiền" }).click();
     // side panel name header should show the selected person
     await expect(page.locator(".person-info__header-name")).toContainText("Hàng Hữu Thiền");
   });
 
   test("tree prototype — actions follow Owner, Contributor, Linked, and Reader capabilities", async ({ page }) => {
     await page.goto("/prototype/tree?role=contributor&person=ego");
-    await expect(page.getByRole("button", { name: "Thêm thành viên" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Thêm người thân" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Chỉnh sửa thông tin" })).toBeVisible();
     await expect(page.getByRole("button", { name: "Thêm quan hệ" })).toBeVisible();
+    await page.getByRole("button", { name: "Thao tác khác" }).click();
+    await expect(page.getByRole("button", { name: "Thêm thành viên khác" })).toBeVisible();
     await expect(page.getByRole("button", { name: "Cộng tác" })).toHaveCount(0);
+    await expect(page.getByRole("button", { name: "Cài đặt cây" })).toHaveCount(0);
 
     await page.goto("/prototype/tree?role=linked&person=ego");
     await expect(page.getByRole("button", { name: "Chỉnh sửa thông tin" })).toBeVisible();
     await expect(page.getByRole("button", { name: "Thêm quan hệ" })).toHaveCount(0);
-    await expect(page.getByRole("button", { name: "Thêm thành viên" })).toHaveCount(0);
+    await expect(page.getByRole("button", { name: "Thêm người thân" })).toHaveCount(0);
 
     await page.goto("/prototype/tree?role=reader&person=ego");
     await expect(page.getByRole("button", { name: "Chỉnh sửa thông tin" })).toHaveCount(0);
     await expect(page.getByRole("button", { name: "Thêm quan hệ" })).toHaveCount(0);
-    await expect(page.getByRole("button", { name: "Thêm thành viên" })).toHaveCount(0);
+    await expect(page.getByRole("button", { name: "Thêm người thân" })).toHaveCount(0);
+    await page.getByRole("button", { name: "Thao tác khác" }).click();
+    await expect(page.getByRole("button", { name: "Tìm người" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Đổi góc nhìn" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Mở hướng dẫn nhanh" })).toBeVisible();
   });
 
   test("tree prototype — settings modal opens via ?panel=settings", async ({
@@ -460,6 +614,7 @@ test.describe("Prototype Pages — smoke tests (no auth required)", () => {
 
   test("tree prototype — collaboration roster shows owner and contributor identities without UUID labels", async ({ page }) => {
     await page.goto("/prototype/tree");
+    await page.getByRole("button", { name: "Thao tác khác" }).click();
     await page.getByRole("button", { name: "Cộng tác" }).click();
     const roster = page.locator(".collaborator-roster");
     await expect(roster.getByText("Hàng Nhựt Prototype", { exact: true })).toBeVisible();
@@ -548,7 +703,8 @@ test.describe("Prototype Pages — smoke tests (no auth required)", () => {
     // Set viewport to 2560x1440 for high definition screenshot
     await page.setViewportSize({ width: 2560, height: 1440 });
     await page.goto("/prototype/tree");
-    await page.getByRole("tab", { name: "Sơ đồ" }).click();
+    await expect(page.locator(".tree-workspace-surface")).toHaveAttribute("data-layout", "split");
+    await expect(page.getByRole("tablist", { name: "Chọn chế độ xem" })).toHaveCount(0);
     await page.waitForSelector(".tree-graph__canvas");
 
     // Wait for layout and animations to settle

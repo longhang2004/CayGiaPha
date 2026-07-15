@@ -1,144 +1,87 @@
-import { useState } from "react";
-import { Person, Address, addressLabel } from "@/lib/graph";
-import { filterWorkspacePeople } from "@/lib/tree-workspace/people";
-import { trackUxEvent, getUxViewportClass } from "@/lib/analytics/uxEvents";
+import { Person, Address, Relationship, TreeAccessRole, addressLabel } from "@/lib/graph";
+import { getFocusRelations } from "@/lib/tree-workspace/people";
+import { ChevronRightIcon } from "@/components/ui/Icons";
+import { trackUxEvent, getUxAccessRole, getUxViewportClass } from "@/lib/analytics/uxEvents";
 
 export interface TreePeopleListViewProps {
   persons: Person[];
+  relationships: Relationship[];
   addresses: Map<string, Address>;
   egoId: string;
   selectedId: string | null;
   onSelectPerson: (id: string) => void;
-  onChangeEgo: (id: string) => void;
-  addressLoading?: boolean;
+  accessRole: TreeAccessRole;
 }
 
 export function TreePeopleListView({
   persons,
+  relationships,
   addresses,
   egoId,
   selectedId,
   onSelectPerson,
-  onChangeEgo,
-  addressLoading,
+  accessRole,
 }: TreePeopleListViewProps) {
-  const [query, setQuery] = useState("");
-  const filtered = filterWorkspacePeople(persons, addresses, query);
-  const viewpointPerson = persons.find((p) => p.id === egoId);
+  const closeRelations = getFocusRelations(egoId, persons, relationships, addresses)
+    .filter((relation) => ["father", "mother", "spouse", "child"].includes(relation.kind));
+  const closeIds = new Set(closeRelations.map((relation) => relation.person.id));
+  const others = persons.filter((person) => !closeIds.has(person.id));
+
+  const handleSelect = (person: Person) => {
+    trackUxEvent("ux_core_flow_complete", {
+      flow: "find_person",
+      surface: "workspace_list",
+      viewportClass: getUxViewportClass(),
+      accessRole: getUxAccessRole(accessRole),
+      outcome: "completed",
+    });
+    onSelectPerson(person.id);
+  };
+
+  const renderPersonRow = (person: Person, relationshipLabel?: string) => {
+    const address = addresses.get(person.id);
+    const isSelected = selectedId === person.id;
+    return (
+      <button
+        key={person.id}
+        type="button"
+        className="tree-people-list__row focus-visible-ring"
+        data-selected={isSelected ? "true" : undefined}
+        aria-pressed={isSelected}
+        aria-label={`Chọn ${person.displayName}`}
+        onClick={() => handleSelect(person)}
+      >
+        <span className={`tree-people-list__avatar tree-people-list__avatar--${person.gender ?? "unknown"}`} aria-hidden="true">
+          {person.displayName.trim().charAt(0).toLocaleUpperCase("vi") || "?"}
+        </span>
+        <span className="tree-people-list__identity">
+          <strong>{person.displayName}</strong>
+          <span>{relationshipLabel ?? (address ? addressLabel(address) : "Thành viên trong cây")}</span>
+        </span>
+        <span className="tree-people-list__chevron" aria-hidden="true"><ChevronRightIcon size={20} /></span>
+      </button>
+    );
+  };
 
   return (
-    <div className="tree-people-list" style={{ display: "flex", flexDirection: "column", height: "100%", padding: "1rem" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
-        <div>
-          <h2 style={{ margin: 0, fontSize: "1.25rem" }}>Danh sách thành viên</h2>
-          {viewpointPerson && (
-            <p style={{ margin: 0, color: "var(--color-muted)", fontSize: "0.875rem" }}>
-              Đang xem từ {viewpointPerson.displayName}
-            </p>
-          )}
+    <div className="tree-people-list">
+      <section className="tree-people-list__group" role="region" aria-labelledby="close-relatives-heading">
+        <div className="tree-people-list__section-heading">
+          <h2 id="close-relatives-heading">Người thân gần</h2>
+          <span>{closeRelations.length}</span>
         </div>
-      </div>
-
-      <div style={{ marginBottom: "1rem" }}>
-        <input
-          type="text"
-          className="field"
-          placeholder="Tìm kiếm theo tên hoặc vai vế..."
-          aria-label="Tìm kiếm thành viên"
-          value={query}
-          onChange={(e) => {
-            const val = e.target.value;
-            if (query === "" && val !== "") {
-              trackUxEvent("ux_core_flow_start", {
-                flow: "find_person",
-                surface: "workspace_list",
-                viewportClass: getUxViewportClass(),
-                accessRole: "unknown",
-                outcome: "started",
-              });
-            }
-            setQuery(val);
-          }}
-          style={{ width: "100%", maxWidth: "400px" }}
-        />
-      </div>
-
-      <div style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-        {filtered.map((p) => {
-          const address = addresses.get(p.id);
-          const isSelected = selectedId === p.id;
-          return (
-            <div
-              key={p.id}
-              className={`surface-card ${isSelected ? "selected" : ""}`}
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                border: isSelected ? "2px solid var(--color-brand)" : "1px solid var(--color-hairline)",
-                padding: "0.5rem 1rem",
-                gap: "1rem",
-              }}
-            >
-               <button
-                type="button"
-                onClick={() => {
-                  trackUxEvent("ux_core_flow_complete", {
-                    flow: "find_person",
-                    surface: "workspace_list",
-                    viewportClass: getUxViewportClass(),
-                    accessRole: "unknown",
-                    outcome: "completed",
-                  });
-                  onSelectPerson(p.id);
-                }}
-                className="focus-visible-ring"
-                style={{
-                  flex: 1,
-                  background: "transparent",
-                  border: "none",
-                  textAlign: "left",
-                  padding: "0.5rem 0",
-                  cursor: "pointer",
-                  color: "inherit",
-                  fontFamily: "inherit",
-                }}
-                aria-label={`Chọn ${p.displayName}`}
-              >
-                <h3 style={{ margin: 0, fontSize: "1rem" }}>{p.displayName}</h3>
-                {address && (
-                  <p style={{ margin: 0, color: "var(--color-muted)", fontSize: "0.875rem" }}>
-                    {addressLabel(address)}
-                  </p>
-                )}
-              </button>
-              <div>
-                <button
-                  className="btn btn-ghost"
-                  onClick={() => {
-                    trackUxEvent("ux_core_flow_complete", {
-                      flow: "change_viewpoint",
-                      surface: "workspace_list",
-                      viewportClass: getUxViewportClass(),
-                      accessRole: "unknown",
-                      outcome: "completed",
-                    });
-                    onChangeEgo(p.id);
-                  }}
-                  disabled={addressLoading || p.id === egoId}
-                >
-                  {p.id === egoId ? "Đang là góc nhìn" : "Đổi người làm góc nhìn"}
-                </button>
-              </div>
-            </div>
-          );
-        })}
-        {filtered.length === 0 && (
-          <p style={{ textAlign: "center", color: "var(--color-muted)", marginTop: "2rem" }}>
-            Không tìm thấy thành viên nào.
-          </p>
+        {closeRelations.length > 0 ? closeRelations.map((relation) => renderPersonRow(relation.person, relation.label)) : (
+          <p className="tree-people-list__empty">Chưa có quan hệ trực tiếp để hiển thị.</p>
         )}
-      </div>
+      </section>
+
+      <section className="tree-people-list__group" role="region" aria-labelledby="other-members-heading">
+        <div className="tree-people-list__section-heading">
+          <h2 id="other-members-heading">Các thành viên khác</h2>
+          <span>{others.length}</span>
+        </div>
+        {others.map((person) => renderPersonRow(person))}
+      </section>
     </div>
   );
 }

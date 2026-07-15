@@ -169,3 +169,7 @@ Durable project knowledge for future AI agents. Keep entries short, verified, an
   per-test budget because concurrent jsdom UI setup can exceed Vitest's 5-second default. Java
   Flyway/Testcontainers verification passes all 27 migrations on PostgreSQL 16; the host Java 26
   cannot run the full Mockito suite because the pinned ByteBuddy supports only through Java 23.
+- **Workspace screenshot compositor (2026-07-15)**: Chromium screenshots can show transient black
+  tiles when the mobile list/graph track is captured while it remains translated. The broad audit
+  keeps production swipe behavior intact and flattens only the active graph track through
+  Playwright's capture-only `style` option before exporting durable screenshots.

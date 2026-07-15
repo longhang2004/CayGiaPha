@@ -46,8 +46,6 @@ function TreePageContent({ params, searchParams }: TreePageProps) {
     showBirthYears,
     isSessionOrDataLoading,
     showLoadingOverlay,
-    addressesReady,
-    selectedAddress,
     addresses,
     addressLoading,
     error,
@@ -60,6 +58,7 @@ function TreePageContent({ params, searchParams }: TreePageProps) {
     isSettingsOpen,
     isCollaborationOpen,
     capabilities,
+    accessRole,
     guidanceRole,
     setSelectedId,
     setEditMode,
@@ -220,15 +219,6 @@ function TreePageContent({ params, searchParams }: TreePageProps) {
     );
   }
 
-  const primitiveCount = relationships.filter((relationship) => relationship.type === "bloodline_father" || relationship.type === "bloodline_mother" || relationship.type === "marriage").length;
-  const guidanceProductState = {
-    treeOpened: true,
-    personCount: persons.length,
-    primitiveCount,
-    addressInspected: Boolean(selectedId && addressesReady && (selectedAddress || addresses.has(selectedId))),
-    viewpointChanged: Boolean(egoId && egoId !== persons[0]?.id && addressesReady),
-  };
-
   return (
     <TreeContext.Provider value={treeState}>
       {showLoadingOverlay && (
@@ -240,7 +230,7 @@ function TreePageContent({ params, searchParams }: TreePageProps) {
       <section className="tree-workspace" style={showLoadingOverlay ? { visibility: "hidden" } : undefined}>
         <GraphOverlayBoundary
           className="tree-workspace__layout"
-          overlay={<GuidanceOrchestrator role={guidanceRole} productState={guidanceProductState} contextualTopicId={selectedId ? "doi-diem-nhin" : "dieu-huong-so-do"} />}
+          overlay={<GuidanceOrchestrator role={guidanceRole} />}
         >
 
           <div className="tree-workspace__main">
@@ -251,14 +241,13 @@ function TreePageContent({ params, searchParams }: TreePageProps) {
               addresses={addresses}
               egoId={egoId}
               selectedId={selectedId}
+              accessRole={accessRole}
               onSelectPerson={(id) => {
                 setSelectedId(id);
                 setEditMode(false);
                 setAddRelativeMode(false);
                 setCreateMode(false);
               }}
-              onChangeEgo={setEgoId}
-              addressLoading={addressLoading}
               graphContent={
                 <div className="tree-workspace__graph">
                   <TreeGraph

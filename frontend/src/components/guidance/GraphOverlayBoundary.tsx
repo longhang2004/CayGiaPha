@@ -93,10 +93,21 @@ export function GraphOverlayBoundary({ className, children, overlay }: BoundaryP
     if (!root) return;
     const observer = new ResizeObserver(measure);
     observer.observe(root);
-    root.querySelectorAll<HTMLElement>("[data-graph-safe-exclude]").forEach((element) => observer.observe(element));
-    document.querySelectorAll<HTMLElement>("[data-graph-safe-external]").forEach((element) => observer.observe(element));
-    const mutation = new MutationObserver(measure);
-    mutation.observe(root, { attributes: true, subtree: true, attributeFilter: ["class", "style"] });
+    const observeExclusions = () => {
+      root.querySelectorAll<HTMLElement>("[data-graph-safe-exclude]").forEach((element) => observer.observe(element));
+      document.querySelectorAll<HTMLElement>("[data-graph-safe-external]").forEach((element) => observer.observe(element));
+    };
+    observeExclusions();
+    const mutation = new MutationObserver(() => {
+      observeExclusions();
+      measure();
+    });
+    mutation.observe(root, {
+      attributes: true,
+      childList: true,
+      subtree: true,
+      attributeFilter: ["class", "style"],
+    });
     window.addEventListener("resize", measure);
     const frame = window.requestAnimationFrame(measure);
     return () => {

@@ -538,6 +538,11 @@ describe("TreeGraph renderer", () => {
 
     await waitFor(() => expect(fetchAddresses).toHaveBeenCalled());
 
+    const controlsToggle = screen.getByRole("button", { name: "Điều khiển sơ đồ" });
+    expect(controlsToggle).toHaveAttribute("aria-expanded", "false");
+    await userEvent.click(controlsToggle);
+    expect(controlsToggle).toHaveAttribute("aria-expanded", "true");
+
     const zoomInBtn = screen.getByTitle("Phóng to");
     const zoomOutBtn = screen.getByTitle("Thu nhỏ");
     const resetBtn = screen.getByTitle("Đặt lại góc nhìn");
@@ -549,6 +554,9 @@ describe("TreeGraph renderer", () => {
     expect(resetBtn).toBeInTheDocument();
     expect(exportBtn).toBeInTheDocument();
     expect(fullscreenBtn).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Căn giữa người đang xem" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Hiện chú giải sơ đồ" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Hướng dẫn sơ đồ" })).toHaveAttribute("href", "/help");
 
     // Select a node to see the center button
     await userEvent.click(screen.getByRole("button", { name: /Bố/ }));
@@ -572,6 +580,33 @@ describe("TreeGraph renderer", () => {
       await userEvent.click(fullscreenBtn);
       expect(mockRequestFullscreen).toHaveBeenCalled();
     }
+  });
+
+  it("does not reset the user's graph view when selecting a person", async () => {
+    vi.spyOn(HTMLElement.prototype, "clientWidth", "get").mockReturnValue(900);
+    vi.spyOn(HTMLElement.prototype, "clientHeight", "get").mockReturnValue(600);
+    const fetchAddresses = vi.fn(async () => ({ egoId: "p1", addresses: [] }));
+
+    render(
+      <TreeGraphTestWrapper
+        treeId="t1"
+        persons={persons}
+        relationships={relationships}
+        initialEgoId="p1"
+        fetchAddresses={fetchAddresses}
+      />,
+    );
+
+    await waitFor(() => expect(fetchAddresses).toHaveBeenCalled());
+    await userEvent.click(screen.getByRole("button", { name: "Điều khiển sơ đồ" }));
+    await userEvent.click(screen.getByTitle("Phóng to"));
+
+    const viewport = document.querySelector(".tree-graph__svg > g")!;
+    const transformBeforeSelection = viewport.getAttribute("transform");
+    await userEvent.click(screen.getByRole("button", { name: /Bố/ }));
+    await screen.findByRole("complementary");
+
+    expect(viewport).toHaveAttribute("transform", transformBeforeSelection);
   });
 
   it("scopes SVG export to its own container when multiple graphs exist", async () => {

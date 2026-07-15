@@ -1,8 +1,23 @@
+"use client";
+
+import { useRef, useState } from "react";
 import { useSession } from "@/app/providers";
+import { CGPDrawer } from "@/components/cgp";
 import { SearchPanel } from "@/components/search/SearchPanel";
-import { ViewpointSelector } from "@/components/graph/ViewpointSelector";
-import { GraphLegend } from "@/components/graph/GraphLegend";
-import { CollaborationIcon, LightbulbIcon, PlusIcon } from "@/components/ui/Icons";
+import {
+  ArrowLeftIcon,
+  CenterIcon,
+  CollaborationIcon,
+  EditIcon,
+  LightbulbIcon,
+  MoreHorizontalIcon,
+  PlusIcon,
+  SearchIcon,
+  SettingsIcon,
+} from "@/components/ui/Icons";
+import { getUxAccessRole, getUxViewportClass, trackUxEvent } from "@/lib/analytics/uxEvents";
+import { GUIDANCE_REOPEN_EVENT } from "@/lib/guidance/storage";
+import { TreePersonPicker } from "./TreePersonPicker";
 import { useTreeContext } from "./TreeContext";
 
 export interface TreePageHeaderProps {
@@ -12,6 +27,11 @@ export interface TreePageHeaderProps {
 
 export function TreePageHeader({ treeListHref = "/tree", helpHref = "/help" }: TreePageHeaderProps) {
   const { user } = useSession();
+  const viewpointTriggerRef = useRef<HTMLButtonElement>(null);
+  const actionsTriggerRef = useRef<HTMLButtonElement>(null);
+  const [isViewpointOpen, setIsViewpointOpen] = useState(false);
+  const [isActionsOpen, setIsActionsOpen] = useState(false);
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
   const {
     activeTreeId,
     treeName,
@@ -19,124 +39,226 @@ export function TreePageHeader({ treeListHref = "/tree", helpHref = "/help" }: T
     addresses,
     egoId,
     selectedId,
-    addressLoading,
     capabilities,
-    canEdit,
+    accessRole,
     setSelectedId,
     setEditMode,
     setAddRelativeMode,
     setCreateMode,
     setEgoId,
+    setIsSettingsOpen,
     setIsCollaborationOpen,
   } = useTreeContext();
 
+  const ego = persons.find((person) => person.id === egoId) ?? persons[0];
+  const selectedPerson = selectedId ? persons.find((person) => person.id === selectedId) : null;
+  const actionTarget = selectedPerson ?? ego;
+  const actionTargetCapabilities = actionTarget?.capabilities ?? capabilities;
+  const canAddRelative = Boolean(actionTarget && actionTargetCapabilities.editRelationships);
+  const canEditSelected = Boolean(selectedPerson && actionTargetCapabilities.editContent);
+
+  const closeActionDrawerAnd = (action: () => void) => {
+    setIsActionsOpen(false);
+    action();
+  };
+
+  const openAddRelative = () => {
+    if (!actionTarget || !canAddRelative) return;
+    setSelectedId(actionTarget.id);
+    setCreateMode(false);
+    setEditMode(false);
+    setAddRelativeMode(true);
+  };
+
+  const changeViewpoint = (personId: string) => {
+    setEgoId(personId);
+    trackUxEvent("ux_core_flow_complete", {
+      flow: "change_viewpoint",
+      surface: "workspace_header",
+      viewportClass: getUxViewportClass(),
+      accessRole: getUxAccessRole(accessRole),
+      outcome: "completed",
+    });
+  };
+
   return (
-    <div className="tree-page-header" data-graph-safe-exclude="auto-y">
-      <div className="tree-page-header__row-one">
-        {/* Brand — hidden on tablet/mobile via CSS */}
-        <div className="tree-page-header__brand">
-          <img src="/logo.svg" alt="Logo Cây Gia Phả" className="tree-page-header__logo" />
-          <div className="tree-page-header__title-container">
-            <a href={treeListHref} className="tree-page-header__title" style={{ textDecoration: "none", color: "inherit" }}>{treeName}</a>
-            <span className="tree-page-header__count">{persons.length} thành viên</span>
-          </div>
+    <>
+      <header className="tree-page-header" data-graph-safe-exclude="auto-y" title={treeName}>
+        <a href={treeListHref} className="tree-page-header__back-link">
+          <ArrowLeftIcon size={18} />
+          <span>Các cây</span>
+        </a>
+        <div className="tree-page-header__context" aria-live="polite">
+          <span>Đang xem từ</span>
+          <strong>{ego?.displayName ?? "Chưa chọn người"}</strong>
         </div>
+        <button
+          ref={viewpointTriggerRef}
+          type="button"
+          className="tree-page-header__viewpoint-button"
+          onClick={() => setIsViewpointOpen(true)}
+          data-guidance-anchor="workspace-viewpoint"
+          aria-haspopup="dialog"
+        >
+          Đổi người
+        </button>
+      </header>
 
-        {/* Search — grows to fill space */}
-        <div className="tree-page-header__search-container" data-guidance-anchor="graph-search">
-          <SearchPanel
-            treeId={activeTreeId}
-            persons={persons}
-            addresses={addresses}
-            egoId={egoId}
-            viewpointId={selectedId || undefined}
-            onSelectResult={(id) => {
-              setSelectedId(id);
-              setEditMode(false);
-              setAddRelativeMode(false);
-            }}
-          />
-        </div>
-
-        {/* Viewpoint — inline on desktop, hidden on tablet (moved to row-two) */}
-        <div className="tree-page-header__viewpoint-inline" data-guidance-anchor="graph-viewpoint">
-          <ViewpointSelector
-            persons={persons}
-            egoId={egoId}
-            onChange={setEgoId}
-            disabled={addressLoading}
-          />
-        </div>
-
-        {/* Actions */}
-        <div className="tree-page-header__actions">
-          <span data-guidance-anchor="graph-legend"><GraphLegend /></span>
-          <a
-            href={treeListHref}
-            className="btn btn-secondary"
-            title="Danh sách cây"
-            aria-label="Danh sách cây"
-            style={{ textDecoration: "none", display: "flex", alignItems: "center", gap: "0.25rem" }}
+      <footer className="tree-workspace-actions" data-graph-safe-exclude="auto-y" aria-label="Tác vụ cây gia phả">
+        {canAddRelative ? (
+          <button
+            type="button"
+            className="tree-workspace-actions__primary"
+            onClick={openAddRelative}
+            data-guidance-anchor="workspace-add-relative"
           >
-            <span>🌳</span>
-            <span style={{ fontSize: "0.8125rem" }}>Cây</span>
-          </a>
-          <a
-            href={helpHref}
-            className="btn btn-secondary"
-            title="Hướng dẫn"
-            aria-label="Mở hướng dẫn"
-            style={{ textDecoration: "none", display: "flex", alignItems: "center", gap: "0.25rem" }}
+            <PlusIcon size={22} />
+            <span>Thêm người thân</span>
+          </button>
+        ) : null}
+        <button
+          ref={actionsTriggerRef}
+          type="button"
+          className="tree-workspace-actions__secondary"
+          onClick={() => setIsActionsOpen(true)}
+          aria-expanded={isActionsOpen}
+          aria-haspopup="dialog"
+        >
+          <span>Thao tác khác</span>
+          <MoreHorizontalIcon size={22} />
+        </button>
+      </footer>
+
+      <TreePersonPicker
+        mode="viewpoint"
+        persons={persons}
+        addresses={addresses}
+        egoId={egoId}
+        selectedId={selectedId}
+        isOpen={isViewpointOpen}
+        onOpenChange={setIsViewpointOpen}
+        onSelectPerson={changeViewpoint}
+        returnFocusRef={viewpointTriggerRef}
+      />
+
+      <CGPDrawer
+        presentation="modal"
+        placement="right"
+        label="Thao tác khác"
+        isOpen={isActionsOpen}
+        onOpenChange={setIsActionsOpen}
+        returnFocusRef={actionsTriggerRef}
+        className="tree-workspace-action-drawer"
+        safeAreaEdge="right"
+      >
+        <div className="tree-workspace-action-drawer__header">
+          <p>Thao tác với cây</p>
+          <h2>Thao tác khác</h2>
+        </div>
+        <div className="tree-workspace-action-drawer__list">
+          <button
+            type="button"
+            aria-label="Tìm người"
+            onClick={() => closeActionDrawerAnd(() => setIsSearchOpen(true))}
           >
-            <LightbulbIcon size={18} />
-            <span style={{ fontSize: "0.8125rem" }}>Hướng dẫn</span>
+            <SearchIcon size={20} />
+            <span><strong>Tìm người</strong><small>Tìm theo tên, vai vế hoặc bộ lọc</small></span>
+          </button>
+          <button
+            type="button"
+            aria-label="Đổi góc nhìn"
+            onClick={() => closeActionDrawerAnd(() => setIsViewpointOpen(true))}
+          >
+            <CenterIcon size={20} />
+            <span><strong>Đổi góc nhìn</strong><small>Tính lại cách xưng hô từ một người khác</small></span>
+          </button>
+          <button
+            type="button"
+            aria-label="Mở hướng dẫn nhanh"
+            onClick={() => closeActionDrawerAnd(() => window.dispatchEvent(new Event(GUIDANCE_REOPEN_EVENT)))}
+          >
+            <LightbulbIcon size={20} />
+            <span><strong>Mở hướng dẫn nhanh</strong><small>Xem lại các điểm chính ngay trên màn hình</small></span>
+          </button>
+          <a href={helpHref} aria-label="Trung tâm hướng dẫn" data-guidance-anchor="workspace-help">
+            <LightbulbIcon size={20} />
+            <span><strong>Trung tâm hướng dẫn</strong><small>Xem hướng dẫn đầy đủ theo việc đang làm</small></span>
           </a>
-          {user && capabilities.manageCollaboration && (
+
+          {canEditSelected ? (
             <button
               type="button"
-              className="btn btn-secondary"
-              onClick={() => setIsCollaborationOpen(true)}
-              title="Cộng tác"
-              aria-label="Cộng tác"
-              style={{ display: "flex", alignItems: "center", gap: "0.25rem" }}
+              aria-label="Sửa người đang chọn"
+              onClick={() => closeActionDrawerAnd(() => {
+                setAddRelativeMode(false);
+                setCreateMode(false);
+                setEditMode(true);
+              })}
             >
-              <CollaborationIcon size={18} />
-              <span style={{ fontSize: "0.8125rem" }}>Cộng tác</span>
+              <EditIcon size={20} />
+              <span><strong>Sửa người đang chọn</strong><small>{selectedPerson?.displayName}</small></span>
             </button>
-          )}
-          {canEdit && (
+          ) : null}
+          {capabilities.editContent ? (
             <button
               type="button"
-              className="btn btn-primary btn-terracotta"
-              onClick={() => {
+              aria-label="Thêm thành viên khác"
+              onClick={() => closeActionDrawerAnd(() => {
                 setSelectedId(null);
-                setCreateMode(true);
                 setAddRelativeMode(false);
                 setEditMode(false);
-              }}
-              title="Thêm thành viên"
-              aria-label="Thêm thành viên"
-              data-guidance-anchor="graph-add-person"
-              style={{ display: "flex", alignItems: "center", gap: "0.25rem" }}
+                setCreateMode(true);
+              })}
             >
-              <PlusIcon size={18} />
-              <span style={{ fontSize: "0.8125rem" }}>Thêm</span>
+              <PlusIcon size={20} />
+              <span><strong>Thêm thành viên khác</strong><small>Thêm người chưa có quan hệ trực tiếp</small></span>
             </button>
-          )}
+          ) : null}
+          {capabilities.manageTree ? (
+            <button type="button" aria-label="Cài đặt cây" onClick={() => closeActionDrawerAnd(() => setIsSettingsOpen(true))}>
+              <SettingsIcon size={20} />
+              <span><strong>Cài đặt cây</strong><small>Tên cây, quyền riêng tư và hiển thị</small></span>
+            </button>
+          ) : null}
+          {user && capabilities.manageCollaboration ? (
+            <button type="button" aria-label="Cộng tác" onClick={() => closeActionDrawerAnd(() => setIsCollaborationOpen(true))}>
+              <CollaborationIcon size={20} />
+              <span><strong>Cộng tác</strong><small>Quản lý người cùng chỉnh sửa cây</small></span>
+            </button>
+          ) : null}
         </div>
-      </div>
+      </CGPDrawer>
 
-      {/* Row 2 — viewpoint on tablet/mobile only (hidden on desktop via CSS) */}
-      <div className="tree-page-header__row-two">
-        <div className="tree-page-header__viewpoint" data-guidance-anchor="graph-viewpoint">
-          <ViewpointSelector
-            persons={persons}
-            egoId={egoId}
-            onChange={setEgoId}
-            disabled={addressLoading}
-          />
+      <CGPDrawer
+        presentation="modal"
+        placement="right"
+        label="Tìm người"
+        isOpen={isSearchOpen}
+        onOpenChange={setIsSearchOpen}
+        returnFocusRef={actionsTriggerRef}
+        className="tree-workspace-search-drawer"
+        safeAreaEdge="right"
+      >
+        <div className="tree-workspace-search-drawer__header">
+          <p>Tìm trong {treeName}</p>
+          <h2>Tìm người</h2>
         </div>
-      </div>
-    </div>
+        <SearchPanel
+          presentation="drawer"
+          treeId={activeTreeId}
+          persons={persons}
+          addresses={addresses}
+          egoId={egoId}
+          viewpointId={egoId}
+          onSelectResult={(personId) => {
+            setSelectedId(personId);
+            setEditMode(false);
+            setAddRelativeMode(false);
+            setCreateMode(false);
+            setIsSearchOpen(false);
+          }}
+        />
+      </CGPDrawer>
+    </>
   );
 }

@@ -1,13 +1,29 @@
 import { track } from "@vercel/analytics/react";
+import type { TreeAccessRole } from "@/lib/graph";
 
 export type UxEventName = "ux_core_flow_start" | "ux_core_flow_complete" | "ux_core_flow_error" | "ux_help_open" | "ux_recovery_used";
 
 export interface UxEventPayload {
   flow: "create_tree" | "join_tree" | "add_first_person" | "add_relative" | "find_person" | "change_viewpoint" | "edit_person" | "open_help";
-  surface: "tree_list" | "tree_empty" | "workspace_focus" | "workspace_list" | "workspace_graph" | "help" | "person_form" | "relative_form";
+  surface: "tree_list" | "tree_empty" | "workspace_focus" | "workspace_header" | "workspace_list" | "workspace_graph" | "help" | "person_form" | "relative_form";
   viewportClass: "mobile" | "tablet" | "desktop";
   accessRole: "owner" | "contributor" | "linked" | "reader" | "unknown";
   outcome: "started" | "completed" | "validation_error" | "request_error" | "cancelled" | "retry";
+}
+
+export function getUxAccessRole(role: TreeAccessRole): UxEventPayload["accessRole"] {
+  switch (role) {
+    case "OWNER":
+      return "owner";
+    case "CONTRIBUTOR":
+      return "contributor";
+    case "LINKED":
+      return "linked";
+    case "READER":
+      return "reader";
+    default:
+      return "unknown";
+  }
 }
 
 export function getUxViewportClass(width?: number): UxEventPayload["viewportClass"] {

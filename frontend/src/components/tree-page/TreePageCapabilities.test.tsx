@@ -1,4 +1,5 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import type { Capabilities, Person, TreeAccessRole } from "@/lib/graph";
 import type { TreeContextType } from "./TreeContext";
@@ -10,8 +11,9 @@ vi.mock("@/app/providers", () => ({
   useSession: () => ({ user: { userId: "user-1" }, loading: false }),
 }));
 vi.mock("@/components/search/SearchPanel", () => ({ SearchPanel: () => <div>Tìm kiếm</div> }));
-vi.mock("@/components/graph/ViewpointSelector", () => ({ ViewpointSelector: () => <div>Điểm nhìn</div> }));
-vi.mock("@/components/graph/GraphLegend", () => ({ GraphLegend: () => <div>Chú thích</div> }));
+vi.mock("./TreePersonPicker", () => ({
+  TreePersonPicker: ({ isOpen }: { isOpen: boolean }) => isOpen ? <div role="dialog" aria-label="Chọn người làm góc nhìn" /> : null,
+}));
 vi.mock("@/components/graph/PersonInfoPanel", () => ({
   PersonInfoPanel: ({ person }: { person: Person }) => <div>{person.displayName}</div>,
 }));
@@ -133,43 +135,92 @@ function renderRole(role: TreeAccessRole) {
 }
 
 describe("tree workspace capability-driven actions", () => {
-  it("shows every content and administration action to the owner", () => {
-    renderRole("OWNER");
-    expect(screen.getByRole("button", { name: "Cộng tác" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Thêm thành viên" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Chỉnh sửa thông tin" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Thêm quan hệ" })).toBeInTheDocument();
-    expect(screen.getByText("Mời xác nhận")).toBeInTheDocument();
-    expect(screen.getByTestId("photos")).toHaveAttribute("data-can-edit", "true");
+  it("targets add-relative at the selected person before the viewpoint person", async () => {
+    const context = contextFor("OWNER");
+    const ego = context.persons[0];
+    const selected: Person = {
+      id: "person-2",
+      displayName: "Nguyễn Thị Mai",
+      capabilities: capabilitiesFor("OWNER"),
+    };
+    context.persons = [ego, selected];
+    context.selectedId = selected.id;
+
+    render(
+      <TreeContext.Provider value={context}>
+        <TreePageHeader />
+      </TreeContext.Provider>,
+    );
+
+    await userEvent.click(screen.getByRole("button", { name: "Thêm người thân" }));
+    expect(context.setSelectedId).toHaveBeenCalledWith(selected.id);
+    expect(context.setCreateMode).toHaveBeenCalledWith(false);
+    expect(context.setEditMode).toHaveBeenCalledWith(false);
+    expect(context.setAddRelativeMode).toHaveBeenCalledWith(true);
   });
 
-  it("lets contributors edit content and relationships without owner administration", () => {
+  it("shows compact context, content, and administration actions to the owner", async () => {
+    renderRole("OWNER");
+    const header = screen.getByRole("banner");
+    expect(screen.getByRole("link", { name: "Các cây" })).toBeInTheDocument();
+    expect(within(header).getByText("Đang xem từ")).toBeInTheDocument();
+    expect(within(header).getByText("Nguyễn Văn Minh")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Đổi người" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Thêm người thân" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Chỉnh sửa thông tin" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Thêm quan hệ" })).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("button", { name: "Thao tác khác" }));
+    expect(screen.getByRole("button", { name: "Cộng tác" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Cài đặt cây" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Thêm thành viên khác" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Sửa người đang chọn" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Tìm người" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Đổi góc nhìn" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Mở hướng dẫn nhanh" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Trung tâm hướng dẫn" })).toBeInTheDocument();
+  });
+
+  it("lets contributors edit content and relationships without owner administration", async () => {
     renderRole("CONTRIBUTOR");
-    expect(screen.queryByRole("button", { name: "Cộng tác" })).not.toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Thêm thành viên" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Thêm người thân" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Chỉnh sửa thông tin" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Thêm quan hệ" })).toBeInTheDocument();
     expect(screen.queryByText("Mời xác nhận")).not.toBeInTheDocument();
     expect(screen.getByTestId("photos")).toHaveAttribute("data-can-edit", "true");
+    await userEvent.click(screen.getByRole("button", { name: "Thao tác khác" }));
+    expect(screen.queryByRole("button", { name: "Cộng tác" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Cài đặt cây" })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Thêm thành viên khác" })).toBeInTheDocument();
   });
 
-  it("lets linked users edit their own node and photos but not the tree structure", () => {
+  it("lets linked users edit their own node and photos but not the tree structure", async () => {
     renderRole("LINKED");
-    expect(screen.queryByRole("button", { name: "Cộng tác" })).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Thêm thành viên" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Thêm người thân" })).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Chỉnh sửa thông tin" })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Thêm quan hệ" })).not.toBeInTheDocument();
     expect(screen.queryByText("Mời xác nhận")).not.toBeInTheDocument();
     expect(screen.getByTestId("photos")).toHaveAttribute("data-can-edit", "true");
+    await userEvent.click(screen.getByRole("button", { name: "Thao tác khác" }));
+    expect(screen.queryByRole("button", { name: "Cộng tác" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Thêm thành viên khác" })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Sửa người đang chọn" })).toBeInTheDocument();
   });
 
-  it("keeps reader actions read-only", () => {
+  it("keeps reader actions read-only while preserving find, viewpoint, and help", async () => {
     renderRole("READER");
-    expect(screen.queryByRole("button", { name: "Cộng tác" })).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Thêm thành viên" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Thêm người thân" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Chỉnh sửa thông tin" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Thêm quan hệ" })).not.toBeInTheDocument();
     expect(screen.queryByText("Mời xác nhận")).not.toBeInTheDocument();
     expect(screen.getByTestId("photos")).toHaveAttribute("data-can-edit", "false");
+    await userEvent.click(screen.getByRole("button", { name: "Thao tác khác" }));
+    expect(screen.queryByRole("button", { name: "Cộng tác" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Thêm thành viên khác" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Sửa người đang chọn" })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Tìm người" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Đổi góc nhìn" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Mở hướng dẫn nhanh" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Trung tâm hướng dẫn" })).toBeInTheDocument();
   });
 });

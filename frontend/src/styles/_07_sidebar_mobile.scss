@@ -254,7 +254,7 @@ html.dark .global-sidebar__brand img {
   }
 
   .inapp-content.inapp-content--no-padding {
-    padding-top: 0 !important;
+    padding-top: var(--mobile-top-bar-height) !important;
   }
 
   .inapp-content--collapsed {
@@ -628,6 +628,10 @@ fieldset .field {
 .cgp-drawer--modal {
   position: relative;
   width: 100%;
+  color: var(--color-fg);
+  border-inline-start: 1px solid var(--color-hairline);
+  background: var(--color-surface-card);
+  box-shadow: -16px 0 40px color-mix(in srgb, var(--color-fg) 16%, transparent);
 }
 
 @media (max-width: 900px) {
@@ -658,6 +662,10 @@ fieldset .field {
   right: 0.5rem;
   z-index: 2;
   font-size: 1.5rem;
+  color: var(--color-fg);
+  border: 1px solid var(--color-hairline);
+  background: var(--color-surface-strong);
+  box-shadow: none;
 }
 
 @keyframes cgp-drawer-enter-left {
