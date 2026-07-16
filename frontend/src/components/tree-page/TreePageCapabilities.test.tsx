@@ -1,7 +1,8 @@
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { Capabilities, Person, TreeAccessRole } from "@/lib/graph";
+import { readGuidanceState, recordWorkspaceCoachStatus } from "@/lib/guidance/storage";
 import type { TreeContextType } from "./TreeContext";
 import { TreeContext } from "./TreeContext";
 import { TreePageHeader } from "./TreePageHeader";
@@ -134,6 +135,13 @@ function renderRole(role: TreeAccessRole) {
   );
 }
 
+beforeEach(() => {
+  window.localStorage.clear();
+  document.querySelectorAll<HTMLElement>("[data-guidance-highlight]").forEach((element) => {
+    element.removeAttribute("data-guidance-highlight");
+  });
+});
+
 describe("tree workspace capability-driven actions", () => {
   it("targets add-relative at the selected person before the viewpoint person", async () => {
     const context = contextFor("OWNER");
@@ -223,4 +231,151 @@ describe("tree workspace capability-driven actions", () => {
     expect(screen.getByRole("button", { name: "Mở hướng dẫn nhanh" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Trung tâm hướng dẫn" })).toBeInTheDocument();
   });
+
+  it.each([
+    ["OWNER", 3, true],
+    ["CONTRIBUTOR", 3, true],
+    ["LINKED", 3, true],
+    ["READER", 2, false],
+  ] as const)(
+    "starts the capability-aware actions Coach once for %s",
+    async (role, expectedCount, hasEditStep) => {
+      const context = contextFor(role);
+      render(
+        <TreeContext.Provider value={context}>
+          <TreePageHeader />
+        </TreeContext.Provider>,
+      );
+
+      expect(screen.queryByRole("dialog", { name: "Hướng dẫn nhanh" })).not.toBeInTheDocument();
+      await userEvent.click(screen.getByRole("button", { name: "Thao tác khác" }));
+
+      const drawer = screen.getByRole("dialog", { name: "Thao tác khác" });
+      let coach = await within(drawer).findByRole("dialog", { name: "Hướng dẫn nhanh" });
+      expect(coach).toHaveTextContent(`Bước 1 / ${expectedCount}`);
+      expect(coach).toHaveTextContent("Tìm người và di chuyển trên sơ đồ");
+
+      await userEvent.click(within(coach).getByRole("button", { name: "Tiếp theo" }));
+      coach = within(drawer).getByRole("dialog", { name: "Hướng dẫn nhanh" });
+      if (hasEditStep) {
+        expect(coach).toHaveTextContent(`Bước 2 / ${expectedCount}`);
+        expect(coach).toHaveTextContent("Sửa thông tin và thêm thành viên");
+        await userEvent.click(within(coach).getByRole("button", { name: "Tiếp theo" }));
+        coach = within(drawer).getByRole("dialog", { name: "Hướng dẫn nhanh" });
+      }
+
+      expect(coach).toHaveTextContent(`Bước ${expectedCount} / ${expectedCount}`);
+      expect(coach).toHaveTextContent("Làm quen với các thao tác trong cây");
+      expect(context.setSelectedId).not.toHaveBeenCalled();
+      expect(context.setEgoId).not.toHaveBeenCalled();
+      expect(context.setEditMode).not.toHaveBeenCalled();
+      expect(context.setAddRelativeMode).not.toHaveBeenCalled();
+      expect(context.setCreateMode).not.toHaveBeenCalled();
+
+      await userEvent.click(within(coach).getByRole("button", { name: "Hoàn tất" }));
+      const stored = readGuidanceState(window.localStorage);
+      expect(stored.workspaceCoach.chapters.actions).toBe("completed");
+      expect(stored.workspaceCoach.chapters.overview).toBeUndefined();
+    },
+  );
+
+  it("replays only the actions chapter without closing its drawer", async () => {
+    recordWorkspaceCoachStatus("actions", "completed", window.localStorage);
+    const context = contextFor("OWNER");
+    render(
+      <TreeContext.Provider value={context}>
+        <TreePageHeader />
+      </TreeContext.Provider>,
+    );
+
+    await userEvent.click(screen.getByRole("button", { name: "Thao tác khác" }));
+    const drawer = screen.getByRole("dialog", { name: "Thao tác khác" });
+    expect(within(drawer).queryByRole("dialog", { name: "Hướng dẫn nhanh" })).not.toBeInTheDocument();
+
+    await userEvent.click(within(drawer).getByRole("button", { name: "Mở hướng dẫn nhanh" }));
+
+    expect(screen.getByRole("dialog", { name: "Thao tác khác" })).toBeInTheDocument();
+    const coach = await within(drawer).findByRole("dialog", { name: "Hướng dẫn nhanh" });
+    expect(coach).toHaveTextContent("Tìm người và di chuyển trên sơ đồ");
+    expect(readGuidanceState(window.localStorage).workspaceCoach.chapters.overview).toBeUndefined();
+  });
+
+  it.each([
+    ["OWNER", 3, true],
+    ["LINKED", 3, true],
+    ["READER", 2, false],
+  ] as const)(
+    "runs the capability-aware person Coach only in view mode for %s",
+    async (role, expectedCount, hasActionStep) => {
+      recordWorkspaceCoachStatus("overview", "skipped", window.localStorage);
+      recordWorkspaceCoachStatus("actions", "completed", window.localStorage);
+      recordWorkspaceCoachStatus("graph", "completed", window.localStorage);
+      const context = contextFor(role);
+      render(
+        <TreeContext.Provider value={context}>
+          <TreePageSlidePanel />
+        </TreeContext.Provider>,
+      );
+
+      let coach = await screen.findByRole("dialog", { name: "Hướng dẫn nhanh" });
+      expect(coach.closest(".side-panel")).not.toBeNull();
+      expect(coach).toHaveTextContent(`Bước 1 / ${expectedCount}`);
+      expect(coach).toHaveTextContent("Xem thông tin và cách xưng hô");
+      expect(document.querySelector('[data-guidance-anchor="person-info-address"]')).toHaveAttribute(
+        "data-guidance-highlight",
+        "true",
+      );
+
+      await userEvent.click(within(coach).getByRole("button", { name: "Tiếp theo" }));
+      coach = screen.getByRole("dialog", { name: "Hướng dẫn nhanh" });
+      if (hasActionStep) {
+        expect(coach).toHaveTextContent(`Bước 2 / ${expectedCount}`);
+        expect(coach).toHaveTextContent("Sửa thông tin và thêm thành viên");
+        expect(document.querySelector('[data-guidance-anchor="person-actions"]')).toHaveAttribute(
+          "data-guidance-highlight",
+          "true",
+        );
+        await userEvent.click(within(coach).getByRole("button", { name: "Tiếp theo" }));
+        coach = screen.getByRole("dialog", { name: "Hướng dẫn nhanh" });
+      }
+
+      expect(coach).toHaveTextContent(`Bước ${expectedCount} / ${expectedCount}`);
+      expect(coach).toHaveTextContent("Lưu ảnh kỷ niệm cho thành viên");
+      expect(document.querySelector('[data-guidance-anchor="person-claim-photos"]')).toHaveAttribute(
+        "data-guidance-highlight",
+        "true",
+      );
+      expect(context.setEditMode).not.toHaveBeenCalled();
+      expect(context.setAddRelativeMode).not.toHaveBeenCalled();
+      expect(context.setEgoId).not.toHaveBeenCalled();
+
+      await userEvent.click(within(coach).getByRole("button", { name: "Hoàn tất" }));
+      expect(readGuidanceState(window.localStorage).workspaceCoach.chapters).toEqual({
+        overview: "skipped",
+        actions: "completed",
+        graph: "completed",
+        person: "completed",
+      });
+    },
+  );
+
+  it.each(["edit", "add-relative"] as const)(
+    "does not mount the person Coach while the %s form is active",
+    async (mode) => {
+      const context = contextFor("OWNER");
+      context.editMode = mode === "edit";
+      context.addRelativeMode = mode === "add-relative";
+      render(
+        <TreeContext.Provider value={context}>
+          <TreePageSlidePanel />
+        </TreeContext.Provider>,
+      );
+
+      expect(await screen.findByText(
+        mode === "edit" ? "Biểu mẫu thành viên" : "Biểu mẫu quan hệ",
+      )).toBeInTheDocument();
+      expect(screen.queryByRole("dialog", { name: "Hướng dẫn nhanh" })).not.toBeInTheDocument();
+      expect(readGuidanceState(window.localStorage).workspaceCoach.chapters.person).toBeUndefined();
+    },
+  );
 });

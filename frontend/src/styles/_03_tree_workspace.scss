@@ -896,7 +896,7 @@ html.dark .tree-page-header__logo {
   min-width: 0;
   min-height: 0;
   flex-direction: column;
-  overflow: hidden;
+  overflow: clip;
 }
 
 .tree-workspace-surface__header {
@@ -1261,6 +1261,22 @@ html.dark .tree-page-header__logo {
   box-shadow: 0 18px 44px color-mix(in srgb, var(--color-fg) 20%, transparent);
 }
 
+.tree-workspace-action-drawer > .workspace-coach--contextual {
+  position: relative;
+  inset: auto;
+  width: 100%;
+  max-width: 100%;
+  margin-top: 1rem;
+}
+
+.tree-workspace__info-panel .workspace-coach--contextual {
+  position: relative;
+  inset: auto;
+  width: 100%;
+  max-width: 100%;
+  margin-top: 1rem;
+}
+
 .workspace-coach__progress {
   color: var(--color-brand);
   font-size: 0.76rem;
@@ -1393,6 +1409,10 @@ html.dark .tree-page-header__logo {
 
   html[data-text-scale="200"] .tree-people-list {
     overflow-y: auto;
+  }
+
+  html[data-text-scale="200"] .tree-workspace .tree-workspace-surface {
+    overflow: clip;
   }
 
   html[data-text-scale="200"] .tree-page-header,

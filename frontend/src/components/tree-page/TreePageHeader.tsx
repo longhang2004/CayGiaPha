@@ -3,6 +3,7 @@
 import { useRef, useState } from "react";
 import { useSession } from "@/app/providers";
 import { CGPDrawer } from "@/components/cgp";
+import { ContextualCoachMarks } from "@/components/guidance/ContextualCoachMarks";
 import { SearchPanel } from "@/components/search/SearchPanel";
 import {
   ArrowLeftIcon,
@@ -16,9 +17,15 @@ import {
   SettingsIcon,
 } from "@/components/ui/Icons";
 import { getUxAccessRole, getUxViewportClass, trackUxEvent } from "@/lib/analytics/uxEvents";
-import { GUIDANCE_REOPEN_EVENT } from "@/lib/guidance/storage";
+import { reopenGuidanceChapter } from "@/lib/guidance/storage";
 import { TreePersonPicker } from "./TreePersonPicker";
 import { useTreeContext } from "./TreeContext";
+
+const ACTION_COACH_STEPS = [
+  { topicId: "dieu-huong-so-do", anchorIds: ["actions-search-viewpoint"] },
+  { topicId: "sua-va-them-thanh-vien", anchorIds: ["actions-edit-add"] },
+  { topicId: "thao-tac-trong-cay", anchorIds: ["actions-manage-help"] },
+];
 
 export interface TreePageHeaderProps {
   treeListHref?: string;
@@ -41,6 +48,7 @@ export function TreePageHeader({ treeListHref = "/tree", helpHref = "/help" }: T
     selectedId,
     capabilities,
     accessRole,
+    guidanceRole,
     setSelectedId,
     setEditMode,
     setAddRelativeMode,
@@ -88,7 +96,11 @@ export function TreePageHeader({ treeListHref = "/tree", helpHref = "/help" }: T
           <ArrowLeftIcon size={18} />
           <span>Các cây</span>
         </a>
-        <div className="tree-page-header__context" aria-live="polite">
+        <div
+          className="tree-page-header__context"
+          aria-live="polite"
+          data-guidance-anchor="workspace-context"
+        >
           <span>Đang xem từ</span>
           <strong>{ego?.displayName ?? "Chưa chọn người"}</strong>
         </div>
@@ -104,7 +116,12 @@ export function TreePageHeader({ treeListHref = "/tree", helpHref = "/help" }: T
         </button>
       </header>
 
-      <footer className="tree-workspace-actions" data-graph-safe-exclude="auto-y" aria-label="Tác vụ cây gia phả">
+      <footer
+        className="tree-workspace-actions"
+        data-graph-safe-exclude="auto-y"
+        data-guidance-anchor="workspace-actions"
+        aria-label="Tác vụ cây gia phả"
+      >
         {canAddRelative ? (
           <button
             type="button"
@@ -155,10 +172,18 @@ export function TreePageHeader({ treeListHref = "/tree", helpHref = "/help" }: T
           <p>Thao tác với cây</p>
           <h2>Thao tác khác</h2>
         </div>
+        <ContextualCoachMarks
+          chapter="actions"
+          role={guidanceRole}
+          steps={ACTION_COACH_STEPS}
+          enabled={isActionsOpen}
+          helpHref={helpHref}
+        />
         <div className="tree-workspace-action-drawer__list">
           <button
             type="button"
             aria-label="Tìm người"
+            data-guidance-anchor="actions-search-viewpoint"
             onClick={() => closeActionDrawerAnd(() => setIsSearchOpen(true))}
           >
             <SearchIcon size={20} />
@@ -175,12 +200,12 @@ export function TreePageHeader({ treeListHref = "/tree", helpHref = "/help" }: T
           <button
             type="button"
             aria-label="Mở hướng dẫn nhanh"
-            onClick={() => closeActionDrawerAnd(() => window.dispatchEvent(new Event(GUIDANCE_REOPEN_EVENT)))}
+            onClick={() => reopenGuidanceChapter("actions")}
           >
             <LightbulbIcon size={20} />
-            <span><strong>Mở hướng dẫn nhanh</strong><small>Xem lại các điểm chính ngay trên màn hình</small></span>
+            <span><strong>Mở hướng dẫn nhanh</strong><small>Phát lại hướng dẫn trong ngăn thao tác này</small></span>
           </button>
-          <a href={helpHref} aria-label="Trung tâm hướng dẫn" data-guidance-anchor="workspace-help">
+          <a href={helpHref} aria-label="Trung tâm hướng dẫn" data-guidance-anchor="actions-manage-help">
             <LightbulbIcon size={20} />
             <span><strong>Trung tâm hướng dẫn</strong><small>Xem hướng dẫn đầy đủ theo việc đang làm</small></span>
           </a>
@@ -189,6 +214,7 @@ export function TreePageHeader({ treeListHref = "/tree", helpHref = "/help" }: T
             <button
               type="button"
               aria-label="Sửa người đang chọn"
+              data-guidance-anchor="actions-edit-add"
               onClick={() => closeActionDrawerAnd(() => {
                 setAddRelativeMode(false);
                 setCreateMode(false);
@@ -203,6 +229,7 @@ export function TreePageHeader({ treeListHref = "/tree", helpHref = "/help" }: T
             <button
               type="button"
               aria-label="Thêm thành viên khác"
+              data-guidance-anchor={canEditSelected ? undefined : "actions-edit-add"}
               onClick={() => closeActionDrawerAnd(() => {
                 setSelectedId(null);
                 setAddRelativeMode(false);

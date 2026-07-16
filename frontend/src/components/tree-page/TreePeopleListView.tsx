@@ -64,7 +64,7 @@ export function TreePeopleListView({
   };
 
   return (
-    <div className="tree-people-list">
+    <div className="tree-people-list" data-guidance-anchor="workspace-person-list">
       <section className="tree-people-list__group" role="region" aria-labelledby="close-relatives-heading">
         <div className="tree-people-list__section-heading">
           <h2 id="close-relatives-heading">Người thân gần</h2>

@@ -3,96 +3,238 @@ import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   GUIDANCE_REOPEN_EVENT,
+  GUIDANCE_STORAGE_KEY,
   readGuidanceState,
-  recordWorkspaceCoachStatus,
 } from "@/lib/guidance/storage";
 import { WorkspaceCoachMarks } from "./WorkspaceCoachMarks";
 
+const overlayMock = vi.hoisted(() => ({
+  safeRect: {
+    left: 0,
+    top: 0,
+    right: 1000,
+    bottom: 800,
+    width: 1000,
+    height: 800,
+  },
+  getPlacement: vi.fn((anchorId: string, preferredPlacement?: string) => ({
+    style: { left: 20, top: 20, width: 340 },
+    target: document.querySelector(`[data-guidance-anchor="${anchorId}"]`),
+    fallback: false,
+    preferredPlacement,
+  })),
+}));
+
 vi.mock("./GraphOverlayBoundary", () => ({
   useGraphOverlay: () => ({
-    safeRect: { left: 0, top: 0, right: 1000, bottom: 800, width: 1000, height: 800 },
-    getPlacement: (anchorId: string) => ({
-      style: { left: 20, top: 20, width: 340 },
-      target: document.querySelector(`[data-guidance-anchor="${anchorId}"]`),
-      fallback: false,
-    }),
+    safeRect: overlayMock.safeRect,
+    getPlacement: overlayMock.getPlacement,
   }),
 }));
 
-function Anchors({ canAdd = true }: { canAdd?: boolean }) {
+interface AnchorProps {
+  includeTabs?: boolean;
+  personAnchor?: "workspace-person-list" | "graph-person-node";
+}
+
+function OverviewAnchors({
+  includeTabs = true,
+  personAnchor = "workspace-person-list",
+}: AnchorProps) {
   return (
     <>
-      <button data-guidance-anchor="workspace-viewpoint">Đổi người</button>
-      <div data-guidance-anchor="workspace-tabs">Danh sách và Sơ đồ</div>
-      {canAdd ? <button data-guidance-anchor="workspace-add-relative">Thêm người thân</button> : null}
-      <button data-guidance-anchor="graph-navigation">Điều khiển sơ đồ</button>
+      <header data-guidance-anchor="workspace-context">Đang xem từ Nguyễn An</header>
+      <button type="button" data-guidance-anchor="workspace-viewpoint">Đổi người</button>
+      {includeTabs ? <div data-guidance-anchor="workspace-tabs">Danh sách và Sơ đồ</div> : null}
+      <button type="button" data-guidance-anchor={personAnchor}>Nguyễn An</button>
+      <footer data-guidance-anchor="workspace-actions">Thao tác cây gia phả</footer>
     </>
   );
+}
+
+function seedGuidance(chapters: Record<string, "completed" | "skipped">) {
+  localStorage.setItem(GUIDANCE_STORAGE_KEY, JSON.stringify({
+    schemaVersion: 5,
+    completed: ["core-tree-open"],
+    dismissedTopicVersions: { "doi-diem-nhin": 2 },
+    onboardingSkipped: false,
+    workspaceCoach: { version: 2, chapters },
+  }));
+}
+
+async function waitForOverviewReady() {
+  await act(async () => {
+    await new Promise((resolve) => window.setTimeout(resolve, 100));
+  });
 }
 
 describe("WorkspaceCoachMarks", () => {
   beforeEach(() => {
     localStorage.clear();
+    overlayMock.safeRect = {
+      left: 0,
+      top: 0,
+      right: 1000,
+      bottom: 800,
+      width: 1000,
+      height: 800,
+    };
+    overlayMock.getPlacement.mockClear();
   });
 
-  it("runs once through available canonical Help topics and records completion", async () => {
+  it("runs the exact five-step overview and records schema-5 chapter completion", async () => {
     const user = userEvent.setup();
-    render(<><Anchors /><WorkspaceCoachMarks role="owner" storage={localStorage} /></>);
+    render(
+      <>
+        <OverviewAnchors />
+        <WorkspaceCoachMarks role="owner" storage={localStorage} helpHref="/prototype/help" />
+      </>,
+    );
 
-    expect(await screen.findByRole("dialog", { name: "Hướng dẫn nhanh" })).toHaveTextContent("Đổi điểm nhìn");
-    await user.click(screen.getByRole("button", { name: "Tiếp theo" }));
-    expect(screen.getByRole("dialog", { name: "Hướng dẫn nhanh" })).toHaveTextContent("Tìm người và di chuyển trên sơ đồ");
-    await user.click(screen.getByRole("button", { name: "Tiếp theo" }));
-    expect(screen.getByRole("dialog", { name: "Hướng dẫn nhanh" })).toHaveTextContent("Thêm quan hệ trực tiếp");
-    await user.click(screen.getByRole("button", { name: "Hoàn tất" }));
+    const expected = [
+      ["Tạo, tham gia hoặc mở một cây", "workspace-context", "bottom"],
+      ["Đổi điểm nhìn", "workspace-viewpoint", "bottom"],
+      ["Tìm người và di chuyển trên sơ đồ", "workspace-tabs", "bottom"],
+      ["Xem thông tin và cách xưng hô", "workspace-person-list", "right"],
+      ["Làm quen với các thao tác trong cây", "workspace-actions", "top"],
+    ] as const;
+
+    for (const [index, [title, anchorId, placement]] of expected.entries()) {
+      const dialog = await screen.findByRole("dialog", { name: "Hướng dẫn nhanh" });
+      expect(dialog).toHaveTextContent(title);
+      expect(dialog).toHaveTextContent(`Bước ${index + 1} / 5`);
+      expect(overlayMock.getPlacement).toHaveBeenLastCalledWith(anchorId, placement);
+      if (index === 0) {
+        expect(screen.getByRole("link", { name: "Xem hướng dẫn" })).toHaveAttribute(
+          "href",
+          "/prototype/help#tao-hoac-mo-cay",
+        );
+      }
+      await user.click(screen.getByRole("button", {
+        name: index === expected.length - 1 ? "Hoàn tất" : "Tiếp theo",
+      }));
+    }
 
     expect(screen.queryByRole("dialog", { name: "Hướng dẫn nhanh" })).not.toBeInTheDocument();
-    expect(readGuidanceState(localStorage).workspaceCoach).toEqual({ version: 1, status: "completed" });
+    expect(readGuidanceState(localStorage)).toMatchObject({
+      schemaVersion: 5,
+      workspaceCoach: {
+        version: 2,
+        chapters: { overview: "completed" },
+      },
+    });
   });
 
-  it("skips unavailable capability steps, persists Escape, and can be reopened manually", async () => {
+  it("skips the missing tabs step on split desktop and uses the graph-node person fallback", async () => {
     const user = userEvent.setup();
-    recordWorkspaceCoachStatus("completed", localStorage);
-    render(<><Anchors canAdd={false} /><WorkspaceCoachMarks role="reader" storage={localStorage} /></>);
+    render(
+      <>
+        <OverviewAnchors includeTabs={false} personAnchor="graph-person-node" />
+        <WorkspaceCoachMarks role="reader" storage={localStorage} />
+      </>,
+    );
 
-    await waitFor(() => expect(screen.queryByRole("dialog", { name: "Hướng dẫn nhanh" })).not.toBeInTheDocument());
-    act(() => window.dispatchEvent(new Event(GUIDANCE_REOPEN_EVENT)));
-    expect(await screen.findByRole("dialog", { name: "Hướng dẫn nhanh" })).toBeInTheDocument();
-    await user.keyboard("{Escape}");
+    const expectedTitles = [
+      "Tạo, tham gia hoặc mở một cây",
+      "Đổi điểm nhìn",
+      "Xem thông tin và cách xưng hô",
+      "Làm quen với các thao tác trong cây",
+    ];
+    for (const [index, title] of expectedTitles.entries()) {
+      const dialog = await screen.findByRole("dialog", { name: "Hướng dẫn nhanh" });
+      expect(dialog).toHaveTextContent(title);
+      expect(dialog).toHaveTextContent(`Bước ${index + 1} / 4`);
+      await user.click(screen.getByRole("button", {
+        name: index === expectedTitles.length - 1 ? "Hoàn tất" : "Tiếp theo",
+      }));
+    }
 
-    expect(readGuidanceState(localStorage).workspaceCoach).toEqual({ version: 1, status: "skipped" });
-    expect(screen.queryByText("Thêm quan hệ trực tiếp hoặc tên gọi tự khai báo")).not.toBeInTheDocument();
+    expect(overlayMock.getPlacement).toHaveBeenCalledWith("graph-person-node", "right");
   });
 
-  it("waits while a person panel is open and can be reopened after the panel closes", async () => {
+  it("keeps a stored overview closed until a generic replay and preserves other chapters", async () => {
+    const user = userEvent.setup();
+    seedGuidance({ overview: "completed", graph: "completed" });
+    render(
+      <>
+        <OverviewAnchors />
+        <WorkspaceCoachMarks role="reader" storage={localStorage} />
+      </>,
+    );
+
+    await waitForOverviewReady();
+    expect(screen.queryByRole("dialog", { name: "Hướng dẫn nhanh" })).not.toBeInTheDocument();
+
+    act(() => window.dispatchEvent(new Event(GUIDANCE_REOPEN_EVENT)));
+    expect(await screen.findByRole("dialog", { name: "Hướng dẫn nhanh" })).toHaveTextContent(
+      "Tạo, tham gia hoặc mở một cây",
+    );
+    await user.click(screen.getByRole("button", { name: "Bỏ qua" }));
+
+    expect(readGuidanceState(localStorage).workspaceCoach).toEqual({
+      version: 2,
+      chapters: { overview: "skipped", graph: "completed" },
+    });
+  });
+
+  it.each([
+    ["person panel", "tree-workspace__info-panel tree-workspace__info-panel--open"],
+    ["drawer", "cgp-drawer-overlay"],
+  ])("defers for an open %s and starts without persisting when it closes", async (_name, openClass) => {
     const { rerender } = render(
       <>
-        <div className="tree-workspace__info-panel tree-workspace__info-panel--open" />
-        <Anchors />
+        <div className={openClass} />
+        <OverviewAnchors />
         <WorkspaceCoachMarks role="owner" storage={localStorage} />
       </>,
     );
 
-    await act(async () => {
-      await new Promise((resolve) => window.setTimeout(resolve, 120));
-    });
+    await waitForOverviewReady();
     expect(screen.queryByRole("dialog", { name: "Hướng dẫn nhanh" })).not.toBeInTheDocument();
+    expect(readGuidanceState(localStorage).workspaceCoach.chapters.overview).toBeUndefined();
 
     rerender(
       <>
-        <div className="tree-workspace__info-panel" />
-        <Anchors />
+        <div />
+        <OverviewAnchors />
         <WorkspaceCoachMarks role="owner" storage={localStorage} />
       </>,
     );
-    act(() => window.dispatchEvent(new Event(GUIDANCE_REOPEN_EVENT)));
-    expect(await screen.findByRole("dialog", { name: "Hướng dẫn nhanh" })).toBeInTheDocument();
+
+    expect(await screen.findByRole("dialog", { name: "Hướng dẫn nhanh" })).toHaveTextContent(
+      "Tạo, tham gia hoặc mở một cây",
+    );
   });
 
-  it("skips an explicit step when its anchor is unavailable without persisting completion", async () => {
+  it("forces an explicit canonical topic after readiness even when overview is decided", async () => {
+    seedGuidance({ overview: "completed" });
     render(
       <>
-        <Anchors />
+        <button type="button" data-guidance-anchor="explicit-viewpoint">Đổi người</button>
+        <WorkspaceCoachMarks
+          role="reader"
+          storage={localStorage}
+          initialTopicId="doi-diem-nhin"
+          anchorOverride="explicit-viewpoint"
+          helpHref="/tro-giup"
+        />
+      </>,
+    );
+
+    const dialog = await screen.findByRole("dialog", { name: "Hướng dẫn nhanh" });
+    expect(dialog).toHaveTextContent("Đổi điểm nhìn");
+    expect(dialog).toHaveTextContent("Bước 1 / 1");
+    expect(screen.getByRole("link", { name: "Xem hướng dẫn" })).toHaveAttribute(
+      "href",
+      "/tro-giup#doi-diem-nhin",
+    );
+    expect(overlayMock.getPlacement).toHaveBeenLastCalledWith("explicit-viewpoint", "bottom");
+  });
+
+  it("renders and persists nothing when an explicit topic anchor is missing", async () => {
+    render(
+      <>
+        <OverviewAnchors />
         <WorkspaceCoachMarks
           role="owner"
           storage={localStorage}
@@ -102,10 +244,59 @@ describe("WorkspaceCoachMarks", () => {
       </>,
     );
 
-    await act(async () => {
-      await new Promise((resolve) => window.setTimeout(resolve, 120));
-    });
+    await waitForOverviewReady();
     expect(screen.queryByRole("dialog", { name: "Hướng dẫn nhanh" })).not.toBeInTheDocument();
-    expect(readGuidanceState(localStorage).workspaceCoach).toBeNull();
+    expect(readGuidanceState(localStorage).workspaceCoach).toEqual({ version: 2, chapters: {} });
+  });
+
+  it("closes for insufficient safe area without persisting and restarts when space returns", async () => {
+    const view = render(
+      <>
+        <OverviewAnchors />
+        <WorkspaceCoachMarks role="owner" storage={localStorage} />
+      </>,
+    );
+
+    expect(await screen.findByRole("dialog", { name: "Hướng dẫn nhanh" })).toBeInTheDocument();
+    overlayMock.safeRect = { ...overlayMock.safeRect, bottom: 200, height: 200 };
+    view.rerender(
+      <>
+        <OverviewAnchors />
+        <WorkspaceCoachMarks role="owner" storage={localStorage} />
+      </>,
+    );
+    await waitFor(() => {
+      expect(screen.queryByRole("dialog", { name: "Hướng dẫn nhanh" })).not.toBeInTheDocument();
+    });
+    expect(readGuidanceState(localStorage).workspaceCoach.chapters.overview).toBeUndefined();
+
+    overlayMock.safeRect = { ...overlayMock.safeRect, bottom: 800, height: 800 };
+    view.rerender(
+      <>
+        <OverviewAnchors />
+        <WorkspaceCoachMarks role="owner" storage={localStorage} />
+      </>,
+    );
+    expect(await screen.findByRole("dialog", { name: "Hướng dẫn nhanh" })).toHaveTextContent(
+      "Tạo, tham gia hoặc mở một cây",
+    );
+  });
+
+  it("uses the mobile card class below 520 CSS pixels", async () => {
+    overlayMock.safeRect = {
+      ...overlayMock.safeRect,
+      right: 400,
+      width: 400,
+    };
+    render(
+      <>
+        <OverviewAnchors />
+        <WorkspaceCoachMarks role="reader" storage={localStorage} />
+      </>,
+    );
+
+    expect(await screen.findByRole("dialog", { name: "Hướng dẫn nhanh" })).toHaveClass(
+      "workspace-coach--mobile",
+    );
   });
 });

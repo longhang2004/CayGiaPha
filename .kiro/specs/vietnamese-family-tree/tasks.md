@@ -572,6 +572,10 @@ against the active Next.js code and current tests.
   - [x] 26.5 Synchronize `/prototype/tree`, remove the standalone mobile concept, and verify roles
     - Cover Owner, Contributor, Linked, and Reader; update targeted component/Playwright contracts;
       run the broad three-viewport prototype audit before visual polish.
+  - [x] 26.6 Extend Coach marks into progressive, surface-triggered chapters
+    - Migrate guidance to schema 5 with independent overview/actions/graph/person decisions; resolve
+      capability-aware anchors from canonical Help; route typed replay to one chapter; and cover the
+      shared `/prototype/tree` interactions without auto-opening a surface or mutating tree state.
 
 ## Notes
 

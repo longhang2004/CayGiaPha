@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { ContextualCoachMarks } from "@/components/guidance/ContextualCoachMarks";
 import {
   CenterIcon,
   DownloadIcon,
@@ -11,8 +12,15 @@ import {
   SettingsIcon,
 } from "@/components/ui/Icons";
 import { type Person } from "@/lib/graph";
+import { reopenGuidanceChapter } from "@/lib/guidance/storage";
 import { GraphLegend } from "./GraphLegend";
 import { ViewpointSelector } from "./ViewpointSelector";
+
+const GRAPH_COACH_STEPS = [
+  { topicId: "dieu-huong-so-do", anchorIds: ["graph-controls-zoom"] },
+  { topicId: "xem-va-luu-so-do", anchorIds: ["graph-controls-center-reset"] },
+  { topicId: "doc-duong-quan-he", anchorIds: ["graph-controls-tools-help"] },
+];
 
 export interface TreeGraphHeaderProps {
   hideViewpointSelector: boolean;
@@ -119,8 +127,23 @@ export function TreeGraphNavControls({
         <span>Điều khiển sơ đồ</span>
       </button>
 
+      <ContextualCoachMarks
+        chapter="graph"
+        role="reader"
+        steps={GRAPH_COACH_STEPS}
+        enabled={isExpanded}
+        helpHref={helpHref}
+      />
+
       <div id="tree-graph-navigation-controls" className="tree-graph__nav-controls">
-        <button type="button" onClick={onZoomIn} className="tree-graph__nav-button" title="Phóng to" aria-label="Phóng to">
+        <button
+          type="button"
+          onClick={onZoomIn}
+          className="tree-graph__nav-button"
+          title="Phóng to"
+          aria-label="Phóng to"
+          data-guidance-anchor="graph-controls-zoom"
+        >
           <PlusIcon size={18} />
           <span>Phóng to</span>
         </button>
@@ -134,6 +157,7 @@ export function TreeGraphNavControls({
           className="tree-graph__nav-button"
           title="Căn giữa người đang xem"
           aria-label="Căn giữa người đang xem"
+          data-guidance-anchor="graph-controls-center-reset"
         >
           <CenterIcon size={18} />
           <span>Về người đang xem</span>
@@ -166,6 +190,7 @@ export function TreeGraphNavControls({
           className="tree-graph__nav-button"
           title="Tải ảnh sơ đồ (SVG)"
           aria-label="Tải SVG"
+          data-guidance-anchor="graph-controls-tools-help"
         >
           <DownloadIcon size={18} />
           <span>Tải SVG</span>
@@ -181,6 +206,15 @@ export function TreeGraphNavControls({
           <span>{isFullscreen ? "Thoát toàn màn hình" : "Toàn màn hình"}</span>
         </button>
         <GraphLegend />
+        <button
+          type="button"
+          className="tree-graph__nav-button"
+          aria-label="Mở hướng dẫn nhanh sơ đồ"
+          onClick={() => reopenGuidanceChapter("graph")}
+        >
+          <LightbulbIcon size={18} />
+          <span>Hướng dẫn nhanh</span>
+        </button>
         <a href={helpHref} className="tree-graph__nav-button" aria-label="Hướng dẫn sơ đồ">
           <LightbulbIcon size={18} />
           <span>Hướng dẫn</span>

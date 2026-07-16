@@ -1,9 +1,14 @@
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { ContextualCoachMarks } from "@/components/guidance/ContextualCoachMarks";
 import { TreeGraph } from "./TreeGraph";
+import { TreeGraphNavControls } from "./TreeGraphControls";
 import { useState } from "react";
 import { PersonInfoPanel } from "./PersonInfoPanel";
+import { readGuidanceState, recordWorkspaceCoachStatus } from "@/lib/guidance/storage";
 import {
   UNRESOLVED_LABEL,
   type Person,
@@ -11,6 +16,11 @@ import {
   type ViewpointAddresses,
   type Address,
 } from "@/lib/graph";
+
+const GRAPH_CSS = readFileSync(
+  resolve(process.cwd(), "src/components/graph/graph.css"),
+  "utf8",
+).replace(/\/\*[\s\S]*?\*\//g, "");
 
 const persons: Person[] = [
   { id: "p1", displayName: "Ông Nội", gender: "male", birthYear: 1940 },
@@ -76,10 +86,54 @@ function TreeGraphTestWrapper(props: any) {
   );
 }
 
+function renderGraphNavControls(withSiblingActionsCoach = false) {
+  const callbacks = {
+    onZoomIn: vi.fn(),
+    onZoomOut: vi.fn(),
+    onCenterOnNode: vi.fn(),
+    onResetZoom: vi.fn(),
+    onToggleFullscreen: vi.fn(),
+    onExportSVG: vi.fn(),
+  };
+
+  render(
+    <>
+      <TreeGraphNavControls
+        {...callbacks}
+        isFullscreen={false}
+        activeSelectedId="p2"
+        activeEgoId="p1"
+      />
+      {withSiblingActionsCoach ? (
+        <>
+          <button type="button" data-guidance-anchor="actions-review-anchor">
+            Thao tác kiểm tra
+          </button>
+          <ContextualCoachMarks
+            chapter="actions"
+            role="reader"
+            steps={[{
+              topicId: "thao-tac-trong-cay",
+              anchorIds: ["actions-review-anchor"],
+            }]}
+            enabled={true}
+          />
+        </>
+      ) : null}
+    </>,
+  );
+
+  return callbacks;
+}
+
 describe("TreeGraph renderer", () => {
   afterEach(() => {
     vi.unstubAllGlobals();
     vi.restoreAllMocks();
+    window.localStorage.clear();
+    document.querySelectorAll<HTMLElement>("[data-guidance-highlight]").forEach((element) => {
+      element.removeAttribute("data-guidance-highlight");
+    });
   });
 
   it("renders the three edge styles so they are distinguishable by class and stroke-dasharray (5.3, 6.3, 12.4)", async () => {
@@ -580,6 +634,87 @@ describe("TreeGraph renderer", () => {
       await userEvent.click(fullscreenBtn);
       expect(mockRequestFullscreen).toHaveBeenCalled();
     }
+  });
+
+  it("starts the three-step graph Coach only after controls expand", async () => {
+    recordWorkspaceCoachStatus("overview", "skipped", window.localStorage);
+    recordWorkspaceCoachStatus("actions", "completed", window.localStorage);
+    recordWorkspaceCoachStatus("person", "skipped", window.localStorage);
+    const callbacks = renderGraphNavControls();
+    expect(screen.queryByRole("dialog", { name: "Hướng dẫn nhanh" })).not.toBeInTheDocument();
+
+    const toggle = screen.getByRole("button", { name: "Điều khiển sơ đồ" });
+    await userEvent.click(toggle);
+    expect(toggle).toHaveAttribute("aria-expanded", "true");
+
+    let coach = await screen.findByRole("dialog", { name: "Hướng dẫn nhanh" });
+    expect(coach).toHaveTextContent("Bước 1 / 3");
+    expect(coach).toHaveTextContent("Tìm người và di chuyển trên sơ đồ");
+    expect(screen.getByTitle("Phóng to")).toHaveAttribute("data-guidance-highlight", "true");
+
+    await userEvent.click(within(coach).getByRole("button", { name: "Tiếp theo" }));
+    coach = screen.getByRole("dialog", { name: "Hướng dẫn nhanh" });
+    expect(coach).toHaveTextContent("Bước 2 / 3");
+    expect(coach).toHaveTextContent("Xem và lưu sơ đồ");
+    expect(screen.getByRole("button", { name: "Căn giữa người đang xem" })).toHaveAttribute(
+      "data-guidance-highlight",
+      "true",
+    );
+
+    await userEvent.click(within(coach).getByRole("button", { name: "Tiếp theo" }));
+    coach = screen.getByRole("dialog", { name: "Hướng dẫn nhanh" });
+    expect(coach).toHaveTextContent("Bước 3 / 3");
+    expect(coach).toHaveTextContent("Đọc đường quan hệ");
+    expect(screen.getByRole("button", { name: "Tải SVG" })).toHaveAttribute(
+      "data-guidance-highlight",
+      "true",
+    );
+    await userEvent.click(within(coach).getByRole("button", { name: "Hoàn tất" }));
+
+    Object.values(callbacks).forEach((callback) => expect(callback).not.toHaveBeenCalled());
+    const stored = readGuidanceState(window.localStorage);
+    expect(stored.workspaceCoach.chapters.graph).toBe("completed");
+    expect(stored.workspaceCoach.chapters.overview).toBe("skipped");
+    expect(stored.workspaceCoach.chapters.actions).toBe("completed");
+    expect(stored.workspaceCoach.chapters.person).toBe("skipped");
+  });
+
+  it("replays only the graph Coach while keeping controls expanded and Help available", async () => {
+    recordWorkspaceCoachStatus("overview", "skipped", window.localStorage);
+    recordWorkspaceCoachStatus("actions", "completed", window.localStorage);
+    recordWorkspaceCoachStatus("person", "skipped", window.localStorage);
+    recordWorkspaceCoachStatus("graph", "completed", window.localStorage);
+    const callbacks = renderGraphNavControls(true);
+
+    const toggle = screen.getByRole("button", { name: "Điều khiển sơ đồ" });
+    await userEvent.click(toggle);
+    expect(toggle).toHaveAttribute("aria-expanded", "true");
+    expect(screen.queryByRole("dialog", { name: "Hướng dẫn nhanh" })).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Hướng dẫn sơ đồ" })).toHaveAttribute("href", "/help");
+
+    await userEvent.click(screen.getByRole("button", { name: "Mở hướng dẫn nhanh sơ đồ" }));
+
+    const coach = await screen.findByRole("dialog", { name: "Hướng dẫn nhanh" });
+    expect(coach).toHaveTextContent("Tìm người và di chuyển trên sơ đồ");
+    expect(screen.getAllByRole("dialog", { name: "Hướng dẫn nhanh" })).toHaveLength(1);
+    expect(screen.queryByText("Làm quen với các thao tác trong cây")).not.toBeInTheDocument();
+    expect(toggle).toHaveAttribute("aria-expanded", "true");
+    Object.values(callbacks).forEach((callback) => expect(callback).not.toHaveBeenCalled());
+    expect(readGuidanceState(window.localStorage).workspaceCoach.chapters).toEqual({
+      overview: "skipped",
+      actions: "completed",
+      person: "skipped",
+      graph: "completed",
+    });
+  });
+
+  it("constrains the active graph Coach stack inside short viewports", () => {
+    expect(GRAPH_CSS).toMatch(
+      /\.tree-graph__nav-shell:has\(> \.workspace-coach--contextual\)\s*\{[^}]*top:\s*0\.75rem[^}]*bottom:\s*5\.75rem[^}]*max-height:\s*none[^}]*overflow-y:\s*auto/s,
+    );
+    expect(GRAPH_CSS).toMatch(
+      /@container tree-surface \(min-width: 960px\)[\s\S]*?\.tree-graph__nav-shell:has\(> \.workspace-coach--contextual\)\s*\{[^}]*bottom:\s*auto[^}]*max-height:\s*calc\(100dvh\s*-\s*1\.5rem\)/,
+    );
   });
 
   it("does not reset the user's graph view when selecting a person", async () => {

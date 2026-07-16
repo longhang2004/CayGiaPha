@@ -6,7 +6,23 @@ import { PersonPhotos } from "@/components/photos/PersonPhotos";
 import { UpcomingEventsWidget } from "@/components/graph/UpcomingEventsWidget";
 import { CloseIcon } from "@/components/ui/Icons";
 import { ClaimFlow } from "@/components/claim/ClaimFlow";
+import { ContextualCoachMarks } from "@/components/guidance/ContextualCoachMarks";
 import { useTreeContext } from "./TreeContext";
+
+const PERSON_COACH_STEPS = [
+  {
+    topicId: "xem-thong-tin-va-xung-ho",
+    anchorIds: ["person-info-address"],
+  },
+  {
+    topicId: "sua-va-them-thanh-vien",
+    anchorIds: ["person-actions"],
+  },
+  {
+    topicId: "luu-anh-ky-niem",
+    anchorIds: ["person-claim-photos"],
+  },
+];
 
 export function TreePageSlidePanel() {
   const {
@@ -31,6 +47,7 @@ export function TreePageSlidePanel() {
     refreshTree,
     claimInviteAction,
     upcomingEventsLoader,
+    guidanceRole,
   } = useTreeContext();
 
   const selectedPerson = selectedId ? persons.find((p) => p.id === selectedId) : null;
@@ -149,17 +166,26 @@ export function TreePageSlidePanel() {
             </div>
           ) : (
             <div>
-              <PersonInfoPanel
-                person={selectedPerson}
-                ego={selectedEgo}
-                address={selectedAddress}
-                loading={addressLoading}
-                hideHeading={true}
+              <ContextualCoachMarks
+                chapter="person"
+                role={guidanceRole}
+                steps={PERSON_COACH_STEPS}
+                enabled={true}
               />
+
+              <div data-guidance-anchor="person-info-address">
+                <PersonInfoPanel
+                  person={selectedPerson}
+                  ego={selectedEgo}
+                  address={selectedAddress}
+                  loading={addressLoading}
+                  hideHeading={true}
+                />
+              </div>
 
               <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem", marginTop: "1rem" }}>
                 {canEditSelected && (
-                  <div className="person-actions">
+                  <div className="person-actions" data-guidance-anchor="person-actions">
                     <button
                       type="button"
                       className="btn"
@@ -209,7 +235,10 @@ export function TreePageSlidePanel() {
                 </div>
               ) : null}
 
-              <div style={{ marginTop: "1.5rem", borderTop: "1px solid var(--color-hairline-soft)", paddingTop: "1rem" }}>
+              <div
+                data-guidance-anchor="person-claim-photos"
+                style={{ marginTop: "1.5rem", borderTop: "1px solid var(--color-hairline-soft)", paddingTop: "1rem" }}
+              >
                 <PersonPhotos
                   treeId={activeTreeId}
                   personId={selectedPerson.id}

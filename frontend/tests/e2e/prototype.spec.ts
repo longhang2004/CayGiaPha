@@ -1,7 +1,60 @@
-import { test, expect } from "@playwright/test";
+import { test, expect, type Locator, type Page } from "@playwright/test";
 
 // Keep this in sync with MOCK_PERSONS; a count change should force the picker contract to be reviewed.
 const MOCK_PERSON_COUNT = 43;
+
+const COMPLETED_WORKSPACE_GUIDANCE = {
+  schemaVersion: 5,
+  completed: [],
+  dismissedTopicVersions: {},
+  onboardingSkipped: false,
+  workspaceCoach: {
+    version: 2,
+    chapters: {
+      overview: "completed",
+      actions: "completed",
+      graph: "completed",
+      person: "completed",
+    },
+  },
+} as const;
+
+async function installCompletedWorkspaceGuidance(page: Page) {
+  await page.addInitScript((state) => {
+    localStorage.setItem("cgp_guidance_v2", JSON.stringify(state));
+  }, COMPLETED_WORKSPACE_GUIDANCE);
+}
+
+async function expectWithinViewport(locator: Locator) {
+  await expect(locator).toBeVisible();
+  await locator.evaluate(async (element) => {
+    const animations = new Set<Animation>();
+    let current: Element | null = element;
+    while (current) {
+      current.getAnimations().forEach((animation) => animations.add(animation));
+      current = current.parentElement;
+    }
+    await Promise.all(Array.from(animations).map((animation) => animation.finished.catch(() => undefined)));
+  });
+  const geometry = await locator.evaluate((element) => {
+    const rect = element.getBoundingClientRect();
+    return {
+      top: rect.top,
+      right: rect.right,
+      bottom: rect.bottom,
+      left: rect.left,
+      viewportWidth: window.innerWidth,
+      viewportHeight: window.innerHeight,
+    };
+  });
+  expect(
+    geometry.top >= 0 &&
+      geometry.left >= 0 &&
+      geometry.bottom <= geometry.viewportHeight &&
+      geometry.right <= geometry.viewportWidth,
+    `Coach geometry must stay within the viewport: ${JSON.stringify(geometry)}`,
+  ).toBe(true);
+}
 
 const PROTOTYPE_PAGES = [
   { href: "/prototype/home", label: "Trang chủ" },
@@ -50,15 +103,7 @@ test.describe("Prototype Pages — smoke tests (no auth required)", () => {
   }
 
   test("populated workspace exposes tabs, capability actions, search, and graph controls", async ({ page }) => {
-    await page.addInitScript(() => {
-      localStorage.setItem("cgp_guidance_v2", JSON.stringify({
-        schemaVersion: 4,
-        firstValue: { status: "completed", dismissedAt: null },
-        contextual: { dismissedTopicIds: [] },
-        onboardingSkipped: false,
-        workspaceCoach: { version: 1, status: "completed" },
-      }));
-    });
+    await installCompletedWorkspaceGuidance(page);
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto("/prototype/tree");
 
@@ -98,13 +143,7 @@ test.describe("Prototype Pages — smoke tests (no auth required)", () => {
   });
 
   test("populated workspace reflows at 320px with 200 percent text", async ({ page }) => {
-    await page.addInitScript(() => localStorage.setItem("cgp_guidance_v2", JSON.stringify({
-      schemaVersion: 4,
-      firstValue: { status: "completed", dismissedAt: null },
-      contextual: { dismissedTopicIds: [] },
-      onboardingSkipped: false,
-      workspaceCoach: { version: 1, status: "completed" },
-    })));
+    await installCompletedWorkspaceGuidance(page);
     await page.setViewportSize({ width: 320, height: 568 });
     await page.goto("/prototype/tree");
     await page.evaluate(() => {
@@ -124,13 +163,7 @@ test.describe("Prototype Pages — smoke tests (no auth required)", () => {
   });
 
   test("workspace viewpoint picker covers every mock person and searches without diacritics", async ({ page }) => {
-    await page.addInitScript(() => localStorage.setItem("cgp_guidance_v2", JSON.stringify({
-      schemaVersion: 4,
-      firstValue: { status: "completed", dismissedAt: null },
-      contextual: { dismissedTopicIds: [] },
-      onboardingSkipped: false,
-      workspaceCoach: { version: 1, status: "completed" },
-    })));
+    await installCompletedWorkspaceGuidance(page);
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto("/prototype/tree");
 
@@ -153,13 +186,7 @@ test.describe("Prototype Pages — smoke tests (no auth required)", () => {
     { name: "desktop", width: 1280, height: 800 },
   ]) {
     test(`populated workspace keeps compact header and full-width rows on ${viewport.name}`, async ({ page }) => {
-      await page.addInitScript(() => localStorage.setItem("cgp_guidance_v2", JSON.stringify({
-        schemaVersion: 4,
-        firstValue: { status: "completed", dismissedAt: null },
-        contextual: { dismissedTopicIds: [] },
-        onboardingSkipped: false,
-        workspaceCoach: { version: 1, status: "completed" },
-      })));
+      await installCompletedWorkspaceGuidance(page);
       await page.setViewportSize({ width: viewport.width, height: viewport.height });
       await page.goto("/prototype/tree");
 
@@ -480,28 +507,92 @@ test.describe("Prototype Pages — smoke tests (no auth required)", () => {
     await expect(coach).toBeVisible();
     await page.keyboard.press("Escape");
     await expect(coach).toHaveCount(0);
-    expect(await page.evaluate(() => JSON.parse(localStorage.getItem("cgp_guidance_v2") ?? "{}").workspaceCoach?.status)).toBe("skipped");
+    expect(await page.evaluate(() => JSON.parse(localStorage.getItem("cgp_guidance_v2") ?? "{}").workspaceCoach?.chapters?.overview)).toBe("skipped");
 
     await page.getByRole("button", { name: "Thao tác khác" }).click();
     await page.getByRole("button", { name: "Mở hướng dẫn nhanh" }).click();
     await expect(coach).toBeVisible();
   });
 
-  test("workspace Coach mark waits for the mobile person sheet to close", async ({ page }) => {
+  test("contextual Coach chapters wait for the user to open each workspace surface", async ({ page }) => {
+    await page.addInitScript(() => {
+      localStorage.setItem("cgp_guidance_v2", JSON.stringify({
+        schemaVersion: 5,
+        completed: [],
+        dismissedTopicVersions: {},
+        onboardingSkipped: false,
+        workspaceCoach: { version: 2, chapters: { overview: "completed" } },
+      }));
+    });
+    await page.setViewportSize({ width: 375, height: 667 });
+    await page.goto("/prototype/tree");
+
+    await expect(page.getByRole("dialog", { name: "Hướng dẫn nhanh" })).toHaveCount(0);
+    await expect(page.getByRole("tab", { name: "Danh sách" })).toHaveAttribute("aria-selected", "true");
+    await expect(page.getByRole("dialog", { name: "Thao tác khác" })).toHaveCount(0);
+    await expect(page.locator(".tree-workspace__info-panel--open")).toHaveCount(0);
+
+    await page.getByRole("button", { name: "Thao tác khác" }).click();
+    const actionDrawer = page.getByRole("dialog", { name: "Thao tác khác" });
+    const actionCoach = actionDrawer.getByRole("dialog", { name: "Hướng dẫn nhanh" });
+    await expect(actionCoach).toContainText("Tìm người và di chuyển trên sơ đồ");
+    await expectWithinViewport(actionCoach);
+    await expect(page.getByRole("tab", { name: "Danh sách" })).toHaveAttribute("aria-selected", "true");
+    await actionCoach.getByRole("button", { name: "Bỏ qua" }).click();
+    await actionDrawer.getByRole("button", { name: "Đóng thao tác khác" }).click();
+
+    await page.getByRole("tab", { name: "Sơ đồ" }).click();
+    await expect(page.getByRole("dialog", { name: "Hướng dẫn nhanh" })).toHaveCount(0);
+    await page.getByRole("button", { name: "Điều khiển sơ đồ" }).click();
+    const graphCoach = page.getByRole("dialog", { name: "Hướng dẫn nhanh" });
+    await expect(graphCoach).toContainText("Tìm người và di chuyển trên sơ đồ");
+    await expectWithinViewport(graphCoach);
+    await expect(page.locator(".tree-workspace__info-panel--open")).toHaveCount(0);
+    await graphCoach.getByRole("button", { name: "Bỏ qua" }).click();
+
+    await page.getByRole("tab", { name: "Danh sách" }).click();
+    await page.getByRole("button", { name: "Chọn Hàng Hữu Phương" }).click();
+    const personPanel = page.locator(".tree-workspace__info-panel--open");
+    const personCoach = personPanel.getByRole("dialog", { name: "Hướng dẫn nhanh" });
+    await expect(personCoach).toContainText("Xem thông tin và cách xưng hô");
+    await expectWithinViewport(personCoach);
+    await expect(page.getByRole("dialog", { name: "Thao tác khác" })).toHaveCount(0);
+    await personCoach.getByRole("button", { name: "Bỏ qua" }).click();
+
+    expect(await page.evaluate(() => JSON.parse(localStorage.getItem("cgp_guidance_v2") ?? "{}").workspaceCoach?.chapters)).toEqual({
+      overview: "completed",
+      actions: "skipped",
+      graph: "skipped",
+      person: "skipped",
+    });
+  });
+
+  test("person Coach starts inside the mobile person sheet without replacing overview", async ({ page }) => {
     await page.addInitScript(() => localStorage.removeItem("cgp_guidance_v2"));
     await page.setViewportSize({ width: 375, height: 667 });
-    await page.goto("/prototype/tree?guideState=tour&person=ego");
+    await page.goto("/prototype/tree?person=ego");
 
     const panel = page.locator(".tree-workspace__info-panel--open");
-    const coach = page.locator(".workspace-coach");
     await expect(panel).toBeVisible();
-    await expect(coach).toHaveCount(0);
+    const personCoach = panel.getByRole("dialog", { name: "Hướng dẫn nhanh" });
+    await expect(personCoach).toContainText("Xem thông tin và cách xưng hô");
+    await personCoach.getByRole("button", { name: "Bỏ qua" }).click();
+    expect(await page.evaluate(() => JSON.parse(localStorage.getItem("cgp_guidance_v2") ?? "{}").workspaceCoach?.chapters)).toEqual({
+      person: "skipped",
+    });
 
     await page.getByRole("button", { name: "Bỏ chọn" }).click();
     await expect(panel).toHaveCount(0);
-    await expect(coach).toBeVisible();
-    await page.getByRole("button", { name: /Tiếp theo|Hoàn tất/ }).click();
-    await expect(coach).toHaveCount(0);
+    const overviewCoach = page.getByRole("dialog", { name: "Hướng dẫn nhanh" });
+    await expect(overviewCoach).toBeVisible();
+    for (let step = 0; step < 3; step += 1) {
+      await overviewCoach.getByRole("button", { name: "Tiếp theo" }).click();
+    }
+    await expect(overviewCoach).toContainText("Xem thông tin và cách xưng hô");
+    await expect(page.locator('[data-guidance-anchor="workspace-person-list"]')).toHaveAttribute(
+      "data-guidance-highlight",
+      "true",
+    );
   });
 
   for (const viewport of [
@@ -570,6 +661,7 @@ test.describe("Prototype Pages — smoke tests (no auth required)", () => {
   test("tree prototype — selecting a node shows info panel", async ({
     page,
   }) => {
+    await installCompletedWorkspaceGuidance(page);
     await page.goto("/prototype/tree");
     await page.getByRole("button", { name: "Chọn Hàng Hữu Thiền" }).click();
     // side panel name header should show the selected person

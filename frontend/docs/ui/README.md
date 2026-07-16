@@ -123,9 +123,12 @@ not automatically page-overflow bugs.
 - Relationship types must remain distinguishable by line style and color.
 - `prefers-reduced-motion` must disable non-essential motion.
 - Help topics under `src/content/help/` are the canonical guidance source. Overview, checklist and contextual notes reference topic IDs and excerpt keys; do not duplicate explanatory copy in components.
-- The populated workspace uses one-time Coach marks sourced from canonical Help topics. Tree-list
-  and empty-tree states retain the short checklist. Completion, Skip, and Escape are persisted;
-  Settings and the action tray can replay the Coach marks explicitly.
+- The populated workspace uses progressive Coach mark chapters sourced from canonical Help topics:
+  overview, actions, graph, and person. Contextual chapters start only after the user opens their
+  surface and never open a drawer, change tabs, expand controls, select a person, or start editing.
+  Missing capability/viewport anchors are skipped; Completion, Skip, and Escape persist per chapter.
+  Settings replays overview, while action and graph surfaces expose typed chapter-specific replay.
+  Tree-list and empty-tree states retain the short checklist.
 - Populated workspace actions are distributed between a compact context bar, a stable footer, and
   a capability-filtered action drawer. Mobile/tablet use `list`/`graph` tabs with inert inactive
   content; wide containers use the same mounted panels in split view.

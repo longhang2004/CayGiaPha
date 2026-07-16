@@ -44,10 +44,25 @@ describe("GuidanceChecklist", () => {
   });
 
   it("persists an explicit skip and manual reopen restores it", async () => {
+    localStorage.setItem(
+      GUIDANCE_STORAGE_KEY,
+      JSON.stringify({
+        schemaVersion: 5,
+        completed: [],
+        dismissedTopicVersions: {},
+        onboardingSkipped: false,
+        workspaceCoach: { version: 2, chapters: { graph: "completed" } },
+      }),
+    );
     render(<GuidanceChecklist role="owner" productState={base} />);
     fireEvent.click(await screen.findByRole("button", { name: "Bỏ qua hướng dẫn" }));
     expect(screen.queryByText("Bắt đầu từng bước")).not.toBeInTheDocument();
-    expect(localStorage.getItem(GUIDANCE_STORAGE_KEY) ?? "").toContain('"onboardingSkipped":true');
+    const stored = JSON.parse(localStorage.getItem(GUIDANCE_STORAGE_KEY) ?? "{}");
+    expect(stored.onboardingSkipped).toBe(true);
+    expect(stored.workspaceCoach).toEqual({
+      version: 2,
+      chapters: { graph: "completed", overview: "skipped" },
+    });
     act(() => window.dispatchEvent(new Event(GUIDANCE_REOPEN_EVENT)));
     expect(await screen.findByText("Bắt đầu từng bước")).toBeInTheDocument();
   });

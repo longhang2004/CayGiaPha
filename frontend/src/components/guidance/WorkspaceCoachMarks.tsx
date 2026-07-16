@@ -1,19 +1,42 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { getHelpExcerpt, getHelpTopic, type GuidanceRole } from "@/content/help/helpTopics";
+import { useEffect, useMemo, useState } from "react";
+import { type GuidanceRole } from "@/content/help/helpTopics";
+import { reopenGuidanceChapter } from "@/lib/guidance/storage";
 import {
-  GUIDANCE_REOPEN_EVENT,
-  readGuidanceState,
-  recordWorkspaceCoachStatus,
-} from "@/lib/guidance/storage";
+  CoachMarkCard,
+  type CoachStep,
+  useCoachMarkSequence,
+} from "./CoachMarkSequence";
 import { useGraphOverlay } from "./GraphOverlayBoundary";
 
-interface CoachStep {
-  topicId: string;
-  anchorId: string;
-  preferredPlacement: "top" | "bottom" | "left" | "right";
-}
+const OVERVIEW_STEPS: CoachStep[] = [
+  {
+    topicId: "tao-hoac-mo-cay",
+    anchorIds: ["workspace-context"],
+    preferredPlacement: "bottom",
+  },
+  {
+    topicId: "doi-diem-nhin",
+    anchorIds: ["workspace-viewpoint"],
+    preferredPlacement: "bottom",
+  },
+  {
+    topicId: "dieu-huong-so-do",
+    anchorIds: ["workspace-tabs"],
+    preferredPlacement: "bottom",
+  },
+  {
+    topicId: "xem-thong-tin-va-xung-ho",
+    anchorIds: ["workspace-person-list", "graph-person-node"],
+    preferredPlacement: "right",
+  },
+  {
+    topicId: "thao-tac-trong-cay",
+    anchorIds: ["workspace-actions"],
+    preferredPlacement: "top",
+  },
+];
 
 const TOPIC_ANCHORS: Record<string, string> = {
   "doi-diem-nhin": "workspace-viewpoint",
@@ -38,64 +61,25 @@ export function WorkspaceCoachMarks({
   initialTopicId = null,
   anchorOverride,
 }: Props) {
-  const resolvedStorage = storage ?? (typeof window !== "undefined" ? window.localStorage : undefined);
   const { safeRect, getPlacement } = useGraphOverlay();
-  const [steps, setSteps] = useState<CoachStep[]>([]);
-  const [active, setActive] = useState(false);
-  const [stepIndex, setStepIndex] = useState(0);
+  const [ready, setReady] = useState(false);
   const [workspaceBlocked, setWorkspaceBlocked] = useState(false);
-  const skipButtonRef = useRef<HTMLButtonElement>(null);
-  const previousFocusRef = useRef<HTMLElement | null>(null);
 
-  const findAvailableSteps = useCallback(() => {
-    const hasAnchor = (anchorId: string) => Boolean(document.querySelector(`[data-guidance-anchor="${anchorId}"]`));
-    if (initialTopicId) {
-      const anchorId = anchorOverride ?? TOPIC_ANCHORS[initialTopicId] ?? "graph-navigation";
-      if (!hasAnchor(anchorId)) return [];
-      return [{
-        topicId: initialTopicId,
-        anchorId,
-        preferredPlacement: "bottom" as const,
-      }];
-    }
-
-    const nextSteps: CoachStep[] = [];
-    if (hasAnchor("workspace-viewpoint")) {
-      nextSteps.push({ topicId: "doi-diem-nhin", anchorId: "workspace-viewpoint", preferredPlacement: "bottom" });
-    }
-    if (hasAnchor("workspace-tabs")) {
-      nextSteps.push({ topicId: "dieu-huong-so-do", anchorId: "workspace-tabs", preferredPlacement: "bottom" });
-    }
-    if (role !== "reader" && hasAnchor("workspace-add-relative")) {
-      nextSteps.push({ topicId: "them-quan-he-ro-rang", anchorId: "workspace-add-relative", preferredPlacement: "top" });
-    } else if (hasAnchor("graph-navigation")) {
-      nextSteps.push({ topicId: "dieu-huong-so-do", anchorId: "graph-navigation", preferredPlacement: "left" });
-    } else if (hasAnchor("workspace-help")) {
-      nextSteps.push({ topicId: "dieu-huong-so-do", anchorId: "workspace-help", preferredPlacement: "top" });
-    }
-    return nextSteps;
-  }, [anchorOverride, initialTopicId, role]);
-
-  const openCoach = useCallback((force = false) => {
-    const availableSteps = findAvailableSteps();
-    setSteps(availableSteps);
-    setStepIndex(0);
-    if (availableSteps.length === 0) return;
-    const state = readGuidanceState(resolvedStorage);
-    if (force || initialTopicId || state.workspaceCoach === null) setActive(true);
-  }, [findAvailableSteps, initialTopicId, resolvedStorage]);
+  const steps = useMemo<CoachStep[]>(() => {
+    if (!initialTopicId) return OVERVIEW_STEPS;
+    return [{
+      topicId: initialTopicId,
+      anchorIds: [anchorOverride ?? TOPIC_ANCHORS[initialTopicId] ?? "graph-navigation"],
+      preferredPlacement: "bottom",
+    }];
+  }, [anchorOverride, initialTopicId]);
 
   useEffect(() => {
     // TreeWorkspaceSurface mounts its panels after hydration. A short deferred
-    // start lets the tab and graph anchors exist before the step list is built.
-    const timer = window.setTimeout(() => openCoach(false), 80);
-    const reopen = () => openCoach(true);
-    window.addEventListener(GUIDANCE_REOPEN_EVENT, reopen);
-    return () => {
-      window.clearTimeout(timer);
-      window.removeEventListener(GUIDANCE_REOPEN_EVENT, reopen);
-    };
-  }, [openCoach]);
+    // start lets the workspace and graph anchors exist before resolution.
+    const timer = window.setTimeout(() => setReady(true), 80);
+    return () => window.clearTimeout(timer);
+  }, []);
 
   useEffect(() => {
     const syncWorkspaceConflict = () => {
@@ -114,84 +98,40 @@ export function WorkspaceCoachMarks({
     return () => observer.disconnect();
   }, []);
 
-  const currentStep = steps[stepIndex];
-  const topic = currentStep ? getHelpTopic(currentStep.topicId, role) : undefined;
-  const placement = useMemo(
-    () => currentStep ? getPlacement(currentStep.anchorId, currentStep.preferredPlacement) : null,
-    [currentStep, getPlacement],
-  );
-  const renderable = active
+  const enabled = ready
     && !workspaceBlocked
     && safeRect.width > 0
     && safeRect.height >= MIN_COACH_SAFE_HEIGHT;
+  const sequence = useCoachMarkSequence({
+    chapter: "overview",
+    role,
+    steps,
+    enabled,
+    storage,
+    helpHref,
+  });
 
   useEffect(() => {
-    if (!renderable) return;
-    previousFocusRef.current = document.activeElement as HTMLElement;
-    skipButtonRef.current?.focus();
-    return () => previousFocusRef.current?.focus();
-  }, [renderable]);
+    if (enabled && initialTopicId) reopenGuidanceChapter("overview");
+  }, [enabled, initialTopicId]);
 
-  useEffect(() => {
-    if (!renderable || !placement?.target) return;
-    placement.target.setAttribute("data-guidance-highlight", "true");
-    return () => placement.target?.removeAttribute("data-guidance-highlight");
-  }, [placement?.target, renderable, stepIndex]);
+  const placement = useMemo(
+    () => sequence.currentAnchorId && sequence.currentStep
+      ? getPlacement(
+          sequence.currentAnchorId,
+          sequence.currentStep.preferredPlacement,
+        )
+      : null,
+    [getPlacement, sequence.currentAnchorId, sequence.currentStep],
+  );
 
-  const finish = useCallback((status: "completed" | "skipped") => {
-    recordWorkspaceCoachStatus(status, resolvedStorage);
-    setActive(false);
-  }, [resolvedStorage]);
-
-  useEffect(() => {
-    if (!renderable) return;
-    const handleEscape = (event: KeyboardEvent) => {
-      if (event.key === "Escape") finish("skipped");
-    };
-    window.addEventListener("keydown", handleEscape);
-    return () => window.removeEventListener("keydown", handleEscape);
-  }, [finish, renderable]);
-
-  if (!renderable || !currentStep || !topic || !placement) return null;
-  const isLastStep = stepIndex === steps.length - 1;
-  const mobile = safeRect.width > 0 && safeRect.width < 520;
+  if (!enabled || !sequence.active || !placement) return null;
 
   return (
-    <section
-      className={`workspace-coach ${mobile ? "workspace-coach--mobile" : ""}`}
-      style={mobile ? undefined : placement.style}
-      role="dialog"
-      aria-label="Hướng dẫn nhanh"
-      aria-modal="false"
-      data-fallback={placement.fallback ? "true" : undefined}
-    >
-      <div className="workspace-coach__progress" aria-live="polite">
-        Bước {stepIndex + 1} / {steps.length}
-      </div>
-      <button
-        ref={skipButtonRef}
-        type="button"
-        className="workspace-coach__skip"
-        onClick={() => finish("skipped")}
-      >
-        Bỏ qua
-      </button>
-      <h2>{topic.title}</h2>
-      <p>{getHelpExcerpt(topic.id, "contextual", role) ?? topic.summary}</p>
-      <div className="workspace-coach__actions">
-        <a href={`${helpHref}#${topic.id}`}>Xem hướng dẫn</a>
-        <button
-          type="button"
-          className="btn btn-primary btn-terracotta"
-          onClick={() => {
-            if (isLastStep) finish("completed");
-            else setStepIndex((index) => index + 1);
-          }}
-          aria-label={isLastStep ? "Hoàn tất" : "Tiếp theo"}
-        >
-          {isLastStep ? "Hoàn tất" : "Tiếp theo"}
-        </button>
-      </div>
-    </section>
+    <CoachMarkCard
+      sequence={sequence}
+      className={safeRect.width < 520 ? "workspace-coach--mobile" : undefined}
+      style={placement.style}
+    />
   );
 }

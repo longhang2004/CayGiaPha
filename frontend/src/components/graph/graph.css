@@ -712,6 +712,23 @@ html.dark .tree-graph__node-tooltip {
   display: flex;
 }
 
+.tree-graph__nav-shell:has(> .workspace-coach--contextual) {
+  top: 0.75rem;
+  bottom: 5.75rem;
+  max-height: none;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+}
+
+.tree-graph__nav-shell > .workspace-coach--contextual {
+  position: relative;
+  inset: auto;
+  width: min(21rem, calc(100vw - 1.5rem));
+  max-width: 100%;
+  align-self: flex-end;
+}
+
 .tree-graph__nav-controls .tree-graph__nav-button,
 .tree-graph__nav-controls > button {
   width: 100%;
@@ -747,6 +764,11 @@ html.dark .tree-graph__node-tooltip {
 
   .tree-graph__nav-controls {
     width: min(21rem, calc(100cqw - 1.5rem));
+  }
+
+  .tree-graph__nav-shell:has(> .workspace-coach--contextual) {
+    bottom: auto;
+    max-height: calc(100dvh - 1.5rem);
   }
 }
 

@@ -25,6 +25,28 @@ const AUDIT_ROUTES = [
   { name: "legal-privacy", href: "/prototype/legal/privacy" },
 ] as const;
 
+const COMPLETED_WORKSPACE_GUIDANCE = {
+  schemaVersion: 5,
+  completed: [],
+  dismissedTopicVersions: {},
+  onboardingSkipped: false,
+  workspaceCoach: {
+    version: 2,
+    chapters: {
+      overview: "completed",
+      actions: "completed",
+      graph: "completed",
+      person: "completed",
+    },
+  },
+} as const;
+
+async function installCompletedWorkspaceGuidance(page: Page) {
+  await page.addInitScript((state) => {
+    localStorage.setItem("cgp_guidance_v2", JSON.stringify(state));
+  }, COMPLETED_WORKSPACE_GUIDANCE);
+}
+
 async function captureWorkspaceScreenshot(
   page: Page,
   testInfo: TestInfo,
@@ -88,16 +110,8 @@ test.describe("prototype UI audit", () => {
 
   for (const viewport of VIEWPORTS) {
     test(`tree workspace list baseline at ${viewport.name}`, async ({ page }) => {
-      await page.addInitScript(() => {
-        localStorage.setItem("cgp_guidance_v2", JSON.stringify({
-          schemaVersion: 4,
-          completed: [],
-          dismissedTopicVersions: {},
-          onboardingSkipped: false,
-          workspaceCoach: { version: 1, status: "completed" },
-        }));
-        localStorage.setItem("cgp_tree_workspace_view_v2", "list");
-      });
+      await installCompletedWorkspaceGuidance(page);
+      await page.addInitScript(() => localStorage.setItem("cgp_tree_workspace_view_v2", "list"));
       await page.setViewportSize(viewport);
       await page.goto("/prototype/tree");
       await page.evaluate(() => document.fonts.ready);
@@ -124,16 +138,8 @@ test.describe("prototype UI audit", () => {
     });
 
     test(`tree workspace graph baseline at ${viewport.name}`, async ({ page }) => {
-      await page.addInitScript(() => {
-        localStorage.setItem("cgp_guidance_v2", JSON.stringify({
-          schemaVersion: 4,
-          completed: [],
-          dismissedTopicVersions: {},
-          onboardingSkipped: false,
-          workspaceCoach: { version: 1, status: "completed" },
-        }));
-        localStorage.setItem("cgp_tree_workspace_view_v2", "graph");
-      });
+      await installCompletedWorkspaceGuidance(page);
+      await page.addInitScript(() => localStorage.setItem("cgp_tree_workspace_view_v2", "graph"));
       await page.setViewportSize(viewport);
       await page.goto("/prototype/tree");
       await page.evaluate(() => document.fonts.ready);
@@ -177,13 +183,7 @@ test.describe("prototype UI audit", () => {
     });
 
     test(`tree workspace action drawer at ${viewport.name}`, async ({ page }) => {
-      await page.addInitScript(() => localStorage.setItem("cgp_guidance_v2", JSON.stringify({
-        schemaVersion: 4,
-        completed: [],
-        dismissedTopicVersions: {},
-        onboardingSkipped: false,
-        workspaceCoach: { version: 1, status: "completed" },
-      })));
+      await installCompletedWorkspaceGuidance(page);
       await page.setViewportSize(viewport);
       await page.goto("/prototype/tree");
       await page.getByRole("button", { name: "Thao tác khác" }).click();

@@ -6,11 +6,14 @@ import { getActiveHelpTopics } from "@/content/help/helpTopics";
 
 const EXPECTED_ACTIVE_TOPIC_IDS = [
   "tao-hoac-mo-cay",
+  "thao-tac-trong-cay",
   "them-nguoi-dau-tien",
+  "sua-va-them-thanh-vien",
   "them-quan-he-ro-rang",
   "xem-thong-tin-va-xung-ho",
   "doi-diem-nhin",
   "dieu-huong-so-do",
+  "xem-va-luu-so-do",
   "doc-duong-quan-he",
   "chon-vung-mien",
   "dieu-chinh-hien-thi",

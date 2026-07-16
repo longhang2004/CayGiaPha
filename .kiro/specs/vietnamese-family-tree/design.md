@@ -172,12 +172,20 @@ button on mobile/tablet. Zoom, centre, reset, fullscreen, SVG download, legend, 
 keyboard/tap reachable with a minimum 44 CSS-px target. Graph node, canvas, and control colours use
 semantic tokens in light, dark, and system themes; line style as well as colour identifies edges.
 
-The populated-workspace onboarding is a one-time Coach mark sequence. Steps resolve their content
-from canonical Help topic IDs and skip missing anchors by viewport/capability. Completion, Skip, or
-Escape writes schema-4 `GuidanceState.workspaceCoach = { version: 1, status }`; legacy
-`onboardingSkipped: true` migrates to a skipped coach while existing checklist state is retained.
-The action tray and Settings can dispatch the shared reopen event without clearing progress. Tree
-list and empty-tree onboarding continue to use the existing checklist.
+The populated-workspace onboarding uses four progressive Coach mark chapters: `overview`,
+`actions`, `graph`, and `person`. The overview runs once after the workspace and its visible anchors
+are ready. A contextual chapter runs only after the user opens its existing surface; guidance never
+opens the action tray, changes tabs, expands graph controls, selects a person, or starts an edit flow
+on the user's behalf. Steps resolve content from canonical Help topic IDs and skip missing anchors by
+viewport/capability.
+
+Completion, Skip, or Escape persists an independent chapter decision in schema-5
+`GuidanceState.workspaceCoach = { version: 2, chapters }`. Typed replay events reopen only the
+requested chapter without clearing other decisions; Settings retains the overview replay, while the
+action and graph control surfaces expose their chapter-specific replay controls. Schema-4 Coach
+state migrates to the overview chapter, legacy `onboardingSkipped: true` still skips overview, and
+existing checklist state is retained. Tree-list and empty-tree onboarding continue to use the
+existing checklist.
 
 ### Auth_Service
 

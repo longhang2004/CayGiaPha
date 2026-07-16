@@ -5,27 +5,28 @@ const LEGACY_GUIDANCE_STORAGE_KEY = "cgp_guidance_v1";
 export const GUIDANCE_REOPEN_EVENT = "cgp:guidance-reopen";
 export const GUIDANCE_RESET_EVENT = "cgp:guidance-reset";
 
+export type WorkspaceCoachChapter = "overview" | "actions" | "graph" | "person";
 export type WorkspaceCoachStatus = "completed" | "skipped";
 
 export interface WorkspaceCoachState {
-  version: 1;
-  status: WorkspaceCoachStatus;
+  version: 2;
+  chapters: Partial<Record<WorkspaceCoachChapter, WorkspaceCoachStatus>>;
 }
 
 export interface GuidanceState {
-  schemaVersion: 4;
+  schemaVersion: 5;
   completed: ChecklistItemId[];
   dismissedTopicVersions: Record<string, number>;
   onboardingSkipped: boolean;
-  workspaceCoach: WorkspaceCoachState | null;
+  workspaceCoach: WorkspaceCoachState;
 }
 
 export const DEFAULT_GUIDANCE_STATE: GuidanceState = {
-  schemaVersion: 4,
+  schemaVersion: 5,
   completed: [],
   dismissedTopicVersions: {},
   onboardingSkipped: false,
-  workspaceCoach: null,
+  workspaceCoach: { version: 2, chapters: {} },
 };
 
 const ALLOWED_IDS: ChecklistItemId[] = [
@@ -36,25 +37,60 @@ const ALLOWED_IDS: ChecklistItemId[] = [
   "core-viewpoint",
 ];
 
+const WORKSPACE_COACH_CHAPTERS: WorkspaceCoachChapter[] = [
+  "overview",
+  "actions",
+  "graph",
+  "person",
+];
+
 function createDefaultState(): GuidanceState {
   return {
     ...DEFAULT_GUIDANCE_STATE,
     completed: [],
     dismissedTopicVersions: {},
-    workspaceCoach: null,
+    workspaceCoach: { version: 2, chapters: {} },
   };
 }
 
-function sanitizeWorkspaceCoach(value: unknown): WorkspaceCoachState | null {
-  if (!value || typeof value !== "object") return null;
-  const candidate = value as { version?: unknown; status?: unknown };
-  if (
-    candidate.version !== 1 ||
-    (candidate.status !== "completed" && candidate.status !== "skipped")
-  ) {
-    return null;
+function isWorkspaceCoachStatus(value: unknown): value is WorkspaceCoachStatus {
+  return value === "completed" || value === "skipped";
+}
+
+function sanitizeWorkspaceCoach(
+  value: unknown,
+  schemaVersion: unknown,
+  onboardingSkipped: boolean,
+): WorkspaceCoachState {
+  const chapters: WorkspaceCoachState["chapters"] = {};
+  if (value && typeof value === "object" && !Array.isArray(value)) {
+    const candidate = value as {
+      version?: unknown;
+      status?: unknown;
+      chapters?: unknown;
+    };
+    if (
+      schemaVersion === 5 &&
+      candidate.version === 2 &&
+      candidate.chapters &&
+      typeof candidate.chapters === "object" &&
+      !Array.isArray(candidate.chapters)
+    ) {
+      const chapterCandidates = candidate.chapters as Record<string, unknown>;
+      WORKSPACE_COACH_CHAPTERS.forEach((chapter) => {
+        const status = chapterCandidates[chapter];
+        if (isWorkspaceCoachStatus(status)) chapters[chapter] = status;
+      });
+    } else if (
+      schemaVersion === 4 &&
+      candidate.version === 1 &&
+      isWorkspaceCoachStatus(candidate.status)
+    ) {
+      chapters.overview = candidate.status;
+    }
   }
-  return { version: 1, status: candidate.status };
+  if (onboardingSkipped && !chapters.overview) chapters.overview = "skipped";
+  return { version: 2, chapters };
 }
 
 function sanitize(value: unknown): GuidanceState {
@@ -66,17 +102,15 @@ function sanitize(value: unknown): GuidanceState {
     onboardingSkipped?: unknown;
     workspaceCoach?: unknown;
   };
-  const isLegacySchema = candidate.schemaVersion === 2 || candidate.schemaVersion === 3;
-  const isSkipped = isLegacySchema && candidate.onboardingSkipped === true;
-  const workspaceCoach =
-    candidate.schemaVersion === 4
-      ? sanitizeWorkspaceCoach(candidate.workspaceCoach)
-      : isSkipped
-        ? { version: 1 as const, status: "skipped" as const }
-        : null;
+  const isKnownSchema =
+    candidate.schemaVersion === 2 ||
+    candidate.schemaVersion === 3 ||
+    candidate.schemaVersion === 4 ||
+    candidate.schemaVersion === 5;
+  const isSkipped = isKnownSchema && candidate.onboardingSkipped === true;
 
   return {
-    schemaVersion: 4,
+    schemaVersion: 5,
     completed: Array.isArray(candidate.completed)
       ? candidate.completed.filter((id): id is ChecklistItemId =>
           ALLOWED_IDS.includes(id as ChecklistItemId),
@@ -94,11 +128,12 @@ function sanitize(value: unknown): GuidanceState {
             ),
           )
         : {},
-    onboardingSkipped:
-      candidate.schemaVersion === 4
-        ? candidate.onboardingSkipped === true
-        : isSkipped,
-    workspaceCoach,
+    onboardingSkipped: isSkipped,
+    workspaceCoach: sanitizeWorkspaceCoach(
+      candidate.workspaceCoach,
+      candidate.schemaVersion,
+      isSkipped,
+    ),
   };
 }
 
@@ -147,12 +182,15 @@ export function recordChecklistCompletion(id: ChecklistItemId, storage?: Storage
 
 export function skipGuidance(storage?: Storage) {
   const state = readGuidanceState(storage);
-  if (!state.onboardingSkipped || state.workspaceCoach?.status !== "skipped") {
+  if (!state.onboardingSkipped || state.workspaceCoach.chapters.overview !== "skipped") {
     writeGuidanceState(
       {
         ...state,
         onboardingSkipped: true,
-        workspaceCoach: { version: 1, status: "skipped" },
+        workspaceCoach: {
+          version: 2,
+          chapters: { ...state.workspaceCoach.chapters, overview: "skipped" },
+        },
       },
       storage,
     );
@@ -160,6 +198,7 @@ export function skipGuidance(storage?: Storage) {
 }
 
 export function recordWorkspaceCoachStatus(
+  chapter: WorkspaceCoachChapter,
   status: WorkspaceCoachStatus,
   storage?: Storage,
 ) {
@@ -167,8 +206,24 @@ export function recordWorkspaceCoachStatus(
   writeGuidanceState(
     {
       ...state,
-      workspaceCoach: { version: 1, status },
+      workspaceCoach: {
+        version: 2,
+        chapters: { ...state.workspaceCoach.chapters, [chapter]: status },
+      },
     },
     storage,
+  );
+}
+
+export interface GuidanceReopenDetail {
+  chapter: WorkspaceCoachChapter;
+}
+
+export function reopenGuidanceChapter(chapter: WorkspaceCoachChapter) {
+  if (typeof window === "undefined") return;
+  window.dispatchEvent(
+    new CustomEvent<GuidanceReopenDetail>(GUIDANCE_REOPEN_EVENT, {
+      detail: { chapter },
+    }),
   );
 }

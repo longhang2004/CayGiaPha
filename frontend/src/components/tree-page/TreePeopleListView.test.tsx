@@ -46,6 +46,10 @@ describe("TreePeopleListView", () => {
       />
     );
 
+    expect(document.querySelector('[data-guidance-anchor="workspace-person-list"]')).toHaveClass(
+      "tree-people-list",
+    );
+
     const pBtn = screen.getByRole("button", { name: /Chọn My Father/i });
     await userEvent.click(pBtn);
 

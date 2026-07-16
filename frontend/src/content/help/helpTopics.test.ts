@@ -1,5 +1,28 @@
 import { describe, expect, it } from "vitest";
 import { HELP_TOPICS, getActiveHelpTopics, getHelpExcerpt, getHelpTopic } from "./helpTopics";
+
+const ALL_ROLES = ["owner", "editor", "reader"];
+
+const EXPECTED_METADATA = {
+  "tao-hoac-mo-cay": { version: 3, reviewedAt: "2026-07-15" },
+  "them-nguoi-dau-tien": { version: 2, reviewedAt: "2026-07-13" },
+  "them-quan-he-ro-rang": { version: 2, reviewedAt: "2026-07-13" },
+  "xem-thong-tin-va-xung-ho": { version: 2, reviewedAt: "2026-07-13" },
+  "doi-diem-nhin": { version: 2, reviewedAt: "2026-07-13" },
+  "dieu-huong-so-do": { version: 2, reviewedAt: "2026-07-13" },
+  "doc-duong-quan-he": { version: 3, reviewedAt: "2026-07-15" },
+  "chon-vung-mien": { version: 2, reviewedAt: "2026-07-13" },
+  "dieu-chinh-hien-thi": { version: 2, reviewedAt: "2026-07-13" },
+  "moi-va-quan-ly-cong-tac": { version: 1, reviewedAt: "2026-07-13" },
+  "luu-anh-ky-niem": { version: 2, reviewedAt: "2026-07-15" },
+  "bao-mat-va-chia-se-cay": { version: 1, reviewedAt: "2026-07-13" },
+  "gui-phan-hoi-va-ung-ho": { version: 1, reviewedAt: "2026-07-13" },
+  "xac-nhan-day-la-toi": { version: 1, reviewedAt: "2026-07-13" },
+  "thao-tac-trong-cay": { version: 1, reviewedAt: "2026-07-15" },
+  "sua-va-them-thanh-vien": { version: 1, reviewedAt: "2026-07-15" },
+  "xem-va-luu-so-do": { version: 1, reviewedAt: "2026-07-15" },
+};
+
 describe("canonical Help registry", () => {
   it("has unique stable IDs and traceable excerpts", () => {
     expect(new Set(HELP_TOPICS.map(t => t.id)).size).toBe(HELP_TOPICS.length);
@@ -14,18 +37,104 @@ describe("canonical Help registry", () => {
   it("filters owner-only topics for readers", () => {
     expect(getHelpTopic("chon-vung-mien", "reader")).toBeUndefined();
   });
-  it("tracks reviewed existing topics separately from newly added topics", () => {
-    const newTopicIds = new Set([
-      "moi-va-quan-ly-cong-tac",
-      "luu-anh-ky-niem",
-      "bao-mat-va-chia-se-cay",
-      "gui-phan-hoi-va-ung-ho",
-      "xac-nhan-day-la-toi",
-    ]);
-    for (const topic of HELP_TOPICS) {
-      expect(topic.reviewedAt).toBe("2026-07-13");
-      expect(topic.version).toBe(newTopicIds.has(topic.id) ? 1 : 2);
+
+  it("registers the exact new all-role contextual topics", () => {
+    const newTopicIds = [
+      "thao-tac-trong-cay",
+      "sua-va-them-thanh-vien",
+      "xem-va-luu-so-do",
+    ];
+
+    for (const id of newTopicIds) {
+      const topic = getHelpTopic(id);
+      expect(topic?.id).toBe(id);
+      expect(topic?.status).toBe("active");
+      expect(topic?.roles).toEqual(ALL_ROLES);
+      expect(topic?.excerpts.contextual?.trim()).toBeTruthy();
     }
+  });
+
+  it("provides contextual excerpts for the overview, person, and graph chapters", () => {
+    const contextualTopicIds = [
+      "tao-hoac-mo-cay",
+      "thao-tac-trong-cay",
+      "sua-va-them-thanh-vien",
+      "doc-duong-quan-he",
+      "xem-va-luu-so-do",
+      "luu-anh-ky-niem",
+    ];
+
+    for (const id of contextualTopicIds) {
+      expect(getHelpExcerpt(id, "contextual")?.trim()).toBeTruthy();
+    }
+  });
+
+  it("explains the mounted workspace back link and viewpoint context", () => {
+    const contextual = getHelpExcerpt("tao-hoac-mo-cay", "contextual") ?? "";
+    expect(contextual).toContain("Các cây");
+    expect(contextual).toContain("Đang xem từ");
+    expect(contextual).not.toContain("cây đang mở");
+  });
+
+  it("explains both mounted footer actions", () => {
+    const contextual = getHelpExcerpt("thao-tac-trong-cay", "contextual") ?? "";
+    expect(contextual).toContain("Thêm người thân");
+    expect(contextual).toContain("Thao tác khác");
+  });
+
+  it("uses the mounted person-detail and action-drawer labels", () => {
+    const topic = getHelpTopic("sua-va-them-thanh-vien");
+    const copy = [
+      ...(topic?.prerequisites ?? []),
+      ...(topic?.steps ?? []),
+      topic?.excerpts.contextual ?? "",
+    ].join(" ");
+
+    for (const label of [
+      "Chỉnh sửa thông tin",
+      "Thêm quan hệ",
+      "Sửa người đang chọn",
+      "Thêm thành viên khác",
+    ]) {
+      expect(copy).toContain(label);
+    }
+    expect(copy).not.toMatch(/nút Chỉnh sửa(?= xuất hiện| hoặc)/);
+    expect(copy).not.toMatch(/nút Thêm thành viên(?= xuất hiện|[.,;]| hoặc)/);
+  });
+
+  it("uses the mounted graph-legend label and rejects the stale label", () => {
+    const topic = getHelpTopic("doc-duong-quan-he");
+    const steps = topic?.steps.join(" ") ?? "";
+    const contextual = topic?.excerpts.contextual ?? "";
+    expect(steps).toContain("Chú giải sơ đồ");
+    expect(contextual).toContain("Chú giải sơ đồ");
+    expect(`${steps} ${contextual}`).not.toContain("Chú thích");
+  });
+
+  it("describes Reset without claiming the entire tree will fit", () => {
+    const resetStep = getHelpTopic("xem-va-luu-so-do")?.steps.find((step) =>
+      step.includes("Đặt lại"),
+    );
+    expect(resetStep).toContain("trạng thái ban đầu");
+    expect(resetStep).not.toMatch(/toàn bộ cây/i);
+  });
+
+  it("keeps every related topic ID resolvable and non-self-referential", () => {
+    const topicIds = new Set(HELP_TOPICS.map((topic) => topic.id));
+    for (const topic of HELP_TOPICS) {
+      for (const relatedTopicId of topic.relatedTopicIds) {
+        expect(topicIds.has(relatedTopicId), `${topic.id} -> ${relatedTopicId}`).toBe(true);
+        expect(relatedTopicId).not.toBe(topic.id);
+      }
+    }
+  });
+
+  it("tracks exact per-topic review and version metadata", () => {
+    expect(
+      Object.fromEntries(
+        HELP_TOPICS.map(({ id, version, reviewedAt }) => [id, { version, reviewedAt }]),
+      ),
+    ).toEqual(EXPECTED_METADATA);
   });
   it("has valid category and normalized keywords", () => {
     const validCategories = ["bat-dau", "nguoi-va-quan-he", "tim-va-xung-ho", "quyen-va-rieng-tu", "tuy-chinh-va-ho-tro"];

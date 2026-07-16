@@ -146,7 +146,14 @@ export function GuidanceChecklist({
 
   const handleSkip = () => {
     skipGuidance(resolvedStorage);
-    setState(s => ({ ...s, onboardingSkipped: true, workspaceCoach: { version: 1, status: "skipped" } }));
+    setState(s => ({
+      ...s,
+      onboardingSkipped: true,
+      workspaceCoach: {
+        version: 2,
+        chapters: { ...s.workspaceCoach.chapters, overview: "skipped" },
+      },
+    }));
     setManualReview(false);
     setDeferred(true);
   };

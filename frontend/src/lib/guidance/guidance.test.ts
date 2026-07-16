@@ -2,10 +2,12 @@ import { describe, expect, it } from "vitest";
 import { getEligibleChecklist } from "./checklist";
 import {
   DEFAULT_GUIDANCE_STATE,
+  GUIDANCE_REOPEN_EVENT,
   GUIDANCE_STORAGE_KEY,
   readGuidanceState,
   recordChecklistCompletion,
   recordWorkspaceCoachStatus,
+  reopenGuidanceChapter,
 } from "./storage";
 
 function createStorage(initial: Record<string, unknown> = {}) {
@@ -49,13 +51,13 @@ describe("guidance eligibility and persistence", () => {
     ).toBe(false);
   });
 
-  it("defaults to schema 4 with no workspace coach decision", () => {
+  it("defaults to schema 5 with an empty versioned chapter map", () => {
     expect(DEFAULT_GUIDANCE_STATE).toEqual({
-      schemaVersion: 4,
+      schemaVersion: 5,
       completed: [],
       dismissedTopicVersions: {},
       onboardingSkipped: false,
-      workspaceCoach: null,
+      workspaceCoach: { version: 2, chapters: {} },
     });
   });
 
@@ -73,25 +75,30 @@ describe("guidance eligibility and persistence", () => {
     expect(values.get(GUIDANCE_STORAGE_KEY)).not.toContain("secret");
   });
 
-  it("accepts only the known workspace coach version and statuses", () => {
-    const { storage: validStorage } = createStorage({
+  it("redacts unknown workspace coach chapters, statuses, and identifier fields", () => {
+    const { storage } = createStorage({
       [GUIDANCE_STORAGE_KEY]: {
         ...DEFAULT_GUIDANCE_STATE,
-        workspaceCoach: { version: 1, status: "completed" },
-      },
-    });
-    const { storage: invalidStorage } = createStorage({
-      [GUIDANCE_STORAGE_KEY]: {
-        ...DEFAULT_GUIDANCE_STATE,
-        workspaceCoach: { version: 99, status: "private-person-id" },
+        workspaceCoach: {
+          version: 2,
+          chapters: {
+            overview: "completed",
+            actions: "private-person-id",
+            graph: "skipped",
+            person: { status: "completed", personId: "person-secret" },
+            "tree-123": "completed",
+          },
+          privateUrl: "/tree/secret",
+        },
       },
     });
 
-    expect(readGuidanceState(validStorage).workspaceCoach).toEqual({
-      version: 1,
-      status: "completed",
+    const state = readGuidanceState(storage);
+    expect(state.workspaceCoach).toEqual({
+      version: 2,
+      chapters: { overview: "completed", graph: "skipped" },
     });
-    expect(readGuidanceState(invalidStorage).workspaceCoach).toBeNull();
+    expect(JSON.stringify(state)).not.toMatch(/person-secret|tree-123|privateUrl|private-person-id/);
   });
 
   it.each([2, 3])(
@@ -114,7 +121,30 @@ describe("guidance eligibility and persistence", () => {
     },
   );
 
-  it("migrates an old onboarding skip to a skipped workspace coach", () => {
+  it("migrates a schema-4 coach decision into the overview chapter", () => {
+    const { storage } = createStorage({
+      [GUIDANCE_STORAGE_KEY]: {
+        schemaVersion: 4,
+        completed: ["core-tree-open", "private-person-id"],
+        dismissedTopicVersions: { "doi-diem-nhin": 2, Private_Name: 4 },
+        onboardingSkipped: false,
+        workspaceCoach: { version: 1, status: "completed" },
+        privateUrl: "/tree/private",
+      },
+    });
+
+    expect(readGuidanceState(storage)).toEqual({
+      ...DEFAULT_GUIDANCE_STATE,
+      completed: ["core-tree-open"],
+      dismissedTopicVersions: { "doi-diem-nhin": 2 },
+      workspaceCoach: {
+        version: 2,
+        chapters: { overview: "completed" },
+      },
+    });
+  });
+
+  it("migrates an old onboarding skip to a skipped overview chapter", () => {
     const { storage } = createStorage({
       [GUIDANCE_STORAGE_KEY]: {
         schemaVersion: 3,
@@ -128,24 +158,53 @@ describe("guidance eligibility and persistence", () => {
       ...DEFAULT_GUIDANCE_STATE,
       completed: ["core-tree-open"],
       onboardingSkipped: true,
-      workspaceCoach: { version: 1, status: "skipped" },
+      workspaceCoach: {
+        version: 2,
+        chapters: { overview: "skipped" },
+      },
     });
   });
 
-  it("records completed and skipped workspace coach decisions", () => {
-    const { storage } = createStorage();
-
-    recordWorkspaceCoachStatus("completed", storage);
-    expect(readGuidanceState(storage).workspaceCoach).toEqual({
-      version: 1,
-      status: "completed",
+  it("records independent workspace coach chapter decisions without losing safe state", () => {
+    const { storage, values } = createStorage({
+      [GUIDANCE_STORAGE_KEY]: {
+        ...DEFAULT_GUIDANCE_STATE,
+        completed: ["core-tree-open"],
+        dismissedTopicVersions: { "doi-diem-nhin": 2 },
+        privateUrl: "/tree/private",
+      },
     });
 
-    recordWorkspaceCoachStatus("skipped", storage);
-    expect(readGuidanceState(storage).workspaceCoach).toEqual({
-      version: 1,
-      status: "skipped",
+    recordWorkspaceCoachStatus("overview", "completed", storage);
+    recordWorkspaceCoachStatus("graph", "skipped", storage);
+
+    expect(readGuidanceState(storage)).toEqual({
+      ...DEFAULT_GUIDANCE_STATE,
+      completed: ["core-tree-open"],
+      dismissedTopicVersions: { "doi-diem-nhin": 2 },
+      workspaceCoach: {
+        version: 2,
+        chapters: { overview: "completed", graph: "skipped" },
+      },
     });
+    expect(values.get(GUIDANCE_STORAGE_KEY)).not.toContain("private");
+  });
+
+  it("dispatches typed chapter replay detail while generic reopen events remain valid", () => {
+    const received: Array<unknown> = [];
+    const listener = (event: Event) => {
+      received.push(event instanceof CustomEvent ? event.detail : undefined);
+    };
+    window.addEventListener(GUIDANCE_REOPEN_EVENT, listener);
+
+    try {
+      window.dispatchEvent(new Event(GUIDANCE_REOPEN_EVENT));
+      reopenGuidanceChapter("person");
+    } finally {
+      window.removeEventListener(GUIDANCE_REOPEN_EVENT, listener);
+    }
+
+    expect(received).toEqual([undefined, { chapter: "person" }]);
   });
 
   it("falls back safely when storage is unavailable", () => {
