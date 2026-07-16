@@ -576,6 +576,13 @@ against the active Next.js code and current tests.
     - Migrate guidance to schema 5 with independent overview/actions/graph/person decisions; resolve
       capability-aware anchors from canonical Help; route typed replay to one chapter; and cover the
       shared `/prototype/tree` interactions without auto-opening a surface or mutating tree state.
+  - [x] 26.7 Reformat workspace panels and contextual Coach layers
+    - Give action, picker, and person surfaces fixed chrome with exactly one internal scroll owner;
+      float contextual Coach content outside the scrolling body; share person-mode chrome/body with
+      separated destructive action and typed replay; use the mobile/tablet action bottom sheet and
+      exact 4×2 graph-control grid while keeping desktop compact. Preserve capability, privacy, API,
+      and graph-engine behavior; reuse production components in `/prototype/tree` and cover
+      responsive scroll ownership in targeted tests and the three-viewport audit.
 
 ## Notes
 

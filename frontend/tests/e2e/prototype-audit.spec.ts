@@ -72,7 +72,7 @@ async function captureWorkspaceScreenshot(
     : undefined;
   // Prime Chromium's composited workspace layers; the first capture from a
   // freshly transitioned panel can otherwise contain transient black tiles.
-  await page.screenshot({ fullPage: false, style: screenshotStyle });
+  await page.screenshot({ fullPage: false, style: screenshotStyle, animations: "disabled" });
   await page.evaluate(() => new Promise<void>((resolve) => {
     requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
   }));
@@ -80,6 +80,7 @@ async function captureWorkspaceScreenshot(
     path: testInfo.outputPath(filename),
     fullPage: false,
     style: screenshotStyle,
+    animations: "disabled",
   });
 }
 
@@ -117,6 +118,11 @@ test.describe("prototype UI audit", () => {
       await page.evaluate(() => document.fonts.ready);
       await expect(page.locator(".tree-page-header")).toBeVisible();
       await expect(page.getByRole("button", { name: "Chọn Hàng Hữu Phương" })).toBeVisible();
+      expect(
+        await page.evaluate(
+          () => document.documentElement.scrollWidth <= document.documentElement.clientWidth + 1,
+        ),
+      ).toBe(true);
       if (viewport.name === "desktop") {
         await expect(page.locator(".tree-workspace-surface")).toHaveAttribute("data-layout", "split");
         await expect(page.getByRole("tablist", { name: "Chọn chế độ xem" })).toHaveCount(0);
@@ -202,6 +208,9 @@ test.describe("prototype UI audit", () => {
       await expect(closeButton.locator("svg")).toBeVisible();
       const dialogBox = await dialog.boundingBox();
       expect(dialogBox).not.toBeNull();
+      const chromeBox = await dialog.locator(".tree-workspace-action-drawer__chrome").boundingBox();
+      expect(chromeBox).not.toBeNull();
+      expect(chromeBox!.y - dialogBox!.y).toBeGreaterThanOrEqual(16);
       const addMemberAction = dialog.getByRole("button", { name: "Thêm thành viên khác" });
       if (await addMemberAction.isVisible()) {
         await addMemberAction.hover();
@@ -231,6 +240,60 @@ test.describe("prototype UI audit", () => {
         page,
         test.info(),
         `${viewport.name}-tree-workspace-actions.png`,
+      );
+    });
+
+    test(`tree workspace person picker at ${viewport.name}`, async ({ page }) => {
+      await installCompletedWorkspaceGuidance(page);
+      await page.setViewportSize(viewport);
+      await page.goto("/prototype/tree");
+      await page.getByRole("button", { name: "Đổi người" }).click();
+      const picker = page.getByRole("dialog", { name: "Chọn người làm góc nhìn" });
+      await expect(picker).toBeVisible();
+      await expect(picker.locator('[data-panel-scroll-region="picker"]')).toHaveCount(1);
+      const [pickerBox, chromeBox] = await Promise.all([
+        picker.boundingBox(),
+        picker.locator(".tree-person-picker__chrome").boundingBox(),
+      ]);
+      expect(pickerBox).not.toBeNull();
+      expect(chromeBox).not.toBeNull();
+      expect(chromeBox!.y - pickerBox!.y).toBeGreaterThanOrEqual(16);
+      await captureWorkspaceScreenshot(
+        page,
+        test.info(),
+        `${viewport.name}-tree-workspace-picker.png`,
+      );
+    });
+
+    test(`tree workspace person panel at ${viewport.name}`, async ({ page }) => {
+      await installCompletedWorkspaceGuidance(page);
+      await page.setViewportSize(viewport);
+      await page.goto("/prototype/tree");
+      await page.getByRole("button", { name: "Chọn Hàng Hữu Phương" }).click();
+      const panel = page.locator('.side-panel[data-panel-mode="view"]');
+      await expect(panel).toBeVisible();
+      await expect(panel.locator('[data-panel-scroll-region="person"]')).toHaveCount(1);
+      await captureWorkspaceScreenshot(
+        page,
+        test.info(),
+        `${viewport.name}-tree-workspace-person.png`,
+      );
+    });
+
+    test(`tree workspace graph controls at ${viewport.name}`, async ({ page }) => {
+      await installCompletedWorkspaceGuidance(page);
+      await page.addInitScript(() => localStorage.setItem("cgp_tree_workspace_view_v2", "graph"));
+      await page.setViewportSize(viewport);
+      await page.goto("/prototype/tree");
+      await page.getByRole("button", { name: "Điều khiển sơ đồ" }).click();
+      const controls = page.locator(".tree-graph__nav-controls");
+      await expect(controls).toBeVisible();
+      await expect(controls.locator(".tree-graph__nav-grid > *")).toHaveCount(8);
+      await captureWorkspaceScreenshot(
+        page,
+        test.info(),
+        `${viewport.name}-tree-workspace-graph-controls.png`,
+        { flattenGraphTrack: true },
       );
     });
 

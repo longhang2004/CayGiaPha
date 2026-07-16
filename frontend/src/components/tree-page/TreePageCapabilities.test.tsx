@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -7,6 +8,11 @@ import type { TreeContextType } from "./TreeContext";
 import { TreeContext } from "./TreeContext";
 import { TreePageHeader } from "./TreePageHeader";
 import { TreePageSlidePanel } from "./TreePageSlidePanel";
+
+const treeWorkspaceStyles = readFileSync(
+  "src/styles/_03_tree_workspace.scss",
+  "utf8",
+);
 
 vi.mock("@/app/providers", () => ({
   useSession: () => ({ user: { userId: "user-1" }, loading: false }),
@@ -189,6 +195,54 @@ describe("tree workspace capability-driven actions", () => {
     expect(screen.getByRole("link", { name: "Trung tâm hướng dẫn" })).toBeInTheDocument();
   });
 
+  it("keeps action drawer chrome and Coach fixed around one list scroll region", async () => {
+    renderRole("OWNER");
+
+    await userEvent.click(screen.getByRole("button", { name: "Thao tác khác" }));
+    const drawer = screen.getByRole("dialog", { name: "Thao tác khác" });
+    const chrome = drawer.querySelector(".tree-workspace-action-drawer__chrome");
+    const scrollRegions = drawer.querySelectorAll('[data-panel-scroll-region="actions"]');
+
+    expect(chrome).not.toBeNull();
+    expect(within(chrome as HTMLElement).getByText("Thao tác với cây")).toBeInTheDocument();
+    expect(within(chrome as HTMLElement).getByRole("heading", { name: "Thao tác khác" })).toBeInTheDocument();
+    expect(chrome?.querySelector(".tree-workspace-action-drawer__description")).toBeNull();
+    expect(scrollRegions).toHaveLength(1);
+
+    const body = scrollRegions[0] as HTMLElement;
+    expect(body).toHaveClass("tree-workspace-action-drawer__body");
+    expect(body.querySelector(".tree-workspace-action-drawer__description")).not.toBeNull();
+    expect(body.querySelector(".tree-workspace-action-drawer__list")).not.toBeNull();
+    expect(body.contains(chrome)).toBe(false);
+
+    const coach = await within(drawer).findByRole("dialog", { name: "Hướng dẫn nhanh" });
+    const coachLayer = coach.closest(".workspace-coach-layer--actions");
+    expect(coachLayer).not.toBeNull();
+    expect(coachLayer?.parentElement).toHaveClass("tree-workspace-action-drawer__content");
+    expect(body.contains(coachLayer)).toBe(false);
+  });
+
+  it("keeps the action bottom sheet vertical animation more specific than the generic right drawer", () => {
+    expect(treeWorkspaceStyles).toMatch(
+      /\.tree-workspace-action-drawer\s*\{[^}]*display:\s*grid;[^}]*grid-template-rows:\s*auto minmax\(0,\s*1fr\);[^}]*overflow:\s*hidden;/s,
+    );
+    expect(treeWorkspaceStyles).toMatch(
+      /\.tree-workspace-action-drawer__body\s*\{[^}]*overflow-y:\s*auto;/s,
+    );
+    expect(treeWorkspaceStyles).toContain(
+      ".cgp-drawer-modal--right:not([data-exiting]):has(> .tree-workspace-action-drawer) > .tree-workspace-action-drawer",
+    );
+    expect(treeWorkspaceStyles).toContain(
+      ".cgp-drawer-modal--right[data-exiting]:has(> .tree-workspace-action-drawer) > .tree-workspace-action-drawer",
+    );
+    expect(treeWorkspaceStyles).toMatch(
+      /@keyframes tree-workspace-action-sheet-enter\s*\{\s*from\s*\{\s*transform:\s*translateY\(100%\);\s*}\s*to\s*\{\s*transform:\s*translateY\(0\);/s,
+    );
+    expect(treeWorkspaceStyles).toMatch(
+      /@keyframes tree-workspace-action-sheet-exit\s*\{\s*from\s*\{\s*transform:\s*translateY\(0\);\s*}\s*to\s*\{\s*transform:\s*translateY\(100%\);/s,
+    );
+  });
+
   it("lets contributors edit content and relationships without owner administration", async () => {
     renderRole("CONTRIBUTOR");
     expect(screen.getByRole("button", { name: "Thêm người thân" })).toBeInTheDocument();
@@ -318,7 +372,11 @@ describe("tree workspace capability-driven actions", () => {
       );
 
       let coach = await screen.findByRole("dialog", { name: "Hướng dẫn nhanh" });
-      expect(coach.closest(".side-panel")).not.toBeNull();
+      const panel = coach.closest(".side-panel");
+      const coachLayer = coach.closest(".workspace-coach-layer--person");
+      expect(panel).not.toBeNull();
+      expect(coachLayer?.parentElement).toHaveClass("side-panel__content");
+      expect(panel?.querySelector('[data-panel-scroll-region="person"]')?.contains(coachLayer)).toBe(false);
       expect(coach).toHaveTextContent(`Bước 1 / ${expectedCount}`);
       expect(coach).toHaveTextContent("Xem thông tin và cách xưng hô");
       expect(document.querySelector('[data-guidance-anchor="person-info-address"]')).toHaveAttribute(
@@ -358,6 +416,64 @@ describe("tree workspace capability-driven actions", () => {
       });
     },
   );
+
+  it.each([
+    ["view", false, false, false, "Bỏ chọn"],
+    ["create", true, false, false, "Hủy"],
+    ["edit", false, true, false, "Hủy chỉnh sửa"],
+    ["add-relative", false, false, true, "Hủy thêm quan hệ"],
+  ] as const)(
+    "keeps fixed chrome and one scroll body in %s mode",
+    async (mode, createMode, editMode, addRelativeMode, closeLabel) => {
+      recordWorkspaceCoachStatus("person", "completed", window.localStorage);
+      const context = contextFor("OWNER");
+      context.createMode = createMode;
+      context.editMode = editMode;
+      context.addRelativeMode = addRelativeMode;
+
+      render(
+        <TreeContext.Provider value={context}>
+          <TreePageSlidePanel />
+        </TreeContext.Provider>,
+      );
+
+      const panel = document.querySelector<HTMLElement>(`.side-panel[data-panel-mode="${mode}"]`);
+      expect(panel).not.toBeNull();
+      const chrome = panel!.querySelector<HTMLElement>(".side-panel__chrome");
+      const body = panel!.querySelector<HTMLElement>('[data-panel-scroll-region="person"]');
+      expect(chrome).not.toBeNull();
+      expect(body).not.toBeNull();
+      expect(panel!.querySelectorAll('[data-panel-scroll-region="person"]')).toHaveLength(1);
+      const closeButton = within(chrome!).getByRole("button", { name: closeLabel });
+      expect(closeButton).toBeInTheDocument();
+      expect(body!.contains(chrome)).toBe(false);
+
+      await userEvent.click(closeButton);
+      if (mode === "view") expect(context.setSelectedId).toHaveBeenCalledWith(null);
+      if (mode === "create") expect(context.setCreateMode).toHaveBeenCalledWith(false);
+      if (mode === "edit") expect(context.setEditMode).toHaveBeenCalledWith(false);
+      if (mode === "add-relative") expect(context.setAddRelativeMode).toHaveBeenCalledWith(false);
+    },
+  );
+
+  it("replays the person chapter from the fixed detail panel", async () => {
+    recordWorkspaceCoachStatus("person", "completed", window.localStorage);
+    const context = contextFor("READER");
+    render(
+      <TreeContext.Provider value={context}>
+        <TreePageSlidePanel />
+      </TreeContext.Provider>,
+    );
+
+    expect(screen.queryByRole("dialog", { name: "Hướng dẫn nhanh" })).not.toBeInTheDocument();
+    await userEvent.click(
+      screen.getByRole("button", { name: "Mở hướng dẫn thông tin thành viên" }),
+    );
+
+    const coach = await screen.findByRole("dialog", { name: "Hướng dẫn nhanh" });
+    expect(coach.closest('[data-coach-layer="person"]')).not.toBeNull();
+    expect(coach).toHaveTextContent("Xem thông tin và cách xưng hô");
+  });
 
   it.each(["edit", "add-relative"] as const)(
     "does not mount the person Coach while the %s form is active",

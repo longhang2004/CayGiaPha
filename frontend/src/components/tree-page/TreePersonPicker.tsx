@@ -59,25 +59,27 @@ export function TreePersonPicker({
       className="tree-person-picker"
       safeAreaEdge="right"
     >
-      <div className="tree-person-picker__header">
-        <p className="tree-person-picker__eyebrow">{isViewpoint ? "Đổi cách xưng hô" : "Tìm trong cây"}</p>
-        <h2>{drawerLabel}</h2>
-        <p>{isViewpoint ? "Cách xưng hô trong cây sẽ được tính lại từ người bạn chọn." : "Chọn một thành viên để xem thông tin chi tiết."}</p>
+      <div className="tree-person-picker__chrome">
+        <div className="tree-person-picker__header">
+          <p className="tree-person-picker__eyebrow">{isViewpoint ? "Đổi cách xưng hô" : "Tìm trong cây"}</p>
+          <h2>{drawerLabel}</h2>
+          <p>{isViewpoint ? "Cách xưng hô trong cây sẽ được tính lại từ người bạn chọn." : "Chọn một thành viên để xem thông tin chi tiết."}</p>
+        </div>
+
+        <CGPTextField
+          type="search"
+          label={isViewpoint ? "Tìm người làm góc nhìn" : "Tìm thành viên"}
+          value={query}
+          onChange={setQuery}
+          placeholder="Nhập tên hoặc cách xưng hô"
+          className="tree-person-picker__search"
+        />
+        <p className="tree-person-picker__count" role="status" aria-live="polite">
+          Tìm thấy {filteredPeople.length} người.
+        </p>
       </div>
 
-      <CGPTextField
-        type="search"
-        label={isViewpoint ? "Tìm người làm góc nhìn" : "Tìm thành viên"}
-        value={query}
-        onChange={setQuery}
-        placeholder="Nhập tên hoặc cách xưng hô"
-        className="tree-person-picker__search"
-      />
-      <p className="tree-person-picker__count" role="status" aria-live="polite">
-        Tìm thấy {filteredPeople.length} người.
-      </p>
-
-      <div className="tree-person-picker__list">
+      <div className="tree-person-picker__list" data-panel-scroll-region="picker">
         {filteredPeople.map((person) => {
           const isCurrent = isViewpoint ? person.id === egoId : person.id === selectedId;
           const relationship = person.id === egoId ? "Bản thân" : addressLabel(addresses.get(person.id));

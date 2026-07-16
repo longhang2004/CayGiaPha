@@ -116,16 +116,106 @@ export function TreeGraphNavControls({
       data-graph-safe-exclude="right"
       data-guidance-anchor="graph-navigation"
     >
-      <button
-        type="button"
-        className="tree-graph__nav-toggle"
-        aria-expanded={isExpanded}
-        aria-controls="tree-graph-navigation-controls"
-        onClick={() => setIsExpanded((current) => !current)}
-      >
-        <SettingsIcon />
-        <span>Điều khiển sơ đồ</span>
-      </button>
+      <div className="tree-graph__nav-palette">
+        <button
+          type="button"
+          className="tree-graph__nav-toggle"
+          aria-expanded={isExpanded}
+          aria-controls="tree-graph-navigation-controls"
+          onClick={() => setIsExpanded((current) => !current)}
+        >
+          <SettingsIcon />
+          <span>Điều khiển sơ đồ</span>
+        </button>
+
+        <div id="tree-graph-navigation-controls" className="tree-graph__nav-controls">
+        <div className="tree-graph__nav-grid">
+          <button
+            type="button"
+            onClick={onZoomIn}
+            className="tree-graph__nav-button"
+            title="Phóng to"
+            aria-label="Phóng to"
+            data-guidance-anchor="graph-controls-zoom"
+          >
+            <PlusIcon size={18} />
+            <span>Phóng to</span>
+          </button>
+          <button type="button" onClick={onZoomOut} className="tree-graph__nav-button" title="Thu nhỏ" aria-label="Thu nhỏ">
+            <MinusIcon size={18} />
+            <span>Thu nhỏ</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => onCenterOnNode(activeEgoId)}
+            className="tree-graph__nav-button"
+            title="Căn giữa người đang xem"
+            aria-label="Căn giữa người đang xem"
+            data-guidance-anchor="graph-controls-center-reset"
+          >
+            <CenterIcon size={18} />
+            <span>Về người đang xem</span>
+          </button>
+          <button
+            type="button"
+            onClick={onResetZoom}
+            className="tree-graph__nav-button"
+            title="Đặt lại góc nhìn"
+            aria-label="Đặt lại góc nhìn"
+          >
+            <ResetViewIcon size={18} />
+            <span>Đặt lại</span>
+          </button>
+          <button
+            type="button"
+            onClick={onExportSVG}
+            className="tree-graph__nav-button"
+            title="Tải ảnh sơ đồ (SVG)"
+            aria-label="Tải SVG"
+            data-guidance-anchor="graph-controls-tools-help"
+          >
+            <DownloadIcon size={18} />
+            <span>Tải SVG</span>
+          </button>
+          <button
+            type="button"
+            onClick={onToggleFullscreen}
+            className="tree-graph__nav-button"
+            title={isFullscreen ? "Thoát toàn màn hình" : "Toàn màn hình"}
+            aria-label={isFullscreen ? "Thoát toàn màn hình" : "Toàn màn hình"}
+          >
+            {isFullscreen ? <MinimizeIcon size={18} /> : <MaximizeIcon size={18} />}
+            <span>{isFullscreen ? "Thoát toàn màn hình" : "Toàn màn hình"}</span>
+          </button>
+          <GraphLegend />
+          <button
+            type="button"
+            className="tree-graph__nav-button"
+            aria-label="Mở hướng dẫn nhanh sơ đồ"
+            onClick={() => reopenGuidanceChapter("graph")}
+          >
+            <LightbulbIcon size={18} />
+            <span>Hướng dẫn nhanh</span>
+          </button>
+        </div>
+
+        {activeSelectedId ? (
+          <button
+            type="button"
+            onClick={() => onCenterOnNode(activeSelectedId)}
+            className="tree-graph__nav-button tree-graph__nav-selected-center"
+            title="Căn giữa người được chọn"
+            aria-label="Căn giữa người được chọn"
+          >
+            <CenterIcon size={18} />
+            <span>Căn giữa người chọn</span>
+          </button>
+        ) : null}
+          <a href={helpHref} className="tree-graph__nav-help-link" aria-label="Hướng dẫn đầy đủ">
+            Hướng dẫn đầy đủ
+          </a>
+        </div>
+      </div>
 
       <ContextualCoachMarks
         chapter="graph"
@@ -134,92 +224,6 @@ export function TreeGraphNavControls({
         enabled={isExpanded}
         helpHref={helpHref}
       />
-
-      <div id="tree-graph-navigation-controls" className="tree-graph__nav-controls">
-        <button
-          type="button"
-          onClick={onZoomIn}
-          className="tree-graph__nav-button"
-          title="Phóng to"
-          aria-label="Phóng to"
-          data-guidance-anchor="graph-controls-zoom"
-        >
-          <PlusIcon size={18} />
-          <span>Phóng to</span>
-        </button>
-        <button type="button" onClick={onZoomOut} className="tree-graph__nav-button" title="Thu nhỏ" aria-label="Thu nhỏ">
-          <MinusIcon size={18} />
-          <span>Thu nhỏ</span>
-        </button>
-        <button
-          type="button"
-          onClick={() => onCenterOnNode(activeEgoId)}
-          className="tree-graph__nav-button"
-          title="Căn giữa người đang xem"
-          aria-label="Căn giữa người đang xem"
-          data-guidance-anchor="graph-controls-center-reset"
-        >
-          <CenterIcon size={18} />
-          <span>Về người đang xem</span>
-        </button>
-        {activeSelectedId ? (
-          <button
-            type="button"
-            onClick={() => onCenterOnNode(activeSelectedId)}
-            className="tree-graph__nav-button"
-            title="Căn giữa người được chọn"
-            aria-label="Căn giữa người được chọn"
-          >
-            <CenterIcon size={18} />
-            <span>Căn giữa người chọn</span>
-          </button>
-        ) : null}
-        <button
-          type="button"
-          onClick={onResetZoom}
-          className="tree-graph__nav-button"
-          title="Đặt lại góc nhìn"
-          aria-label="Đặt lại góc nhìn"
-        >
-          <ResetViewIcon size={18} />
-          <span>Đặt lại</span>
-        </button>
-        <button
-          type="button"
-          onClick={onExportSVG}
-          className="tree-graph__nav-button"
-          title="Tải ảnh sơ đồ (SVG)"
-          aria-label="Tải SVG"
-          data-guidance-anchor="graph-controls-tools-help"
-        >
-          <DownloadIcon size={18} />
-          <span>Tải SVG</span>
-        </button>
-        <button
-          type="button"
-          onClick={onToggleFullscreen}
-          className="tree-graph__nav-button"
-          title={isFullscreen ? "Thoát toàn màn hình" : "Toàn màn hình"}
-          aria-label={isFullscreen ? "Thoát toàn màn hình" : "Toàn màn hình"}
-        >
-          {isFullscreen ? <MinimizeIcon size={18} /> : <MaximizeIcon size={18} />}
-          <span>{isFullscreen ? "Thoát toàn màn hình" : "Toàn màn hình"}</span>
-        </button>
-        <GraphLegend />
-        <button
-          type="button"
-          className="tree-graph__nav-button"
-          aria-label="Mở hướng dẫn nhanh sơ đồ"
-          onClick={() => reopenGuidanceChapter("graph")}
-        >
-          <LightbulbIcon size={18} />
-          <span>Hướng dẫn nhanh</span>
-        </button>
-        <a href={helpHref} className="tree-graph__nav-button" aria-label="Hướng dẫn sơ đồ">
-          <LightbulbIcon size={18} />
-          <span>Hướng dẫn</span>
-        </a>
-      </div>
     </div>
   );
 }

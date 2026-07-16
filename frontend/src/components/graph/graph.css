@@ -310,18 +310,92 @@
 }
 
 .person-info {
-  border: 1px solid var(--color-hairline);
-  border-radius: 12px;
-  padding: 0.75rem 1rem;
-  background-color: var(--color-surface-card);
+  min-width: 0;
+  padding: 0;
+  color: var(--color-fg);
+  border: 0;
+  background: transparent;
 }
 
-.person-info dt {
-  font-weight: 600;
+.person-info--loading {
+  display: flex;
+  min-height: 180px;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 0.75rem;
 }
 
-.person-info dd {
-  margin: 0 0 0.5rem;
+.person-info--loading p {
+  margin: 0;
+  color: var(--color-muted);
+  font-size: 0.875rem;
+}
+
+.person-info__spinner {
+  width: 2rem;
+  height: 2rem;
+  border-width: 3px;
+}
+
+.person-info__facts {
+  display: grid;
+  gap: 0;
+  margin: 0;
+}
+
+.person-info__fact {
+  display: grid;
+  grid-template-columns: minmax(7.5rem, 1fr) auto;
+  gap: 1rem;
+  align-items: baseline;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid var(--color-hairline);
+}
+
+.person-info__fact dt,
+.person-info__address-callout dt {
+  color: var(--color-muted);
+  font-size: 0.78rem;
+  font-weight: 750;
+}
+
+.person-info__fact dd {
+  margin: 0;
+  font-weight: 650;
+  text-align: right;
+}
+
+.person-info__address-callout {
+  display: grid;
+  gap: 0.25rem;
+  margin-top: 1rem;
+  padding: 1rem;
+  border: 1px solid color-mix(in srgb, var(--color-brand) 28%, var(--color-hairline));
+  border-left: 4px solid var(--color-brand);
+  border-radius: 0.75rem;
+  background: color-mix(in srgb, var(--color-brand) 7%, var(--color-surface-card));
+}
+
+.person-info__address-callout dd {
+  margin: 0;
+  color: var(--color-brand);
+  font-size: 1.2rem;
+  font-weight: 800;
+  line-height: 1.25;
+}
+
+.person-info__address-callout > span {
+  color: var(--color-muted);
+  font-size: 0.78rem;
+}
+
+.person-info__empty-bio {
+  margin: 0;
+  padding: 0.5rem 0;
+  color: var(--color-muted);
+  font-size: 0.875rem;
+  font-style: italic;
 }
 
 @media (max-width: 900px) {
@@ -410,38 +484,42 @@
   gap: 1rem;
   margin-bottom: 1rem;
   padding-bottom: 1rem;
-  border-bottom: 1px dashed var(--color-hairline);
+  border-bottom: 1px solid var(--color-hairline);
 }
 
 .person-info__avatar {
-  width: 48px;
-  height: 48px;
-  border-radius: 50%;
   display: flex;
+  width: 52px;
+  height: 52px;
+  flex: 0 0 52px;
+  border-radius: 50%;
   align-items: center;
   justify-content: center;
-  font-weight: bold;
+  color: var(--color-fg);
   font-size: 1.25rem;
-  color: white;
+  font-weight: 800;
+  border: 1px solid var(--color-hairline);
 }
 
 .person-info__avatar--male {
-  background-color: var(--color-timeline-read); /* pastel blue */
+  background: color-mix(in srgb, var(--color-timeline-read) 42%, var(--color-surface-card));
 }
 
 .person-info__avatar--female {
-  background-color: #f472b6; /* pastel pink */
+  background: color-mix(in srgb, var(--color-brand) 22%, var(--color-surface-card));
 }
 
 .person-info__header-text {
   display: flex;
+  min-width: 0;
   flex-direction: column;
 }
 
 .person-info__header-name {
-  font-size: 1.125rem;
-  font-weight: 600;
+  overflow-wrap: anywhere;
   color: var(--color-fg);
+  font-size: 1.125rem;
+  font-weight: 750;
   margin: 0;
 }
 
@@ -662,9 +740,15 @@ html.dark .tree-graph__node-tooltip {
 
 .tree-graph__nav-shell {
   position: absolute;
+  inset: 0;
+  z-index: 30;
+  pointer-events: none;
+}
+
+.tree-graph__nav-palette {
+  position: absolute;
   right: 0.75rem;
   bottom: 5.75rem;
-  z-index: 30;
   display: flex;
   flex-direction: column;
   align-items: flex-end;
@@ -690,6 +774,7 @@ html.dark .tree-graph__node-tooltip {
   font-weight: 750;
   text-decoration: none;
   cursor: pointer;
+  pointer-events: auto;
 }
 
 .tree-graph__nav-controls {
@@ -706,42 +791,78 @@ html.dark .tree-graph__node-tooltip {
   border-radius: 0.9rem;
   background: var(--color-surface-card);
   box-shadow: 0 16px 36px color-mix(in srgb, var(--color-fg) 18%, transparent);
+  pointer-events: auto;
 }
 
 .tree-graph__nav-shell[data-expanded="true"] .tree-graph__nav-controls {
   display: flex;
 }
 
-.tree-graph__nav-shell:has(> .workspace-coach--contextual) {
-  top: 0.75rem;
-  bottom: 5.75rem;
-  max-height: none;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  scrollbar-gutter: stable;
+.tree-graph__nav-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.4rem;
 }
 
-.tree-graph__nav-shell > .workspace-coach--contextual {
-  position: relative;
-  inset: auto;
-  width: min(21rem, calc(100vw - 1.5rem));
-  max-width: 100%;
-  align-self: flex-end;
-}
-
-.tree-graph__nav-controls .tree-graph__nav-button,
-.tree-graph__nav-controls > button {
+.tree-graph__nav-grid > .tree-graph__nav-button,
+.tree-graph__nav-grid > button {
   width: 100%;
-  justify-content: flex-start;
+  min-width: 0;
+  min-height: 68px;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.25rem;
+  padding: 0.45rem 0.25rem;
+  box-shadow: none;
+  text-align: center;
+}
+
+.tree-graph__nav-grid > .tree-graph__nav-button > span,
+.tree-graph__nav-grid > button > span {
+  font-size: 0.7rem;
+  line-height: 1.15;
+}
+
+.tree-graph__nav-selected-center {
+  width: 100%;
+  justify-content: center;
   box-shadow: none;
 }
 
-.tree-graph__nav-controls > button[aria-label="Hiện chú giải sơ đồ"] {
-  min-width: 48px;
-  min-height: 48px;
-  justify-content: flex-start;
-  padding: 0.6rem 0.75rem;
-  border-radius: 0.75rem;
+.tree-graph__nav-help-link {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-brand);
+  font-size: 0.82rem;
+  font-weight: 750;
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
+.workspace-coach-layer--graph {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  bottom: auto;
+  z-index: 31;
+  width: min(21rem, calc(100vw - 1.5rem));
+  pointer-events: none;
+}
+
+.workspace-coach-layer--graph:empty {
+  display: none;
+}
+
+.workspace-coach-layer--graph > .workspace-coach--contextual {
+  position: relative;
+  inset: auto;
+  width: 100%;
+  max-width: 100%;
+  max-height: min(46dvh, 24rem);
+  overflow-y: auto;
+  pointer-events: auto;
 }
 
 .tree-graph__nav-glyph {
@@ -752,7 +873,7 @@ html.dark .tree-graph__node-tooltip {
 }
 
 @container tree-surface (min-width: 960px) {
-  .tree-graph__nav-shell {
+  .tree-graph__nav-palette {
     top: 0.75rem;
     right: 0.75rem;
     bottom: auto;
@@ -766,9 +887,18 @@ html.dark .tree-graph__node-tooltip {
     width: min(21rem, calc(100cqw - 1.5rem));
   }
 
-  .tree-graph__nav-shell:has(> .workspace-coach--contextual) {
+  .tree-graph__nav-grid > .tree-graph__nav-button,
+  .tree-graph__nav-grid > button {
+    min-height: 56px;
+    padding-block: 0.35rem;
+  }
+
+  .workspace-coach-layer--graph {
+    top: 0.75rem;
+    right: auto;
     bottom: auto;
-    max-height: calc(100dvh - 1.5rem);
+    left: 0.75rem;
+    width: min(21rem, calc(100% - 23.25rem));
   }
 }
 

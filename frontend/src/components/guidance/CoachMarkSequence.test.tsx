@@ -86,11 +86,16 @@ describe("CoachMarkSequence", () => {
     );
 
     expect(await screen.findByRole("dialog", { name: "Hướng dẫn nhanh" })).toBeInTheDocument();
+    expect(document.querySelector('[data-coach-layer="overview"]')).toHaveClass(
+      "workspace-coach-layer",
+      "workspace-coach-layer--overview",
+    );
     expect(screen.getByRole("link", { name: "Xem hướng dẫn" })).toHaveAttribute(
       "href",
       "/help#doi-diem-nhin",
     );
     await user.click(screen.getByRole("button", { name: "Hoàn tất" }));
+    expect(document.querySelector('[data-coach-layer="overview"]')).not.toBeInTheDocument();
     expect(readGuidanceState(storage).workspaceCoach.chapters.overview).toBe("completed");
 
     view.unmount();
@@ -326,6 +331,47 @@ describe("CoachMarkSequence", () => {
     expect(document.querySelector('[data-guidance-anchor="graph"]')).not.toHaveAttribute(
       "data-guidance-highlight",
     );
+  });
+
+  it("keeps only the most recently opened chapter active", async () => {
+    const user = userEvent.setup();
+    const { storage } = createStorage();
+    render(
+      <>
+        <div data-guidance-anchor="viewpoint" />
+        <div data-guidance-anchor="graph" />
+        <SequenceHarness
+          chapter="person"
+          role="reader"
+          steps={[OVERVIEW_STEP]}
+          enabled
+          storage={storage}
+        />
+        <SequenceHarness
+          chapter="graph"
+          role="reader"
+          steps={[GRAPH_STEP]}
+          enabled
+          storage={storage}
+        />
+      </>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getAllByRole("dialog", { name: "Hướng dẫn nhanh" })).toHaveLength(1);
+    });
+    expect(screen.getByTestId("person-state")).toHaveAttribute("data-active", "false");
+    expect(screen.getByTestId("graph-state")).toHaveAttribute("data-active", "true");
+
+    await user.keyboard("{Escape}");
+    expect(readGuidanceState(storage).workspaceCoach.chapters).toEqual({
+      graph: "skipped",
+    });
+
+    act(() => reopenGuidanceChapter("person"));
+    expect(await screen.findByRole("dialog", { name: "Hướng dẫn nhanh" })).toBeInTheDocument();
+    expect(screen.getByTestId("person-state")).toHaveAttribute("data-active", "true");
+    expect(screen.getByTestId("graph-state")).toHaveAttribute("data-active", "false");
   });
 
   it("focuses Skip once, restores focus, and cleans highlights on step, disable, and unmount", async () => {

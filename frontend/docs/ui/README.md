@@ -99,7 +99,8 @@ Current behavioral thresholds:
 
 - Container `>= 960px`: populated tree workspace becomes a split list–graph view.
 - `<= 1024px`: workspace compacts panels/actions.
-- `<= 900px`: sidebar becomes drawer; graph controls stack.
+- `<= 900px`: sidebar becomes a drawer; the workspace action drawer becomes a bottom sheet with
+  upward enter and downward exit motion; the graph's eight primary controls use an exact 4×2 grid.
 - `<= 860px`: support/admin grids collapse.
 - `<= 640px`: landing/auth/tree mobile composition.
 - `<= 560px`, `<= 539px`, `<= 480px`: local adjustments.
@@ -132,6 +133,24 @@ not automatically page-overflow bugs.
 - Populated workspace actions are distributed between a compact context bar, a stable footer, and
   a capability-filtered action drawer. Mobile/tablet use `list`/`graph` tabs with inert inactive
   content; wide containers use the same mounted panels in split view.
+- Workspace drawers and person panels keep chrome fixed, clip at the surface root, and give exactly
+  one internal body/list region ownership of scrolling. Contextual Coach cards render in an absolute
+  layer outside that scroll region, so they do not push content rows.
+- The viewpoint picker keeps search and count controls in fixed chrome and scrolls only its person
+  list. Person view, create, edit, and add-relative modes share the side-panel chrome/body contract;
+  normal actions remain grouped, the destructive action is separated, and the person surface has a
+  typed manual replay for its Coach chapter.
+- The action drawer remains a compact right drawer on desktop and a vertically entering/exiting
+  bottom sheet on mobile/tablet. Mobile/tablet graph controls place exactly eight primary actions in
+  a 4×2 grid, with selected-person centring and full Help outside the grid; desktop controls remain
+  compact.
+- At the canonical 200% text scale on touch layouts, action-drawer title/close chrome stays fixed
+  while secondary description copy scrolls with the action list. The workspace footer reflows into
+  normal document flow and the list/graph surface keeps a 360px work area, preventing fixed chrome
+  from covering member rows on short 320px-wide viewports.
+- These presentation changes do not alter capability filtering, privacy projection, API contracts,
+  or the graph engine. `/prototype/tree` shares the production workspace components, and targeted
+  tests plus the three-viewport audit cover responsive scroll ownership.
 - Guidance content is reviewed with each relevant feature release and quarterly for runtime accuracy.
 
 ## Non-negotiable editing rules

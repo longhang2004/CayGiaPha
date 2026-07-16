@@ -38,4 +38,30 @@ describe("TreePersonPicker", () => {
     expect(onSelectPerson).toHaveBeenCalledWith("three");
     expect(onOpenChange).toHaveBeenCalledWith(false);
   });
+
+  it("uses fixed chrome and a list-only scroll region", () => {
+    const { baseElement } = render(
+      <TreePersonPicker
+        mode="viewpoint"
+        persons={PERSONS}
+        addresses={new Map()}
+        egoId="one"
+        selectedId="one"
+        isOpen
+        onOpenChange={vi.fn()}
+        onSelectPerson={vi.fn()}
+      />,
+    );
+
+    const scrollRegions = baseElement.querySelectorAll('[data-panel-scroll-region="picker"]');
+    expect(scrollRegions).toHaveLength(1);
+    const scrollRegion = scrollRegions[0];
+    expect(scrollRegion.classList.contains("tree-person-picker__list")).toBe(true);
+
+    const searchBox = screen.getByRole("searchbox", { name: "Tìm người làm góc nhìn" });
+    expect(scrollRegion.contains(searchBox)).toBe(false);
+
+    const status = screen.getByRole("status");
+    expect(scrollRegion.contains(status)).toBe(false);
+  });
 });

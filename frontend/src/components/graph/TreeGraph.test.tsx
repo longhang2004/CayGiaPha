@@ -610,7 +610,7 @@ describe("TreeGraph renderer", () => {
     expect(fullscreenBtn).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Căn giữa người đang xem" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Hiện chú giải sơ đồ" })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Hướng dẫn sơ đồ" })).toHaveAttribute("href", "/help");
+    expect(screen.getByRole("link", { name: "Hướng dẫn đầy đủ" })).toHaveAttribute("href", "/help");
 
     // Select a node to see the center button
     await userEvent.click(screen.getByRole("button", { name: /Bố/ }));
@@ -648,6 +648,15 @@ describe("TreeGraph renderer", () => {
     expect(toggle).toHaveAttribute("aria-expanded", "true");
 
     let coach = await screen.findByRole("dialog", { name: "Hướng dẫn nhanh" });
+    const graphLayers = document.querySelectorAll<HTMLElement>('[data-coach-layer="graph"]');
+    expect(graphLayers).toHaveLength(1);
+    expect(graphLayers[0]).toHaveClass(
+      "workspace-coach-layer",
+      "workspace-coach-layer--graph",
+    );
+    expect(
+      document.querySelector(".workspace-coach-layer--graph .workspace-coach-layer--graph"),
+    ).toBeNull();
     expect(coach).toHaveTextContent("Bước 1 / 3");
     expect(coach).toHaveTextContent("Tìm người và di chuyển trên sơ đồ");
     expect(screen.getByTitle("Phóng to")).toHaveAttribute("data-guidance-highlight", "true");
@@ -690,7 +699,7 @@ describe("TreeGraph renderer", () => {
     await userEvent.click(toggle);
     expect(toggle).toHaveAttribute("aria-expanded", "true");
     expect(screen.queryByRole("dialog", { name: "Hướng dẫn nhanh" })).not.toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Hướng dẫn sơ đồ" })).toHaveAttribute("href", "/help");
+    expect(screen.getByRole("link", { name: "Hướng dẫn đầy đủ" })).toHaveAttribute("href", "/help");
 
     await userEvent.click(screen.getByRole("button", { name: "Mở hướng dẫn nhanh sơ đồ" }));
 
@@ -708,13 +717,52 @@ describe("TreeGraph renderer", () => {
     });
   });
 
-  it("constrains the active graph Coach stack inside short viewports", () => {
+  it("keeps exactly eight primary controls in the 4x2 grid and secondary actions outside", async () => {
+    recordWorkspaceCoachStatus("graph", "completed", window.localStorage);
+    renderGraphNavControls();
+
+    await userEvent.click(screen.getByRole("button", { name: "Điều khiển sơ đồ" }));
+
+    const grid = document.querySelector<HTMLElement>(".tree-graph__nav-grid");
+    expect(grid).not.toBeNull();
+    expect(
+      Array.from(grid!.children).map((control) => control.textContent?.replace(/\s+/g, " ").trim()),
+    ).toEqual([
+      "Phóng to",
+      "Thu nhỏ",
+      "Về người đang xem",
+      "Đặt lại",
+      "Tải SVG",
+      "Toàn màn hình",
+      "Chú giải",
+      "Hướng dẫn nhanh",
+    ]);
+    expect(grid!.children).toHaveLength(8);
+
+    const selectedCenter = screen.getByRole("button", { name: "Căn giữa người được chọn" });
+    const fullHelp = screen.getByRole("link", { name: "Hướng dẫn đầy đủ" });
+    expect(grid).not.toContainElement(selectedCenter);
+    expect(grid).not.toContainElement(fullHelp);
+    expect(fullHelp).toHaveTextContent("Hướng dẫn đầy đủ");
+  });
+
+  it("uses a four-column primary grid and a dedicated floating graph Coach layer", () => {
     expect(GRAPH_CSS).toMatch(
-      /\.tree-graph__nav-shell:has\(> \.workspace-coach--contextual\)\s*\{[^}]*top:\s*0\.75rem[^}]*bottom:\s*5\.75rem[^}]*max-height:\s*none[^}]*overflow-y:\s*auto/s,
+      /\.tree-graph__nav-grid\s*\{[^}]*display:\s*grid[^}]*grid-template-columns:\s*repeat\(4,\s*minmax\(0,\s*1fr\)\)/s,
     );
     expect(GRAPH_CSS).toMatch(
-      /@container tree-surface \(min-width: 960px\)[\s\S]*?\.tree-graph__nav-shell:has\(> \.workspace-coach--contextual\)\s*\{[^}]*bottom:\s*auto[^}]*max-height:\s*calc\(100dvh\s*-\s*1\.5rem\)/,
+      /\.tree-graph__nav-grid > \.tree-graph__nav-button[\s\S]*?min-height:\s*(?:[4-9]\d|\d{3,})px[\s\S]*?flex-direction:\s*column/,
     );
+    expect(GRAPH_CSS).toMatch(
+      /\.tree-graph__nav-shell\s*\{[^}]*position:\s*absolute[^}]*inset:\s*0[^}]*pointer-events:\s*none/s,
+    );
+    expect(GRAPH_CSS).toMatch(
+      /\.workspace-coach-layer--graph\s*\{[^}]*position:\s*absolute[^}]*top:\s*0\.75rem[^}]*right:\s*0\.75rem[^}]*bottom:\s*auto/s,
+    );
+    expect(GRAPH_CSS).toMatch(
+      /@container tree-surface \(min-width: 960px\)[\s\S]*?\.tree-graph__nav-palette\s*\{[^}]*top:\s*0\.75rem[^}]*right:\s*0\.75rem[^}]*bottom:\s*auto[\s\S]*?\.workspace-coach-layer--graph\s*\{[^}]*right:\s*auto[^}]*left:\s*0\.75rem[^}]*width:\s*min\(21rem,\s*calc\(100%\s*-\s*23\.25rem\)\)/,
+    );
+    expect(GRAPH_CSS).not.toMatch(/\.tree-graph__nav-shell:has\(/);
   });
 
   it("does not reset the user's graph view when selecting a person", async () => {

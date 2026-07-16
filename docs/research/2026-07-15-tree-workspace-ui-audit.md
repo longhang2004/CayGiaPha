@@ -1,17 +1,18 @@
-# Tree workspace UI audit — 2026-07-15
+# Tree workspace UI audit — 2026-07-15, cập nhật 2026-07-16
 
 ## Phạm vi
 
-Audit populated workspace tại `/prototype/tree` sau khi migrate Open Design, tập trung vào bốn trạng thái `Danh sách`, `Sơ đồ`, drawer `Thao tác khác` và Coach mark ở desktop, tablet và mobile. Báo cáo này đã được cập nhật sau polish gate và broad audit cuối.
+Audit populated workspace tại `/prototype/tree` sau khi migrate Open Design, tập trung vào `Danh sách`, `Sơ đồ`, picker đổi người, drawer `Thao tác khác`, person panel và Coach mark ở desktop, tablet và mobile. Bản cập nhật 2026-07-16 xác nhận scroll ownership, fixed chrome, floating Coach layer và graph controls 4×2 sau vòng reformat panel.
 
 ## Bằng chứng kiểm thử
 
-- Targeted workspace, guidance, picker và graph component tests: 79/79 pass trên 15 test files.
+- Toàn bộ frontend unit/component tests: 526/526 pass trên 111 test files.
 - `npm run typecheck`: pass.
 - `npm run lint`: pass, chỉ còn cảnh báo `<img>` được chấp nhận theo quy ước repository.
 - `npm run build`: pass.
-- `tests/e2e/prototype.spec.ts`: 81/81 pass.
-- `tests/e2e/prototype-audit.spec.ts`: 60/60 pass, gồm 48 route baseline và 12 visual-state cases của workspace.
+- `tests/e2e/prototype.spec.ts`: 89/89 pass.
+- `tests/e2e/prototype-audit.spec.ts`: 69/69 pass, gồm 48 route baseline và 21 visual-state cases của workspace.
+- Hai suite Playwright chạy cùng nhau: 158/158 pass trong Chromium.
 - `tests/e2e/family-tree.spec.ts`: bị chặn ở bước signup do local API/Drizzle trả `Internal Server Error`, trước khi test đi tới workspace. Đây là giới hạn môi trường kiểm thử hiện tại, không phải lỗi UI được quan sát trong prototype.
 
 ## Findings và trạng thái xử lý
@@ -26,6 +27,14 @@ Audit populated workspace tại `/prototype/tree` sau khi migrate Open Design, t
 | P2 | Graph controls desktop | Thu controls vào trigger có nhãn “Điều khiển sơ đồ”; mobile reset legacy `100dvh` để control luôn nằm trong canvas và trên footer. | Ý nghĩa control rõ hơn và mọi gesture đều có button tương đương. |
 | P3 | Footer desktop | Gắn footer action với chiều rộng list rail trong split layout. | Graph không còn bị footer chiếm toàn dải ngang. |
 | P3 | Reduced motion | Override cả trạng thái enter và exit của action bottom sheet bằng selector đủ specificity. | Không còn animation sót lại khi hệ điều hành yêu cầu giảm chuyển động. |
+| P1 | Picker và action/person panel | Chia fixed chrome và một body/list cuộn duy nhất; root panel `overflow: hidden`; thêm safe-area padding. | Header, search và close button đứng yên khi cuộn nội dung ở cả ba viewport. |
+| P1 | Contextual Coach trong action/graph/person | Đưa card vào absolute overlay layer theo chapter, tách khỏi scroll body và normal flow. | Coach không còn đẩy row/card, không che workspace chrome và vẫn giữ focus/persistence. |
+| P2 | Person info panel | Bỏ nested card nặng, tách profile summary, facts, address callout, action thường và danger section. | Hierarchy dễ quét hơn; capability và action callbacks giữ nguyên. |
+| P2 | Graph palette mobile/tablet | Gom đúng tám primary controls vào grid bốn cột hai hàng; đưa selected-center và Help đầy đủ ra ngoài grid. | Palette chiếm ít chiều cao hơn và mọi gesture vẫn có button tương đương. |
+| P2 | Action drawer responsive | Dùng bottom-sheet translateY trên mobile/tablet và giữ right-drawer translateX trên desktop. | Hướng đóng/mở phù hợp với hình thái panel ở từng breakpoint. |
+| P1 | Nhiều Coach chapter đồng thời | Sequence mới phát activation event; chapter cũ đóng mà không bị ghi `skipped`. | Chỉ chapter trên cùng nghe Escape và sở hữu focus/highlight; replay typed vẫn hoạt động. |
+| P1 | 320×568 ở canonical 200% text | Dùng `cgp.textScale=200` trong regression test; giữ title/close của drawer cố định nhưng chuyển mô tả phụ vào body cuộn; đưa footer về normal flow và giữ surface cao 360px khi tổng fixed chrome vượt viewport. | Picker/action/person Coach thao tác được; danh sách không bị footer che và không có nội dung bị mất ở scale tối đa. |
+| P2 | Split boundary | Định vị graph Coach theo graph rail thay vì toàn workspace; thêm geometry test tại ngưỡng split. | Coach không bị cắt khi graph rail vừa đủ chuyển sang desktop composition. |
 
 Không phát hiện P0.
 
@@ -40,6 +49,8 @@ Không phát hiện P0.
 - Graph có đường thao tác bằng button, không bắt buộc pan/pinch.
 - Layout 320px với 200% text, reduced motion và keyboard interaction có test contract.
 - Audit screenshot chờ transition/hydration, prime compositor và chỉ làm phẳng track transform trong lúc chụp graph; không còn black-tile artifact trong bộ ảnh bàn giao, còn swipe animation production không bị thay đổi.
+- Picker, action drawer và person panel có đúng một `data-panel-scroll-region`; Playwright xác nhận chrome/close lệch không quá 1px sau khi cuộn.
+- Graph palette có đúng tám child trong primary grid và bốn cột ở mobile/tablet.
 
 ## Ảnh audit
 
@@ -49,6 +60,9 @@ Không phát hiện P0.
 - [Sơ đồ](./2026-07-15-tree-workspace-ui-audit/screenshots/desktop-tree-workspace-graph.png)
 - [Thao tác khác](./2026-07-15-tree-workspace-ui-audit/screenshots/desktop-tree-workspace-actions.png)
 - [Coach mark](./2026-07-15-tree-workspace-ui-audit/screenshots/desktop-tree-workspace-coach.png)
+- [Picker đổi người](./2026-07-15-tree-workspace-ui-audit/screenshots/desktop-tree-workspace-picker.png)
+- [Person panel](./2026-07-15-tree-workspace-ui-audit/screenshots/desktop-tree-workspace-person.png)
+- [Graph controls](./2026-07-15-tree-workspace-ui-audit/screenshots/desktop-tree-workspace-graph-controls.png)
 
 ### Tablet
 
@@ -56,6 +70,9 @@ Không phát hiện P0.
 - [Sơ đồ](./2026-07-15-tree-workspace-ui-audit/screenshots/tablet-tree-workspace-graph.png)
 - [Thao tác khác](./2026-07-15-tree-workspace-ui-audit/screenshots/tablet-tree-workspace-actions.png)
 - [Coach mark](./2026-07-15-tree-workspace-ui-audit/screenshots/tablet-tree-workspace-coach.png)
+- [Picker đổi người](./2026-07-15-tree-workspace-ui-audit/screenshots/tablet-tree-workspace-picker.png)
+- [Person panel](./2026-07-15-tree-workspace-ui-audit/screenshots/tablet-tree-workspace-person.png)
+- [Graph controls](./2026-07-15-tree-workspace-ui-audit/screenshots/tablet-tree-workspace-graph-controls.png)
 
 ### Mobile
 
@@ -63,6 +80,9 @@ Không phát hiện P0.
 - [Sơ đồ](./2026-07-15-tree-workspace-ui-audit/screenshots/mobile-tree-workspace-graph.png)
 - [Thao tác khác](./2026-07-15-tree-workspace-ui-audit/screenshots/mobile-tree-workspace-actions.png)
 - [Coach mark](./2026-07-15-tree-workspace-ui-audit/screenshots/mobile-tree-workspace-coach.png)
+- [Picker đổi người](./2026-07-15-tree-workspace-ui-audit/screenshots/mobile-tree-workspace-picker.png)
+- [Person panel](./2026-07-15-tree-workspace-ui-audit/screenshots/mobile-tree-workspace-person.png)
+- [Graph controls](./2026-07-15-tree-workspace-ui-audit/screenshots/mobile-tree-workspace-graph-controls.png)
 
 ## Kết luận
 

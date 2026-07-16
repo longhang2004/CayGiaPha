@@ -11,12 +11,12 @@ export function GraphLegend() {
       onOpenChange={setIsOpen}
       trigger={
         <>
-        <InfoIcon size={18} />
-        <span className="hide-on-tablet hide-on-mobile">Chú giải</span>
+          <InfoIcon size={18} />
+          <span>Chú giải</span>
         </>
       }
       triggerAriaLabel="Hiện chú giải sơ đồ"
-      triggerClassName={`btn btn-secondary ${isOpen ? "active" : ""}`}
+      triggerClassName={`tree-graph__nav-button tree-graph__nav-legend-button ${isOpen ? "active" : ""}`}
       ariaLabel="Chú giải sơ đồ"
       placement="top end"
       size="sm"

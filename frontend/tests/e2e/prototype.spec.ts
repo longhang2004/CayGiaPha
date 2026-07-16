@@ -25,6 +25,56 @@ async function installCompletedWorkspaceGuidance(page: Page) {
   }, COMPLETED_WORKSPACE_GUIDANCE);
 }
 
+type WorkspaceCoachChapter = "overview" | "actions" | "graph" | "person";
+type WorkspaceCoachStatus = "completed" | "skipped";
+
+async function installWorkspaceGuidanceChapters(
+  page: Page,
+  chapters: Partial<Record<WorkspaceCoachChapter, WorkspaceCoachStatus>>,
+) {
+  await page.addInitScript((chapterState) => {
+    localStorage.setItem("cgp_guidance_v2", JSON.stringify({
+      schemaVersion: 5,
+      completed: [],
+      dismissedTopicVersions: {},
+      onboardingSkipped: false,
+      workspaceCoach: { version: 2, chapters: chapterState },
+    }));
+  }, chapters);
+}
+
+interface ElementBox {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
+async function requiredBoundingBox(locator: Locator): Promise<ElementBox> {
+  const box = await locator.boundingBox();
+  expect(box).not.toBeNull();
+  return box!;
+}
+
+function expectStableBox(before: ElementBox, after: ElementBox) {
+  for (const key of ["x", "y", "width", "height"] as const) {
+    expect(Math.abs(before[key] - after[key]), `${key} changed after body scroll`).toBeLessThanOrEqual(1);
+  }
+}
+
+async function scrollRegionToBottom(locator: Locator) {
+  const result = await locator.evaluate(async (element) => {
+    const maxScrollTop = element.scrollHeight - element.clientHeight;
+    element.scrollTop = element.scrollHeight;
+    await new Promise<void>((resolve) => {
+      requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
+    });
+    return { maxScrollTop, scrollTop: element.scrollTop };
+  });
+  expect(result.maxScrollTop).toBeGreaterThan(0);
+  expect(result.scrollTop).toBeGreaterThan(0);
+}
+
 async function expectWithinViewport(locator: Locator) {
   await expect(locator).toBeVisible();
   await locator.evaluate(async (element) => {
@@ -123,7 +173,7 @@ test.describe("Prototype Pages — smoke tests (no auth required)", () => {
 
     await page.getByRole("button", { name: "Thêm người thân" }).click();
     await expect(page.getByRole("form", { name: "Thêm người thân" })).toBeVisible();
-    await page.getByRole("button", { name: "Bỏ chọn" }).click();
+    await page.getByRole("button", { name: "Hủy thêm quan hệ" }).click();
     await page.getByRole("button", { name: "Bỏ chọn" }).click();
     await expect(page.locator(".tree-workspace__info-panel")).toBeHidden();
 
@@ -179,6 +229,207 @@ test.describe("Prototype Pages — smoke tests (no auth required)", () => {
     await dialog.getByRole("button", { name: "Xem từ Hàng Nhựt Tiến" }).click();
 
     await expect(page.locator(".tree-page-header")).toContainText("Hàng Nhựt Tiến");
+  });
+
+  test("workspace viewpoint picker owns one scrolling list while chrome stays fixed", async ({ page }) => {
+    await installCompletedWorkspaceGuidance(page);
+    await page.setViewportSize({ width: 375, height: 667 });
+    await page.goto("/prototype/tree");
+
+    await page.getByRole("button", { name: "Đổi người" }).click();
+    const dialog = page.getByRole("dialog", { name: "Chọn người làm góc nhìn" });
+    await expectWithinViewport(dialog);
+
+    const scrollRegions = dialog.locator('[data-panel-scroll-region="picker"]');
+    await expect(scrollRegions).toHaveCount(1);
+    expect(await dialog.evaluate((element) => getComputedStyle(element).overflowY)).toBe("hidden");
+    const scrollRegion = scrollRegions.first();
+    const chrome = dialog.locator(".tree-person-picker__chrome");
+    const close = dialog.getByRole("button", { name: "Đóng chọn người làm góc nhìn" });
+    const [chromeBefore, closeBefore] = await Promise.all([
+      requiredBoundingBox(chrome),
+      requiredBoundingBox(close),
+    ]);
+
+    await scrollRegionToBottom(scrollRegion);
+
+    const [chromeAfter, closeAfter] = await Promise.all([
+      requiredBoundingBox(chrome),
+      requiredBoundingBox(close),
+    ]);
+    expectStableBox(chromeBefore, chromeAfter);
+    expectStableBox(closeBefore, closeAfter);
+  });
+
+  test("action drawer keeps chrome and Coach outside its single scrolling body", async ({ page }) => {
+    await installCompletedWorkspaceGuidance(page);
+    await page.setViewportSize({ width: 375, height: 500 });
+    await page.goto("/prototype/tree");
+
+    await page.getByRole("button", { name: "Thao tác khác" }).click();
+    const dialog = page.getByRole("dialog", { name: "Thao tác khác" });
+    await expectWithinViewport(dialog);
+    const scrollRegions = dialog.locator('[data-panel-scroll-region="actions"]');
+    await expect(scrollRegions).toHaveCount(1);
+    expect(await dialog.evaluate((element) => getComputedStyle(element).overflowY)).toBe("hidden");
+    const scrollRegion = scrollRegions.first();
+    const chrome = dialog.locator(".tree-workspace-action-drawer__chrome");
+    const close = dialog.getByRole("button", { name: "Đóng thao tác khác" });
+    const firstAction = scrollRegion.getByRole("button", { name: "Tìm người" });
+    const firstActionBeforeCoach = await requiredBoundingBox(firstAction);
+
+    await scrollRegion.getByRole("button", { name: "Mở hướng dẫn nhanh" }).click();
+    const coachLayer = dialog.locator('[data-coach-layer="actions"]');
+    await expect(coachLayer).toHaveCount(1);
+    await expectWithinViewport(coachLayer);
+    await expect(scrollRegion.locator('[data-coach-layer="actions"]')).toHaveCount(0);
+    expectStableBox(firstActionBeforeCoach, await requiredBoundingBox(firstAction));
+
+    const [chromeBefore, closeBefore] = await Promise.all([
+      requiredBoundingBox(chrome),
+      requiredBoundingBox(close),
+    ]);
+    await scrollRegionToBottom(scrollRegion);
+    const [chromeAfter, closeAfter] = await Promise.all([
+      requiredBoundingBox(chrome),
+      requiredBoundingBox(close),
+    ]);
+    expectStableBox(chromeBefore, chromeAfter);
+    expectStableBox(closeBefore, closeAfter);
+  });
+
+  test("panel Coach layers stay inside the remaining surface at 320px and 200 percent text", async ({ page }) => {
+    await installWorkspaceGuidanceChapters(page, {
+      overview: "completed",
+      actions: "completed",
+      graph: "completed",
+    });
+    await page.addInitScript(() => localStorage.setItem("cgp.textScale", "200"));
+    await page.setViewportSize({ width: 320, height: 568 });
+    await page.goto("/prototype/tree");
+    await page.evaluate(() => document.fonts.ready);
+
+    await page.getByRole("button", { name: "Đổi người" }).click();
+    const pickerDialog = page.getByRole("dialog", { name: "Chọn người làm góc nhìn" });
+    await expectWithinViewport(pickerDialog);
+    const pickerChrome = pickerDialog.locator(".tree-person-picker__chrome");
+    const pickerClose = pickerDialog.getByRole("button", {
+      name: "Đóng chọn người làm góc nhìn",
+    });
+    const [pickerChromeBefore, pickerCloseBefore] = await Promise.all([
+      requiredBoundingBox(pickerChrome),
+      requiredBoundingBox(pickerClose),
+    ]);
+    await scrollRegionToBottom(
+      pickerDialog.locator('[data-panel-scroll-region="picker"]'),
+    );
+    expectStableBox(pickerChromeBefore, await requiredBoundingBox(pickerChrome));
+    expectStableBox(pickerCloseBefore, await requiredBoundingBox(pickerClose));
+    await pickerClose.click();
+
+    await page.getByRole("button", { name: "Thao tác khác" }).click();
+    const actionDialog = page.getByRole("dialog", { name: "Thao tác khác" });
+    await actionDialog.getByRole("button", { name: "Mở hướng dẫn nhanh" }).click();
+    await expectWithinViewport(actionDialog.locator('[data-coach-layer="actions"]'));
+    const actionCoach = actionDialog.getByRole("dialog", { name: "Hướng dẫn nhanh" });
+    await expectWithinViewport(actionCoach);
+    await actionCoach.getByRole("button", { name: "Tiếp theo" }).click();
+    await page.keyboard.press("Escape");
+    await actionDialog.getByRole("button", { name: "Đóng thao tác khác" }).click();
+
+    await page.getByRole("button", { name: "Chọn Hàng Hữu Phương" }).click();
+    const personPanel = page.locator('.side-panel[data-panel-mode="view"]');
+    await expectWithinViewport(personPanel.locator('[data-coach-layer="person"]'));
+    const personCoach = personPanel.getByRole("dialog", { name: "Hướng dẫn nhanh" });
+    await expectWithinViewport(personCoach);
+    await personCoach.getByRole("button", { name: "Tiếp theo" }).click();
+    expect(
+      await page.evaluate(() => document.documentElement.scrollWidth),
+    ).toBeLessThanOrEqual(await page.evaluate(() => document.documentElement.clientWidth));
+  });
+
+  test("owner person view keeps fixed chrome and Coach outside its single scrolling body", async ({ page }) => {
+    await installWorkspaceGuidanceChapters(page, {
+      overview: "completed",
+      actions: "completed",
+      graph: "completed",
+    });
+    await page.setViewportSize({ width: 375, height: 667 });
+    await page.goto("/prototype/tree");
+
+    await page.getByRole("button", { name: "Chọn Hàng Hữu Phương" }).click();
+    const panel = page.locator('.side-panel[data-panel-mode="view"]');
+    await expectWithinViewport(panel);
+    const scrollRegions = panel.locator('[data-panel-scroll-region="person"]');
+    await expect(scrollRegions).toHaveCount(1);
+    const scrollRegion = scrollRegions.first();
+    const coachLayer = panel.locator('[data-coach-layer="person"]');
+    await expect(coachLayer).toHaveCount(1);
+    await expectWithinViewport(coachLayer);
+    await expect(scrollRegion.locator('[data-coach-layer="person"]')).toHaveCount(0);
+
+    const chrome = panel.locator(".side-panel__chrome");
+    const close = panel.getByRole("button", { name: "Bỏ chọn" });
+    const [chromeBefore, closeBefore] = await Promise.all([
+      requiredBoundingBox(chrome),
+      requiredBoundingBox(close),
+    ]);
+    await scrollRegionToBottom(scrollRegion);
+    const [chromeAfter, closeAfter] = await Promise.all([
+      requiredBoundingBox(chrome),
+      requiredBoundingBox(close),
+    ]);
+    expectStableBox(chromeBefore, chromeAfter);
+    expectStableBox(closeBefore, closeAfter);
+  });
+
+  for (const viewport of [
+    { name: "mobile", width: 375, height: 667 },
+    { name: "tablet", width: 768, height: 1024 },
+  ]) {
+    test(`graph controls keep an exact 4x2 primary grid on ${viewport.name}`, async ({ page }) => {
+      await installCompletedWorkspaceGuidance(page);
+      await page.addInitScript(() => localStorage.setItem("cgp_tree_workspace_view_v2", "graph"));
+      await page.setViewportSize(viewport);
+      await page.goto("/prototype/tree");
+
+      await page.getByRole("button", { name: "Điều khiển sơ đồ" }).click();
+      const grid = page.locator(".tree-graph__nav-grid");
+      await expect(grid).toBeVisible();
+      await expect(grid.locator(":scope > *")).toHaveCount(8);
+      expect(
+        await grid.evaluate((element) => getComputedStyle(element).gridTemplateColumns
+          .split(" ")
+          .filter(Boolean).length),
+      ).toBe(4);
+
+      const fullHelp = page.getByRole("link", { name: "Hướng dẫn đầy đủ" });
+      await expect(fullHelp).toBeVisible();
+      await expect(grid.getByRole("link", { name: "Hướng dẫn đầy đủ" })).toHaveCount(0);
+    });
+  }
+
+  test("graph Coach stays inside the graph rail at the desktop split boundary", async ({ page }) => {
+    await installWorkspaceGuidanceChapters(page, {
+      overview: "completed",
+      actions: "completed",
+      person: "completed",
+    });
+    await page.setViewportSize({ width: 1220, height: 800 });
+    await page.goto("/prototype/tree");
+
+    await expect(page.locator(".tree-workspace-surface")).toHaveAttribute("data-layout", "split");
+
+    await page.getByRole("button", { name: "Điều khiển sơ đồ" }).click();
+    const graphPanel = page.locator("#panel-graph");
+    const coachLayer = graphPanel.locator('[data-coach-layer="graph"]');
+    await expectWithinViewport(coachLayer);
+    const [panelBox, coachBox] = await Promise.all([
+      requiredBoundingBox(graphPanel),
+      requiredBoundingBox(coachLayer),
+    ]);
+    expect(coachBox.x).toBeGreaterThanOrEqual(panelBox.x);
+    expect(coachBox.x + coachBox.width).toBeLessThanOrEqual(panelBox.x + panelBox.width);
   });
 
   for (const viewport of [
@@ -510,7 +761,12 @@ test.describe("Prototype Pages — smoke tests (no auth required)", () => {
     expect(await page.evaluate(() => JSON.parse(localStorage.getItem("cgp_guidance_v2") ?? "{}").workspaceCoach?.chapters?.overview)).toBe("skipped");
 
     await page.getByRole("button", { name: "Thao tác khác" }).click();
-    await page.getByRole("button", { name: "Mở hướng dẫn nhanh" }).click();
+    await expect(coach).toBeVisible();
+    await page.keyboard.press("Escape");
+    await expect(coach).toHaveCount(0);
+    await page.getByRole("dialog", { name: "Thao tác khác" })
+      .getByRole("button", { name: "Mở hướng dẫn nhanh" })
+      .click();
     await expect(coach).toBeVisible();
   });
 

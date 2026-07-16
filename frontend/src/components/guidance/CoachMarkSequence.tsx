@@ -23,6 +23,8 @@ import {
 
 export type CoachMarkPlacement = "top" | "bottom" | "left" | "right";
 
+const COACH_SEQUENCE_ACTIVATE_EVENT = "cgp:workspace-coach-sequence-activate";
+
 export interface CoachStep {
   topicId: string;
   anchorIds: string[];
@@ -144,6 +146,16 @@ export function useCoachMarkSequence({
     return available;
   }, [role, steps]);
 
+  useEffect(() => {
+    const handleSequenceActivate = (event: Event) => {
+      if (!(event instanceof CustomEvent)) return;
+      const detail = event.detail as { chapter?: unknown } | null;
+      if (detail?.chapter !== chapter) setActive(false);
+    };
+    window.addEventListener(COACH_SEQUENCE_ACTIVATE_EVENT, handleSequenceActivate);
+    return () => window.removeEventListener(COACH_SEQUENCE_ACTIVATE_EVENT, handleSequenceActivate);
+  }, [chapter]);
+
   const open = useCallback(
     (force: boolean) => {
       if (!enabled) return;
@@ -157,7 +169,14 @@ export function useCoachMarkSequence({
       const available = resolveAvailableSteps();
       setResolvedSteps(available);
       setIndex(0);
-      setActive(available.length > 0);
+      if (available.length === 0) {
+        setActive(false);
+        return;
+      }
+      window.dispatchEvent(new CustomEvent(COACH_SEQUENCE_ACTIVATE_EVENT, {
+        detail: { chapter },
+      }));
+      setActive(true);
     },
     [chapter, enabled, resolveAvailableSteps, resolvedStorage],
   );

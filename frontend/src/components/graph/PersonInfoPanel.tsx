@@ -17,9 +17,9 @@ const GENDER_LABEL: Record<string, string> = {
 export function PersonInfoPanel({ person, ego, address, loading, hideHeading = false }: PersonInfoPanelProps) {
   if (loading) {
     return (
-      <aside className="person-info" aria-live="polite" aria-busy="true" style={{ display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", minHeight: "180px", gap: "0.75rem" }}>
-        <div className="center-state__spinner" style={{ width: "2rem", height: "2rem", borderWidth: "3px" }} />
-        <p style={{ margin: 0, color: "var(--color-muted)", fontSize: "0.875rem" }}>Đang tính toán cách xưng hô…</p>
+      <aside className="person-info person-info--loading" aria-live="polite" aria-busy="true">
+        <div className="center-state__spinner person-info__spinner" />
+        <p>Đang tính toán cách xưng hô…</p>
       </aside>
     );
   }
@@ -56,36 +56,37 @@ export function PersonInfoPanel({ person, ego, address, loading, hideHeading = f
       id: "info",
       label: "Chi tiết",
       content: (
-        <dl>
+        <dl className="person-info__facts">
           {person.gender ? (
-            <div>
+            <div className="person-info__fact">
               <dt>Giới tính</dt>
               <dd>{GENDER_LABEL[person.gender] ?? person.gender}</dd>
             </div>
           ) : null}
           {person.birthYear != null ? (
-            <div>
+            <div className="person-info__fact">
               <dt>Năm sinh</dt>
               <dd>{person.birthYear}</dd>
             </div>
           ) : null}
           {person.birthOrder != null ? (
-            <div>
+            <div className="person-info__fact">
               <dt>Thứ tự trong gia đình</dt>
               <dd>Con thứ {person.birthOrder}</dd>
             </div>
           ) : null}
           {person.deceased != null ? (
-            <div>
+            <div className="person-info__fact">
               <dt>Tình trạng</dt>
               <dd>{person.deceased ? "Đã qua đời" : "Còn sống"}</dd>
             </div>
           ) : null}
-          <div>
-            <dt>Cách xưng hô{ego ? ` (${ego.displayName} gọi)` : ""}</dt>
+          <div className="person-info__address-callout">
+            <dt>Cách xưng hô</dt>
             <dd data-address data-unresolved={unresolved ? "true" : "false"}>
               {isSelf ? "Bản thân" : capitalize(addressLabel(address))}
             </dd>
+            {ego ? <span>{ego.displayName} gọi</span> : null}
           </div>
         </dl>
       ),
@@ -106,7 +107,7 @@ export function PersonInfoPanel({ person, ego, address, loading, hideHeading = f
               ))}
             </div>
           ) : (
-            <p style={{ fontStyle: "italic", fontSize: "0.875rem", margin: 0, padding: "0.5rem 0", color: "var(--color-muted)" }}>
+            <p className="person-info__empty-bio">
               Chưa có sự kiện nào. Thêm năm sinh hoặc thông tin qua đời để xem tiểu sử.
             </p>
           )}
@@ -117,10 +118,8 @@ export function PersonInfoPanel({ person, ego, address, loading, hideHeading = f
 
   return (
     <aside className="person-info" aria-live="polite" data-person-id={person.id}>
-      {/* Hidden/accessible heading to keep tests and screen-readers happy */}
-      <h2 className={hideHeading ? "sr-only" : ""}>{person.displayName}</h2>
+      {hideHeading ? null : <h2>{person.displayName}</h2>}
 
-      {/* Visual Header Card */}
       <div className="person-info__avatar-container">
         <div className={`person-info__avatar person-info__avatar--${person.gender ?? "unknown"}`}>
           {initialLetter}

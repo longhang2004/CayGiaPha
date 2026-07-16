@@ -19,4 +19,14 @@ describe("GraphLegend", () => {
     await user.click(screen.getByRole("button", { name: "Đóng chú giải" }));
     expect(screen.queryByRole("dialog", { name: "Chú giải sơ đồ" })).not.toBeInTheDocument();
   });
+
+  it("keeps the Chú giải label visible at every viewport size", () => {
+    render(<GraphLegend />);
+
+    const trigger = screen.getByRole("button", { name: "Hiện chú giải sơ đồ" });
+    const label = screen.getByText("Chú giải");
+    expect(trigger).toContainElement(label);
+    expect(label).not.toHaveClass("hide-on-tablet");
+    expect(label).not.toHaveClass("hide-on-mobile");
+  });
 });

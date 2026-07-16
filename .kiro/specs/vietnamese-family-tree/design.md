@@ -161,16 +161,32 @@ The workspace header is a compact context bar containing a stable route back to 
 focus to its trigger, and does not request a new API. Selecting a person opens the existing detail
 surface as a bottom sheet on narrow containers and a side panel on wide containers.
 
+Workspace drawers and person panels use fixed chrome plus exactly one internal body/list scroll
+owner. Contextual Coach content is an absolute overlay outside that scroll region and never pushes
+rows. Only one workspace Coach sequence is active at a time; opening another chapter dismisses the
+prior visual sequence without persisting completion or skip. The viewpoint picker keeps search and
+count in its fixed chrome and scrolls only the person
+list. Person view, create, edit, and add-relative modes share the same side-panel chrome/body;
+ordinary actions stay grouped, the destructive action is separated, and the person surface exposes
+typed manual replay for its Coach chapter.
+
 The footer is capability-driven. “Thêm người thân” targets `selectedId ?? egoId` only when that
 person's server capability permits relationship editing. Search, viewpoint change, quick guidance,
 and canonical Help remain available to all readable roles; editing, settings, and collaboration
 actions appear only when the corresponding server capability is true. Client role labels never
 grant authority.
 
-Graph controls are compact on wide containers and collapse behind the labelled “Điều khiển sơ đồ”
-button on mobile/tablet. Zoom, centre, reset, fullscreen, SVG download, legend, and Help remain
-keyboard/tap reachable with a minimum 44 CSS-px target. Graph node, canvas, and control colours use
-semantic tokens in light, dark, and system themes; line style as well as colour identifies edges.
+The action surface is a compact right drawer on desktop and a bottom sheet with vertical enter and
+exit motion on mobile/tablet. Graph controls are compact on wide containers. On mobile/tablet, the
+opened control surface presents exactly eight primary actions in a 4×2 grid; selected-person
+centring and full Help remain outside that grid. Every control remains keyboard/tap reachable with a
+minimum 44 CSS-px target. Graph node, canvas, and control colours use semantic tokens in light,
+dark, and system themes; line style as well as colour identifies edges.
+
+These layout contracts do not change capability checks, privacy projection, API contracts, or the
+existing graph engine. `/prototype/tree` renders the shared production workspace components rather
+than a parallel panel implementation; targeted tests and the three-viewport UI audit cover
+responsive scroll ownership.
 
 The populated-workspace onboarding uses four progressive Coach mark chapters: `overview`,
 `actions`, `graph`, and `person`. The overview runs once after the workspace and its visible anchors

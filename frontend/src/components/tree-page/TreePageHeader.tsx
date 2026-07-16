@@ -168,91 +168,101 @@ export function TreePageHeader({ treeListHref = "/tree", helpHref = "/help" }: T
         className="tree-workspace-action-drawer"
         safeAreaEdge="right"
       >
-        <div className="tree-workspace-action-drawer__header">
-          <p>Thao tác với cây</p>
+        <div className="tree-workspace-action-drawer__chrome">
+          <p className="tree-workspace-action-drawer__eyebrow">Thao tác với cây</p>
           <h2>Thao tác khác</h2>
         </div>
-        <ContextualCoachMarks
-          chapter="actions"
-          role={guidanceRole}
-          steps={ACTION_COACH_STEPS}
-          enabled={isActionsOpen}
-          helpHref={helpHref}
-        />
-        <div className="tree-workspace-action-drawer__list">
-          <button
-            type="button"
-            aria-label="Tìm người"
-            data-guidance-anchor="actions-search-viewpoint"
-            onClick={() => closeActionDrawerAnd(() => setIsSearchOpen(true))}
+        <div className="tree-workspace-action-drawer__content">
+          <ContextualCoachMarks
+            chapter="actions"
+            role={guidanceRole}
+            steps={ACTION_COACH_STEPS}
+            enabled={isActionsOpen}
+            helpHref={helpHref}
+          />
+          <div
+            className="tree-workspace-action-drawer__body"
+            data-panel-scroll-region="actions"
           >
-            <SearchIcon size={20} />
-            <span><strong>Tìm người</strong><small>Tìm theo tên, vai vế hoặc bộ lọc</small></span>
-          </button>
-          <button
-            type="button"
-            aria-label="Đổi góc nhìn"
-            onClick={() => closeActionDrawerAnd(() => setIsViewpointOpen(true))}
-          >
-            <CenterIcon size={20} />
-            <span><strong>Đổi góc nhìn</strong><small>Tính lại cách xưng hô từ một người khác</small></span>
-          </button>
-          <button
-            type="button"
-            aria-label="Mở hướng dẫn nhanh"
-            onClick={() => reopenGuidanceChapter("actions")}
-          >
-            <LightbulbIcon size={20} />
-            <span><strong>Mở hướng dẫn nhanh</strong><small>Phát lại hướng dẫn trong ngăn thao tác này</small></span>
-          </button>
-          <a href={helpHref} aria-label="Trung tâm hướng dẫn" data-guidance-anchor="actions-manage-help">
-            <LightbulbIcon size={20} />
-            <span><strong>Trung tâm hướng dẫn</strong><small>Xem hướng dẫn đầy đủ theo việc đang làm</small></span>
-          </a>
+            <p className="tree-workspace-action-drawer__description">
+              Tìm người, đổi góc nhìn hoặc quản lý cây gia phả.
+            </p>
+            <div className="tree-workspace-action-drawer__list">
+              <button
+                type="button"
+                aria-label="Tìm người"
+                data-guidance-anchor="actions-search-viewpoint"
+                onClick={() => closeActionDrawerAnd(() => setIsSearchOpen(true))}
+              >
+                <SearchIcon size={20} />
+                <span><strong>Tìm người</strong><small>Tìm theo tên, vai vế hoặc bộ lọc</small></span>
+              </button>
+              <button
+                type="button"
+                aria-label="Đổi góc nhìn"
+                onClick={() => closeActionDrawerAnd(() => setIsViewpointOpen(true))}
+              >
+                <CenterIcon size={20} />
+                <span><strong>Đổi góc nhìn</strong><small>Tính lại cách xưng hô từ một người khác</small></span>
+              </button>
+              <button
+                type="button"
+                aria-label="Mở hướng dẫn nhanh"
+                onClick={() => reopenGuidanceChapter("actions")}
+              >
+                <LightbulbIcon size={20} />
+                <span><strong>Mở hướng dẫn nhanh</strong><small>Phát lại hướng dẫn trong ngăn thao tác này</small></span>
+              </button>
+              <a href={helpHref} aria-label="Trung tâm hướng dẫn" data-guidance-anchor="actions-manage-help">
+                <LightbulbIcon size={20} />
+                <span><strong>Trung tâm hướng dẫn</strong><small>Xem hướng dẫn đầy đủ theo việc đang làm</small></span>
+              </a>
 
-          {canEditSelected ? (
-            <button
-              type="button"
-              aria-label="Sửa người đang chọn"
-              data-guidance-anchor="actions-edit-add"
-              onClick={() => closeActionDrawerAnd(() => {
-                setAddRelativeMode(false);
-                setCreateMode(false);
-                setEditMode(true);
-              })}
-            >
-              <EditIcon size={20} />
-              <span><strong>Sửa người đang chọn</strong><small>{selectedPerson?.displayName}</small></span>
-            </button>
-          ) : null}
-          {capabilities.editContent ? (
-            <button
-              type="button"
-              aria-label="Thêm thành viên khác"
-              data-guidance-anchor={canEditSelected ? undefined : "actions-edit-add"}
-              onClick={() => closeActionDrawerAnd(() => {
-                setSelectedId(null);
-                setAddRelativeMode(false);
-                setEditMode(false);
-                setCreateMode(true);
-              })}
-            >
-              <PlusIcon size={20} />
-              <span><strong>Thêm thành viên khác</strong><small>Thêm người chưa có quan hệ trực tiếp</small></span>
-            </button>
-          ) : null}
-          {capabilities.manageTree ? (
-            <button type="button" aria-label="Cài đặt cây" onClick={() => closeActionDrawerAnd(() => setIsSettingsOpen(true))}>
-              <SettingsIcon size={20} />
-              <span><strong>Cài đặt cây</strong><small>Tên cây, quyền riêng tư và hiển thị</small></span>
-            </button>
-          ) : null}
-          {user && capabilities.manageCollaboration ? (
-            <button type="button" aria-label="Cộng tác" onClick={() => closeActionDrawerAnd(() => setIsCollaborationOpen(true))}>
-              <CollaborationIcon size={20} />
-              <span><strong>Cộng tác</strong><small>Quản lý người cùng chỉnh sửa cây</small></span>
-            </button>
-          ) : null}
+              {canEditSelected ? (
+                <button
+                  type="button"
+                  aria-label="Sửa người đang chọn"
+                  data-guidance-anchor="actions-edit-add"
+                  onClick={() => closeActionDrawerAnd(() => {
+                    setAddRelativeMode(false);
+                    setCreateMode(false);
+                    setEditMode(true);
+                  })}
+                >
+                  <EditIcon size={20} />
+                  <span><strong>Sửa người đang chọn</strong><small>{selectedPerson?.displayName}</small></span>
+                </button>
+              ) : null}
+              {capabilities.editContent ? (
+                <button
+                  type="button"
+                  aria-label="Thêm thành viên khác"
+                  data-guidance-anchor={canEditSelected ? undefined : "actions-edit-add"}
+                  onClick={() => closeActionDrawerAnd(() => {
+                    setSelectedId(null);
+                    setAddRelativeMode(false);
+                    setEditMode(false);
+                    setCreateMode(true);
+                  })}
+                >
+                  <PlusIcon size={20} />
+                  <span><strong>Thêm thành viên khác</strong><small>Thêm người chưa có quan hệ trực tiếp</small></span>
+                </button>
+              ) : null}
+              {capabilities.manageTree ? (
+                <button type="button" aria-label="Cài đặt cây" onClick={() => closeActionDrawerAnd(() => setIsSettingsOpen(true))}>
+                  <SettingsIcon size={20} />
+                  <span><strong>Cài đặt cây</strong><small>Tên cây, quyền riêng tư và hiển thị</small></span>
+                </button>
+              ) : null}
+              {user && capabilities.manageCollaboration ? (
+                <button type="button" aria-label="Cộng tác" onClick={() => closeActionDrawerAnd(() => setIsCollaborationOpen(true))}>
+                  <CollaborationIcon size={20} />
+                  <span><strong>Cộng tác</strong><small>Quản lý người cùng chỉnh sửa cây</small></span>
+                </button>
+              ) : null}
+            </div>
+          </div>
         </div>
       </CGPDrawer>
 

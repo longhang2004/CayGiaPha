@@ -10,11 +10,24 @@ export interface ContextualCoachMarksProps extends UseCoachMarkSequenceOptions {
   className?: string;
 }
 
-export function ContextualCoachMarks({ className, ...options }: ContextualCoachMarksProps) {
-  const sequence = useCoachMarkSequence(options);
+export function ContextualCoachMarks({
+  className,
+  chapter,
+  ...options
+}: ContextualCoachMarksProps) {
+  const sequence = useCoachMarkSequence({ chapter, ...options });
   const contextualClassName = ["workspace-coach--contextual", className]
     .filter(Boolean)
     .join(" ");
 
-  return <CoachMarkCard sequence={sequence} className={contextualClassName} />;
+  if (!sequence.active) return null;
+
+  return (
+    <div
+      className={`workspace-coach-layer workspace-coach-layer--${chapter}`}
+      data-coach-layer={chapter}
+    >
+      <CoachMarkCard sequence={sequence} className={contextualClassName} />
+    </div>
+  );
 }
