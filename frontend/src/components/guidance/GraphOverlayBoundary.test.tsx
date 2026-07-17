@@ -10,8 +10,11 @@ class MockMutationObserver {
 }
 
 function Probe() {
-  const { safeRect } = useGraphOverlay();
-  return <output data-testid="safe-rect">{JSON.stringify(safeRect)}</output>;
+  const { safeRect, spotlightLayer } = useGraphOverlay();
+  return <>
+    <output data-testid="safe-rect">{JSON.stringify(safeRect)}</output>
+    <output data-testid="spotlight-ready">{String(Boolean(spotlightLayer))}</output>
+  </>;
 }
 
 describe("GraphOverlayBoundary", () => {
@@ -39,6 +42,9 @@ describe("GraphOverlayBoundary", () => {
     await waitFor(() => expect(screen.getByTestId("safe-rect")).toHaveTextContent('"right":908'));
     expect(screen.getByTestId("safe-rect")).toHaveTextContent('"bottom":688');
     expect(screen.getByTestId("safe-rect")).toHaveTextContent('"top":72');
+    expect(document.querySelector(".root")).toHaveStyle({
+      "--graph-coach-bottom-inset": "100px",
+    });
   });
 
   it("remeasures when responsive safe-area exclusions mount after hydration", () => {
@@ -53,5 +59,16 @@ describe("GraphOverlayBoundary", () => {
       childList: true,
       subtree: true,
     }));
+  });
+
+  it("provides a full-root spotlight layer separately from the safe card layer", async () => {
+    render(
+      <GraphOverlayBoundary className="root" overlay={<Probe />}>
+        <div>Workspace</div>
+      </GraphOverlayBoundary>,
+    );
+
+    expect(screen.getByTestId("graph-spotlight-layer")).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByTestId("spotlight-ready")).toHaveTextContent("true"));
   });
 });

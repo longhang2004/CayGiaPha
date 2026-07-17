@@ -84,7 +84,12 @@ async function expectWithinViewport(locator: Locator) {
       current.getAnimations().forEach((animation) => animations.add(animation));
       current = current.parentElement;
     }
-    await Promise.all(Array.from(animations).map((animation) => animation.finished.catch(() => undefined)));
+    await Promise.race([
+      Promise.all(
+        Array.from(animations).map((animation) => animation.finished.catch(() => undefined)),
+      ),
+      new Promise<void>((resolve) => window.setTimeout(resolve, 500)),
+    ]);
   });
   const geometry = await locator.evaluate((element) => {
     const rect = element.getBoundingClientRect();
@@ -97,13 +102,101 @@ async function expectWithinViewport(locator: Locator) {
       viewportHeight: window.innerHeight,
     };
   });
+  const roundingTolerance = 1;
   expect(
-    geometry.top >= 0 &&
-      geometry.left >= 0 &&
-      geometry.bottom <= geometry.viewportHeight &&
-      geometry.right <= geometry.viewportWidth,
+    geometry.top >= -roundingTolerance &&
+      geometry.left >= -roundingTolerance &&
+      geometry.bottom <= geometry.viewportHeight + roundingTolerance &&
+      geometry.right <= geometry.viewportWidth + roundingTolerance,
     `Coach geometry must stay within the viewport: ${JSON.stringify(geometry)}`,
   ).toBe(true);
+}
+
+async function expectCoachTargetsHighlightedControl(coach: Locator) {
+  await expectWithinViewport(coach);
+  const geometry = await coach.evaluate(async (card) => {
+    const target = document.querySelector<HTMLElement>('[data-guidance-highlight="true"]');
+    const cutout = document.querySelector<HTMLElement>("[data-coach-spotlight-cutout]");
+    const panes = Array.from(
+      document.querySelectorAll<HTMLElement>("[data-coach-spotlight-pane]"),
+    );
+    const primary = Array.from(card.querySelectorAll<HTMLButtonElement>("button")).at(-1);
+    primary?.scrollIntoView({ block: "nearest", inline: "nearest" });
+    await new Promise<void>((resolve) => {
+      requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
+    });
+    const toBox = (element: Element) => {
+      const rect = element.getBoundingClientRect();
+      return {
+        top: rect.top,
+        right: rect.right,
+        bottom: rect.bottom,
+        left: rect.left,
+        width: rect.width,
+        height: rect.height,
+      };
+    };
+    if (!target || !cutout || !primary) return null;
+    const cardBox = toBox(card);
+    const targetBox = toBox(target);
+    const cutoutBox = toBox(cutout);
+    const primaryBox = toBox(primary);
+    const hit = document.elementFromPoint(
+      primaryBox.left + primaryBox.width / 2,
+      primaryBox.top + primaryBox.height / 2,
+    );
+    const overlapWidth = Math.max(
+      0,
+      Math.min(cardBox.right, targetBox.right) - Math.max(cardBox.left, targetBox.left),
+    );
+    const overlapHeight = Math.max(
+      0,
+      Math.min(cardBox.bottom, targetBox.bottom) - Math.max(cardBox.top, targetBox.top),
+    );
+    return {
+      cardBox,
+      targetBox,
+      cutoutBox,
+      primaryBox,
+      overlapArea: overlapWidth * overlapHeight,
+      paneCount: panes.length,
+      panesIgnorePointers: panes.every(
+        (pane) => getComputedStyle(pane).pointerEvents === "none",
+      ),
+      cutoutIgnoresPointers: getComputedStyle(cutout).pointerEvents === "none",
+      primaryHit: hit === primary || primary.contains(hit),
+      hitTag: hit?.tagName ?? null,
+      hitClass: hit instanceof HTMLElement ? hit.className : null,
+      hitAriaLabel: hit?.getAttribute("aria-label") ?? null,
+      inlineTop: (card as HTMLElement).style.top,
+      inlineBottom: (card as HTMLElement).style.bottom,
+      horizontalOverflow:
+        document.documentElement.scrollWidth - document.documentElement.clientWidth,
+      viewportWidth: window.innerWidth,
+      viewportHeight: window.innerHeight,
+    };
+  });
+
+  expect(geometry).not.toBeNull();
+  expect(geometry!.overlapArea).toBe(0);
+  expect(geometry!.paneCount).toBe(4);
+  expect(geometry!.panesIgnorePointers).toBe(true);
+  expect(geometry!.cutoutIgnoresPointers).toBe(true);
+  expect(
+    geometry!.primaryHit,
+    `Coach primary control must be the top hit target: ${JSON.stringify(geometry)}`,
+  ).toBe(true);
+  expect(geometry!.inlineTop).not.toBe("");
+  expect(geometry!.inlineBottom).toBe("auto");
+  expect(geometry!.horizontalOverflow).toBeLessThanOrEqual(1);
+  expect(geometry!.targetBox.top).toBeGreaterThanOrEqual(-1);
+  expect(geometry!.targetBox.left).toBeGreaterThanOrEqual(-1);
+  expect(geometry!.targetBox.right).toBeLessThanOrEqual(geometry!.viewportWidth + 1);
+  expect(geometry!.targetBox.bottom).toBeLessThanOrEqual(geometry!.viewportHeight + 1);
+  expect(geometry!.cutoutBox.top).toBeLessThanOrEqual(geometry!.targetBox.top + 1);
+  expect(geometry!.cutoutBox.left).toBeLessThanOrEqual(geometry!.targetBox.left + 1);
+  expect(geometry!.cutoutBox.right).toBeGreaterThanOrEqual(geometry!.targetBox.right - 1);
+  expect(geometry!.cutoutBox.bottom).toBeGreaterThanOrEqual(geometry!.targetBox.bottom - 1);
 }
 
 const PROTOTYPE_PAGES = [
@@ -343,8 +436,9 @@ test.describe("Prototype Pages — smoke tests (no auth required)", () => {
     await actionDialog.getByRole("button", { name: "Mở hướng dẫn nhanh" }).click();
     await expectWithinViewport(actionDialog.locator('[data-coach-layer="actions"]'));
     const actionCoach = actionDialog.getByRole("dialog", { name: "Hướng dẫn nhanh" });
-    await expectWithinViewport(actionCoach);
+    await expectCoachTargetsHighlightedControl(actionCoach);
     await actionCoach.getByRole("button", { name: "Tiếp theo" }).click();
+    await expectCoachTargetsHighlightedControl(actionCoach);
     await page.keyboard.press("Escape");
     await actionDialog.getByRole("button", { name: "Đóng thao tác khác" }).click();
 
@@ -352,7 +446,7 @@ test.describe("Prototype Pages — smoke tests (no auth required)", () => {
     const personPanel = page.locator('.side-panel[data-panel-mode="view"]');
     await expectWithinViewport(personPanel.locator('[data-coach-layer="person"]'));
     const personCoach = personPanel.getByRole("dialog", { name: "Hướng dẫn nhanh" });
-    await expectWithinViewport(personCoach);
+    await expectCoachTargetsHighlightedControl(personCoach);
     await personCoach.getByRole("button", { name: "Tiếp theo" }).click();
     expect(
       await page.evaluate(() => document.documentElement.scrollWidth),
@@ -537,6 +631,51 @@ test.describe("Prototype Pages — smoke tests (no auth required)", () => {
     await page.getByRole("checkbox", { name: /Chính sách bảo mật/i }).press("Space");
     await expect(page.locator('button[type="submit"]')).toBeEnabled();
   });
+
+  for (const viewport of [
+    { name: "compact-mobile", width: 320, height: 568 },
+    { name: "mobile", width: 375, height: 667 },
+    { name: "tablet", width: 768, height: 1024 },
+    { name: "desktop", width: 1280, height: 800 },
+  ]) {
+    test(`every populated-workspace Coach step targets without overlap on ${viewport.name}`, async ({ page }) => {
+      await page.addInitScript(() => localStorage.removeItem("cgp_guidance_v2"));
+      await page.setViewportSize({ width: viewport.width, height: viewport.height });
+      await page.goto("/prototype/tree");
+
+      const completeCoach = async (scope: Page | Locator) => {
+        for (let guard = 0; guard < 6; guard += 1) {
+          const coach = scope.getByRole("dialog", { name: "Hướng dẫn nhanh" });
+          await expectCoachTargetsHighlightedControl(coach);
+          const complete = coach.getByRole("button", { name: "Hoàn tất" });
+          if (await complete.count()) {
+            await complete.click();
+            return;
+          }
+          await coach.getByRole("button", { name: "Tiếp theo" }).click();
+        }
+        throw new Error("Coach sequence exceeded its maximum expected step count");
+      };
+
+      await completeCoach(page);
+
+      await page.getByRole("button", { name: "Thao tác khác" }).click();
+      const actionDrawer = page.getByRole("dialog", { name: "Thao tác khác" });
+      await completeCoach(actionDrawer);
+      await actionDrawer.getByRole("button", { name: "Đóng thao tác khác" }).click();
+
+      const graphTab = page.getByRole("tab", { name: "Sơ đồ" });
+      if (await graphTab.isVisible()) await graphTab.click();
+      await page.getByRole("button", { name: "Điều khiển sơ đồ" }).click();
+      await completeCoach(page);
+
+      const listTab = page.getByRole("tab", { name: "Danh sách" });
+      if (await listTab.isVisible()) await listTab.click();
+      await page.getByRole("button", { name: "Chọn Hàng Hữu Phương" }).click();
+      const personPanel = page.locator('.side-panel[data-panel-mode="view"]');
+      await completeCoach(personPanel);
+    });
+  }
 
   for (const viewport of [
     { name: "desktop", width: 1280, height: 800 },

@@ -46,11 +46,12 @@ describe("TreePeopleListView", () => {
       />
     );
 
-    expect(document.querySelector('[data-guidance-anchor="workspace-person-list"]')).toHaveClass(
-      "tree-people-list",
-    );
-
     const pBtn = screen.getByRole("button", { name: /Chọn My Father/i });
+    expect(pBtn).toHaveAttribute("data-guidance-anchor", "workspace-person-list");
+    expect(document.querySelectorAll('[data-guidance-anchor="workspace-person-list"]')).toHaveLength(1);
+    expect(document.querySelector(".tree-people-list")).not.toHaveAttribute(
+      "data-guidance-anchor",
+    );
     await userEvent.click(pBtn);
 
     expect(onSelectPerson).toHaveBeenCalledWith("father");

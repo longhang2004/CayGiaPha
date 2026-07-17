@@ -622,6 +622,10 @@ describe("TreeGraph renderer", () => {
     expect(controlsToggle).toHaveAttribute("aria-expanded", "false");
     await userEvent.click(controlsToggle);
     expect(controlsToggle).toHaveAttribute("aria-expanded", "true");
+    expect(document.querySelector(".tree-graph__nav-controls")).toHaveAttribute(
+      "data-panel-scroll-region",
+      "graph-controls",
+    );
 
     const zoomInBtn = screen.getByTitle("Phóng to");
     const zoomOutBtn = screen.getByTitle("Thu nhỏ");
@@ -772,7 +776,7 @@ describe("TreeGraph renderer", () => {
     expect(fullHelp).toHaveTextContent("Hướng dẫn đầy đủ");
   });
 
-  it("uses a four-column primary grid and a dedicated floating graph Coach layer", () => {
+  it("uses a four-column primary grid and a full-surface graph Coach layer", () => {
     expect(GRAPH_CSS).toMatch(
       /\.tree-graph__nav-grid\s*\{[^}]*display:\s*grid[^}]*grid-template-columns:\s*repeat\(4,\s*minmax\(0,\s*1fr\)\)/s,
     );
@@ -783,10 +787,13 @@ describe("TreeGraph renderer", () => {
       /\.tree-graph__nav-shell\s*\{[^}]*position:\s*absolute[^}]*inset:\s*0[^}]*pointer-events:\s*none/s,
     );
     expect(GRAPH_CSS).toMatch(
-      /\.workspace-coach-layer--graph\s*\{[^}]*position:\s*absolute[^}]*top:\s*0\.75rem[^}]*right:\s*0\.75rem[^}]*bottom:\s*auto/s,
+      /\.workspace-coach-layer--graph\s*\{[^}]*position:\s*absolute[^}]*inset:\s*0 0 var\(--graph-coach-bottom-inset,\s*0\)[^}]*z-index:\s*31[^}]*pointer-events:\s*none/s,
     );
     expect(GRAPH_CSS).toMatch(
-      /@container tree-surface \(min-width: 960px\)[\s\S]*?\.tree-graph__nav-palette\s*\{[^}]*top:\s*0\.75rem[^}]*right:\s*0\.75rem[^}]*bottom:\s*auto[\s\S]*?\.workspace-coach-layer--graph\s*\{[^}]*right:\s*auto[^}]*left:\s*0\.75rem[^}]*width:\s*min\(21rem,\s*calc\(100%\s*-\s*23\.25rem\)\)/,
+      /@container tree-surface \(min-width: 960px\)[\s\S]*?\.tree-graph__nav-palette\s*\{[^}]*top:\s*0\.75rem[^}]*right:\s*0\.75rem[^}]*bottom:\s*auto/,
+    );
+    expect(GRAPH_CSS).not.toMatch(
+      /@container tree-surface \(min-width: 960px\)[\s\S]*?\.workspace-coach-layer--graph\s*\{/,
     );
     expect(GRAPH_CSS).not.toMatch(/\.tree-graph__nav-shell:has\(/);
   });

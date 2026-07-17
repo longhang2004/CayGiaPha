@@ -583,6 +583,12 @@ against the active Next.js code and current tests.
       exact 4×2 graph-control grid while keeping desktop compact. Preserve capability, privacy, API,
       and graph-engine behavior; reuse production components in `/prototype/tree` and cover
       responsive scroll ownership in targeted tests and the three-viewport audit.
+  - [x] 26.8 Measure Coach placement and add target spotlighting
+    - Share measured preferred/flip/best-fit placement across overview, actions, graph, and person;
+      keep cards 12px from compact anchors and safe edges; auto-scroll only the nearest marked panel;
+      add a non-interactive four-pane spotlight; and keep card controls usable with a scrolling body
+      at mobile, tablet, desktop, and representative 200% text scale layouts. Preserve lifecycle,
+      capability, privacy, persistence, focus restoration, Help copy, and production/prototype reuse.
 
 - [x] 27. Southern ordinal address display and relationship-line integrity
   - [x] 27.1 Carry display-only ordinal context through canonical and address resolution

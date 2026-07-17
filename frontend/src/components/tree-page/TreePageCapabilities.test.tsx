@@ -22,7 +22,20 @@ vi.mock("./TreePersonPicker", () => ({
   TreePersonPicker: ({ isOpen }: { isOpen: boolean }) => isOpen ? <div role="dialog" aria-label="Chọn người để xét vai vế" /> : null,
 }));
 vi.mock("@/components/graph/PersonInfoPanel", () => ({
-  PersonInfoPanel: ({ person }: { person: Person }) => <div>{person.displayName}</div>,
+  PersonInfoPanel: ({
+    person,
+    addressGuidanceAnchor,
+  }: {
+    person: Person;
+    addressGuidanceAnchor?: string;
+  }) => (
+    <div
+      className="person-info__address-callout"
+      data-guidance-anchor={addressGuidanceAnchor}
+    >
+      {person.displayName}
+    </div>
+  ),
 }));
 vi.mock("@/components/person/PersonForm", () => ({ PersonForm: () => <div>Biểu mẫu thành viên</div> }));
 vi.mock("@/components/person/AddRelativeForm", () => ({ AddRelativeForm: () => <div>Biểu mẫu quan hệ</div> }));
@@ -382,30 +395,27 @@ describe("tree workspace capability-driven actions", () => {
       expect(panel?.querySelector('[data-panel-scroll-region="person"]')?.contains(coachLayer)).toBe(false);
       expect(coach).toHaveTextContent(`Bước 1 / ${expectedCount}`);
       expect(coach).toHaveTextContent("Xem thông tin và cách xưng hô");
-      expect(document.querySelector('[data-guidance-anchor="person-info-address"]')).toHaveAttribute(
-        "data-guidance-highlight",
-        "true",
-      );
+      const addressAnchor = document.querySelector('[data-guidance-anchor="person-info-address"]');
+      expect(addressAnchor).toHaveClass("person-info__address-callout");
+      expect(addressAnchor).toHaveAttribute("data-guidance-highlight", "true");
 
       await userEvent.click(within(coach).getByRole("button", { name: "Tiếp theo" }));
       coach = screen.getByRole("dialog", { name: "Hướng dẫn nhanh" });
       if (hasActionStep) {
         expect(coach).toHaveTextContent(`Bước 2 / ${expectedCount}`);
         expect(coach).toHaveTextContent("Sửa thông tin và thêm thành viên");
-        expect(document.querySelector('[data-guidance-anchor="person-actions"]')).toHaveAttribute(
-          "data-guidance-highlight",
-          "true",
-        );
+        const actionsAnchor = document.querySelector('[data-guidance-anchor="person-actions"]');
+        expect(actionsAnchor).toHaveClass("person-actions");
+        expect(actionsAnchor).toHaveAttribute("data-guidance-highlight", "true");
         await userEvent.click(within(coach).getByRole("button", { name: "Tiếp theo" }));
         coach = screen.getByRole("dialog", { name: "Hướng dẫn nhanh" });
       }
 
       expect(coach).toHaveTextContent(`Bước ${expectedCount} / ${expectedCount}`);
       expect(coach).toHaveTextContent("Lưu ảnh kỷ niệm cho thành viên");
-      expect(document.querySelector('[data-guidance-anchor="person-claim-photos"]')).toHaveAttribute(
-        "data-guidance-highlight",
-        "true",
-      );
+      const photosAnchor = document.querySelector('[data-guidance-anchor="person-claim-photos"]');
+      expect(photosAnchor).toHaveClass("person-detail-section__header");
+      expect(photosAnchor).toHaveAttribute("data-guidance-highlight", "true");
       expect(context.setEditMode).not.toHaveBeenCalled();
       expect(context.setAddRelativeMode).not.toHaveBeenCalled();
       expect(context.setEgoId).not.toHaveBeenCalled();

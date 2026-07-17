@@ -7,6 +7,7 @@ export interface PersonInfoPanelProps {
   address: Address | undefined;
   loading?: boolean;
   hideHeading?: boolean;
+  addressGuidanceAnchor?: string;
 }
 
 const GENDER_LABEL: Record<string, string> = {
@@ -14,7 +15,14 @@ const GENDER_LABEL: Record<string, string> = {
   female: "Nữ",
 };
 
-export function PersonInfoPanel({ person, ego, address, loading, hideHeading = false }: PersonInfoPanelProps) {
+export function PersonInfoPanel({
+  person,
+  ego,
+  address,
+  loading,
+  hideHeading = false,
+  addressGuidanceAnchor,
+}: PersonInfoPanelProps) {
   if (loading) {
     return (
       <aside className="person-info person-info--loading" aria-live="polite" aria-busy="true">
@@ -81,7 +89,10 @@ export function PersonInfoPanel({ person, ego, address, loading, hideHeading = f
               <dd>{person.deceased ? "Đã qua đời" : "Còn sống"}</dd>
             </div>
           ) : null}
-          <div className="person-info__address-callout">
+          <div
+            className="person-info__address-callout"
+            data-guidance-anchor={addressGuidanceAnchor}
+          >
             <dt>Cách xưng hô</dt>
             <dd data-address data-unresolved={unresolved ? "true" : "false"}>
               {isSelf ? "Bản thân" : capitalize(addressLabel(address))}

@@ -1,6 +1,6 @@
 import { act, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   GUIDANCE_REOPEN_EVENT,
   GUIDANCE_STORAGE_KEY,
@@ -26,6 +26,20 @@ const GRAPH_STEP: CoachStep = {
   anchorIds: ["graph"],
   preferredPlacement: "left",
 };
+
+class MockResizeObserver { observe() {} disconnect() {} }
+
+const domRect = (left: number, top: number, width: number, height: number) => ({
+  left,
+  top,
+  right: left + width,
+  bottom: top + height,
+  width,
+  height,
+  x: left,
+  y: top,
+  toJSON: () => ({}),
+}) as DOMRect;
 
 function createStorage(initial?: unknown) {
   const values = new Map<string, string>();
@@ -67,6 +81,13 @@ async function flushEffects() {
 describe("CoachMarkSequence", () => {
   beforeEach(() => {
     window.localStorage.clear();
+    vi.stubGlobal("ResizeObserver", MockResizeObserver);
+    vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockImplementation(function (this: HTMLElement) {
+      if (this.classList.contains("workspace-coach-layer")) return domRect(0, 0, 500, 500);
+      if (this.classList.contains("workspace-coach")) return domRect(0, 0, 240, 160);
+      if (this.hasAttribute("data-guidance-anchor")) return domRect(200, 100, 100, 48);
+      return domRect(0, 0, 0, 0);
+    });
   });
 
   it("auto-starts an undecided chapter once and stays closed after completion", async () => {
@@ -90,6 +111,7 @@ describe("CoachMarkSequence", () => {
       "workspace-coach-layer",
       "workspace-coach-layer--overview",
     );
+    await waitFor(() => expect(document.querySelectorAll("[data-coach-spotlight-pane]")).toHaveLength(4));
     expect(screen.getByRole("link", { name: "Xem hướng dẫn" })).toHaveAttribute(
       "href",
       "/help#doi-diem-nhin",

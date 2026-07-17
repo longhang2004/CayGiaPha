@@ -128,7 +128,11 @@ export function TreeGraphNavControls({
           <span>Điều khiển sơ đồ</span>
         </button>
 
-        <div id="tree-graph-navigation-controls" className="tree-graph__nav-controls">
+        <div
+          id="tree-graph-navigation-controls"
+          className="tree-graph__nav-controls"
+          data-panel-scroll-region="graph-controls"
+        >
         <div className="tree-graph__nav-grid">
           <button
             type="button"

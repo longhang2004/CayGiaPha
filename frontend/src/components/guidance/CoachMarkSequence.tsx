@@ -2,6 +2,7 @@
 
 import {
   type CSSProperties,
+  type Ref,
   type RefObject,
   useCallback,
   useEffect,
@@ -67,6 +68,8 @@ export interface CoachMarkCardProps {
   sequence: CoachMarkSequenceState;
   className?: string;
   style?: CSSProperties;
+  cardRef?: Ref<HTMLElement>;
+  placement?: CoachMarkPlacement;
 }
 
 function resolveStorage(storage?: Storage) {
@@ -266,15 +269,23 @@ export function useCoachMarkSequence({
   };
 }
 
-export function CoachMarkCard({ sequence, className, style }: CoachMarkCardProps) {
+export function CoachMarkCard({
+  sequence,
+  className,
+  style,
+  cardRef,
+  placement,
+}: CoachMarkCardProps) {
   const topic = sequence.currentTopic;
   if (!sequence.active || !topic) return null;
   const cardClassName = ["workspace-coach", className].filter(Boolean).join(" ");
 
   return (
     <section
+      ref={cardRef}
       className={cardClassName}
       style={style}
+      data-coach-placement={placement}
       role="dialog"
       aria-label="Hướng dẫn nhanh"
       aria-modal="false"
@@ -290,8 +301,10 @@ export function CoachMarkCard({ sequence, className, style }: CoachMarkCardProps
       >
         Bỏ qua
       </button>
-      <h2>{topic.title}</h2>
-      <p>{topic.excerpts.contextual ?? topic.summary}</p>
+      <div className="workspace-coach__body">
+        <h2>{topic.title}</h2>
+        <p>{topic.excerpts.contextual ?? topic.summary}</p>
+      </div>
       <div className="workspace-coach__actions">
         <a href={`${sequence.helpHref}#${topic.id}`}>Xem hướng dẫn</a>
         {!sequence.isFirst ? (

@@ -17,20 +17,33 @@ const overlayMock = vi.hoisted(() => ({
     width: 1000,
     height: 800,
   },
-  getPlacement: vi.fn((anchorId: string, preferredPlacement?: string) => ({
-    style: { left: 20, top: 20, width: 340 },
-    target: document.querySelector(`[data-guidance-anchor="${anchorId}"]`),
-    fallback: false,
-    preferredPlacement,
-  })),
+  root: null as HTMLElement | null,
+  layer: null as HTMLElement | null,
+  spotlightLayer: null as HTMLElement | null,
 }));
 
 vi.mock("./GraphOverlayBoundary", () => ({
   useGraphOverlay: () => ({
     safeRect: overlayMock.safeRect,
-    getPlacement: overlayMock.getPlacement,
+    root: overlayMock.root,
+    layer: overlayMock.layer,
+    spotlightLayer: overlayMock.spotlightLayer,
   }),
 }));
+
+class MockResizeObserver { observe() {} disconnect() {} }
+
+const domRect = (left: number, top: number, width: number, height: number) => ({
+  left,
+  top,
+  right: left + width,
+  bottom: top + height,
+  width,
+  height,
+  x: left,
+  y: top,
+  toJSON: () => ({}),
+}) as DOMRect;
 
 interface AnchorProps {
   includeTabs?: boolean;
@@ -71,6 +84,7 @@ async function waitForOverviewReady() {
 describe("WorkspaceCoachMarks", () => {
   beforeEach(() => {
     localStorage.clear();
+    vi.stubGlobal("ResizeObserver", MockResizeObserver);
     overlayMock.safeRect = {
       left: 0,
       top: 0,
@@ -79,7 +93,26 @@ describe("WorkspaceCoachMarks", () => {
       width: 1000,
       height: 800,
     };
-    overlayMock.getPlacement.mockClear();
+    overlayMock.root?.remove();
+    overlayMock.root = document.createElement("div");
+    overlayMock.layer = document.createElement("div");
+    overlayMock.spotlightLayer = document.createElement("div");
+    overlayMock.root.append(overlayMock.spotlightLayer, overlayMock.layer);
+    document.body.append(overlayMock.root);
+    vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockImplementation(function (this: HTMLElement) {
+      if (this === overlayMock.root) return domRect(0, 0, 1000, 800);
+      if (this === overlayMock.layer) {
+        return domRect(
+          overlayMock.safeRect.left,
+          overlayMock.safeRect.top,
+          overlayMock.safeRect.width,
+          overlayMock.safeRect.height,
+        );
+      }
+      if (this.classList.contains("workspace-coach")) return domRect(0, 0, 340, 280);
+      if (this.hasAttribute("data-guidance-anchor")) return domRect(200, 100, 120, 48);
+      return domRect(0, 0, 0, 0);
+    });
   });
 
   it("runs the exact five-step overview and records schema-5 chapter completion", async () => {
@@ -96,14 +129,18 @@ describe("WorkspaceCoachMarks", () => {
       ["Đổi người xét", "workspace-viewpoint", "bottom"],
       ["Tìm người và di chuyển trên sơ đồ", "workspace-tabs", "bottom"],
       ["Xem thông tin và cách xưng hô", "workspace-person-list", "right"],
-      ["Làm quen với các thao tác trong cây", "workspace-actions", "top"],
+      ["Làm quen với các thao tác trong cây", "workspace-actions", "bottom"],
     ] as const;
 
     for (const [index, [title, anchorId, placement]] of expected.entries()) {
       const dialog = await screen.findByRole("dialog", { name: "Hướng dẫn nhanh" });
       expect(dialog).toHaveTextContent(title);
       expect(dialog).toHaveTextContent(`Bước ${index + 1} / 5`);
-      expect(overlayMock.getPlacement).toHaveBeenLastCalledWith(anchorId, placement);
+      await waitFor(() => expect(dialog).toHaveAttribute("data-coach-placement", placement));
+      expect(document.querySelector(`[data-guidance-anchor="${anchorId}"]`)).toHaveAttribute(
+        "data-guidance-highlight",
+        "true",
+      );
       if (index === 0) {
         expect(screen.getByRole("link", { name: "Xem hướng dẫn" })).toHaveAttribute(
           "href",
@@ -149,7 +186,9 @@ describe("WorkspaceCoachMarks", () => {
       }));
     }
 
-    expect(overlayMock.getPlacement).toHaveBeenCalledWith("graph-person-node", "right");
+    expect(document.querySelector('[data-guidance-anchor="graph-person-node"]')).not.toHaveAttribute(
+      "data-guidance-highlight",
+    );
   });
 
   it("keeps a stored overview closed until a generic replay and preserves other chapters", async () => {
@@ -228,7 +267,7 @@ describe("WorkspaceCoachMarks", () => {
       "href",
       "/tro-giup#doi-diem-nhin",
     );
-    expect(overlayMock.getPlacement).toHaveBeenLastCalledWith("explicit-viewpoint", "bottom");
+    await waitFor(() => expect(dialog).toHaveAttribute("data-coach-placement", "bottom"));
   });
 
   it("renders and persists nothing when an explicit topic anchor is missing", async () => {
@@ -249,7 +288,7 @@ describe("WorkspaceCoachMarks", () => {
     expect(readGuidanceState(localStorage).workspaceCoach).toEqual({ version: 2, chapters: {} });
   });
 
-  it("closes for insufficient safe area without persisting and restarts when space returns", async () => {
+  it("constrains in a compact safe area, but closes when controls cannot fit", async () => {
     const view = render(
       <>
         <OverviewAnchors />
@@ -258,7 +297,16 @@ describe("WorkspaceCoachMarks", () => {
     );
 
     expect(await screen.findByRole("dialog", { name: "Hướng dẫn nhanh" })).toBeInTheDocument();
-    overlayMock.safeRect = { ...overlayMock.safeRect, bottom: 200, height: 200 };
+    overlayMock.safeRect = { ...overlayMock.safeRect, bottom: 240, height: 240 };
+    view.rerender(
+      <>
+        <OverviewAnchors />
+        <WorkspaceCoachMarks role="owner" storage={localStorage} />
+      </>,
+    );
+    expect(await screen.findByRole("dialog", { name: "Hướng dẫn nhanh" })).toBeInTheDocument();
+
+    overlayMock.safeRect = { ...overlayMock.safeRect, bottom: 100, height: 100 };
     view.rerender(
       <>
         <OverviewAnchors />
@@ -282,7 +330,7 @@ describe("WorkspaceCoachMarks", () => {
     );
   });
 
-  it("uses the mobile card class below 520 CSS pixels", async () => {
+  it("does not apply the stretching mobile inset below 520 CSS pixels", async () => {
     overlayMock.safeRect = {
       ...overlayMock.safeRect,
       right: 400,
@@ -295,8 +343,10 @@ describe("WorkspaceCoachMarks", () => {
       </>,
     );
 
-    expect(await screen.findByRole("dialog", { name: "Hướng dẫn nhanh" })).toHaveClass(
-      "workspace-coach--mobile",
-    );
+    const dialog = await screen.findByRole("dialog", { name: "Hướng dẫn nhanh" });
+    await waitFor(() => expect(dialog).toHaveAttribute("data-coach-placement", "bottom"));
+    expect(dialog).not.toHaveClass("workspace-coach--mobile");
+    expect(dialog.style.bottom).toBe("auto");
+    expect(dialog.style.right).toBe("auto");
   });
 });

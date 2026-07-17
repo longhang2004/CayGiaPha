@@ -241,26 +241,22 @@ export function TreePageSlidePanel() {
             />
           )}
         >
-          <div data-guidance-anchor="person-info-address">
-            <PersonInfoPanel
-              person={selectedPerson}
-              ego={selectedEgo}
-              address={selectedAddress}
-              loading={addressLoading}
-              hideHeading={true}
-            />
-          </div>
+          <PersonInfoPanel
+            person={selectedPerson}
+            ego={selectedEgo}
+            address={selectedAddress}
+            loading={addressLoading}
+            hideHeading={true}
+            addressGuidanceAnchor="person-info-address"
+          />
 
           {canEditSelected ? (
-            <section
-              className="person-detail-section person-detail-section--actions"
-              data-guidance-anchor="person-actions"
-            >
+            <section className="person-detail-section person-detail-section--actions">
               <div className="person-detail-section__header">
                 <h4>Thao tác với thành viên</h4>
                 <p>Sửa thông tin hoặc cập nhật quan hệ gia đình.</p>
               </div>
-              <div className="person-actions">
+              <div className="person-actions" data-guidance-anchor="person-actions">
                 <button type="button" className="btn" onClick={() => setEditMode(true)}>
                   Chỉnh sửa thông tin
                 </button>
@@ -316,11 +312,11 @@ export function TreePageSlidePanel() {
             </section>
           ) : null}
 
-          <section
-            className="person-detail-section"
-            data-guidance-anchor="person-claim-photos"
-          >
-            <div className="person-detail-section__header">
+          <section className="person-detail-section">
+            <div
+              className="person-detail-section__header"
+              data-guidance-anchor="person-claim-photos"
+            >
               <h4>Ảnh kỷ niệm</h4>
               <p>Lưu lại ảnh gia đình gắn với thành viên này.</p>
             </div>

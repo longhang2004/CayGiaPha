@@ -197,6 +197,18 @@ opens the action tray, changes tabs, expands graph controls, selects a person, o
 on the user's behalf. Steps resolve content from canonical Help topic IDs and skip missing anchors by
 viewport/capability.
 
+All four chapters use one measured anchor-placement engine. It observes the target, card, and owning
+surface; tries the preferred side, its opposite, then the side with the most usable space; and keeps
+12 CSS px between the card, target, and surface edge. The card has fixed progress/footer rows and an
+internally scrolling body, and receives a constrained maximum height only when its natural measured
+height cannot fit. Before placement, only the nearest marked panel scroll owner may be adjusted, with
+no smooth scrolling; the workspace/page outside that surface is never scrolled. Four non-interactive
+58%-black, 2px-blurred panes create an 8px-padded spotlight cutout around the active target. Overview
+cards remain in the graph-safe card layer while their spotlight covers the full workspace; action,
+graph, and person spotlights remain clipped to their owning content surfaces. Anchors identify a
+specific selectable person row, address callout, person action group, photo header, drawer action, or
+graph control rather than a large enclosing section.
+
 Completion, Skip, or Escape persists an independent chapter decision in schema-5
 `GuidanceState.workspaceCoach = { version: 2, chapters }`. Typed replay events reopen only the
 requested chapter without clearing other decisions; Settings retains the overview replay, while the

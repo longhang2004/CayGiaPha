@@ -136,6 +136,13 @@ not automatically page-overflow bugs.
 - Workspace drawers and person panels keep chrome fixed, clip at the surface root, and give exactly
   one internal body/list region ownership of scrolling. Contextual Coach cards render in an absolute
   layer outside that scroll region, so they do not push content rows.
+- Coach placement is measured rather than estimated: use the preferred/opposite/best-fit side, keep
+  12 CSS px from the compact target and owning surface, and constrain only the card body when natural
+  height cannot fit. Auto-scroll is immediate and limited to the nearest
+  `[data-panel-scroll-region]`; never scroll the outer workspace/page for Coach placement. The active
+  target remains interactive inside an 8px-padded cutout formed by four `pointer-events: none` panes
+  using 58% black and 2px backdrop blur. Overview uses the graph-safe card layer plus a full-workspace
+  spotlight; contextual spotlights are clipped to their action, graph, or person surface.
 - The viewpoint picker keeps search and count controls in fixed chrome and scrolls only its person
   list. Person view, create, edit, and add-relative modes share the side-panel chrome/body contract;
   normal actions remain grouped, the destructive action is separated, and the person surface has a

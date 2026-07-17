@@ -21,12 +21,11 @@ export interface GraphSafeRect {
   height: number;
 }
 
-type Placement = "top" | "bottom" | "left" | "right";
 interface OverlayContextValue {
   root: HTMLElement | null;
   layer: HTMLElement | null;
+  spotlightLayer: HTMLElement | null;
   safeRect: GraphSafeRect;
-  getPlacement: (anchorId: string, preferred?: Placement) => { style: CSSProperties; target: HTMLElement | null; fallback: boolean };
 }
 
 const EMPTY_RECT: GraphSafeRect = { left: 0, top: 0, right: 0, bottom: 0, width: 0, height: 0 };
@@ -41,13 +40,16 @@ interface BoundaryProps {
 export function GraphOverlayBoundary({ className, children, overlay }: BoundaryProps) {
   const rootRef = useRef<HTMLDivElement>(null);
   const layerRef = useRef<HTMLDivElement>(null);
+  const spotlightLayerRef = useRef<HTMLDivElement>(null);
   const [safeRect, setSafeRect] = useState(EMPTY_RECT);
+  const [rootHeight, setRootHeight] = useState(0);
   const [portalReady, setPortalReady] = useState(false);
 
   const measure = useCallback(() => {
     const root = rootRef.current;
     if (!root) return;
     const rootRect = root.getBoundingClientRect();
+    setRootHeight(rootRect.height);
     const padding = 12;
     let left = padding;
     let top = padding;
@@ -118,38 +120,34 @@ export function GraphOverlayBoundary({ className, children, overlay }: BoundaryP
     };
   }, [measure]);
 
-  const getPlacement = useCallback<OverlayContextValue["getPlacement"]>((anchorId, preferred = "bottom") => {
-    const root = rootRef.current;
-    const layer = layerRef.current;
-    const target = root?.querySelector<HTMLElement>(`[data-guidance-anchor="${anchorId}"]`) ?? null;
-    if (!root || !layer || !target || safeRect.width === 0) return { style: {}, target, fallback: true };
-    const layerRect = layer.getBoundingClientRect();
-    const targetRect = target.getBoundingClientRect();
-    const cardWidth = Math.min(340, safeRect.width);
-    const cardHeight = 280;
-    const gap = 12;
-    let x = targetRect.left - layerRect.left;
-    let y = targetRect.bottom - layerRect.top + gap;
-    if (preferred === "top") y = targetRect.top - layerRect.top - cardHeight - gap;
-    if (preferred === "left") x = targetRect.left - layerRect.left - cardWidth - gap;
-    if (preferred === "right") x = targetRect.right - layerRect.left + gap;
-    x = Math.max(0, Math.min(x, safeRect.width - cardWidth));
-    y = Math.max(0, Math.min(y, safeRect.height - cardHeight));
-    return { style: { left: x, top: y, width: cardWidth, maxHeight: Math.max(120, safeRect.height - y), overflow: "auto" }, target, fallback: false };
-  }, [safeRect]);
-
-  const value: OverlayContextValue = { root: rootRef.current, layer: layerRef.current, safeRect, getPlacement };
+  const value: OverlayContextValue = {
+    root: rootRef.current,
+    layer: layerRef.current,
+    spotlightLayer: spotlightLayerRef.current,
+    safeRect,
+  };
   const layerStyle = {
     left: safeRect.left,
     top: safeRect.top,
     width: safeRect.width,
     height: safeRect.height,
   };
+  const rootStyle = {
+    "--graph-coach-bottom-inset": `${safeRect.bottom > 0
+      ? Math.max(0, rootHeight - safeRect.bottom - 12)
+      : 0}px`,
+  } as CSSProperties;
 
   return (
     <GraphOverlayContext.Provider value={value}>
-      <div ref={rootRef} className={className}>
+      <div ref={rootRef} className={className} style={rootStyle}>
         {children}
+        <div
+          ref={spotlightLayerRef}
+          className="graph-spotlight-layer"
+          data-testid="graph-spotlight-layer"
+          aria-hidden="true"
+        />
         <div ref={layerRef} className="graph-overlay-layer" style={layerStyle} data-testid="graph-overlay-layer" />
         {portalReady && layerRef.current && overlay ? createPortal(overlay, layerRef.current) : null}
       </div>

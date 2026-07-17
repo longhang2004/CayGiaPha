@@ -26,6 +26,7 @@ export function TreePeopleListView({
     .filter((relation) => ["father", "mother", "spouse", "child"].includes(relation.kind));
   const closeIds = new Set(closeRelations.map((relation) => relation.person.id));
   const others = persons.filter((person) => !closeIds.has(person.id));
+  const guidancePersonId = closeRelations[0]?.person.id ?? others[0]?.id;
 
   const handleSelect = (person: Person) => {
     trackUxEvent("ux_core_flow_complete", {
@@ -46,6 +47,7 @@ export function TreePeopleListView({
         key={person.id}
         type="button"
         className="tree-people-list__row focus-visible-ring"
+        data-guidance-anchor={person.id === guidancePersonId ? "workspace-person-list" : undefined}
         data-selected={isSelected ? "true" : undefined}
         aria-pressed={isSelected}
         aria-label={`Chọn ${person.displayName}`}
@@ -64,7 +66,7 @@ export function TreePeopleListView({
   };
 
   return (
-    <div className="tree-people-list" data-guidance-anchor="workspace-person-list">
+    <div className="tree-people-list">
       <section className="tree-people-list__group" role="region" aria-labelledby="close-relatives-heading">
         <div className="tree-people-list__section-heading">
           <h2 id="close-relatives-heading">Người thân gần</h2>

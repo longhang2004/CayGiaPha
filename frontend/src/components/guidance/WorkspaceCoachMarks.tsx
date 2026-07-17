@@ -3,8 +3,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { type GuidanceRole } from "@/content/help/helpTopics";
 import { reopenGuidanceChapter } from "@/lib/guidance/storage";
+import { AnchoredCoachMark } from "./AnchoredCoachMark";
 import {
-  CoachMarkCard,
   type CoachStep,
   useCoachMarkSequence,
 } from "./CoachMarkSequence";
@@ -44,7 +44,7 @@ const TOPIC_ANCHORS: Record<string, string> = {
   "them-quan-he-ro-rang": "workspace-add-relative",
 };
 
-const MIN_COACH_SAFE_HEIGHT = 280;
+const MIN_COACH_SAFE_HEIGHT = 160;
 
 interface Props {
   role: GuidanceRole;
@@ -61,7 +61,7 @@ export function WorkspaceCoachMarks({
   initialTopicId = null,
   anchorOverride,
 }: Props) {
-  const { safeRect, getPlacement } = useGraphOverlay();
+  const { root, layer, spotlightLayer, safeRect } = useGraphOverlay();
   const [ready, setReady] = useState(false);
   const [workspaceBlocked, setWorkspaceBlocked] = useState(false);
 
@@ -115,23 +115,20 @@ export function WorkspaceCoachMarks({
     if (enabled && initialTopicId) reopenGuidanceChapter("overview");
   }, [enabled, initialTopicId]);
 
-  const placement = useMemo(
-    () => sequence.currentAnchorId && sequence.currentStep
-      ? getPlacement(
-          sequence.currentAnchorId,
-          sequence.currentStep.preferredPlacement,
-        )
-      : null,
-    [getPlacement, sequence.currentAnchorId, sequence.currentStep],
-  );
-
-  if (!enabled || !sequence.active || !placement) return null;
+  if (
+    !enabled ||
+    !sequence.active ||
+    !root ||
+    !layer ||
+    !spotlightLayer
+  ) return null;
 
   return (
-    <CoachMarkCard
+    <AnchoredCoachMark
       sequence={sequence}
-      className={safeRect.width < 520 ? "workspace-coach--mobile" : undefined}
-      style={placement.style}
+      cardBoundary={layer}
+      spotlightBoundary={root}
+      spotlightHost={spotlightLayer}
     />
   );
 }
