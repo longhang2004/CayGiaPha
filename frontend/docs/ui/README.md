@@ -152,6 +152,15 @@ not automatically page-overflow bugs.
 - Region Nam may append a privacy-safe, display-only calling number for sibling and parent-sibling
   terms (including their spouses) when explicit birth order is visible. Bắc/Trung, missing or hidden
   order, and all ineligible relation bands retain the canonical base term; never infer “Út”.
+- Graph cards use one compact metric profile per text scale: 176×128px at 100%, 192×156px at 150%,
+  and 208×184px at 200%. Keep 24px between adjacent nodes, 96px of line space between generations,
+  72px between disconnected components, and 64px inside the SVG world. Names may use two visual
+  lines, but their full accessible name and tooltip must remain available. Connectors terminate at
+  measured card edges rather than hard-coded offsets.
+- Graph camera transforms keep 48px four-direction boundaries, a dynamic minimum zoom of
+  `clamp(fitZoom, 0.12, 0.5)`, and maximum zoom 2. Center axes whose scaled world is smaller than
+  the padded viewport; clamp every drag, wheel, pinch, button, reset, resize, fullscreen, and
+  center-on-node path. Pointer, pinch-midpoint, and viewport-center zoom anchors must remain stable.
 - The action drawer remains a compact right drawer on desktop and a vertically entering/exiting
   bottom sheet on mobile/tablet. Mobile/tablet graph controls place exactly eight primary actions in
   a 4×2 grid, with selected-person centring and full Help outside the grid; desktop controls remain

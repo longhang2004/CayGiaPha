@@ -1,14 +1,24 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { render, screen, waitFor, within } from "@testing-library/react";
+import {
+  render as testingLibraryRender,
+  screen,
+  waitFor,
+  within,
+  type RenderOptions,
+} from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { type ReactElement, useState } from "react";
+import { TextSizeProvider } from "@/components/a11y/TextSizeProvider";
 import { ContextualCoachMarks } from "@/components/guidance/ContextualCoachMarks";
 import { TreeGraph } from "./TreeGraph";
 import { TreeGraphNavControls } from "./TreeGraphControls";
-import { useState } from "react";
+import { GraphEdge } from "./EdgeStyles";
+import { getRectangleBoundaryPoint, getTreeGraphMetrics } from "./treeGraphGeometry";
 import { PersonInfoPanel } from "./PersonInfoPanel";
 import { readGuidanceState, recordWorkspaceCoachStatus } from "@/lib/guidance/storage";
+import { applyTextScale, TEXT_SIZE_STORAGE_KEY } from "@/lib/textSize";
 import {
   UNRESOLVED_LABEL,
   type Person,
@@ -22,6 +32,29 @@ const GRAPH_CSS = readFileSync(
   resolve(process.cwd(), "src/components/graph/graph.css"),
   "utf8",
 ).replace(/\/\*[\s\S]*?\*\//g, "");
+
+function render(ui: ReactElement, options?: RenderOptions) {
+  return testingLibraryRender(<TextSizeProvider>{ui}</TextSizeProvider>, options);
+}
+
+function graphNodeRect(personId: string) {
+  const node = document.querySelector<SVGGElement>(`.tree-graph__node[data-person-id="${personId}"]`)!;
+  const transform = node.getAttribute("transform")!;
+  const match = transform.match(/translate\(([-\d.]+),\s*([-\d.]+)\)/)!;
+  const foreignObject = node.querySelector("foreignObject")!;
+  const width = Number(foreignObject.getAttribute("width"));
+  const height = Number(foreignObject.getAttribute("height"));
+  const left = Number(match[1]);
+  const top = Number(match[2]);
+  return {
+    left,
+    top,
+    width,
+    height,
+    centerX: left + width / 2,
+    centerY: top + height / 2,
+  };
+}
 
 const persons: Person[] = [
   { id: "p1", displayName: "Ông Nội", gender: "male", birthYear: 1940 },
@@ -132,6 +165,7 @@ describe("TreeGraph renderer", () => {
     vi.unstubAllGlobals();
     vi.restoreAllMocks();
     window.localStorage.clear();
+    applyTextScale(100);
     document.querySelectorAll<HTMLElement>("[data-guidance-highlight]").forEach((element) => {
       element.removeAttribute("data-guidance-highlight");
     });
@@ -402,11 +436,13 @@ describe("TreeGraph renderer", () => {
     await waitFor(() => expect(fetchAddresses).toHaveBeenCalled());
 
     const uncleNode = document.querySelector('.tree-graph__node[data-person-id="uncleInLaw"]')!;
-    expect(within(uncleNode as HTMLElement).getByLabelText("Có nhánh mở rộng")).toBeInTheDocument();
+    const branchBadge = within(uncleNode as HTMLElement).getByLabelText("Có nhánh mở rộng");
+    expect(branchBadge).toBeInTheDocument();
+    expect(branchBadge.closest(".tree-graph__node-status-row")).toBeInTheDocument();
     expect(document.querySelector('.tree-graph__node[data-person-id="inLawFather"]')).not.toBeInTheDocument();
   });
 
-  it("expands node width for long display names instead of truncating the card", async () => {
+  it("uses the compact 100% metric and keeps a long display name accessible", async () => {
     const fetchAddresses = stubFetcher({ p1: { egoId: "p1", addresses: [] } });
     const longName = "Phạm Văn Dượng Gia Đình Nhánh Mở Rộng";
     const longNamePersons: Person[] = [
@@ -429,8 +465,34 @@ describe("TreeGraph renderer", () => {
     const card = within(node as HTMLElement).getByRole("button", { name: new RegExp(longName) });
     const foreignObject = card.closest("foreignObject")!;
 
-    expect(foreignObject).toHaveAttribute("width", expect.not.stringMatching(/^220$/));
-    expect(card.querySelector(".tree-graph__node-name")).toHaveTextContent(longName);
+    expect(foreignObject).toHaveAttribute("width", "176");
+    expect(foreignObject).toHaveAttribute("height", "128");
+    const name = card.querySelector(".tree-graph__node-name");
+    expect(name).toHaveTextContent(longName);
+    expect(name).toHaveAttribute("title", longName);
+    expect(GRAPH_CSS).toMatch(/\.tree-graph__node-name\s*\{[^}]*-webkit-line-clamp:\s*2/s);
+  });
+
+  it("grows node height primarily downward at 200% text scale", async () => {
+    window.localStorage.setItem(TEXT_SIZE_STORAGE_KEY, "200");
+    const fetchAddresses = stubFetcher({ p1: { egoId: "p1", addresses: [] } });
+
+    render(
+      <TreeGraph
+        treeId="t1"
+        persons={[{ id: "p1", displayName: "Phạm Văn Dượng Gia Đình", gender: "male", birthYear: 1985 }]}
+        relationships={[]}
+        initialEgoId="p1"
+        fetchAddresses={fetchAddresses}
+      />,
+    );
+
+    await waitFor(() => expect(fetchAddresses).toHaveBeenCalled());
+    const foreignObject = document.querySelector('.tree-graph__node[data-person-id="p1"] foreignObject');
+    await waitFor(() => {
+      expect(foreignObject).toHaveAttribute("width", "208");
+      expect(foreignObject).toHaveAttribute("height", "184");
+    });
   });
 
   it("supports switching tabs (Chi tiết vs Tiểu sử) in PersonInfoPanel", async () => {
@@ -577,6 +639,129 @@ describe("TreeGraph renderer", () => {
     // The individual father and mother edges should NOT be rendered separately
     expect(document.querySelector('[data-relationship-id="r-father"]')).not.toBeInTheDocument();
     expect(document.querySelector('[data-relationship-id="r-mother"]')).not.toBeInTheDocument();
+  });
+
+  it("starts a single-parent joint connector at the parent bottom and ends at the child top", async () => {
+    const fetchAddresses = vi.fn(async () => ({ egoId: "child", addresses: [] }));
+    const connectorPersons: Person[] = [
+      { id: "parent", displayName: "Cha", gender: "male" },
+      { id: "child", displayName: "Con", gender: "female" },
+    ];
+    const connectorRelationships: Relationship[] = [{
+      id: "r-parent-child",
+      type: "bloodline_father",
+      sourceId: "parent",
+      targetId: "child",
+      derivationState: "derived",
+    }];
+
+    render(
+      <TreeGraph
+        treeId="t1"
+        persons={connectorPersons}
+        relationships={connectorRelationships}
+        initialEgoId="child"
+        fetchAddresses={fetchAddresses}
+      />,
+    );
+
+    await waitFor(() => expect(fetchAddresses).toHaveBeenCalled());
+    const path = document.querySelector('path[data-joint-child-id="child"]')!;
+    const coordinates = path.getAttribute("d")!.match(/-?\d+(?:\.\d+)?/g)!.map(Number);
+    const parent = graphNodeRect("parent");
+    const child = graphNodeRect("child");
+
+    expect(coordinates[1]).toBe(parent.centerY + parent.height / 2);
+    expect(coordinates.at(-1)).toBe(child.centerY - child.height / 2);
+  });
+
+  it("terminates marriage and generic relationship lines at actual card boundaries", () => {
+    const source = { id: "source", x: 0, y: 0 };
+    const target = { id: "target", x: 300, y: 200 };
+    const sourceSize = { width: 176, height: 128 };
+    const targetSize = { width: 208, height: 184 };
+
+    render(
+      <svg>
+        <GraphEdge
+          relationship={{
+            id: "r-marriage-boundary",
+            type: "marriage",
+            sourceId: "source",
+            targetId: "target",
+            derivationState: "derived",
+          }}
+          source={{ ...source, y: 0 }}
+          target={{ ...target, y: 0 }}
+          sourceSize={sourceSize}
+          targetSize={targetSize}
+        />
+        <GraphEdge
+          relationship={{
+            id: "r-social-boundary",
+            type: "non_bloodline",
+            sourceId: "source",
+            targetId: "target",
+            derivationState: "derived",
+            socialType: "friend",
+          }}
+          source={source}
+          target={target}
+          sourceSize={sourceSize}
+          targetSize={targetSize}
+        />
+      </svg>,
+    );
+
+    const marriage = document.querySelector<SVGLineElement>('[data-relationship-id="r-marriage-boundary"]')!;
+    const social = document.querySelector<SVGLineElement>('[data-relationship-id="r-social-boundary"]')!;
+
+    expect(Number(marriage.getAttribute("x1"))).toBe(source.x + sourceSize.width / 2);
+    expect(Number(marriage.getAttribute("x2"))).toBe(target.x - targetSize.width / 2);
+
+    const expectedSource = getRectangleBoundaryPoint(source, target, sourceSize);
+    const expectedTarget = getRectangleBoundaryPoint(target, source, targetSize);
+    expect(Number(social.getAttribute("x1"))).toBeCloseTo(expectedSource.x);
+    expect(Number(social.getAttribute("y1"))).toBeCloseTo(expectedSource.y);
+    expect(Number(social.getAttribute("x2"))).toBeCloseTo(expectedTarget.x);
+    expect(Number(social.getAttribute("y2"))).toBeCloseTo(expectedTarget.y);
+  });
+
+  it("keeps the unidentified relationship label inside the disconnected-component gap", () => {
+    const metrics = getTreeGraphMetrics(100);
+    const source = { id: "source", x: 0, y: 0 };
+    const target = {
+      id: "target",
+      x: metrics.nodeWidth + metrics.componentGap,
+      y: 0,
+    };
+
+    render(
+      <svg>
+        <GraphEdge
+          relationship={{
+            id: "r-unidentified-gap",
+            type: "asserted",
+            sourceId: "source",
+            targetId: "target",
+            derivationState: "asserted",
+            assertedLabel: "Chưa xác định",
+          }}
+          source={source}
+          target={target}
+          sourceSize={{ width: metrics.nodeWidth, height: metrics.nodeHeight }}
+          targetSize={{ width: metrics.nodeWidth, height: metrics.nodeHeight }}
+        />
+      </svg>,
+    );
+
+    const plate = document.querySelector<SVGRectElement>(
+      '[data-relationship-id="r-unidentified-gap"] + rect',
+    );
+    expect(plate).not.toBeNull();
+    expect(Number(plate!.getAttribute("width"))).toBeLessThanOrEqual(
+      metrics.componentGap - 8,
+    );
   });
 
   it("keeps the prototype marriage line alongside its joint child connector", async () => {
@@ -791,6 +976,9 @@ describe("TreeGraph renderer", () => {
     );
     expect(GRAPH_CSS).toMatch(
       /@container tree-surface \(min-width: 960px\)[\s\S]*?\.tree-graph__nav-palette\s*\{[^}]*top:\s*0\.75rem[^}]*right:\s*0\.75rem[^}]*bottom:\s*auto/,
+    );
+    expect(GRAPH_CSS).toMatch(
+      /\.tree-graph__nav-button:disabled\s*\{[^}]*cursor:\s*not-allowed[^}]*opacity:/s,
     );
     expect(GRAPH_CSS).not.toMatch(
       /@container tree-surface \(min-width: 960px\)[\s\S]*?\.workspace-coach-layer--graph\s*\{/,

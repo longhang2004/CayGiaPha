@@ -12,6 +12,7 @@ import {
   type Relationship,
   type ViewpointAddresses,
 } from "@/lib/graph";
+import { useTextSize } from "@/components/a11y/TextSizeProvider";
 import { GraphEdge } from "./EdgeStyles";
 import { useTreeGraphLayout } from "./useTreeGraphLayout";
 import { useTreeGraphZoom } from "./useTreeGraphZoom";
@@ -90,6 +91,7 @@ export function TreeGraph({
   const [internalFocusId, setInternalFocusId] = useState<string | null>(null);
   const activeFocusId = focusId !== undefined ? focusId : internalFocusId;
   const activeSetFocusId = onFocusChange ?? setInternalFocusId;
+  const { scale: textScale } = useTextSize();
 
   useEffect(() => {
     onAddressLoading?.(activeLoading);
@@ -118,12 +120,17 @@ export function TreeGraph({
     treeStructureVersion,
     svgWidth,
     svgHeight,
-    NODE_HEIGHT
-  } = useTreeGraphLayout(persons, relationships, activeEgoId, activeFocusId);
+    NODE_HEIGHT,
+    metrics,
+  } = useTreeGraphLayout(persons, relationships, activeEgoId, activeFocusId, textScale);
 
   const {
     pan,
     zoom,
+    minZoom,
+    maxZoom,
+    canZoomIn,
+    canZoomOut,
     isDragging,
     isFullscreen,
     containerRef,
@@ -255,6 +262,13 @@ export function TreeGraph({
           role="group"
           aria-label="Sơ đồ gia phả"
           className="tree-graph__svg"
+          data-camera-pan-x={pan.x}
+          data-camera-pan-y={pan.y}
+          data-camera-zoom={zoom}
+          data-camera-min-zoom={minZoom}
+          data-camera-max-zoom={maxZoom}
+          data-world-width={svgWidth}
+          data-world-height={svgHeight}
           style={{ cursor: isDragging ? "grabbing" : "grab" }}
         >
           <g transform={`translate(${pan.x}, ${pan.y}) scale(${zoom})`}>
@@ -289,6 +303,14 @@ export function TreeGraph({
                       relationship={rel}
                       source={source}
                       target={target}
+                      sourceSize={{
+                        width: nodeWidthById.get(rel.sourceId) ?? metrics.nodeWidth,
+                        height: NODE_HEIGHT,
+                      }}
+                      targetSize={{
+                        width: nodeWidthById.get(rel.targetId) ?? metrics.nodeWidth,
+                        height: NODE_HEIGHT,
+                      }}
                     />
                   );
                 })}
@@ -317,7 +339,7 @@ export function TreeGraph({
                 const unresolved = !isEgo && !activeLoading && activeAddresses.size > 0 && isUnresolved(address);
                 const isRedacted = person.displayName === "Người thân còn sống";
                 const hasCollapsedBranch = filteredData.collapsedBranchRoots.has(person.id);
-                const nodeWidth = nodeWidthById.get(person.id) ?? 220; // NODE_MIN_WIDTH
+                const nodeWidth = nodeWidthById.get(person.id) ?? metrics.nodeWidth;
 
                 return (
                   <TreeGraphNode
@@ -353,6 +375,8 @@ export function TreeGraph({
           activeSelectedId={activeSelectedId}
           activeEgoId={activeEgoId}
           helpHref={helpHref}
+          canZoomIn={canZoomIn}
+          canZoomOut={canZoomOut}
         />
       </div>
     </div>

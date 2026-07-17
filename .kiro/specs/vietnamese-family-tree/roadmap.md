@@ -117,6 +117,10 @@ To create customer-visible value and a defensible adoption loop, prioritize in t
    defer offline navigation until real usage proves it is needed.
 6. **Add F-5's capture slice:** audio recording, consent, storage, playback, and Vietnamese
    transcription before guided AI interviews or memory-book generation.
+7. **Research ordered addressing for Bắc and Trung:** validate the culturally correct ordering
+   conventions, eligible kinship bands, spouse inheritance, and privacy behavior independently for
+   each region before extending resolver display and search. Do not assume the Southern
+   `birthOrder + 1` calling-number formatter applies to either dialect.
 
 The three best experiments for the next product cycle are: “ngày giỗ không quên”, “quét QR biết
 xưng hô”, and “cộng tác nhưng không làm hỏng gia phả”. Each can be tested with a small number of

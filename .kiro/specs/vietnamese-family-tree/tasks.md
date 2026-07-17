@@ -605,6 +605,17 @@ against the active Next.js code and current tests.
     - Give marriage edges their own namespace; assert unique person/relationship IDs, valid endpoints,
       and simultaneous marriage plus joint parent-child connectors in the regression family.
 
+- [x] 28. Compact graph layout and bounded camera
+  - [x] 28.1 Add deterministic node, world, and connector geometry
+    - Interpolate node metrics across the existing 100–200% text scale; compact horizontal spacing,
+      increase generation spacing, and terminate every relationship line at actual card boundaries.
+  - [x] 28.2 Clamp every graph camera interaction
+    - Share pure fit/min/max/pan geometry across initialization, reset, resize, fullscreen, drag,
+      wheel, pinch, buttons, and center-on-node behavior with a 48px four-edge boundary.
+  - [x] 28.3 Lock production/prototype responsive evidence
+    - Cover compact cards, connector endpoints, zoom limits, four-direction pan, 200% text, and page
+      overflow in targeted component and Playwright tests plus the broad prototype audit.
+
 ## Notes
 
 - Tasks marked with `*` are optional test sub-tasks and can be skipped for a faster MVP; core

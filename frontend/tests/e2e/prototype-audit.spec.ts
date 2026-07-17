@@ -213,7 +213,8 @@ test.describe("prototype UI audit", () => {
         expect(controlsBox!.x + controlsBox!.width).toBeLessThanOrEqual(canvasBox!.x + canvasBox!.width + 1);
         expect(controlsBox!.y).toBeGreaterThanOrEqual(canvasBox!.y);
         expect(controlsBox!.y + controlsBox!.height).toBeLessThanOrEqual(footerBox!.y + 1);
-        expect(egoNodeBox!.width).toBeGreaterThanOrEqual(140);
+        // Compact 176px cards render at the readable initial 0.75 camera zoom (132px).
+        expect(egoNodeBox!.width).toBeGreaterThanOrEqual(128);
         expect(egoNodeBox!.x + egoNodeBox!.width).toBeGreaterThan(canvasBox!.x);
         expect(egoNodeBox!.x).toBeLessThan(canvasBox!.x + canvasBox!.width);
       }

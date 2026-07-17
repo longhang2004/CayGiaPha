@@ -56,54 +56,57 @@ export const TreeGraphNode = memo(function TreeGraphNode({
 
           <div className="tree-graph__node-content">
             <div className="tree-graph__node-row-top">
-              <span className="tree-graph__node-name">
+              <span className="tree-graph__node-name" title={person.displayName}>
                 {person.displayName}
               </span>
-              {person.deceased && (
-                <span className="tree-graph__node-deceased-marker" title="Đã mất">
-                  †
-                </span>
-              )}
-              {person.claimed && (
-                <span className="tree-graph__node-claimed-badge" title="Tài khoản đã xác nhận">
-                  <svg viewBox="0 0 24 24" className="tree-graph__node-badge-icon" aria-hidden="true">
-                    <path fill="currentColor" d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
-                  </svg>
-                </span>
-              )}
-              {isEgo && (
-                <span className="tree-graph__node-ego-badge">
-                  Bạn
-                </span>
-              )}
             </div>
-            <div className="tree-graph__node-row-bottom">
-              {label && (
-                <span
-                  className="tree-graph__node-address"
-                  data-address
-                  data-unresolved={unresolved ? "true" : "false"}
-                >
-                  {label}
-                </span>
-              )}
+            {label && (
+              <span
+                className="tree-graph__node-address"
+                data-address
+                data-unresolved={unresolved ? "true" : "false"}
+                title={label}
+              >
+                {label}
+              </span>
+            )}
+            <div className="tree-graph__node-status-row">
               {showBirthYears && person.birthYear && (
                 <span className="tree-graph__node-lifespan">
                   {person.deceased ? `(${person.birthYear} - †)` : `(s. ${person.birthYear})`}
                 </span>
               )}
+              <span className="tree-graph__node-status-badges">
+                {person.deceased && (
+                  <span className="tree-graph__node-deceased-marker" title="Đã mất">
+                    †
+                  </span>
+                )}
+                {person.claimed && (
+                  <span className="tree-graph__node-claimed-badge" title="Tài khoản đã xác nhận">
+                    <svg viewBox="0 0 24 24" className="tree-graph__node-badge-icon" aria-hidden="true">
+                      <path fill="currentColor" d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                    </svg>
+                  </span>
+                )}
+                {isEgo && (
+                  <span className="tree-graph__node-ego-badge">
+                    Bạn
+                  </span>
+                )}
+                {hasCollapsedBranch && (
+                  <span
+                    className="tree-graph__node-branch-badge"
+                    title="Có nhánh gia đình mở rộng. Chọn người này rồi dùng làm người xét để xem."
+                    aria-label="Có nhánh mở rộng"
+                  >
+                    <TreeIcon size={13} />
+                    <span>Nhánh</span>
+                  </span>
+                )}
+              </span>
             </div>
           </div>
-          {hasCollapsedBranch && (
-            <span
-              className="tree-graph__node-branch-badge"
-              title="Có nhánh gia đình mở rộng. Chọn người này rồi dùng làm người xét để xem."
-              aria-label="Có nhánh mở rộng"
-            >
-              <TreeIcon size={13} />
-              <span>Nhánh</span>
-            </span>
-          )}
         </button>
 
         {/* Tooltip Hover/Focus */}

@@ -1,7 +1,13 @@
-import { useState, useRef, useEffect, useCallback } from "react";
-
-const MIN_ZOOM = 0.05;
-const MAX_ZOOM = 3;
+import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  centerCameraOn,
+  clampCamera,
+  fitCamera,
+  getCameraLimits,
+  zoomCameraAt,
+  type CameraGeometry,
+  type CameraState,
+} from "./treeGraphCamera";
 
 export function useTreeGraphZoom(
   svgWidth: number,
@@ -10,15 +16,16 @@ export function useTreeGraphZoom(
   positions: Map<string, { x: number; y: number }>,
   initialCenterId?: string | null,
 ) {
-  const [pan, setPan] = useState({ x: 0, y: 0 });
-  const [zoom, setZoom] = useState(1);
+  const [camera, setCamera] = useState<CameraState>({
+    pan: { x: 0, y: 0 },
+    zoom: 1,
+  });
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
 
   const pinchStartRef = useRef<{
     distance: number;
-    zoom: number;
-    pan: { x: number; y: number };
+    camera: CameraState;
     midpoint: { x: number; y: number };
   } | null>(null);
 
@@ -39,15 +46,19 @@ export function useTreeGraphZoom(
     initialPosition?.y ?? "",
   ].join(":");
 
-  const calculateFitZoom = useCallback((containerWidth: number, containerHeight: number) => {
-    if (containerWidth <= 0 || containerHeight <= 0 || svgWidth <= 0 || svgHeight <= 0) {
-      return null;
-    }
+  const geometryFor = useCallback((width: number, height: number): CameraGeometry => ({
+    viewport: { width, height },
+    world: { width: svgWidth, height: svgHeight },
+  }), [svgHeight, svgWidth]);
 
-    const horizontalFit = (containerWidth - 40) / svgWidth;
-    const verticalFit = (containerHeight - 40) / svgHeight;
-    return Math.max(MIN_ZOOM, Math.min(1, horizontalFit, verticalFit));
-  }, [svgHeight, svgWidth]);
+  const currentGeometry = useCallback(() => {
+    const container = containerRef.current;
+    const size = containerSizeRef.current ?? {
+      width: container?.clientWidth ?? 0,
+      height: container?.clientHeight ?? 0,
+    };
+    return geometryFor(size.width, size.height);
+  }, [geometryFor]);
 
   useEffect(() => {
     const handleFullscreenChange = () => {
@@ -71,43 +82,38 @@ export function useTreeGraphZoom(
   }, []);
 
   const handleReset = useCallback(() => {
-    if (containerRef.current) {
-      const containerWidth = containerRef.current.clientWidth;
-      const containerHeight = containerRef.current.clientHeight;
-      const calculatedZoom = calculateFitZoom(containerWidth, containerHeight);
-      if (calculatedZoom === null) return;
-      const initialPanX = (containerWidth - svgWidth * calculatedZoom) / 2;
-      const initialPanY = (containerHeight - svgHeight * calculatedZoom) / 2;
-      setPan({ x: initialPanX, y: initialPanY });
-      setZoom(calculatedZoom);
-    }
-  }, [calculateFitZoom, svgWidth, svgHeight]);
+    const container = containerRef.current;
+    if (!container) return;
+    const width = container.clientWidth;
+    const height = container.clientHeight;
+    if (width <= 0 || height <= 0) return;
+    containerSizeRef.current = { width, height };
+    setCamera(fitCamera(geometryFor(width, height)));
+  }, [geometryFor]);
 
   const handleReadableInitialView = useCallback(() => {
     const container = containerRef.current;
-    if (!container) return;
-    const containerWidth = container.clientWidth;
-    const containerHeight = container.clientHeight;
-    const fitZoom = calculateFitZoom(containerWidth, containerHeight);
-    if (fitZoom === null) return false;
-    containerSizeRef.current = { width: containerWidth, height: containerHeight };
+    if (!container) return false;
+    const width = container.clientWidth;
+    const height = container.clientHeight;
+    if (width <= 0 || height <= 0 || svgWidth <= 0 || svgHeight <= 0) return false;
 
-    if (!initialPosition || fitZoom >= 0.75) {
-      const initialPanX = (containerWidth - svgWidth * fitZoom) / 2;
-      const initialPanY = (containerHeight - svgHeight * fitZoom) / 2;
-      setPan({ x: initialPanX, y: initialPanY });
-      setZoom(fitZoom);
+    const geometry = geometryFor(width, height);
+    const fitted = fitCamera(geometry);
+    containerSizeRef.current = { width, height };
+
+    if (!initialPosition || fitted.zoom >= 0.75) {
+      setCamera(fitted);
       return true;
     }
 
-    const readableZoom = 0.75;
-    setZoom(readableZoom);
-    setPan({
-      x: containerWidth / 2 - initialPosition.x * readableZoom,
-      y: containerHeight / 2 - initialPosition.y * readableZoom,
-    });
+    setCamera(centerCameraOn(
+      { zoom: 0.75, pan: { x: 0, y: 0 } },
+      initialPosition,
+      geometry,
+    ));
     return true;
-  }, [calculateFitZoom, initialPosition, svgHeight, svgWidth]);
+  }, [geometryFor, initialPosition, svgHeight, svgWidth]);
 
   useEffect(() => {
     if (initializedLayoutRef.current === initializationKey) return;
@@ -138,14 +144,27 @@ export function useTreeGraphZoom(
           return;
         }
 
-        const deltaX = (nextWidth - previousSize.width) / 2;
-        const deltaY = (nextHeight - previousSize.height) / 2;
-        if (deltaX !== 0 || deltaY !== 0) {
-          setPan((currentPan) => ({
-            x: currentPan.x + deltaX,
-            y: currentPan.y + deltaY,
-          }));
-        }
+        const previousGeometry = geometryFor(previousSize.width, previousSize.height);
+        const nextGeometry = geometryFor(nextWidth, nextHeight);
+        setCamera((current) => {
+          const boundedCurrent = clampCamera(current, previousGeometry);
+          const worldAtCenter = {
+            x: (previousSize.width / 2 - boundedCurrent.pan.x) / boundedCurrent.zoom,
+            y: (previousSize.height / 2 - boundedCurrent.pan.y) / boundedCurrent.zoom,
+          };
+          const nextLimits = getCameraLimits(nextGeometry, boundedCurrent.zoom);
+          const nextZoom = Math.max(
+            nextLimits.minZoom,
+            Math.min(nextLimits.maxZoom, boundedCurrent.zoom),
+          );
+          return clampCamera({
+            zoom: nextZoom,
+            pan: {
+              x: nextWidth / 2 - worldAtCenter.x * nextZoom,
+              y: nextHeight / 2 - worldAtCenter.y * nextZoom,
+            },
+          }, nextGeometry);
+        });
       });
     });
     observer.observe(container);
@@ -154,25 +173,28 @@ export function useTreeGraphZoom(
       observer.disconnect();
       cancelAnimationFrame(animationFrame);
     };
-  }, [handleReadableInitialView, initializationKey]);
+  }, [geometryFor, handleReadableInitialView, initializationKey]);
 
-  const handleMouseDown = useCallback((e: React.MouseEvent<SVGSVGElement>) => {
-    if (e.button !== 0) return;
-    const target = e.target as SVGElement;
+  const handleMouseDown = useCallback((event: React.MouseEvent<SVGSVGElement>) => {
+    if (event.button !== 0) return;
+    const target = event.target as SVGElement;
     if (target.closest(".tree-graph__node-button") || target.closest("select") || target.closest("button")) {
       return;
     }
     setIsDragging(true);
-    setDragStart({ x: e.clientX - pan.x, y: e.clientY - pan.y });
-  }, [pan.x, pan.y]);
+    setDragStart({ x: event.clientX - camera.pan.x, y: event.clientY - camera.pan.y });
+  }, [camera.pan.x, camera.pan.y]);
 
-  const handleMouseMove = useCallback((e: React.MouseEvent<SVGSVGElement>) => {
+  const handleMouseMove = useCallback((event: React.MouseEvent<SVGSVGElement>) => {
     if (!isDragging) return;
-    setPan({
-      x: e.clientX - dragStart.x,
-      y: e.clientY - dragStart.y,
-    });
-  }, [isDragging, dragStart]);
+    setCamera((current) => clampCamera({
+      zoom: current.zoom,
+      pan: {
+        x: event.clientX - dragStart.x,
+        y: event.clientY - dragStart.y,
+      },
+    }, currentGeometry()));
+  }, [currentGeometry, dragStart, isDragging]);
 
   const handleMouseUp = useCallback(() => {
     setIsDragging(false);
@@ -184,95 +206,118 @@ export function useTreeGraphZoom(
     return Math.hypot(dx, dy);
   };
 
-  const midpointBetweenTouches = (touches: React.TouchList) => ({
-    x: (touches[0].clientX + touches[1].clientX) / 2,
-    y: (touches[0].clientY + touches[1].clientY) / 2,
-  });
+  const midpointBetweenTouches = (touches: React.TouchList) => {
+    const rect = containerRef.current?.getBoundingClientRect();
+    return {
+      x: (touches[0].clientX + touches[1].clientX) / 2 - (rect?.left ?? 0),
+      y: (touches[0].clientY + touches[1].clientY) / 2 - (rect?.top ?? 0),
+    };
+  };
 
-  const clampZoom = (value: number) => Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, value));
-
-  const handleTouchStart = useCallback((e: React.TouchEvent<SVGSVGElement>) => {
-    const target = e.target as SVGElement;
+  const handleTouchStart = useCallback((event: React.TouchEvent<SVGSVGElement>) => {
+    const target = event.target as SVGElement;
     if (target.closest(".tree-graph__node-button") || target.closest("select") || target.closest("button")) {
       return;
     }
 
-    if (e.touches.length === 2) {
-      e.preventDefault();
+    if (event.touches.length === 2) {
+      event.preventDefault();
       setIsDragging(false);
       pinchStartRef.current = {
-        distance: distanceBetweenTouches(e.touches),
-        zoom,
-        pan,
-        midpoint: midpointBetweenTouches(e.touches),
+        distance: distanceBetweenTouches(event.touches),
+        camera,
+        midpoint: midpointBetweenTouches(event.touches),
       };
       return;
     }
 
-    if (e.touches.length !== 1) return;
-    const touch = e.touches[0];
+    if (event.touches.length !== 1) return;
+    const touch = event.touches[0];
     pinchStartRef.current = null;
     setIsDragging(true);
-    setDragStart({ x: touch.clientX - pan.x, y: touch.clientY - pan.y });
-  }, [zoom, pan]);
+    setDragStart({ x: touch.clientX - camera.pan.x, y: touch.clientY - camera.pan.y });
+  }, [camera]);
 
-  const handleTouchMove = useCallback((e: React.TouchEvent<SVGSVGElement>) => {
-    if (e.touches.length === 2 && pinchStartRef.current) {
-      e.preventDefault();
+  const handleTouchMove = useCallback((event: React.TouchEvent<SVGSVGElement>) => {
+    if (event.touches.length === 2 && pinchStartRef.current) {
+      event.preventDefault();
       const start = pinchStartRef.current;
-      const nextDistance = distanceBetweenTouches(e.touches);
+      const nextDistance = distanceBetweenTouches(event.touches);
       if (start.distance <= 0 || nextDistance <= 0) return;
 
-      const nextZoom = clampZoom(start.zoom * (nextDistance / start.distance));
-      const currentMidpoint = midpointBetweenTouches(e.touches);
-      const anchor = {
-        x: (start.midpoint.x - start.pan.x) / start.zoom,
-        y: (start.midpoint.y - start.pan.y) / start.zoom,
+      const currentMidpoint = midpointBetweenTouches(event.touches);
+      const requestedZoom = start.camera.zoom * (nextDistance / start.distance);
+      const startWorldAnchor = {
+        x: (start.midpoint.x - start.camera.pan.x) / start.camera.zoom,
+        y: (start.midpoint.y - start.camera.pan.y) / start.camera.zoom,
       };
-
-      setZoom(nextZoom);
-      setPan({
-        x: currentMidpoint.x - anchor.x * nextZoom,
-        y: currentMidpoint.y - anchor.y * nextZoom,
-      });
+      const limits = getCameraLimits(currentGeometry(), requestedZoom);
+      const zoom = Math.max(limits.minZoom, Math.min(limits.maxZoom, requestedZoom));
+      setCamera(clampCamera({
+        zoom,
+        pan: {
+          x: currentMidpoint.x - startWorldAnchor.x * zoom,
+          y: currentMidpoint.y - startWorldAnchor.y * zoom,
+        },
+      }, currentGeometry()));
       return;
     }
 
-    if (!isDragging || e.touches.length !== 1) return;
-    e.preventDefault();
-    const touch = e.touches[0];
-    setPan({
-      x: touch.clientX - dragStart.x,
-      y: touch.clientY - dragStart.y,
-    });
-  }, [isDragging, dragStart]);
+    if (!isDragging || event.touches.length !== 1) return;
+    event.preventDefault();
+    const touch = event.touches[0];
+    setCamera((current) => clampCamera({
+      zoom: current.zoom,
+      pan: {
+        x: touch.clientX - dragStart.x,
+        y: touch.clientY - dragStart.y,
+      },
+    }, currentGeometry()));
+  }, [currentGeometry, dragStart, isDragging]);
 
   const handleTouchEnd = useCallback(() => {
     pinchStartRef.current = null;
     setIsDragging(false);
   }, []);
 
-  const handleWheel = useCallback((e: React.WheelEvent<SVGSVGElement>) => {
-    e.preventDefault();
+  const handleWheel = useCallback((event: React.WheelEvent<SVGSVGElement>) => {
+    event.preventDefault();
+    const rect = containerRef.current?.getBoundingClientRect();
+    const anchor = {
+      x: event.clientX - (rect?.left ?? 0),
+      y: event.clientY - (rect?.top ?? 0),
+    };
     const zoomFactor = 1.05;
-    const nextZoom = e.deltaY < 0 ? zoom * zoomFactor : zoom / zoomFactor;
-    setZoom(clampZoom(nextZoom));
-  }, [zoom]);
+    setCamera((current) => zoomCameraAt(
+      current,
+      event.deltaY < 0 ? current.zoom * zoomFactor : current.zoom / zoomFactor,
+      anchor,
+      currentGeometry(),
+    ));
+  }, [currentGeometry]);
 
-  const handleZoomIn = useCallback(() => setZoom((z) => Math.min(MAX_ZOOM, z * 1.2)), []);
-  const handleZoomOut = useCallback(() => setZoom((z) => Math.max(MIN_ZOOM, z / 1.2)), []);
+  const zoomFromCenter = useCallback((factor: number) => {
+    const geometry = currentGeometry();
+    const anchor = {
+      x: geometry.viewport.width / 2,
+      y: geometry.viewport.height / 2,
+    };
+    setCamera((current) => zoomCameraAt(
+      current,
+      current.zoom * factor,
+      anchor,
+      geometry,
+    ));
+  }, [currentGeometry]);
+
+  const handleZoomIn = useCallback(() => zoomFromCenter(1.2), [zoomFromCenter]);
+  const handleZoomOut = useCallback(() => zoomFromCenter(1 / 1.2), [zoomFromCenter]);
 
   const handleCenterOnNode = useCallback((nodeId: string) => {
-    const pos = positions.get(nodeId);
-    if (pos && containerRef.current) {
-      const containerWidth = containerRef.current.clientWidth;
-      const containerHeight = containerRef.current.clientHeight;
-      setPan({
-        x: containerWidth / 2 - pos.x * zoom,
-        y: containerHeight / 2 - pos.y * zoom,
-      });
-    }
-  }, [positions, zoom]);
+    const position = positions.get(nodeId);
+    if (!position) return;
+    setCamera((current) => centerCameraOn(current, position, currentGeometry()));
+  }, [currentGeometry, positions]);
 
   const handleExportSVG = useCallback(() => {
     const svgElement = containerRef.current?.querySelector(".tree-graph__svg") as SVGSVGElement | null;
@@ -294,10 +339,10 @@ export function useTreeGraphZoom(
               styles += rule.cssText + "\n";
             }
           }
-        } catch (e) {
+        } catch {
         }
       }
-    } catch (e) {
+    } catch {
     }
 
     if (styles) {
@@ -317,16 +362,23 @@ export function useTreeGraphZoom(
 
     const link = document.createElement("a");
     link.href = url;
-    link.download = `gia-pha-dong-ho.svg`;
+    link.download = "gia-pha-dong-ho.svg";
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
-  }, [svgWidth, svgHeight]);
+  }, [svgHeight, svgWidth]);
+
+  const limits = getCameraLimits(currentGeometry(), camera.zoom);
+  const epsilon = 0.000001;
 
   return {
-    pan,
-    zoom,
+    pan: camera.pan,
+    zoom: camera.zoom,
+    minZoom: limits.minZoom,
+    maxZoom: limits.maxZoom,
+    canZoomIn: camera.zoom < limits.maxZoom - epsilon,
+    canZoomOut: camera.zoom > limits.minZoom + epsilon,
     isDragging,
     isFullscreen,
     containerRef,

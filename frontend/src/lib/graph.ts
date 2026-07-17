@@ -506,14 +506,25 @@ export function collapseExtendedFamilyBranches(
  * task — correctness of edge styling, selection info, and the viewpoint
  * re-render is what matters — so we lay nodes out in a stable grid.
  */
+export interface GraphLayoutOptions {
+  cellWidth?: number;
+  cellHeight?: number;
+  padding?: number;
+  paddingX?: number;
+  paddingY?: number;
+  componentGap?: number;
+  nodeWidth?: number;
+}
+
 export function layoutNodes(
   persons: Person[],
   relationships: Relationship[] = [],
-  opts: { cellWidth?: number; cellHeight?: number; padding?: number } = {}
+  opts: GraphLayoutOptions = {}
 ): Map<string, NodePosition> {
   const cellWidth = opts.cellWidth ?? 160;
   const cellHeight = opts.cellHeight ?? 120;
-  const padding = opts.padding ?? 40;
+  const paddingX = opts.paddingX ?? opts.padding ?? 40;
+  const paddingY = opts.paddingY ?? opts.padding ?? 40;
 
   const positions = new Map<string, NodePosition>();
   if (persons.length === 0) {
@@ -712,7 +723,7 @@ export function layoutNodes(
     }
   });
   const maxWidth = maxGenCount * cellWidth;
-  const pageCenter = padding + maxWidth / 2;
+  const pageCenter = paddingX + maxWidth / 2;
 
   // BƯỚC 4 & 5 — Tính x, y position và gán (sắp xếp top-down để con căn giữa theo cha mẹ):
   const depths = Array.from(generationMap.keys()).sort((a, b) => a - b);
@@ -834,7 +845,7 @@ export function layoutNodes(
     }
 
     // Gán vị trí x, y chính thức cho các person trong thế hệ này
-    const y = padding + depth * cellHeight;
+    const y = paddingY + depth * cellHeight;
     activeUnits.forEach((uid, idx) => {
       const unitCenter = x[idx];
       const unitMembers = units.get(uid) || [];
@@ -1010,7 +1021,7 @@ export function layoutNodes(
         }
       }
 
-      const genY = padding + depth * cellHeight;
+      const genY = paddingY + depth * cellHeight;
       activeUnits.forEach((uid, idx) => {
         const unitCenter = x[idx];
         const members = units.get(uid) || [];
@@ -1042,7 +1053,7 @@ export function layoutNodes(
 export function layoutMultiTreeNodes(
   persons: Person[],
   relationships: Relationship[] = [],
-  opts: { cellWidth?: number; cellHeight?: number; padding?: number } = {}
+  opts: GraphLayoutOptions = {}
 ): Map<string, NodePosition> {
   if (persons.length === 0) {
     return new Map();
@@ -1095,10 +1106,11 @@ export function layoutMultiTreeNodes(
   // 3. Layout each component and offset them horizontally
   const finalPositions = new Map<string, NodePosition>();
   const cellWidth = opts.cellWidth ?? 160;
-  const padding = opts.padding ?? 40;
-  const horizontalSpacing = 300; // Spacing between different trees
+  const nodeWidth = opts.nodeWidth ?? cellWidth;
+  const paddingX = opts.paddingX ?? opts.padding ?? 40;
+  const horizontalSpacing = opts.componentGap ?? 300;
 
-  let offsetX = padding;
+  let offsetX = paddingX;
 
   components.forEach((compIds) => {
     const compPersons = persons.filter((p) => compIds.includes(p.id));
@@ -1117,7 +1129,7 @@ export function layoutMultiTreeNodes(
       if (pos.x > maxX) maxX = pos.x;
     });
 
-    const compWidth = (maxX - minX) + cellWidth;
+    const compWidth = (maxX - minX) + nodeWidth;
 
     // Shift coordinates and add to final positions
     compPositions.forEach((pos, id) => {

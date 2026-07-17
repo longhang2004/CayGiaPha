@@ -185,6 +185,21 @@ centring and full Help remain outside that grid. Every control remains keyboard/
 minimum 44 CSS-px target. Graph node, canvas, and control colours use semantic tokens in light,
 dark, and system themes; line style as well as colour identifies edges.
 
+Graph geometry uses a compact text-scale-aware profile rather than estimating card width from name
+length. Node dimensions interpolate from 176×128 CSS px at 100% text to 192×156 at 150% and
+208×184 at 200%; horizontal node gap is 24px, generation gap is 96px beyond card height,
+disconnected-component gap is 72px, and the graph world retains 64px content padding. Names render
+at most two visual lines while their complete accessible name and tooltip remain available. Every
+marriage, bloodline, asserted, social, and unidentified connector consumes the same node geometry
+and terminates at the relevant card boundary.
+
+The graph camera reserves 48 CSS px around the usable viewport and clamps every mouse, touch,
+wheel, button, reset, resize, fullscreen, and center-on-node transform. Its full-fit zoom uses the
+padded viewport; the effective minimum is `clamp(fitZoom, 0.12, 0.5)` and the maximum is 2. A graph
+smaller than the padded viewport is centered on that axis; otherwise pan is bounded between the two
+48px edge positions. Wheel and pinch preserve their pointer/midpoint world anchor, while button
+zoom preserves the viewport-center world anchor.
+
 These layout contracts do not change capability checks, privacy projection, API contracts, or the
 existing graph engine. `/prototype/tree` renders the shared production workspace components rather
 than a parallel panel implementation; targeted tests and the three-viewport UI audit cover
