@@ -8,6 +8,7 @@ import { TextSizeProvider } from "@/components/a11y/TextSizeProvider";
 import { Plus_Jakarta_Sans } from "next/font/google";
 import { AppLayoutWrapper } from "@/components/AppLayoutWrapper";
 import { Analytics } from "@vercel/analytics/react";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import { ConsentReacceptanceDialog } from "@/components/legal/ConsentReacceptanceDialog";
 
 const plusJakarta = Plus_Jakarta_Sans({
@@ -119,6 +120,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
                 <AppLayoutWrapper>{children}</AppLayoutWrapper>
                 <ConsentReacceptanceDialog />
                 <Analytics />
+                <SpeedInsights />
               </SessionProvider>
             </TextSizeProvider>
           </ConfirmProvider>
