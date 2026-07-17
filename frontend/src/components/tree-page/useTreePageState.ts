@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "@/app/providers";
 import { api, ApiError } from "@/lib/apiClient";
@@ -7,6 +7,17 @@ import type { Region } from "@/lib/region";
 import { getCollaborators, type TreeCollaborator } from "@/lib/collaboration";
 import type { TreeContextType } from "./TreeContext";
 import { useViewpointAddresses } from "./useViewpointAddresses";
+import { normalizeTreeDetailPayload } from "./treeDetailPayload";
+
+const NO_CAPABILITIES: Capabilities = {
+  editContent: false,
+  editRelationships: false,
+  editPhotos: false,
+  editVisibility: false,
+  manageClaim: false,
+  manageTree: false,
+  manageCollaboration: false,
+};
 
 export function useTreePageState(
   activeTreeId: string,
@@ -25,15 +36,8 @@ export function useTreePageState(
   const [sharing, setSharing] = useState("private");
   const [treeName, setTreeName] = useState("Cây Gia Phả");
   const [accessRole, setAccessRole] = useState<TreeAccessRole>("NONE");
-  const [capabilities, setCapabilities] = useState<Capabilities>({
-    editContent: false,
-    editRelationships: false,
-    editPhotos: false,
-    editVisibility: false,
-    manageClaim: false,
-    manageTree: false,
-    manageCollaboration: false,
-  });
+  const [capabilities, setCapabilities] = useState<Capabilities>(NO_CAPABILITIES);
+  const loadRequestId = useRef(0);
 
   const [loadingData, setLoadingData] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -75,7 +79,7 @@ export function useTreePageState(
   useEffect(() => {
     let cancelled = false;
 
-    if (!activeTreeId || !user?.userId || accessRole !== "OWNER") {
+    if (!activeTreeId || !user?.userId || !capabilities.manageCollaboration) {
       setCollaborators([]);
       return;
     }
@@ -95,24 +99,25 @@ export function useTreePageState(
     return () => {
       cancelled = true;
     };
-  }, [activeTreeId, user?.userId, accessRole]);
+  }, [activeTreeId, user?.userId, capabilities.manageCollaboration]);
 
   const loadTree = useCallback(async (id: string, token?: string) => {
+    const requestId = ++loadRequestId.current;
     setLoadingData(true);
     setError(null);
+    setAuthError(false);
+    setAccessRole("NONE");
+    setCapabilities(NO_CAPABILITIES);
+    setCollaborators([]);
     try {
-      const data = await api.get<{
-        persons: Person[];
-        relationships: Relationship[];
-        region: Region;
-        livingRedaction: boolean;
-        sharing: string;
-        name: string;
-        accessRole: TreeAccessRole;
-        capabilities: Capabilities;
-      }>(`/trees/${encodeURIComponent(id)}`, {
-        headers: token ? { "X-Share-Token": token } : undefined,
-      });
+      const data = normalizeTreeDetailPayload(
+        await api.get<unknown>(`/trees/${encodeURIComponent(id)}`, {
+          headers: token ? { "X-Share-Token": token } : undefined,
+        }),
+      );
+      if (requestId !== loadRequestId.current) {
+        return;
+      }
       setPersons(data.persons);
       setRelationships(data.relationships);
       setRegionState(data.region);
@@ -122,6 +127,9 @@ export function useTreePageState(
       setAccessRole(data.accessRole);
       setCapabilities(data.capabilities);
     } catch (err) {
+      if (requestId !== loadRequestId.current) {
+        return;
+      }
       if (err instanceof ApiError) {
         if (err.status === 401 || err.status === 403) {
           setAuthError(true);
@@ -136,9 +144,15 @@ export function useTreePageState(
         setError("Không thể tải sơ đồ gia phả. Vui lòng thử lại.");
       }
     } finally {
-      setLoadingData(false);
+      if (requestId === loadRequestId.current) {
+        setLoadingData(false);
+      }
     }
   }, [router]);
+
+  useEffect(() => () => {
+    loadRequestId.current += 1;
+  }, []);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -172,8 +186,8 @@ export function useTreePageState(
     }
   }, [activeTreeId, shareToken, loadTree]);
 
-  const isOwner = accessRole === "OWNER";
-  const isCollaborator = accessRole === "CONTRIBUTOR";
+  const isOwner = capabilities.manageTree && capabilities.manageCollaboration;
+  const isCollaborator = !isOwner && capabilities.editContent && capabilities.editRelationships;
   const canEdit = capabilities.editContent;
   const guidanceRole = isOwner ? "owner" : canEdit ? "editor" : "reader";
 

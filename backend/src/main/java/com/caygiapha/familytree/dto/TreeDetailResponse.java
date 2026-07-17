@@ -1,5 +1,7 @@
 package com.caygiapha.familytree.dto;
 
+import com.caygiapha.familytree.security.CapabilitySet;
+import com.caygiapha.familytree.security.TreeAccessRole;
 import java.util.List;
 import java.util.UUID;
 
@@ -7,6 +9,8 @@ import java.util.UUID;
 public record TreeDetailResponse(
         UUID treeId,
         String name,
+        TreeAccessRole accessRole,
+        CapabilitySet capabilities,
         String region,
         String sharing,
         boolean livingRedaction,
@@ -33,7 +37,8 @@ public record TreeDetailResponse(
             String visDeath,
             String visMarital,
             String visAdoption,
-            boolean claimed) {}
+            boolean claimed,
+            CapabilitySet capabilities) {}
 
     public record RelationshipItem(
             UUID id,
