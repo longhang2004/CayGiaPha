@@ -5,6 +5,7 @@ import { GuidanceChecklist } from "@/components/guidance/GuidanceChecklist";
 import { DEFAULT_GUIDANCE_STATE, GUIDANCE_STORAGE_KEY } from "@/lib/guidance/storage";
 import { EarlyAccessWelcomeDialog } from "@/components/tree/EarlyAccessWelcomeDialog";
 import { TreeEntryModal, type TreeEntryMode } from "@/components/tree/TreeEntryModal";
+import { TreeListView } from "@/components/tree/TreeListView";
 
 export default function PrototypeTreeListPage() {
   const params = useSearchParams();
@@ -15,6 +16,7 @@ export default function PrototypeTreeListPage() {
   const welcomeOpen = params.get("welcome") === "open";
   const [modalOpen, setModalOpen] = useState(Boolean(entry));
   const [openedTree, setOpenedTree] = useState<string | null>(null);
+  const [treeVisible, setTreeVisible] = useState(hasTree);
   const initialMode: TreeEntryMode = entry === "create" ? "create" : entry === "join" || entry === "pending" || entry === "error" ? "join" : "choose";
   const storage = useMemo(() => {
     const saved = { ...DEFAULT_GUIDANCE_STATE };
@@ -23,9 +25,15 @@ export default function PrototypeTreeListPage() {
   }, []);
   return <main className="tree-list-page">
     {welcomeOpen ? <EarlyAccessWelcomeDialog forceOpen persistAcknowledgement={false} /> : null}
-    <div className="tree-list-page__header"><div><p className="eyebrow">Không gian gia đình</p><h1>Cây gia phả của bạn</h1><p>Prototype dùng dữ liệu hư cấu, không gọi API.</p></div><button type="button" className="btn btn-primary btn-terracotta" onClick={() => setModalOpen(true)}>+ Thêm cây</button></div>
-    {openedTree ? <p role="status">Đang mở cây mẫu: {openedTree}</p> : null}
-    <div className="tree-list-page__grid">{hasTree ? <div className="surface-card tree-list-card"><div className="tree-list-card__main"><h3>Gia phả mẫu</h3><div className="tree-list-card__meta"><span>Vai trò: <strong>Chủ cây</strong></span><span>Phương ngữ: <strong>Nam</strong></span></div></div><div className="tree-list-card__actions"><button type="button" className="btn btn-primary btn-terracotta">Xem sơ đồ</button></div></div> : <div className="surface-card tree-list-page__empty"><h2 style={{ marginTop: 0 }}>Chào mừng bạn đến với Cây Gia Phả</h2><p>Bạn chưa có cây gia phả nào.</p><p>Chọn Thêm cây để tạo cây mới hoặc tham gia bằng mã mời.</p><div style={{ marginTop: "1.5rem" }}><GuidanceChecklist initialPresentation={state === "collapsed" ? "collapsed" : state === "deferred" || state === "skipped" ? "deferred" : "expanded"} storage={storage} role="owner" productState={{ treeOpened: completed, personCount: completed ? 2 : 0, primitiveCount: completed ? 1 : 0, addressInspected: completed, viewpointChanged: completed }} /></div></div>}</div>
+    <TreeListView
+      trees={treeVisible ? [{ id: "prototype-tree", name: "Gia phả mẫu", region: "Nam", accessRole: "OWNER" }] : []}
+      description="Prototype dùng dữ liệu hư cấu, không gọi API."
+      onAddTree={() => setModalOpen(true)}
+      onOpenTree={(treeId) => setOpenedTree(treeId)}
+      onDeleteTree={() => setTreeVisible(false)}
+      notice={openedTree ? <p role="status">Đang mở cây mẫu: {openedTree}</p> : null}
+      emptyGuidance={<GuidanceChecklist initialPresentation={state === "collapsed" ? "collapsed" : state === "deferred" || state === "skipped" ? "deferred" : "expanded"} storage={storage} role="owner" productState={{ treeOpened: completed, personCount: completed ? 2 : 0, primitiveCount: completed ? 1 : 0, addressInspected: completed, viewpointChanged: completed }} />}
+    />
     <TreeEntryModal
       key={entry ?? "interactive"}
       isOpen={modalOpen}

@@ -565,14 +565,32 @@ test.describe("Prototype Pages — smoke tests (no auth required)", () => {
     });
   }
 
-  test("home prototype — logged-out state renders sign-up and sign-in CTAs", async ({
+  test("home prototype — logged-out state renders the long-form landing contract", async ({
     page,
   }) => {
     await page.goto("/prototype/home");
-    await expect(page.locator("h1#home-title")).toContainText("Cây Gia Phả");
-    await expect(page.locator('a[href="/signup"]').first()).toBeVisible();
-    await expect(page.locator('a[href="/signin"]').first()).toBeVisible();
-    await expect(page.getByRole("link", { name: "Hướng dẫn sử dụng" })).toBeVisible();
+    await expect(page.locator("h1#home-title")).toHaveText(
+      "Gom lại những người thân, câu chuyện và cách gọi trong gia đình",
+    );
+    await expect(page.getByRole("link", { name: "Tạo cây gia phả" }).first()).toHaveAttribute(
+      "href",
+      "/signup",
+    );
+    await expect(page.getByRole("region", { name: "Cách hoạt động" })).toBeVisible();
+    await expect(page.getByRole("region", { name: "Tính năng" })).toBeVisible();
+    await expect(page.getByRole("region", { name: "Riêng tư" })).toBeVisible();
+
+    const footer = page.getByRole("contentinfo");
+    await footer.scrollIntoViewIfNeeded();
+    await expect(footer.getByRole("link", { name: "Hướng dẫn" })).toHaveAttribute("href", "/help");
+    await expect(footer.getByRole("link", { name: "Điều khoản dịch vụ" })).toHaveAttribute(
+      "href",
+      "/legal/tos",
+    );
+    await expect(footer.getByRole("link", { name: "Chính sách quyền riêng tư" })).toHaveAttribute(
+      "href",
+      "/legal/privacy",
+    );
   });
 
   test("home prototype — logged-in state toggle shows tree CTA", async ({
@@ -581,16 +599,150 @@ test.describe("Prototype Pages — smoke tests (no auth required)", () => {
     await page.goto("/prototype/home");
     // Toggle to logged-in state
     await page.click('button:has-text("Đã đăng nhập")');
-    await expect(page.locator('a[href="/tree"]').first()).toBeVisible();
-    await expect(page.getByRole("link", { name: "Hướng dẫn sử dụng" })).toBeVisible();
+    await expect(page.getByRole("link", { name: "Mở cây gia phả" }).first()).toHaveAttribute(
+      "href",
+      "/tree",
+    );
   });
 
-  test("home prototype — help CTA opens the usage guide", async ({ page }) => {
+  test("home prototype — learn action keeps dark text over the hero", async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 800 });
     await page.goto("/prototype/home");
-    await page.getByRole("link", { name: "Hướng dẫn sử dụng" }).click();
+
+    await expect(page.getByRole("link", { name: "Xem cách hoạt động" })).toHaveCSS(
+      "color",
+      "rgb(28, 26, 22)",
+    );
+  });
+
+  test("home prototype — hamburger exposes a touch-ready dark-mode switch", async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 667 });
+    await page.goto("/prototype/home");
+
+    await page.getByRole("button", { name: "Cài đặt hiển thị và Trợ giúp" }).click();
+    const toggle = page.getByRole("switch", { name: "Giao diện tối" });
+    await expect(toggle).toHaveAttribute("aria-checked", "false");
+
+    const box = await toggle.boundingBox();
+    expect(box).toBeTruthy();
+    expect(box!.width).toBeGreaterThanOrEqual(48);
+    expect(box!.height).toBeGreaterThanOrEqual(48);
+    expect(box!.width / box!.height).toBeGreaterThanOrEqual(1.5);
+    await expect(toggle).toHaveCSS("justify-content", "flex-start");
+
+    await toggle.click();
+    await expect(toggle).toHaveAttribute("aria-checked", "true");
+    await expect(page.locator("html")).toHaveClass(/dark/);
+    await expect(page.locator("html")).not.toHaveClass(/light/);
+    expect(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1,
+      ),
+    ).toBe(false);
+  });
+
+  test("home prototype — footer Help opens the usage guide", async ({ page }) => {
+    await page.goto("/prototype/home");
+    await page.getByRole("contentinfo").getByRole("link", { name: "Hướng dẫn" }).click();
     await expect(page).toHaveURL(/\/help$/, { timeout: 15_000 });
     await expect(page.getByRole("heading", { name: "Hướng dẫn sử dụng" })).toBeVisible();
   });
+
+  for (const viewport of [
+    { name: "mobile-320", width: 320, height: 568 },
+    { name: "mobile-375", width: 375, height: 667 },
+    { name: "tablet", width: 768, height: 1024 },
+    { name: "desktop", width: 1280, height: 800 },
+  ]) {
+    test(`home prototype keeps anchors, FAQ, crop, and page width stable on ${viewport.name}`, async ({ page }) => {
+      await page.setViewportSize({ width: viewport.width, height: viewport.height });
+      await page.goto("/prototype/home");
+
+      const heroImage = page.locator(".home-landing__hero-image");
+      await expect(heroImage).toBeVisible();
+      await expect(heroImage).toHaveAttribute("width", "1200");
+      await expect(heroImage).toHaveAttribute("height", "630");
+      expect(
+        await heroImage.evaluate((image) => getComputedStyle(image).objectFit),
+      ).toBe("cover");
+
+      await page.getByRole("link", { name: "Xem cách hoạt động" }).click();
+      await expect.poll(async () =>
+        page.locator("#cach-hoat-dong").evaluate((section) => {
+          const header = document.querySelector<HTMLElement>(".app-header");
+          return section.getBoundingClientRect().top - (header?.getBoundingClientRect().bottom ?? 0);
+        }),
+      ).toBeGreaterThanOrEqual(-1);
+
+      const firstQuestion = page.getByText("Dùng Cây Gia Phả có mất phí không?");
+      await firstQuestion.scrollIntoViewIfNeeded();
+      await firstQuestion.click();
+      await expect(
+        page
+          .getByRole("region", { name: "Câu hỏi thường gặp" })
+          .getByText(/^Hiện tại, Cây Gia Phả miễn phí trong giai đoạn truy cập sớm/),
+      ).toBeVisible();
+
+      await page.getByRole("contentinfo").scrollIntoViewIfNeeded();
+      const footerLinkHeights = await page
+        .locator(".home-footer__links a")
+        .evaluateAll((links) => links.map((link) => link.getBoundingClientRect().height));
+      expect(footerLinkHeights.every((height) => height >= 48)).toBe(true);
+
+      if (viewport.name === "desktop") {
+        const marketingLinkHeights = await page
+          .locator(".app-nav__marketing-links a")
+          .evaluateAll((links) => links.map((link) => link.getBoundingClientRect().height));
+        expect(marketingLinkHeights.every((height) => height >= 48)).toBe(true);
+      }
+      expect(
+        await page.evaluate(
+          () => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1,
+        ),
+      ).toBe(false);
+    });
+  }
+
+  for (const viewport of [
+    { name: "mobile", width: 375, height: 667 },
+    { name: "tablet", width: 768, height: 1024 },
+  ]) {
+    test(`home prototype reflows key content at 200% text on ${viewport.name}`, async ({ page }) => {
+      await page.setViewportSize({ width: viewport.width, height: viewport.height });
+      await page.goto("/prototype/home");
+      await page.evaluate(() => {
+        document.documentElement.style.fontSize = "200%";
+        document.documentElement.dataset.textScale = "200";
+      });
+
+      const geometry = await page.evaluate(() => {
+        const selectors = [
+          ".home-landing__hero",
+          "#home-title",
+          ".home-landing__hero-actions",
+          ".home-feature-story--wide",
+          ".home-feature-story--tall",
+          ".home-privacy",
+          ".home-footer",
+        ];
+        return selectors.map((selector) => {
+          const rect = document.querySelector<HTMLElement>(selector)!.getBoundingClientRect();
+          return { selector, left: rect.left, right: rect.right, viewportWidth: window.innerWidth };
+        });
+      });
+
+      for (const item of geometry) {
+        expect(item.left, item.selector).toBeGreaterThanOrEqual(-1);
+        expect(item.right, item.selector).toBeLessThanOrEqual(item.viewportWidth + 1);
+      }
+      expect(
+        await page.evaluate(
+          () => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1,
+        ),
+      ).toBe(false);
+      await expect(page.getByRole("link", { name: "Tạo cây gia phả" }).first()).toBeVisible();
+    });
+  }
 
   test("signin prototype — renders form with identifier and password", async ({ page }) => {
     await page.goto("/prototype/signin");
@@ -598,6 +750,7 @@ test.describe("Prototype Pages — smoke tests (no auth required)", () => {
     await expect(page.locator('input[name="identifier"]')).toBeVisible();
     await expect(page.locator('input[name="password"]')).toBeVisible();
     await expect(page.locator('button[type="submit"]')).toBeVisible();
+    await expect(page.getByRole("link", { name: "Chưa có tài khoản? Đăng ký ngay!" })).toBeVisible();
   });
 
   test("forgot-password prototype completes recovery without a live API request", async ({ page }) => {
@@ -630,6 +783,7 @@ test.describe("Prototype Pages — smoke tests (no auth required)", () => {
     await page.getByRole("checkbox", { name: /Điều khoản dịch vụ/i }).press("Space");
     await page.getByRole("checkbox", { name: /Chính sách bảo mật/i }).press("Space");
     await expect(page.locator('button[type="submit"]')).toBeEnabled();
+    await expect(page.getByRole("link", { name: "Đã có tài khoản? Đăng nhập ngay!" })).toBeVisible();
   });
 
   for (const viewport of [
@@ -728,6 +882,48 @@ test.describe("Prototype Pages — smoke tests (no auth required)", () => {
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth);
     expect(overflow).toBe(false);
     await expect(page.getByRole("button", { name: "Thu gọn" })).toBeVisible();
+  });
+
+  for (const viewport of [
+    { name: "desktop", width: 1280, height: 800 },
+    { name: "tablet", width: 768, height: 1024 },
+    { name: "mobile", width: 375, height: 667 },
+  ]) {
+    test(`tree list editorial rows stay usable on ${viewport.name}`, async ({ page }) => {
+      await page.setViewportSize({ width: viewport.width, height: viewport.height });
+      await page.goto("/prototype/tree-list");
+
+      await expect(page.getByRole("heading", { name: "Cây gia phả của bạn" })).toBeVisible();
+      await expect(page.getByText("1 cây gia phả")).toBeVisible();
+      await expect(page.locator(".tree-list-card__index")).toHaveText("01");
+      const openButton = page.getByRole("button", { name: "Xem sơ đồ" });
+      await expect(openButton).toBeVisible();
+      const openBox = await openButton.boundingBox();
+      expect(openBox).toBeTruthy();
+      expect(openBox!.height).toBeGreaterThanOrEqual(44);
+      expect(
+        await page.evaluate(
+          () => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1,
+        ),
+      ).toBe(false);
+    });
+  }
+
+  test("tree list empty state reflows at mobile 200% text", async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 667 });
+    await page.goto("/prototype/tree-list?trees=none");
+    await page.evaluate(() => {
+      document.documentElement.style.fontSize = "200%";
+      document.documentElement.dataset.textScale = "200";
+    });
+
+    await expect(page.getByRole("heading", { name: "Chào mừng bạn đến với Cây Gia Phả" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "+ Thêm cây" })).toBeVisible();
+    expect(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1,
+      ),
+    ).toBe(false);
   });
 
   test("guidance prototype states are deterministic", async ({ page }) => {
@@ -1181,6 +1377,9 @@ test.describe("Prototype Pages — smoke tests (no auth required)", () => {
       if (request.url().includes("/api/v1/me/")) dataRequests.push(request.url());
     });
     await page.goto("/prototype/settings");
+    await expect(page.getByRole("heading", { name: "Pháp lý và quyền riêng tư" })).toBeVisible();
+    await expect(page.getByRole("link", { name: "Điều khoản dịch vụ" })).toHaveAttribute("href", "/legal/tos");
+    await expect(page.getByRole("link", { name: "Chính sách quyền riêng tư" })).toHaveAttribute("href", "/legal/privacy");
     await expect(page.getByRole("heading", { name: "Quyền dữ liệu của bạn" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Nguyễn Văn Minh" })).toBeVisible();
     expect(dataRequests).toEqual([]);

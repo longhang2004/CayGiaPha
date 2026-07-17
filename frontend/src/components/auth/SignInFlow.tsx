@@ -148,7 +148,7 @@ export function SignInFlow({ redirectTo = "/", reason }: SignInFlowProps) {
           />
         </div>
         <a href={buildAuthHref("/signup", redirectTo, reason)} style={{ textAlign: "center" }}>
-          Chưa có tài khoản?
+          Chưa có tài khoản? Đăng ký ngay!
         </a>
       </div>
       </form>

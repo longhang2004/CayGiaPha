@@ -232,6 +232,51 @@ state migrates to the overview chapter, legacy `onboardingSkipped: true` still s
 existing checklist state is retained. Tree-list and empty-tree onboarding continue to use the
 existing checklist.
 
+### Marketing homepage and legal entry points
+
+The public homepage and `/prototype/home` render one shared `HomeLanding` with an internal
+`loading | signed-out | signed-in` state contract. State changes only the primary create/open-tree
+action. The page keeps one long-form order: hero, value strip, practical problem, starting actions,
+feature stories, Vietnamese kinship, privacy, audiences, FAQ, final action, and grouped footer.
+Marketing navigation uses absolute homepage anchors for cách hoạt động, tính năng, and riêng tư so
+the fixed Header and Hamburger remain correct from `/help`.
+
+The hero and Open Graph card share a 1200×630 generated editorial illustration of a Vietnamese
+multigenerational family. Its copy area remains clear on wide screens and becomes a separate image
+row on mobile. Stable HTML/CSS conceptual artwork explains features without mirroring production UI
+screens. The dedicated `_11_home.scss` owns every homepage selector and supports semantic theme
+tokens, reduced motion, 100-200% text reflow, fixed-header anchor offsets, and horizontal-overflow
+protection.
+
+Homepage motion is progressive enhancement. `HomeScrollReveal` observes existing `.home-reveal`
+markers once, adds the visible state as each section enters the viewport, and leaves all content
+visible when animation is disabled or `IntersectionObserver` is unavailable. Reduced-motion users
+receive no entrance movement. FAQ questions override the global button alignment, reserve a fixed
+trailing icon slot, and keep left-aligned wrapping at every supported text scale.
+
+The homepage footer groups product, support, and legal destinations. `LegalLinksCard` is shared by
+production and prototype Settings and appears immediately before Data Rights. The sidebar does not
+duplicate these legal links. Canonical ToS and Privacy routes, content, versions, consent behavior,
+and data-rights behavior remain unchanged.
+
+Canonical Help bumps `dieu-huong-so-do` and `xem-va-luu-so-do` whenever bounded-camera behavior
+changes. User-facing guidance describes four-direction stopping, limited zoom, and Đặt lại restoring
+the initial state without exposing implementation constants.
+
+### Tree list presentation
+
+Production `/tree` and `/prototype/tree-list` render the same `TreeListView`. The view presents a
+truthful tree count and a semantic ordered catalog with visible row numbers, tree name, access role,
+regional dialect, primary open action, and an Owner-only delete action. Desktop uses editorial rows
+and dividers instead of elevated cards; tablet and mobile move actions below the row content while
+preserving 44px minimum targets and page-width containment. The empty state retains the canonical
+Guidance checklist and the shared add-tree entry point. Data fetching, create/join/delete callbacks,
+confirmation, capability, and routing stay owned by the production page.
+
+Sign-in and sign-up cross-links use complete prompts, respectively “Chưa có tài khoản? Đăng ký
+ngay!” and “Đã có tài khoản? Đăng nhập ngay!”, while preserving invitation redirect and reason
+parameters.
+
 ### Auth_Service
 
 Handles password/Google sign-up, sign-in, recovery, and session lifecycle. (Requirements 1, 2, 13)

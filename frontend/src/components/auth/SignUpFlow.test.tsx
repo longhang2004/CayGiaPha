@@ -77,7 +77,7 @@ describe("SignUpFlow", () => {
       />,
     );
 
-    expect(screen.getByRole("link", { name: "Đã có tài khoản?" })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: "Đã có tài khoản? Đăng nhập ngay!" })).toHaveAttribute(
       "href",
       "/signin?redirect=%2Finvitation%2Finv-1&reason=invitation",
     );

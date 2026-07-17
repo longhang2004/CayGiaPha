@@ -2015,20 +2015,12 @@ html.dark .double-bezel-card {
   button:hover:not(:disabled),
   .btn:hover:not(:disabled),
   [role="button"]:hover:not(:disabled),
-  a.button:hover:not(:disabled),
-  .home-hero__card:hover,
-  .home-steps article:hover {
+  a.button:hover:not(:disabled) {
     transform: none;
   }
 }
 
 @media (max-width: 900px) {
-  .home-hero {
-    grid-template-columns: 1fr;
-    gap: var(--space-xl);
-    padding-block: calc(var(--space-2xl) + 1rem) var(--space-xl);
-  }
-
   .tree-workspace {
     width: 100% !important;
     max-width: 100% !important;
@@ -2153,11 +2145,6 @@ html.dark .double-bezel-card {
     border-radius: 0;
   }
 
-  .home-steps {
-    grid-template-columns: 1fr;
-    padding-bottom: var(--space-xl);
-  }
-
   .tree-workspace__header {
     flex-direction: column;
   }
@@ -2170,102 +2157,6 @@ html.dark .double-bezel-card {
 @media (max-width: 640px) {
   main {
     padding-inline: var(--space-sm);
-  }
-
-  .home-hero {
-    min-height: auto;
-    padding-top: calc(var(--space-xl) + 4rem);
-    gap: var(--space-lg);
-  }
-
-  .home-hero__content h1 {
-    margin-bottom: var(--space-md);
-    font-size: clamp(3.5rem, 18vw, 5.25rem);
-  }
-
-  .home-hero__lead {
-    margin-bottom: var(--space-lg);
-    font-size: 1.125rem;
-    line-height: 1.55;
-  }
-
-  .home-hero__image {
-    height: 180px;
-  }
-
-  .home-hero__card-body {
-    padding: var(--space-md);
-  }
-
-  .home-hero__actions .btn,
-  .home-hero__loading {
-    width: 100%;
-  }
-
-  .tree-list-page {
-    padding: var(--space-md) var(--space-sm) var(--space-xl);
-  }
-
-  .tree-list-page__header {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    align-items: end;
-    gap: var(--space-md);
-    margin-bottom: var(--space-lg);
-  }
-
-  .tree-list-page__eyebrow {
-    display: none;
-  }
-
-  .tree-list-page h1 {
-    font-size: clamp(2.75rem, 14vw, 4rem);
-  }
-
-  .tree-list-page__header p:not(.eyebrow) {
-    margin-top: 0.75rem;
-    font-size: 1rem;
-    line-height: 1.45;
-  }
-
-  .tree-list-page__header .btn {
-    align-self: center;
-    min-width: 7.5rem;
-    min-height: 4.25rem;
-    border-radius: 999px;
-    padding-inline: 1rem;
-    line-height: 1.1;
-    white-space: normal;
-  }
-
-  .tree-list-card {
-    grid-template-columns: 1fr;
-    gap: var(--space-md);
-    padding: var(--space-lg);
-  }
-
-  .tree-list-card__meta {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: var(--space-sm);
-  }
-
-  .tree-list-card__meta span {
-    display: grid;
-    gap: 0.25rem;
-  }
-
-  .tree-list-card__actions {
-    display: grid;
-    grid-template-columns: 1fr auto;
-  }
-
-  .tree-list-card__actions .btn {
-    min-height: 3.5rem;
-  }
-
-  .tree-list-card__delete {
-    min-width: 4.5rem;
   }
 
   .onboarding-strip {

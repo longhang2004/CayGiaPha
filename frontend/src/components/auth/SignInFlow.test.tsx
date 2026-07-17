@@ -50,7 +50,7 @@ describe("SignInFlow", () => {
   it("links to sign up while preserving invitation context", () => {
     render(<GoogleOAuthProvider clientId="test"><SignInFlow redirectTo="/invitation/inv-1" reason="invitation" /></GoogleOAuthProvider>);
 
-    expect(screen.getByRole("link", { name: "Chưa có tài khoản?" })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: "Chưa có tài khoản? Đăng ký ngay!" })).toHaveAttribute(
       "href",
       "/signup?redirect=%2Finvitation%2Finv-1&reason=invitation",
     );

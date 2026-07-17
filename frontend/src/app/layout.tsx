@@ -24,7 +24,7 @@ export const metadata: Metadata = {
     template: "%s | Cây Gia Phả",
   },
   description:
-    "Ứng dụng tạo cây gia phả, sơ đồ dòng họ trực tuyến cho người Việt. Tự động tính toán cách xưng hô (Bắc, Trung, Nam), mời cộng tác và lưu trữ kỷ niệm.",
+    "Gom người thân, quan hệ, ảnh kỷ niệm và cách xưng hô tiếng Việt vào một cây gia phả để cả nhà cùng bổ sung.",
   keywords: [
     "cây gia phả",
     "sơ đồ dòng họ",
@@ -57,14 +57,14 @@ export const metadata: Metadata = {
     url: "https://cay-gia-pha-six.vercel.app",
     title: "Cây Gia Phả | Tạo Sơ Đồ Dòng Họ & Xưng Hô Tự Động",
     description:
-      "Ứng dụng tạo cây gia phả, sơ đồ dòng họ trực tuyến cho người Việt. Tự động tính toán cách xưng hô (Bắc, Trung, Nam), mời cộng tác và lưu trữ kỷ niệm.",
+      "Gom người thân, quan hệ, ảnh kỷ niệm và cách xưng hô tiếng Việt vào một cây gia phả để cả nhà cùng bổ sung.",
     siteName: "Cây Gia Phả",
     images: [
       {
-        url: "/hero.png",
+        url: "/home-heritage-family.jpg",
         width: 1200,
         height: 630,
-        alt: "Cây Gia Phả - Giao diện chính",
+        alt: "Gia đình Việt nhiều thế hệ quây quần trong sân nhà",
       },
     ],
   },
@@ -73,7 +73,7 @@ export const metadata: Metadata = {
     title: "Cây Gia Phả | Tạo Sơ Đồ Dòng Họ & Xưng Hô Tự Động",
     description:
       "Ứng dụng tạo cây gia phả trực tuyến cho người Việt. Tự động tính cách xưng hô, mời cộng tác và lưu trữ kỷ niệm.",
-    images: ["/hero.png"],
+    images: ["/home-heritage-family.jpg"],
   },
 };
 
