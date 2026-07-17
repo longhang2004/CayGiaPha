@@ -70,6 +70,8 @@ describe("KinshipResolver", () => {
   const ego = person("male", 2, 1995);
   const siblingElder = person("female", 1, 1992);
   const siblingYounger = person("male", 3, 1998);
+  const siblingBirthYearOnly = person("female", null, 1993);
+  const siblingInvalidOrder = person("male", 100, 1994);
   const childNode = person("female", 1, 2020);
 
   // Disconnected component
@@ -86,6 +88,8 @@ describe("KinshipResolver", () => {
   mother(motherNode, ego);
   father(fatherNode, siblingElder);
   father(fatherNode, siblingYounger);
+  father(fatherNode, siblingBirthYearOnly);
+  father(fatherNode, siblingInvalidOrder);
 
   father(mgf, motherNode);
   father(mgf, maternalUncle);
@@ -166,6 +170,12 @@ describe("KinshipResolver", () => {
     expect(r.targetGender).toBe("FEMALE");
     expect(r.branchOrder).toBe("ELDER");
     expect(r.spouseHop).toBe(false);
+    expect(res.ordinalContext).toEqual({
+      sourcePersonId: siblingElder,
+      birthOrder: 1,
+      band: "sibling",
+      inheritedThroughSpouse: false,
+    });
   });
 
   it("younger sibling is younger", () => {
@@ -177,6 +187,16 @@ describe("KinshipResolver", () => {
     expect(r.branchOrder).toBe("YOUNGER");
   });
 
+  it.each([siblingBirthYearOnly, siblingInvalidOrder])(
+    "does not create ordinal context without a valid explicit birth order: %s",
+    (siblingId) => {
+      const res = resolve(ego, siblingId);
+
+      expect(res.status).toBe("RESOLVED");
+      expect(res.ordinalContext).toBeNull();
+    },
+  );
+
   it("spouse of relative sets spouseHop and targetGender", () => {
     const res = resolve(ego, auntInLaw);
     expect(res.status).toBe("RESOLVED");
@@ -187,6 +207,12 @@ describe("KinshipResolver", () => {
     expect(r.targetGender).toBe("FEMALE");
     expect(r.branchOrder).toBe("ELDER");
     expect(r.spouseHop).toBe(true);
+    expect(res.ordinalContext).toEqual({
+      sourcePersonId: uncleElder,
+      birthOrder: 1,
+      band: "parent_sibling",
+      inheritedThroughSpouse: true,
+    });
   });
 
   it("bare spouse is self sides with spouseHop", () => {
@@ -210,6 +236,7 @@ describe("KinshipResolver", () => {
     expect(r.side).toBe("SELF");
     expect(r.targetGender).toBe("FEMALE");
     expect(r.branchOrder).toBe("SELF");
+    expect(res.ordinalContext).toBeNull();
   });
 
   it("ego addressing itself is self", () => {
@@ -254,6 +281,7 @@ describe("KinshipResolver", () => {
       expect(batch.status).toBe(single.status);
       if (single.isResolved()) {
         expect(batch.relation!.canonicalKey()).toBe(single.relation!.canonicalKey());
+        expect(batch.ordinalContext).toEqual(single.ordinalContext);
       }
     }
   });

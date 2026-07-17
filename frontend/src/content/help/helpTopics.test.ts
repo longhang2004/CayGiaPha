@@ -4,11 +4,11 @@ import { HELP_TOPICS, getActiveHelpTopics, getHelpExcerpt, getHelpTopic } from "
 const ALL_ROLES = ["owner", "editor", "reader"];
 
 const EXPECTED_METADATA = {
-  "tao-hoac-mo-cay": { version: 3, reviewedAt: "2026-07-15" },
+  "tao-hoac-mo-cay": { version: 4, reviewedAt: "2026-07-17" },
   "them-nguoi-dau-tien": { version: 2, reviewedAt: "2026-07-13" },
   "them-quan-he-ro-rang": { version: 2, reviewedAt: "2026-07-13" },
-  "xem-thong-tin-va-xung-ho": { version: 2, reviewedAt: "2026-07-13" },
-  "doi-diem-nhin": { version: 2, reviewedAt: "2026-07-13" },
+  "xem-thong-tin-va-xung-ho": { version: 3, reviewedAt: "2026-07-17" },
+  "doi-diem-nhin": { version: 3, reviewedAt: "2026-07-17" },
   "dieu-huong-so-do": { version: 2, reviewedAt: "2026-07-13" },
   "doc-duong-quan-he": { version: 3, reviewedAt: "2026-07-15" },
   "chon-vung-mien": { version: 2, reviewedAt: "2026-07-13" },
@@ -69,11 +69,22 @@ describe("canonical Help registry", () => {
     }
   });
 
-  it("explains the mounted workspace back link and viewpoint context", () => {
+  it("explains the mounted workspace back link and kinship reference context", () => {
     const contextual = getHelpExcerpt("tao-hoac-mo-cay", "contextual") ?? "";
     expect(contextual).toContain("Các cây");
-    expect(contextual).toContain("Đang xem từ");
+    expect(contextual).toContain("Xét vai vế theo");
+    expect(contextual).not.toContain("Đang xem từ");
     expect(contextual).not.toContain("cây đang mở");
+  });
+
+  it("uses the approved kinship-reference terminology without renaming the stable topic ID", () => {
+    const topic = getHelpTopic("doi-diem-nhin");
+    expect(topic?.id).toBe("doi-diem-nhin");
+    expect(topic?.title).toBe("Đổi người xét");
+    const copy = [topic?.summary, topic?.purpose, ...(topic?.steps ?? []), topic?.recovery]
+      .join(" ");
+    expect(copy).toContain("xét vai vế");
+    expect(copy).not.toMatch(/điểm nhìn|góc nhìn/i);
   });
 
   it("explains both mounted footer actions", () => {

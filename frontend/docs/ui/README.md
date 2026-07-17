@@ -140,6 +140,11 @@ not automatically page-overflow bugs.
   list. Person view, create, edit, and add-relative modes share the side-panel chrome/body contract;
   normal actions remain grouped, the destructive action is separated, and the person surface has a
   typed manual replay for its Coach chapter.
+- User-facing kinship reference copy is “Xét vai vế theo [Tên]” and “Đổi người xét”. Keep the stable
+  internal `viewpoint` names and reserve “góc nhìn” for graph camera/zoom controls such as Đặt lại.
+- Region Nam may append a privacy-safe, display-only calling number for sibling and parent-sibling
+  terms (including their spouses) when explicit birth order is visible. Bắc/Trung, missing or hidden
+  order, and all ineligible relation bands retain the canonical base term; never infer “Út”.
 - The action drawer remains a compact right drawer on desktop and a vertically entering/exiting
   bottom sheet on mobile/tablet. Mobile/tablet graph controls place exactly eight primary actions in
   a 4×2 grid, with selected-person centring and full Help outside the grid; desktop controls remain

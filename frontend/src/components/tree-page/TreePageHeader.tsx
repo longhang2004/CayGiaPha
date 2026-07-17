@@ -101,7 +101,7 @@ export function TreePageHeader({ treeListHref = "/tree", helpHref = "/help" }: T
           aria-live="polite"
           data-guidance-anchor="workspace-context"
         >
-          <span>Đang xem từ</span>
+          <span>Xét vai vế theo</span>
           <strong>{ego?.displayName ?? "Chưa chọn người"}</strong>
         </div>
         <button
@@ -112,7 +112,7 @@ export function TreePageHeader({ treeListHref = "/tree", helpHref = "/help" }: T
           data-guidance-anchor="workspace-viewpoint"
           aria-haspopup="dialog"
         >
-          Đổi người
+          Đổi người xét
         </button>
       </header>
 
@@ -185,7 +185,7 @@ export function TreePageHeader({ treeListHref = "/tree", helpHref = "/help" }: T
             data-panel-scroll-region="actions"
           >
             <p className="tree-workspace-action-drawer__description">
-              Tìm người, đổi góc nhìn hoặc quản lý cây gia phả.
+              Tìm người, đổi người xét hoặc quản lý cây gia phả.
             </p>
             <div className="tree-workspace-action-drawer__list">
               <button
@@ -199,11 +199,11 @@ export function TreePageHeader({ treeListHref = "/tree", helpHref = "/help" }: T
               </button>
               <button
                 type="button"
-                aria-label="Đổi góc nhìn"
+                aria-label="Đổi người xét"
                 onClick={() => closeActionDrawerAnd(() => setIsViewpointOpen(true))}
               >
                 <CenterIcon size={20} />
-                <span><strong>Đổi góc nhìn</strong><small>Tính lại cách xưng hô từ một người khác</small></span>
+                <span><strong>Đổi người xét</strong><small>Tính lại vai vế theo một người khác</small></span>
               </button>
               <button
                 type="button"

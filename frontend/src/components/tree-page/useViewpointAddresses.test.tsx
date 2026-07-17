@@ -81,7 +81,7 @@ describe("useViewpointAddresses", () => {
     rerender({ treeId: "t1", egoId: "p1", persons, relationships, refreshKey: 1, fetchAddresses });
 
     await waitFor(() => expect(result.current.loading).toBe(false));
-    expect(result.current.error).toBe("Không tải được cách xưng hô cho góc nhìn này.");
+    expect(result.current.error).toBe("Không tải được cách xưng hô theo người đang xét.");
     expect(result.current.ready).toBe(true);
     expect(result.current.addresses.size).toBe(0);
   });

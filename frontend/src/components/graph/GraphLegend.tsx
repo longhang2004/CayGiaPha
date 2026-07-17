@@ -53,7 +53,7 @@ export function GraphLegend() {
             </div>
             <div className="graph-legend__item">
               <div className="graph-legend__node graph-legend__node--ego">Aa</div>
-              <span>Góc nhìn hiện tại</span>
+              <span>Người đang xét vai vế</span>
             </div>
           </div>
         </div>

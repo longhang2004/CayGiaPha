@@ -2,13 +2,19 @@ import { db } from "../../db";
 import { regionKinshipTerms, relationships, persons, trees } from "../../db/schema";
 import { eq, and, sql } from "drizzle-orm";
 import { KinshipGraphProjection, Relationship } from "./projection";
-import { KinshipResolver, CanonicalResolution, CanonicalRelation } from "./resolver";
+import {
+  KinshipResolver,
+  CanonicalResolution,
+  CanonicalRelation,
+  KinshipOrdinalContext,
+} from "./resolver";
 import { SEEDED_KINSHIP_TERMS } from "./seededTerms";
 
 export interface AddressResolution {
   status: "RESOLVED" | "ASSERTED" | "UNDEFINED_FOR_REGION" | "UNRESOLVED_NO_PATH" | "UNRESOLVED_INDETERMINATE_ORDER";
   term: string | null;
   relation: CanonicalRelation | null;
+  ordinalContext: KinshipOrdinalContext | null;
 }
 
 let isSeeded = false;
@@ -113,6 +119,7 @@ export class KinshipAddressService {
         status: "ASSERTED",
         term: assertedLabel,
         relation: null,
+        ordinalContext: null,
       };
     }
 
@@ -133,7 +140,12 @@ export class KinshipAddressService {
       .then((rows) => rows[0]);
 
     if (!treeRecord) {
-      return { status: "UNRESOLVED_NO_PATH", term: null, relation: null };
+      return {
+        status: "UNRESOLVED_NO_PATH",
+        term: null,
+        relation: null,
+        ordinalContext: null,
+      };
     }
     const region = treeRecord.region;
 
@@ -174,6 +186,7 @@ export class KinshipAddressService {
         status: canonicalResolution.status as any,
         term: null,
         relation: null,
+        ordinalContext: null,
       };
     }
 
@@ -197,12 +210,14 @@ export class KinshipAddressService {
         status: "RESOLVED",
         term: termRecord.term,
         relation,
+        ordinalContext: canonicalResolution.ordinalContext,
       };
     } else {
       return {
         status: "UNDEFINED_FOR_REGION",
         term: null,
         relation,
+        ordinalContext: canonicalResolution.ordinalContext,
       };
     }
   }

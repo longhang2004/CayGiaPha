@@ -9,6 +9,6 @@ export const CORE_CHECKLIST: ChecklistItemDefinition[] = [
   { id: "core-first-person", title: "Thêm người đầu tiên", topicId: "them-nguoi-dau-tien", roles: ["owner", "editor"], eligible: s => s.treeOpened && s.personCount === 0, complete: s => s.personCount > 0 },
   { id: "core-first-primitive", title: "Nối cha, mẹ, vợ/chồng hoặc con", topicId: "them-quan-he-ro-rang", roles: ["owner", "editor"], eligible: s => s.treeOpened && s.personCount > 0 && s.primitiveCount === 0, complete: s => s.primitiveCount > 0 },
   { id: "core-inspect-address", title: "Chọn một người để xem xưng hô", topicId: "xem-thong-tin-va-xung-ho", roles: ALL, eligible: s => s.treeOpened && s.personCount > 0, complete: s => s.addressInspected },
-  { id: "core-viewpoint", title: "Thử đổi điểm nhìn", topicId: "doi-diem-nhin", roles: ALL, eligible: s => s.treeOpened && s.personCount >= 2, complete: s => s.viewpointChanged },
+  { id: "core-viewpoint", title: "Thử đổi người xét", topicId: "doi-diem-nhin", roles: ALL, eligible: s => s.treeOpened && s.personCount >= 2, complete: s => s.viewpointChanged },
 ];
 export function getEligibleChecklist(role: GuidanceRole, state: GuidanceProductState) { return CORE_CHECKLIST.filter(i => i.roles.includes(role) && (i.eligible(state) || i.complete(state))).slice(0, 5); }

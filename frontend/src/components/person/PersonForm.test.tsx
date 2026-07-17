@@ -39,6 +39,16 @@ describe("PersonForm (create)", () => {
     );
   });
 
+  it("explains birth order using the Southern calling convention", () => {
+    render(<PersonForm mode="create" treeId="t1" />);
+    expect(
+      screen.getByRole("spinbutton", {
+        name: "Thứ tự sinh trong anh chị em ruột (tùy chọn)",
+      }),
+    ).toBeInTheDocument();
+    expect(screen.getByText("1 = con đầu, miền Nam gọi Hai.")).toBeInTheDocument();
+  });
+
   it("posts the right body to /persons on submit", async () => {
     const fetchMock = mockFetchQueue([{ ok: true, status: 201, body: { id: "p1" } }]);
     const onSuccess = vi.fn();

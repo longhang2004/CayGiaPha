@@ -25,7 +25,10 @@ describe("GuidanceChecklist", () => {
       "Chọn một người trên sơ đồ để mở thông tin và xem cách xưng hô.",
     );
     expect(getHelpExcerpt("doi-diem-nhin", "checklist", "owner")).toBe(
-      "Chọn người khác trong Điểm nhìn để tính lại cách xưng hô.",
+      "Chọn Đổi người xét để tính lại cách xưng hô theo một người khác.",
+    );
+    expect(CORE_CHECKLIST.find((item) => item.id === "core-viewpoint")?.title).toBe(
+      "Thử đổi người xét",
     );
   });
 

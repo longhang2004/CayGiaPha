@@ -9,6 +9,20 @@ import crypto from "crypto";
 
 export type Role = "OWNER" | "CONTRIBUTOR" | "LINKED" | "READER" | "NONE";
 
+export function roleForPersonProjection(
+  treeRole: Role,
+  linkedPersonIds: ReadonlySet<string>,
+  personId: string,
+): Role {
+  if (treeRole === "OWNER" || treeRole === "CONTRIBUTOR") {
+    return treeRole;
+  }
+  if (treeRole === "NONE") {
+    return "NONE";
+  }
+  return linkedPersonIds.has(personId) ? "LINKED" : "READER";
+}
+
 export interface Capabilities {
   editContent: boolean;
   editRelationships: boolean;
@@ -100,6 +114,27 @@ export async function getAuthContext(): Promise<AuthContext> {
 
 
 export class AuthorizationService {
+  async linkedPersonIds(
+    currentUserId: string | null,
+    targetTreeId: string,
+  ): Promise<Set<string>> {
+    if (!currentUserId) {
+      return new Set();
+    }
+
+    const rows = await db
+      .select({ personId: claims.personId })
+      .from(claims)
+      .innerJoin(persons, eq(claims.personId, persons.id))
+      .where(
+        and(
+          eq(persons.treeId, targetTreeId),
+          eq(claims.userId, currentUserId),
+        ),
+      );
+    return new Set(rows.map((row) => row.personId));
+  }
+
   async classify(
     currentUserId: string | null,
     targetTreeId: string,

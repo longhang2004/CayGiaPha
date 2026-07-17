@@ -119,6 +119,20 @@ export function projectPerson(
   return projected;
 }
 
+export function canExposeKinshipOrdinal(
+  person: PrivacyPerson,
+  options: {
+    role: Role;
+    livingRedaction: boolean;
+    currentYear?: number;
+  },
+): boolean {
+  return Object.prototype.hasOwnProperty.call(
+    projectPerson(person, options),
+    "birthOrder",
+  );
+}
+
 export function canViewPrimaryPhoto(person: PrivacyPerson, role: Role): boolean {
   return canViewGovernedField(role, person.visPhoto);
 }

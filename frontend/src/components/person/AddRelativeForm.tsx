@@ -727,7 +727,7 @@ return (
             )}
           </div>
 
-          <FormControl id="newBirthOrder" label="Thứ tự sinh (tùy chọn)">
+          <FormControl id="newBirthOrder" label="Thứ tự sinh trong anh chị em ruột (tùy chọn)">
             <Input
               id="newBirthOrder"
               type="number"
@@ -738,7 +738,7 @@ return (
               disabled={submitting}
             />
             <p className="field-hint" style={{ fontSize: "0.75rem", marginTop: "4px" }}>
-              Số 1 = con đầu lòng (miền Nam gọi là Anh/Chị Hai).
+              1 = con đầu, miền Nam gọi Hai.
             </p>
           </FormControl>
 

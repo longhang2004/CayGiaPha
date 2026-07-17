@@ -19,7 +19,7 @@ vi.mock("@/app/providers", () => ({
 }));
 vi.mock("@/components/search/SearchPanel", () => ({ SearchPanel: () => <div>Tìm kiếm</div> }));
 vi.mock("./TreePersonPicker", () => ({
-  TreePersonPicker: ({ isOpen }: { isOpen: boolean }) => isOpen ? <div role="dialog" aria-label="Chọn người làm góc nhìn" /> : null,
+  TreePersonPicker: ({ isOpen }: { isOpen: boolean }) => isOpen ? <div role="dialog" aria-label="Chọn người để xét vai vế" /> : null,
 }));
 vi.mock("@/components/graph/PersonInfoPanel", () => ({
   PersonInfoPanel: ({ person }: { person: Person }) => <div>{person.displayName}</div>,
@@ -177,20 +177,22 @@ describe("tree workspace capability-driven actions", () => {
     renderRole("OWNER");
     const header = screen.getByRole("banner");
     expect(screen.getByRole("link", { name: "Các cây" })).toBeInTheDocument();
-    expect(within(header).getByText("Đang xem từ")).toBeInTheDocument();
+    expect(within(header).getByText("Xét vai vế theo")).toBeInTheDocument();
     expect(within(header).getByText("Nguyễn Văn Minh")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Đổi người" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Đổi người xét" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Thêm người thân" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Chỉnh sửa thông tin" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Thêm quan hệ" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Đang dùng để xét vai vế" })).toBeDisabled();
 
     await userEvent.click(screen.getByRole("button", { name: "Thao tác khác" }));
+    const actionDrawer = screen.getByRole("dialog", { name: "Thao tác khác" });
     expect(screen.getByRole("button", { name: "Cộng tác" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Cài đặt cây" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Thêm thành viên khác" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Sửa người đang chọn" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Tìm người" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Đổi góc nhìn" })).toBeInTheDocument();
+    expect(within(actionDrawer).getByRole("button", { name: "Đổi người xét" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Mở hướng dẫn nhanh" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Trung tâm hướng dẫn" })).toBeInTheDocument();
   });
@@ -277,11 +279,12 @@ describe("tree workspace capability-driven actions", () => {
     expect(screen.queryByText("Mời xác nhận")).not.toBeInTheDocument();
     expect(screen.getByTestId("photos")).toHaveAttribute("data-can-edit", "false");
     await userEvent.click(screen.getByRole("button", { name: "Thao tác khác" }));
+    const actionDrawer = screen.getByRole("dialog", { name: "Thao tác khác" });
     expect(screen.queryByRole("button", { name: "Cộng tác" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Thêm thành viên khác" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Sửa người đang chọn" })).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Tìm người" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Đổi góc nhìn" })).toBeInTheDocument();
+    expect(within(actionDrawer).getByRole("button", { name: "Đổi người xét" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Mở hướng dẫn nhanh" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Trung tâm hướng dẫn" })).toBeInTheDocument();
   });

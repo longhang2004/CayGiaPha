@@ -59,7 +59,7 @@ export default function PrototypeHomePage() {
             <h1 id="home-title">Cây Gia Phả</h1>
             <p className="home-hero__lead">
               Tạo hoặc tham gia cây gia phả, cùng người thân bổ sung thành viên và
-              ảnh kỷ niệm, rồi xem cách xưng hô tiếng Việt được tính theo điểm nhìn
+              ảnh kỷ niệm, rồi xem cách xưng hô tiếng Việt được tính theo người bạn chọn để xét vai vế
               và vùng Bắc, Trung, Nam.
             </p>
 
@@ -93,7 +93,7 @@ export default function PrototypeHomePage() {
               />
               <div className="home-hero__card-body">
                 <div>
-                  <span className="home-hero__stat">Một cây, nhiều góc nhìn</span>
+                  <span className="home-hero__stat">Một cây, nhiều cách xưng hô</span>
                   <p className="home-hero__card-copy">
                     Quản lý thành viên, quan hệ, ảnh, quyền cộng tác và chế độ chia
                     sẻ trong cùng một không gian gia đình.
@@ -102,7 +102,7 @@ export default function PrototypeHomePage() {
                 <div className="home-feature-grid">
                   <span>Quan hệ trực tiếp hoặc tên gọi tự khai báo</span>
                   <span>Bảo vệ người còn sống và kiểm soát chia sẻ</span>
-                  <span>Tìm kiếm, đổi điểm nhìn và cộng tác</span>
+                  <span>Tìm kiếm, đổi người xét và cộng tác</span>
                 </div>
               </div>
             </div>

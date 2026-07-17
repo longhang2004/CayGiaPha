@@ -186,10 +186,11 @@ test.describe("Prototype Pages — smoke tests (no auth required)", () => {
     await expect(otherActions).toBeFocused();
 
     await otherActions.click();
-    await page.getByRole("button", { name: "Đổi góc nhìn" }).click();
-    const viewpointDialog = page.getByRole("dialog", { name: "Chọn người làm góc nhìn" });
-    await viewpointDialog.getByRole("button", { name: "Xem từ Nguyễn Thị Minh" }).click();
+    await page.getByRole("dialog", { name: "Thao tác khác" }).getByRole("button", { name: "Đổi người xét" }).click();
+    const viewpointDialog = page.getByRole("dialog", { name: "Chọn người để xét vai vế" });
+    await viewpointDialog.getByRole("button", { name: "Xét theo Nguyễn Thị Minh" }).click();
     await expect(page.locator(".tree-page-header")).toContainText("Nguyễn Thị Minh");
+    await expect(page.getByText("chồng", { exact: true }).first()).toBeVisible();
   });
 
   test("populated workspace reflows at 320px with 200 percent text", async ({ page }) => {
@@ -217,18 +218,28 @@ test.describe("Prototype Pages — smoke tests (no auth required)", () => {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto("/prototype/tree");
 
-    await page.getByRole("button", { name: "Đổi người" }).click();
-    const dialog = page.getByRole("dialog", { name: "Chọn người làm góc nhìn" });
-    const choices = dialog.getByRole("button", { name: /^Xem từ / });
+    await page.getByRole("button", { name: "Đổi người xét" }).click();
+    const dialog = page.getByRole("dialog", { name: "Chọn người để xét vai vế" });
+    const choices = dialog.getByRole("button", { name: /^Xét theo / });
     await expect(dialog.getByRole("status")).toHaveText(`Tìm thấy ${MOCK_PERSON_COUNT} người.`);
     await expect(choices).toHaveCount(MOCK_PERSON_COUNT);
 
-    await dialog.getByRole("searchbox", { name: "Tìm người làm góc nhìn" }).fill("nhut tien");
+    await dialog.getByRole("searchbox", { name: "Tìm người để xét" }).fill("nhut tien");
     await expect(dialog.getByRole("status")).toHaveText("Tìm thấy 1 người.");
     await expect(choices).toHaveCount(1);
-    await dialog.getByRole("button", { name: "Xem từ Hàng Nhựt Tiến" }).click();
+    await dialog.getByRole("button", { name: "Xét theo Hàng Nhựt Tiến" }).click();
 
     await expect(page.locator(".tree-page-header")).toContainText("Hàng Nhựt Tiến");
+  });
+
+  test("Southern prototype exposes sibling and parent-sibling ordinal labels", async ({ page }) => {
+    await installCompletedWorkspaceGuidance(page);
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto("/prototype/tree");
+
+    await expect(page.getByText("Anh Hai", { exact: true })).toBeVisible();
+    await expect(page.getByText("Cậu Ba", { exact: true })).toBeVisible();
+    await expect(page.getByText("Dì Tư", { exact: true })).toBeVisible();
   });
 
   test("workspace viewpoint picker owns one scrolling list while chrome stays fixed", async ({ page }) => {
@@ -236,8 +247,8 @@ test.describe("Prototype Pages — smoke tests (no auth required)", () => {
     await page.setViewportSize({ width: 375, height: 667 });
     await page.goto("/prototype/tree");
 
-    await page.getByRole("button", { name: "Đổi người" }).click();
-    const dialog = page.getByRole("dialog", { name: "Chọn người làm góc nhìn" });
+    await page.getByRole("button", { name: "Đổi người xét" }).click();
+    const dialog = page.getByRole("dialog", { name: "Chọn người để xét vai vế" });
     await expectWithinViewport(dialog);
 
     const scrollRegions = dialog.locator('[data-panel-scroll-region="picker"]');
@@ -245,7 +256,7 @@ test.describe("Prototype Pages — smoke tests (no auth required)", () => {
     expect(await dialog.evaluate((element) => getComputedStyle(element).overflowY)).toBe("hidden");
     const scrollRegion = scrollRegions.first();
     const chrome = dialog.locator(".tree-person-picker__chrome");
-    const close = dialog.getByRole("button", { name: "Đóng chọn người làm góc nhìn" });
+    const close = dialog.getByRole("button", { name: "Đóng chọn người để xét vai vế" });
     const [chromeBefore, closeBefore] = await Promise.all([
       requiredBoundingBox(chrome),
       requiredBoundingBox(close),
@@ -309,12 +320,12 @@ test.describe("Prototype Pages — smoke tests (no auth required)", () => {
     await page.goto("/prototype/tree");
     await page.evaluate(() => document.fonts.ready);
 
-    await page.getByRole("button", { name: "Đổi người" }).click();
-    const pickerDialog = page.getByRole("dialog", { name: "Chọn người làm góc nhìn" });
+    await page.getByRole("button", { name: "Đổi người xét" }).click();
+    const pickerDialog = page.getByRole("dialog", { name: "Chọn người để xét vai vế" });
     await expectWithinViewport(pickerDialog);
     const pickerChrome = pickerDialog.locator(".tree-person-picker__chrome");
     const pickerClose = pickerDialog.getByRole("button", {
-      name: "Đóng chọn người làm góc nhìn",
+      name: "Đóng chọn người để xét vai vế",
     });
     const [pickerChromeBefore, pickerCloseBefore] = await Promise.all([
       requiredBoundingBox(pickerChrome),
@@ -945,7 +956,7 @@ test.describe("Prototype Pages — smoke tests (no auth required)", () => {
     await expect(page.getByRole("button", { name: "Thêm người thân" })).toHaveCount(0);
     await page.getByRole("button", { name: "Thao tác khác" }).click();
     await expect(page.getByRole("button", { name: "Tìm người" })).toBeVisible();
-    await expect(page.getByRole("button", { name: "Đổi góc nhìn" })).toBeVisible();
+    await expect(page.getByRole("dialog", { name: "Thao tác khác" }).getByRole("button", { name: "Đổi người xét" })).toBeVisible();
     await expect(page.getByRole("button", { name: "Mở hướng dẫn nhanh" })).toBeVisible();
   });
 
@@ -958,6 +969,14 @@ test.describe("Prototype Pages — smoke tests (no auth required)", () => {
     await expect(dialog.getByRole("heading", { level: 2, name: "Cài đặt" })).toBeVisible();
     await expect(dialog.getByText("Hàng Nhựt Prototype")).toBeVisible();
     await expect(dialog.getByText("prototype@caygipha.dev")).toBeVisible();
+
+    await dialog.getByLabel("Cách xưng hô theo vùng miền").selectOption("Bac");
+    await expect(dialog.getByTestId("region-saved")).toHaveText("Đã lưu cách xưng hô.");
+    await dialog.getByRole("button", { name: "Đóng", exact: true }).click();
+
+    const olderBrotherRow = page.getByRole("button", { name: "Chọn Hàng Nhựt Tiến" });
+    await expect(olderBrotherRow).toContainText("anh");
+    await expect(olderBrotherRow).not.toContainText("Hai");
   });
 
   test("tree prototype — collaboration roster shows owner and contributor identities without UUID labels", async ({ page }) => {

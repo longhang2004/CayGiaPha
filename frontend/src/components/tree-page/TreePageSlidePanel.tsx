@@ -279,7 +279,9 @@ export function TreePageSlidePanel() {
                   onClick={() => setEgoId(selectedPerson.id)}
                   disabled={egoId === selectedPerson.id || addressLoading}
                 >
-                  {egoId === selectedPerson.id ? "Đang là góc nhìn" : "Chuyển góc nhìn này"}
+                  {egoId === selectedPerson.id
+                    ? "Đang dùng để xét vai vế"
+                    : "Xét vai vế theo người này"}
                 </button>
               </div>
               <div className="person-danger-section">

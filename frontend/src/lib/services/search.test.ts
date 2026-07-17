@@ -5,6 +5,8 @@ const mocks = vi.hoisted(() => ({
   from: vi.fn(),
   where: vi.fn(),
   classify: vi.fn(),
+  linkedPersonIds: vi.fn(),
+  resolveAddress: vi.fn(),
 }));
 
 vi.mock("../db", () => {
@@ -25,12 +27,24 @@ vi.mock("../db", () => {
   };
 });
 vi.mock("./authorization", () => ({
-  authorizationService: { classify: mocks.classify },
+  authorizationService: {
+    classify: mocks.classify,
+    linkedPersonIds: mocks.linkedPersonIds,
+  },
+  roleForPersonProjection: (
+    treeRole: string,
+    linkedIds: ReadonlySet<string>,
+    personId: string,
+  ) => {
+    if (treeRole === "OWNER" || treeRole === "CONTRIBUTOR") return treeRole;
+    if (treeRole === "NONE") return "NONE";
+    return linkedIds.has(personId) ? "LINKED" : "READER";
+  },
 }));
 vi.mock("./claim", () => ({ claimService: { isClaimed: vi.fn() } }));
 vi.mock("./kinship/address", () => ({
   kinshipAddressService: {
-    resolveAddress: vi.fn(),
+    resolveAddress: mocks.resolveAddress,
     resolveDerivedAddress: vi.fn(),
   },
 }));
@@ -66,6 +80,7 @@ describe("SearchService", () => {
     vi.clearAllMocks();
     mocks.where.mockReset();
     mocks.classify.mockResolvedValue("OWNER");
+    mocks.linkedPersonIds.mockResolvedValue(new Set());
   });
 
   it("normalizes the bloodline filter to both primitive parent edge types", () => {
@@ -110,5 +125,98 @@ describe("SearchService", () => {
 
     await expect(new SearchService().search("tree", {}, "user"))
       .rejects.toMatchObject({ code: "VALIDATION_ERROR", field: "treeSize" });
+  });
+
+  it.each(["cậu", "CAU BA"])(
+    "matches the base or visible full Southern kinship term: %s",
+    async (addressQuery) => {
+      const source = { ...PERSON, birthOrder: 2 };
+      mocks.resolveAddress.mockResolvedValue({
+        status: "RESOLVED",
+        term: "cậu",
+        relation: {},
+        ordinalContext: {
+          sourcePersonId: source.id,
+          birthOrder: 2,
+          band: "parent_sibling",
+          inheritedThroughSpouse: false,
+        },
+      });
+      mocks.where
+        .mockResolvedValueOnce([{ id: "viewpoint" }])
+        .mockResolvedValueOnce([source])
+        .mockResolvedValueOnce([{ id: "tree", region: "Nam", livingRedaction: true }])
+        .mockResolvedValueOnce([{ id: "tree", region: "Nam", livingRedaction: true }])
+        .mockResolvedValueOnce([source]);
+
+      await expect(
+        new SearchService().search(
+          "tree",
+          { addressQuery, viewpointId: "viewpoint" },
+          "user",
+        ),
+      ).resolves.toMatchObject({ noMatches: false, results: [{ personId: source.id }] });
+    },
+  );
+
+  it("does not match a full ordinal term when the source birth order is redacted", async () => {
+    const source = { ...PERSON, birthOrder: 2 };
+    mocks.classify.mockResolvedValue("READER");
+    mocks.resolveAddress.mockResolvedValue({
+      status: "RESOLVED",
+      term: "cậu",
+      relation: {},
+      ordinalContext: {
+        sourcePersonId: source.id,
+        birthOrder: 2,
+        band: "parent_sibling",
+        inheritedThroughSpouse: false,
+      },
+    });
+    mocks.where
+      .mockResolvedValueOnce([{ id: "viewpoint" }])
+      .mockResolvedValueOnce([source])
+      .mockResolvedValueOnce([{ id: "tree", region: "Nam", livingRedaction: true }])
+      .mockResolvedValueOnce([{ id: "tree", region: "Nam", livingRedaction: true }])
+      .mockResolvedValueOnce([]);
+
+    await expect(
+      new SearchService().search(
+        "tree",
+        { addressQuery: "cậu ba", viewpointId: "viewpoint" },
+        "reader",
+      ),
+    ).resolves.toEqual({ noMatches: true, results: [] });
+  });
+
+  it("does not expose another person's ordinal through a Linked search", async () => {
+    const source = { ...PERSON, birthOrder: 2 };
+    mocks.classify.mockResolvedValue("LINKED");
+    mocks.linkedPersonIds.mockResolvedValue(new Set(["linked-own-node"]));
+    mocks.resolveAddress.mockResolvedValue({
+      status: "RESOLVED",
+      term: "cậu",
+      relation: {},
+      ordinalContext: {
+        sourcePersonId: source.id,
+        birthOrder: 2,
+        band: "parent_sibling",
+        inheritedThroughSpouse: false,
+      },
+    });
+    mocks.where
+      .mockResolvedValueOnce([{ id: "viewpoint" }])
+      .mockResolvedValueOnce([source])
+      .mockResolvedValueOnce([{ id: "tree", region: "Nam", livingRedaction: true }])
+      .mockResolvedValueOnce([{ id: "tree", region: "Nam", livingRedaction: true }])
+      .mockResolvedValueOnce([]);
+
+    await expect(
+      new SearchService().search(
+        "tree",
+        { addressQuery: "cậu ba", viewpointId: "viewpoint" },
+        "linked-user",
+      ),
+    ).resolves.toEqual({ noMatches: true, results: [] });
   });
 });

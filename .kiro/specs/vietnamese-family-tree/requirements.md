@@ -162,6 +162,10 @@ Tree merging and cross-tree graph traversal are deferred to a later version.
 5. IF both the birth order and the birth year required to distinguish an elder-sibling term from a younger-sibling term are absent or equal for the involved Person nodes, THEN THE Kinship_Resolver SHALL return an unresolved-relationship indicator and SHALL NOT select either the elder-sibling or younger-sibling term.
 6. FOR ALL pairs of Person nodes connected solely by Derived_Relationships, IF the Kinship_Resolver computes that Person A addresses Person B with a descendant term such as cháu, THEN the Kinship_Resolver SHALL compute that Person B addresses Person A with the corresponding ascendant term such as bác, chú, cô, dì, or cậu (symmetry property).
 7. IF the relationship path between the Viewpoint Person and the selected Person cannot be resolved to a defined Form_Of_Address, THEN THE Kinship_Resolver SHALL return an unresolved-relationship indicator and SHALL retain the selected Person node and Viewpoint unchanged.
+8. WHILE a tree uses Region Nam, WHEN the resolved path is an anh/chị/em relationship (`u1:d1`) or a bác/chú/cô/cậu/dì relationship (`u2:d1`) and the blood relative has an explicit birth order from 1 through 99, THE Family_Tree_System SHALL append the Southern calling number derived as birth order plus one to the displayed Form_Of_Address.
+9. WHEN either eligible relationship in criterion 8 ends with a spouse hop, THE Family_Tree_System SHALL derive the displayed calling number from the explicit birth order of the blood relative immediately before that spouse hop.
+10. THE Family_Tree_System SHALL NOT append an ordinal outside Region Nam, infer an ordinal from birth year or render order, or infer the term “Út”; missing, invalid, or privacy-redacted birth order SHALL fall back to the regional base term.
+11. Displaying an ordinal SHALL NOT change the canonical-relation key, regional seed term, stored asserted label, asserted-upgrade behavior, or conflict detection.
 
 ### Requirement 9: Multi-Region Dialect Support
 
@@ -188,6 +192,7 @@ Tree merging and cross-tree graph traversal are deferred to a later version.
 2. WHEN the Viewpoint changes, THE Renderer SHALL display the recomputed forms of address within 2 seconds for a tree of up to 1,000 Person nodes without requiring any additional relationship data to be stored.
 3. WHERE the relationship path between the selected Viewpoint and another Person node cannot be resolved to a defined Form_Of_Address, THE Kinship_Resolver SHALL return the unresolved-relationship indicator for that Person node.
 4. IF a User selects as the Viewpoint a Person node that does not exist in the tree, THEN THE Family_Tree_System SHALL reject the request, leave the current Viewpoint unchanged, and return an error indication that the selected node is not in the tree.
+5. THE user interface SHALL describe the kinship Viewpoint as “Xét vai vế theo [Tên]” and expose the change action as “Đổi người xét”; internal identifiers, telemetry enums, and REST paths MAY retain the stable `viewpoint` terminology, and camera/zoom controls MAY retain “góc nhìn”.
 
 ### Requirement 11: Node Linking and Verification
 
@@ -270,6 +275,7 @@ Tree merging and cross-tree graph traversal are deferred to a later version.
 6. IF no Person node satisfies the submitted search query and applied filters, THEN THE Search_Service SHALL return an empty result set and a no-matches indication.
 7. WHEN a User submits a search or filter request against a tree of up to 1,000 Person nodes, THE Search_Service SHALL return the result set within 2 seconds.
 8. IF a search query is empty or exceeds 100 characters, or a birth-year range specifies a lower bound greater than its upper bound, THEN THE Search_Service SHALL reject the request, return no result set, and return an error indication identifying the invalid field.
+9. FOR a Southern ordinal display term, THE Search_Service SHALL compare address queries exactly after case-folding and removing Vietnamese diacritics: the base term SHALL match every corresponding relative, while the full ordinal term SHALL match only the relative whose ordinal is visible to the requester.
 
 ### Requirement 17: In-Application Usage Guide
 
@@ -326,6 +332,7 @@ Tree merging and cross-tree graph traversal are deferred to a later version.
 3. WHILE a Person node is not a Living_Person, THE Family_Tree_System SHALL apply only the per-field visibility rules of Requirements 14 and 21 and SHALL NOT apply Living_Person redaction.
 4. THE Family_Tree_System SHALL provide a per-tree Living_Person-redaction setting, controllable only by the Owner, defaulting to enabled.
 5. WHERE Living_Person redaction omits or replaces fields, THE Family_Tree_System SHALL still return enough of the person's node identity and graph position to render the tree structure without exposing the protected fields.
+6. WHEN birth order is omitted by the privacy projection, THE Family_Tree_System SHALL omit its Southern ordinal from viewpoint-address and search results and SHALL NOT allow a full-ordinal query to reveal that hidden value.
 
 ### Requirement 21: Extended Field Visibility
 

@@ -9,8 +9,7 @@
  *  - Wrapped in MockSessionProvider (no real login required).
  *  - `persons` and `relationships` are pre-seeded with MOCK_* constants.
  *  - API mutating calls (save, delete, share) are stubbed to no-ops.
- *  - `fetchAddresses` on TreeGraph is stubbed to return empty addresses
- *    instantly, avoiding backend calls.
+ *  - `fetchAddresses` derives mock regional terms locally, avoiding backend calls.
  *  - Accepts `?panel=settings` to open the settings modal by default.
  *
  * ⚠️  Dev/local only — gated by the (prototype) layout.
@@ -23,7 +22,7 @@
 import React, { useState, useEffect, useCallback, Suspense, useMemo } from "react";
 import { useSearchParams } from "next/navigation";
 import { TreeGraph } from "@/components/graph/TreeGraph";
-import type { Person, Relationship, Address, ViewpointAddresses, Capabilities, TreeAccessRole } from "@/lib/graph";
+import type { Person, Relationship, Capabilities, TreeAccessRole } from "@/lib/graph";
 import type { Region } from "@/lib/region";
 import type { TreeCollaborator, CollaborationInvitation } from "@/lib/collaboration";
 import { MockSessionProvider } from "@/lib/prototype/mockSession";
@@ -33,6 +32,7 @@ import {
   PROTOTYPE_TREE_ID,
   MOCK_USER,
 } from "@/lib/prototype/mockData";
+import { buildMockViewpointAddresses } from "@/lib/prototype/mockAddresses";
 import "@/components/graph/graph.css";
 import { CollaborationModal, type CollaborationAdapter } from "@/components/collaboration/CollaborationModal";
 import { SettingsModal } from "@/components/tree/SettingsModal";
@@ -44,55 +44,6 @@ import { TreePageHeader } from "@/components/tree-page/TreePageHeader";
 import { TreePageSlidePanel } from "@/components/tree-page/TreePageSlidePanel";
 import { useViewpointAddresses } from "@/components/tree-page/useViewpointAddresses";
 import { TreeWorkspaceSurface } from "@/components/tree-page/TreeWorkspaceSurface";
-
-/** Stub fetchAddresses that resolves immediately with no addresses. */
-async function mockFetchAddresses(
-  _treeId: string,
-  egoId: string,
-): Promise<ViewpointAddresses> {
-  return {
-    egoId,
-    addresses: [
-      { personId: "cu-noi-ong", resolved: "cụ nội ông", status: "resolved" },
-      { personId: "cu-noi-ba", resolved: "cụ nội bà", status: "resolved" },
-      { personId: "ong-noi", resolved: "ông nội", status: "resolved" },
-      { personId: "ba-noi", resolved: "bà nội", status: "resolved" },
-      { personId: "ong-ngoai", resolved: "ông ngoại", status: "resolved" },
-      { personId: "bac", resolved: "bác", status: "resolved" },
-      { personId: "bac-dau", resolved: "bác dâu", status: "resolved" },
-      { personId: "ba", resolved: "ba", status: "resolved" },
-      { personId: "ma", resolved: "má", status: "resolved" },
-      { personId: "co", resolved: "cô", status: "resolved" },
-      { personId: "duong", resolved: "dượng", status: "resolved" },
-      { personId: "chu", resolved: "chú", status: "resolved" },
-      { personId: "thim", resolved: "thím", status: "resolved" },
-      { personId: "di", resolved: "dì", status: "resolved" },
-      { personId: "cau", resolved: "cậu", status: "resolved" },
-      { personId: "mo", resolved: "mợ", status: "resolved" },
-      { personId: "anh-ho", resolved: "anh họ", status: "resolved" },
-      { personId: "chi-dau-ho", resolved: "chị dâu họ", status: "resolved" },
-      { personId: "anh-ruot", resolved: "anh ruột", status: "resolved" },
-      { personId: "chi-dau", resolved: "chị dâu", status: "resolved" },
-      { personId: "ego", resolved: "bản thân", status: "resolved" },
-      { personId: "vo", resolved: "vợ", status: "resolved" },
-      { personId: "em", resolved: "em gái", status: "resolved" },
-      { personId: "em-re", resolved: "em rể", status: "resolved" },
-      { personId: "em-ho-noi", resolved: "em họ", status: "resolved" },
-      { personId: "em-ho-noi-vo", resolved: "mợ họ", status: "resolved" },
-      { personId: "em-ho-ngoai", resolved: "em họ", status: "resolved" },
-      { personId: "em-ho-ngoai-chong", resolved: "dượng họ", status: "resolved" },
-      { personId: "con-trai", resolved: "con trai", status: "resolved" },
-      { personId: "con-gai", resolved: "con gái", status: "resolved" },
-      { personId: "chau-ho-nam", resolved: "cháu họ", status: "resolved" },
-      { personId: "chau-ruot-khôi", resolved: "cháu ruột", status: "resolved" },
-      { personId: "chau-ngoai-mai", resolved: "cháu ngoại", status: "resolved" },
-      { personId: "chau-ho-tien", resolved: "cháu họ", status: "resolved" },
-      { personId: "chau-ho-dat", resolved: "cháu họ", status: "resolved" },
-      { personId: "chau-ho-tuan", resolved: "cháu họ", status: "resolved" },
-      { personId: "chau-ho-linh", resolved: "cháu họ", status: "resolved" },
-    ],
-  };
-}
 
 const NO_CAPABILITIES: Capabilities = {
   editContent: false,
@@ -145,7 +96,7 @@ function PrototypeTreeContent() {
       : capabilities,
   })), [accessRole, capabilities]);
   const [relationships] = useState<Relationship[]>(MOCK_RELATIONSHIPS);
-  const [region, setRegionState] = useState<Region>("Bac");
+  const [region, setRegionState] = useState<Region>("Nam");
   const [livingRedaction, setLivingRedaction] = useState(false);
   const [sharing, setSharing] = useState("private");
   const [treeName, setTreeName] = useState("Cây Gia Phả Mẫu");
@@ -154,9 +105,14 @@ function PrototypeTreeContent() {
   const [addRelativeMode, setAddRelativeMode] = useState(false);
   const [createMode, setCreateMode] = useState(false);
 
-  const [egoId, setEgoId] = useState<string>(MOCK_PERSONS[0].id);
+  const [egoId, setEgoId] = useState<string>("ego");
   const [addressRefreshKey, setAddressRefreshKey] = useState(0);
   const [focusId, setFocusId] = useState<string | null>(null);
+  const fetchPrototypeAddresses = useCallback(
+    async (_treeId: string, viewpointId: string) =>
+      buildMockViewpointAddresses(viewpointId, region),
+    [region],
+  );
 
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
@@ -166,7 +122,7 @@ function PrototypeTreeContent() {
     persons,
     relationships,
     refreshKey: addressRefreshKey,
-    fetchAddresses: mockFetchAddresses,
+    fetchAddresses: fetchPrototypeAddresses,
   });
 
   const selectedAddress = selectedId ? addresses.get(selectedId) : undefined;

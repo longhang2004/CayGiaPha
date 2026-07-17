@@ -43,8 +43,8 @@ function OverviewAnchors({
 }: AnchorProps) {
   return (
     <>
-      <header data-guidance-anchor="workspace-context">Đang xem từ Nguyễn An</header>
-      <button type="button" data-guidance-anchor="workspace-viewpoint">Đổi người</button>
+      <header data-guidance-anchor="workspace-context">Xét vai vế theo Nguyễn An</header>
+      <button type="button" data-guidance-anchor="workspace-viewpoint">Đổi người xét</button>
       {includeTabs ? <div data-guidance-anchor="workspace-tabs">Danh sách và Sơ đồ</div> : null}
       <button type="button" data-guidance-anchor={personAnchor}>Nguyễn An</button>
       <footer data-guidance-anchor="workspace-actions">Thao tác cây gia phả</footer>
@@ -93,7 +93,7 @@ describe("WorkspaceCoachMarks", () => {
 
     const expected = [
       ["Tạo, tham gia hoặc mở một cây", "workspace-context", "bottom"],
-      ["Đổi điểm nhìn", "workspace-viewpoint", "bottom"],
+      ["Đổi người xét", "workspace-viewpoint", "bottom"],
       ["Tìm người và di chuyển trên sơ đồ", "workspace-tabs", "bottom"],
       ["Xem thông tin và cách xưng hô", "workspace-person-list", "right"],
       ["Làm quen với các thao tác trong cây", "workspace-actions", "top"],
@@ -136,7 +136,7 @@ describe("WorkspaceCoachMarks", () => {
 
     const expectedTitles = [
       "Tạo, tham gia hoặc mở một cây",
-      "Đổi điểm nhìn",
+      "Đổi người xét",
       "Xem thông tin và cách xưng hô",
       "Làm quen với các thao tác trong cây",
     ];
@@ -210,7 +210,7 @@ describe("WorkspaceCoachMarks", () => {
     seedGuidance({ overview: "completed" });
     render(
       <>
-        <button type="button" data-guidance-anchor="explicit-viewpoint">Đổi người</button>
+        <button type="button" data-guidance-anchor="explicit-viewpoint">Đổi người xét</button>
         <WorkspaceCoachMarks
           role="reader"
           storage={localStorage}
@@ -222,7 +222,7 @@ describe("WorkspaceCoachMarks", () => {
     );
 
     const dialog = await screen.findByRole("dialog", { name: "Hướng dẫn nhanh" });
-    expect(dialog).toHaveTextContent("Đổi điểm nhìn");
+    expect(dialog).toHaveTextContent("Đổi người xét");
     expect(dialog).toHaveTextContent("Bước 1 / 1");
     expect(screen.getByRole("link", { name: "Xem hướng dẫn" })).toHaveAttribute(
       "href",

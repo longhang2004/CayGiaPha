@@ -156,7 +156,9 @@ motion-safe translate. At 960 CSS px and above, container queries present a spli
 `clamp(320px, 34%, 420px)` list rail and graph canvas.
 
 The workspace header is a compact context bar containing a stable route back to the tree list,
-“Đang xem từ [Tên]”, and a labelled viewpoint picker. The shared picker receives the already loaded
+“Xét vai vế theo [Tên]”, and a labelled “Đổi người xét” picker. `viewpoint` remains the stable
+internal type, telemetry, and REST-path term; “góc nhìn” remains reserved for camera/zoom controls.
+The shared picker receives the already loaded
 `persons` and `addresses`, supports Vietnamese diacritic-insensitive search, traps focus, restores
 focus to its trigger, and does not request a new API. Selecting a person opens the existing detail
 surface as a bottom sheet on narrow containers and a side panel on wide containers.
@@ -522,6 +524,21 @@ downCount, side, targetGender, branchOrder, spouseHop) and query
 `region_kinship_terms (region = tree.region, canonical_relation = key)`. Return the `term` if
 present; otherwise return **undefined for this region**. (9.3, 9.4)
 
+### Display-only Southern ordinal context
+
+Canonical resolution may additionally carry an internal `KinshipOrdinalContext` with the explicit
+birth order and source person for exactly two bands: sibling (`u1:d1`) and parent sibling
+(`u2:d1`). A final spouse hop inherits this context from the blood relative immediately before the
+spouse. The context never participates in `CanonicalRelation.canonicalKey()` and is never serialized
+in the REST response.
+
+For Region Nam only, the display formatter maps explicit `birthOrder = n` to the calling number
+`n + 1` (`1 → Hai`, `2 → Ba`, `3 → Tư`, through birth order 99) and appends it to the regional base
+term. It never infers from birth year, graph/render order, or tree completeness, and therefore never
+generates “Út”. Bắc, Trung, missing/invalid birth order, and privacy-hidden source birth order all
+return the unchanged base term. Asserted labels, regional seed rows, upgrade/conflict behavior, and
+canonical keys remain unchanged.
+
 ### Symmetry (8.6)
 
 For any pair connected solely by derived relationships, if ego addresses target with a descendant
@@ -822,10 +839,13 @@ substring.
 
 **Validates: Requirements 16.1**
 
-### Property 24: Address search exact match
+### Property 24: Address search exact match with privacy-safe Southern ordinals
 
 *For any* tree, viewpoint, and query term, address search returns all and only the persons whose
-computed `Form_Of_Address` from the viewpoint equals the query term.
+computed `Form_Of_Address` from the viewpoint equals the query term after case/diacritic
+normalization. A regional base query (for example `cậu`) includes ordinalized displays such as
+`Cậu Ba`; a full ordinal query matches only that visible display. If the ordinal source birth order
+does not survive privacy projection, the full ordinal query cannot match.
 
 **Validates: Requirements 16.2**
 
@@ -955,8 +975,11 @@ privacy projector; session context carries account identity, not an owned-tree f
   display name with a placeholder (e.g. "Người thân còn sống" / "Living relative"), unless the
   corresponding field visibility is `public`. Node identity and edges are still returned so the
   graph renders (20.5).
-- **Search and viewpoint reads.** The viewpoint all-addresses response carries only person ids and
-  kinship descriptors (no names or birth years), so it exposes no identifying fields. Search results
+- **Search and viewpoint reads.** The viewpoint all-addresses response carries only person ids,
+  display terms, and kinship descriptors (no names, birth years, birth order, ordinal context, or
+  ordinal-source ids). A Southern ordinal is included only when the source person's birth order
+  survives that viewer's existing privacy projection. Search applies the same decision before
+  matching a full ordinal, preventing a hidden birth-order side channel. Search results
   do carry display names, so a `SearchResultRedactor` applies the same name redaction after the
   query runs: for a non-privileged viewer it replaces living / `vis_name`-private names with the
   placeholder, and drops such persons entirely from a *name* query so a hidden name cannot be

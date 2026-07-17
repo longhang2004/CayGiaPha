@@ -170,7 +170,7 @@ describe("CoachMarkSequence", () => {
       </>,
     );
 
-    expect(await screen.findByText("Đổi điểm nhìn")).toBeInTheDocument();
+    expect(await screen.findByText("Đổi người xét")).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Quay lại" })).not.toBeInTheDocument();
     expect(screen.getByText("Bước 1 / 2")).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Tiếp theo" }));
@@ -183,7 +183,7 @@ describe("CoachMarkSequence", () => {
     );
     await user.click(screen.getByRole("button", { name: "Quay lại" }));
 
-    expect(screen.getByText("Đổi điểm nhìn")).toBeInTheDocument();
+    expect(screen.getByText("Đổi người xét")).toBeInTheDocument();
     expect(anchorClicks).toBe(0);
   });
 

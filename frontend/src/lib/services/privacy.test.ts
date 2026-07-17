@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   REDACTED_PERSON_NAME,
+  canExposeKinshipOrdinal,
   canViewGovernedField,
   isLivingPerson,
   projectPerson,
@@ -90,5 +91,31 @@ describe("privacy projector", () => {
   it("treats Linked as trusted only when classification is for their own node", () => {
     expect(canViewGovernedField("LINKED", "private")).toBe(true);
     expect(canViewGovernedField("READER", "private")).toBe(false);
+  });
+
+  it("exposes kinship ordinals only when birth order survives projection", () => {
+    for (const role of ["OWNER", "CONTRIBUTOR", "LINKED"] as const) {
+      expect(
+        canExposeKinshipOrdinal(basePerson, {
+          role,
+          livingRedaction: true,
+          currentYear: 2026,
+        }),
+      ).toBe(true);
+    }
+
+    expect(
+      canExposeKinshipOrdinal(basePerson, {
+        role: "READER",
+        livingRedaction: true,
+        currentYear: 2026,
+      }),
+    ).toBe(false);
+    expect(
+      canExposeKinshipOrdinal(
+        { ...basePerson, birthYear: 1925 },
+        { role: "READER", livingRedaction: true, currentYear: 2026 },
+      ),
+    ).toBe(true);
   });
 });

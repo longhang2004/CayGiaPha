@@ -4,9 +4,18 @@ import { eq, and, or, inArray } from "drizzle-orm";
 import { ApiException } from "./errors";
 import { kinshipAddressService } from "./kinship/address";
 import { claimService } from "./claim";
-import { containsNormalized } from "../nameNormalize";
-import { authorizationService } from "./authorization";
-import { projectPerson, REDACTED_PERSON_NAME } from "./privacy";
+import { containsNormalized, normalizeName } from "../nameNormalize";
+import {
+  authorizationService,
+  roleForPersonProjection,
+  type Role,
+} from "./authorization";
+import {
+  canExposeKinshipOrdinal,
+  projectPerson,
+  REDACTED_PERSON_NAME,
+} from "./privacy";
+import { formatKinshipDisplayTerm } from "./kinship/ordinal";
 
 export interface SearchFilters {
   gender?: string | null;
@@ -46,6 +55,14 @@ const RELATIONSHIP_TYPES = new Set([
   "asserted",
 ]);
 const MAX_SEARCH_NODES = 1000;
+
+interface AddressDisplayContext {
+  region: string;
+  livingRedaction: boolean;
+  treeRole: Role;
+  linkedPersonIds: ReadonlySet<string>;
+  peopleById: ReadonlyMap<string, typeof persons.$inferSelect>;
+}
 
 export function relationshipTypesForFilter(relType: string): string[] {
   return relType === "bloodline"
@@ -100,6 +117,30 @@ export class SearchService {
       );
     }
 
+    let addressDisplayContext: AddressDisplayContext | null = null;
+    if (addressQuery) {
+      const tree = await db
+        .select()
+        .from(trees)
+        .where(eq(trees.id, treeId))
+        .then((rows) => rows[0]);
+      const treeRole = await authorizationService.classify(
+        currentUserId,
+        treeId,
+        null,
+      );
+      addressDisplayContext = {
+        region: tree?.region ?? "Bac",
+        livingRedaction: tree?.livingRedaction ?? true,
+        treeRole,
+        linkedPersonIds: await authorizationService.linkedPersonIds(
+          currentUserId,
+          treeId,
+        ),
+        peopleById: new Map(allPeople.map((person) => [person.id, person])),
+      };
+    }
+
     const results: SearchResult[] = [];
     for (const person of allPeople) {
       // Name search
@@ -113,7 +154,8 @@ export class SearchService {
           treeId,
           viewpointId!,
           person.id,
-          addressQuery
+          addressQuery,
+          addressDisplayContext!,
         );
         if (!matchesAddress) {
           continue;
@@ -303,10 +345,39 @@ export class SearchService {
     treeId: string,
     viewpointId: string,
     targetId: string,
-    addressQuery: string
+    addressQuery: string,
+    context: AddressDisplayContext,
   ): Promise<boolean> {
     const res = await kinshipAddressService.resolveAddress(treeId, viewpointId, targetId);
-    return res.status === "RESOLVED" && res.term === addressQuery;
+    if (res.status !== "RESOLVED" || !res.term) {
+      return false;
+    }
+
+    const normalizedQuery = normalizeName(addressQuery.trim());
+    if (normalizeName(res.term) === normalizedQuery) {
+      return true;
+    }
+
+    const ordinalSource = res.ordinalContext
+      ? context.peopleById.get(res.ordinalContext.sourcePersonId)
+      : undefined;
+    const canExposeOrdinal = ordinalSource
+      ? canExposeKinshipOrdinal(ordinalSource, {
+          role: roleForPersonProjection(
+            context.treeRole,
+            context.linkedPersonIds,
+            ordinalSource.id,
+          ),
+          livingRedaction: context.livingRedaction,
+        })
+      : false;
+    const displayTerm = formatKinshipDisplayTerm({
+      baseTerm: res.term,
+      region: context.region,
+      ordinalContext: res.ordinalContext,
+      canExposeOrdinal,
+    });
+    return normalizeName(displayTerm) === normalizedQuery;
   }
 
   private validateQuery(field: string, query?: string | null) {

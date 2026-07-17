@@ -73,7 +73,7 @@ export function useViewpointAddresses({
         if (err instanceof DOMException && err.name === "AbortError") return;
         setAddresses(new Map());
         setReady(true);
-        setError("Không tải được cách xưng hô cho góc nhìn này.");
+        setError("Không tải được cách xưng hô theo người đang xét.");
         setLoading(false);
       });
 

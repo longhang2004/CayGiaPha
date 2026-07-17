@@ -1,11 +1,17 @@
 import { handleApiRoute } from "@/lib/services/routeHelper";
-import { getAuthContext, authorizationService } from "@/lib/services/authorization";
+import {
+  getAuthContext,
+  authorizationService,
+  roleForPersonProjection,
+} from "@/lib/services/authorization";
 import { ApiException } from "@/lib/services/errors";
 import { db } from "@/lib/db";
 import { persons, regionKinshipTerms, trees } from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
 import { projectionCache, ensureKinshipTermsSeeded } from "@/lib/services/kinship/address";
 import { KinshipResolver } from "@/lib/services/kinship/resolver";
+import { formatKinshipDisplayTerm } from "@/lib/services/kinship/ordinal";
+import { canExposeKinshipOrdinal } from "@/lib/services/privacy";
 
 export async function GET(
   request: Request,
@@ -56,6 +62,17 @@ export async function GET(
       .where(eq(trees.id, treeId))
       .then((rows) => rows[0]);
     const region = treeRecord?.region || "Bac";
+    const livingRedaction = treeRecord?.livingRedaction ?? true;
+    const treeRole = await authorizationService.classify(
+      auth.userId,
+      treeId,
+      null,
+      shareToken,
+    );
+    const linkedPersonIds = await authorizationService.linkedPersonIds(
+      auth.userId,
+      treeId,
+    );
 
     await ensureKinshipTermsSeeded();
 
@@ -72,9 +89,27 @@ export async function GET(
         const key = res.relation.canonicalKey();
         const term = termMap.get(key) || null;
         if (term) {
+          const ordinalSource = res.ordinalContext
+            ? personMap.get(res.ordinalContext.sourcePersonId)
+            : undefined;
+          const canExposeOrdinal = ordinalSource
+            ? canExposeKinshipOrdinal(ordinalSource, {
+                role: roleForPersonProjection(
+                  treeRole,
+                  linkedPersonIds,
+                  ordinalSource.id,
+                ),
+                livingRedaction,
+              })
+            : false;
           addresses.push({
             personId: targetId,
-            resolved: term,
+            resolved: formatKinshipDisplayTerm({
+              baseTerm: term,
+              region,
+              ordinalContext: res.ordinalContext,
+              canExposeOrdinal,
+            }),
             status: "resolved",
             unresolvedIndicator: null,
             relation: {

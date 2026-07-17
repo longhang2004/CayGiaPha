@@ -185,7 +185,7 @@ export function TreeGraph({
         if (err instanceof DOMException && err.name === "AbortError") {
           return;
         }
-        setInternalError("Không tải được cách xưng hô cho góc nhìn này.");
+        setInternalError("Không tải được cách xưng hô theo người đang xét.");
         setInternalAddresses(new Map());
         onAddressesLoadedRef.current?.(new Map());
       })

@@ -31,6 +31,17 @@ afterEach(() => {
 });
 
 describe("AddRelativeForm", () => {
+  it("explains birth order using the Southern calling convention", async () => {
+    render(<AddRelativeForm treeId="t1" persons={PERSONS} />);
+    await userEvent.click(screen.getByLabelText("Thêm người thân mới vào cây"));
+    expect(
+      screen.getByRole("spinbutton", {
+        name: "Thứ tự sinh trong anh chị em ruột (tùy chọn)",
+      }),
+    ).toBeInTheDocument();
+    expect(screen.getByText("1 = con đầu, miền Nam gọi Hai.")).toBeInTheDocument();
+  });
+
   it("explains the responsibility for another person's data", () => {
     render(<AddRelativeForm treeId="t1" persons={PERSONS} />);
     expect(screen.getByRole("note")).toHaveTextContent(/quyền riêng tư/i);

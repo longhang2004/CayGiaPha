@@ -29,11 +29,12 @@ describe("TreePersonPicker", () => {
     );
 
     expect(screen.getByRole("status")).toHaveTextContent("Tìm thấy 3 người");
-    expect(screen.getAllByRole("button", { name: /^Xem từ / })).toHaveLength(3);
+    expect(screen.getByRole("dialog", { name: "Chọn người để xét vai vế" })).toBeInTheDocument();
+    expect(screen.getAllByRole("button", { name: /^Xét theo / })).toHaveLength(3);
 
-    await user.type(screen.getByRole("searchbox", { name: "Tìm người làm góc nhìn" }), "nhut tien");
+    await user.type(screen.getByRole("searchbox", { name: "Tìm người để xét" }), "nhut tien");
     expect(screen.getByRole("status")).toHaveTextContent("Tìm thấy 1 người");
-    await user.click(screen.getByRole("button", { name: "Xem từ Hàng Nhựt Tiến" }));
+    await user.click(screen.getByRole("button", { name: "Xét theo Hàng Nhựt Tiến" }));
 
     expect(onSelectPerson).toHaveBeenCalledWith("three");
     expect(onOpenChange).toHaveBeenCalledWith(false);
@@ -58,7 +59,7 @@ describe("TreePersonPicker", () => {
     const scrollRegion = scrollRegions[0];
     expect(scrollRegion.classList.contains("tree-person-picker__list")).toBe(true);
 
-    const searchBox = screen.getByRole("searchbox", { name: "Tìm người làm góc nhìn" });
+    const searchBox = screen.getByRole("searchbox", { name: "Tìm người để xét" });
     expect(scrollRegion.contains(searchBox)).toBe(false);
 
     const status = screen.getByRole("status");

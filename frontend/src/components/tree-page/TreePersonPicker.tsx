@@ -43,7 +43,7 @@ export function TreePersonPicker({
   }, [addresses, egoId, persons, query]);
 
   const isViewpoint = mode === "viewpoint";
-  const drawerLabel = isViewpoint ? "Chọn người làm góc nhìn" : "Chọn một người";
+  const drawerLabel = isViewpoint ? "Chọn người để xét vai vế" : "Chọn một người";
 
   return (
     <CGPDrawer
@@ -61,14 +61,14 @@ export function TreePersonPicker({
     >
       <div className="tree-person-picker__chrome">
         <div className="tree-person-picker__header">
-          <p className="tree-person-picker__eyebrow">{isViewpoint ? "Đổi cách xưng hô" : "Tìm trong cây"}</p>
+          <p className="tree-person-picker__eyebrow">{isViewpoint ? "Đổi người xét" : "Tìm trong cây"}</p>
           <h2>{drawerLabel}</h2>
           <p>{isViewpoint ? "Cách xưng hô trong cây sẽ được tính lại từ người bạn chọn." : "Chọn một thành viên để xem thông tin chi tiết."}</p>
         </div>
 
         <CGPTextField
           type="search"
-          label={isViewpoint ? "Tìm người làm góc nhìn" : "Tìm thành viên"}
+          label={isViewpoint ? "Tìm người để xét" : "Tìm thành viên"}
           value={query}
           onChange={setQuery}
           placeholder="Nhập tên hoặc cách xưng hô"
@@ -90,7 +90,7 @@ export function TreePersonPicker({
               className="tree-person-picker__person"
               data-selected={isCurrent ? "true" : undefined}
               aria-current={isCurrent ? "true" : undefined}
-              aria-label={`${isViewpoint ? "Xem từ" : "Chọn"} ${person.displayName}`}
+              aria-label={`${isViewpoint ? "Xét theo" : "Chọn"} ${person.displayName}`}
               onClick={() => {
                 onSelectPerson(person.id);
                 onOpenChange(false);

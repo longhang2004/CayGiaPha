@@ -584,6 +584,21 @@ against the active Next.js code and current tests.
       and graph-engine behavior; reuse production components in `/prototype/tree` and cover
       responsive scroll ownership in targeted tests and the three-viewport audit.
 
+- [x] 27. Southern ordinal address display and relationship-line integrity
+  - [x] 27.1 Carry display-only ordinal context through canonical and address resolution
+    - Limit ordinal context to sibling and parent-sibling bands; inherit through a final spouse hop;
+      keep canonical keys, regional seeds, asserted labels, and conflict behavior unchanged.
+  - [x] 27.2 Apply privacy-safe Southern formatting to viewpoint reads and search
+    - Map explicit birth order to the Southern calling number, fall back to the base term outside Nam
+      or when hidden, normalize base/full address queries, and serialize no ordinal metadata.
+  - [x] 27.3 Align kinship-reference terminology and prototype evidence
+    - Use “Xét vai vế theo” and “Đổi người xét” across workspace, picker, person actions, Help,
+      Coach marks, checklist, errors, and prototype; retain camera “góc nhìn” copy and stable internal
+      viewpoint identifiers.
+  - [x] 27.4 Repair duplicate prototype relationship IDs and lock fixture invariants
+    - Give marriage edges their own namespace; assert unique person/relationship IDs, valid endpoints,
+      and simultaneous marriage plus joint parent-child connectors in the regression family.
+
 ## Notes
 
 - Tasks marked with `*` are optional test sub-tasks and can be skipped for a faster MVP; core

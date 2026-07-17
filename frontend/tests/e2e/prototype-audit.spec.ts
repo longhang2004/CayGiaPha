@@ -6,6 +6,11 @@ const VIEWPORTS = [
   { name: "mobile", width: 375, height: 667 },
 ] as const;
 
+const WORKSPACE_BOUNDARY_VIEWPORTS = [
+  { name: "mobile-320", width: 320, height: 667 },
+  { name: "mobile-430", width: 430, height: 800 },
+] as const;
+
 const AUDIT_ROUTES = [
   { name: "home", href: "/prototype/home" },
   { name: "signin", href: "/prototype/signin" },
@@ -105,6 +110,38 @@ test.describe("prototype UI audit", () => {
           fullPage: true,
           animations: "disabled",
         });
+      });
+    }
+  }
+
+  for (const viewport of WORKSPACE_BOUNDARY_VIEWPORTS) {
+    for (const mode of ["list", "graph"] as const) {
+      test(`tree workspace ${mode} boundary at ${viewport.name}`, async ({ page }) => {
+        await installCompletedWorkspaceGuidance(page);
+        await page.addInitScript(
+          (workspaceMode) => localStorage.setItem("cgp_tree_workspace_view_v2", workspaceMode),
+          mode,
+        );
+        await page.setViewportSize(viewport);
+        await page.goto("/prototype/tree");
+        await page.evaluate(() => document.fonts.ready);
+        await expect(page.locator(".tree-page-header")).toBeVisible();
+        await page.locator(".tree-workspace-surface__panels").evaluate(async (element) => {
+          await Promise.all(
+            element.getAnimations().map((animation) => animation.finished.catch(() => undefined)),
+          );
+        });
+        expect(
+          await page.evaluate(
+            () => document.documentElement.scrollWidth <= document.documentElement.clientWidth + 1,
+          ),
+        ).toBe(true);
+        await captureWorkspaceScreenshot(
+          page,
+          test.info(),
+          `${viewport.name}-tree-workspace-${mode}.png`,
+          { flattenGraphTrack: mode === "graph" },
+        );
       });
     }
   }
@@ -247,8 +284,8 @@ test.describe("prototype UI audit", () => {
       await installCompletedWorkspaceGuidance(page);
       await page.setViewportSize(viewport);
       await page.goto("/prototype/tree");
-      await page.getByRole("button", { name: "Đổi người" }).click();
-      const picker = page.getByRole("dialog", { name: "Chọn người làm góc nhìn" });
+      await page.getByRole("button", { name: "Đổi người xét" }).click();
+      const picker = page.getByRole("dialog", { name: "Chọn người để xét vai vế" });
       await expect(picker).toBeVisible();
       await expect(picker.locator('[data-panel-scroll-region="picker"]')).toHaveCount(1);
       const [pickerBox, chromeBox] = await Promise.all([

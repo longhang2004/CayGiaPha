@@ -97,7 +97,7 @@ export const TreeGraphNode = memo(function TreeGraphNode({
           {hasCollapsedBranch && (
             <span
               className="tree-graph__node-branch-badge"
-              title="Có nhánh gia đình mở rộng. Chọn người này rồi chuyển góc nhìn để xem."
+              title="Có nhánh gia đình mở rộng. Chọn người này rồi dùng làm người xét để xem."
               aria-label="Có nhánh mở rộng"
             >
               <TreeIcon size={13} />
@@ -110,7 +110,7 @@ export const TreeGraphNode = memo(function TreeGraphNode({
         <div className="tree-graph__node-tooltip" role="tooltip">
           <div style={{ fontWeight: "bold" }}>{person.displayName}</div>
           <div style={{ fontSize: "0.75rem", opacity: 0.9 }}>
-            {isEgo ? "Góc nhìn: Bạn" : label ? `Cách xưng hô: ${label}` : "Chưa rõ cách xưng hô"}
+            {isEgo ? "Người xét: Bạn" : label ? `Cách xưng hô: ${label}` : "Chưa rõ cách xưng hô"}
           </div>
           {person.birthYear && (
             <div style={{ fontSize: "0.75rem", opacity: 0.9 }}>

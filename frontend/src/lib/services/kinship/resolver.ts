@@ -2,6 +2,14 @@ import { KinshipGraphProjection, Step, StepKind, Side, ParentType } from "./proj
 
 export type Gender = "MALE" | "FEMALE";
 export type BranchOrder = "ELDER" | "YOUNGER" | "SELF" | "UNKNOWN";
+export type KinshipOrdinalBand = "sibling" | "parent_sibling";
+
+export interface KinshipOrdinalContext {
+  sourcePersonId: string;
+  birthOrder: number;
+  band: KinshipOrdinalBand;
+  inheritedThroughSpouse: boolean;
+}
 
 export class CanonicalRelation {
   constructor(
@@ -32,7 +40,8 @@ export type ResolutionStatus =
 export class CanonicalResolution {
   constructor(
     public readonly status: ResolutionStatus,
-    public readonly relation: CanonicalRelation | null
+    public readonly relation: CanonicalRelation | null,
+    public readonly ordinalContext: KinshipOrdinalContext | null = null
   ) {
     if (status === "RESOLVED" && !relation) {
       throw new Error("RESOLVED resolution requires a relation");
@@ -42,8 +51,11 @@ export class CanonicalResolution {
     }
   }
 
-  static resolved(relation: CanonicalRelation): CanonicalResolution {
-    return new CanonicalResolution("RESOLVED", relation);
+  static resolved(
+    relation: CanonicalRelation,
+    ordinalContext: KinshipOrdinalContext | null = null
+  ): CanonicalResolution {
+    return new CanonicalResolution("RESOLVED", relation, ordinalContext);
   }
 
   static noPath(): CanonicalResolution {
@@ -294,9 +306,51 @@ export class KinshipResolver {
       branchOrder = "SELF";
     }
 
-    return CanonicalResolution.resolved(
-      new CanonicalRelation(upCount, downCount, side, targetGender, branchOrder, spouseHop)
+    const ordinalContext = this.ordinalContext(
+      nodes,
+      bloodEnd,
+      upCount,
+      downCount,
+      spouseHop,
+      personLookup
     );
+
+    return CanonicalResolution.resolved(
+      new CanonicalRelation(upCount, downCount, side, targetGender, branchOrder, spouseHop),
+      ordinalContext
+    );
+  }
+
+  private ordinalContext(
+    nodes: string[],
+    bloodEnd: number,
+    upCount: number,
+    downCount: number,
+    spouseHop: boolean,
+    personLookup: (id: string) => PersonLookupSource | undefined
+  ): KinshipOrdinalContext | null {
+    let band: KinshipOrdinalBand | null = null;
+    if (upCount === 1 && downCount === 1) {
+      band = "sibling";
+    } else if (upCount === 2 && downCount === 1) {
+      band = "parent_sibling";
+    }
+    if (!band) {
+      return null;
+    }
+
+    const sourcePersonId = nodes[bloodEnd];
+    const birthOrder = personLookup(sourcePersonId)?.birthOrder;
+    if (!Number.isInteger(birthOrder) || birthOrder! < 1 || birthOrder! > 99) {
+      return null;
+    }
+
+    return {
+      sourcePersonId,
+      birthOrder: birthOrder!,
+      band,
+      inheritedThroughSpouse: spouseHop,
+    };
   }
 
   private sideOf(upCount: number, steps: Step[]): Side {

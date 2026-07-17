@@ -16,6 +16,7 @@ import {
   type ViewpointAddresses,
   type Address,
 } from "@/lib/graph";
+import { MOCK_PERSONS, MOCK_RELATIONSHIPS } from "@/lib/prototype/mockData";
 
 const GRAPH_CSS = readFileSync(
   resolve(process.cwd(), "src/components/graph/graph.css"),
@@ -265,7 +266,7 @@ describe("TreeGraph renderer", () => {
 
     // Change the viewpoint to p2.
     await userEvent.selectOptions(
-      screen.getByLabelText(/Cách xưng hô hiển thị theo/),
+      screen.getByLabelText(/Xét vai vế theo/),
       "p2",
     );
 
@@ -576,6 +577,31 @@ describe("TreeGraph renderer", () => {
     // The individual father and mother edges should NOT be rendered separately
     expect(document.querySelector('[data-relationship-id="r-father"]')).not.toBeInTheDocument();
     expect(document.querySelector('[data-relationship-id="r-mother"]')).not.toBeInTheDocument();
+  });
+
+  it("keeps the prototype marriage line alongside its joint child connector", async () => {
+    const fetchAddresses = vi.fn(async () => ({ egoId: "ego", addresses: [] }));
+
+    render(
+      <TreeGraph
+        treeId="prototype-tree"
+        persons={MOCK_PERSONS}
+        relationships={MOCK_RELATIONSHIPS}
+        initialEgoId="ego"
+        fetchAddresses={fetchAddresses}
+      />,
+    );
+
+    await waitFor(() => expect(fetchAddresses).toHaveBeenCalled());
+
+    expect(
+      document.querySelector(
+        '[data-relationship-id="r-marriage-anh-ruot"]',
+      ),
+    ).toBeInTheDocument();
+    expect(
+      document.querySelector('path[data-joint-child-id="chau-ruot-khôi"]'),
+    ).toBeInTheDocument();
   });
 
   it("provides functional navigation controls (zoom, reset, fullscreen, export)", async () => {

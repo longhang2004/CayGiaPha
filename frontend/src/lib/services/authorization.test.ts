@@ -16,7 +16,11 @@ vi.mock("./consent", () => ({
   consentService: { needsReacceptance: mocks.needsReacceptance },
 }));
 
-import { AuthorizationService, capabilitiesFor } from "./authorization";
+import {
+  AuthorizationService,
+  capabilitiesFor,
+  roleForPersonProjection,
+} from "./authorization";
 
 describe("collaboration roster authorization", () => {
   beforeEach(() => {
@@ -158,5 +162,29 @@ describe("tree capability classification", () => {
       editVisibility: false,
       manageTree: false,
     });
+  });
+
+  it("derives person-scoped projection roles without widening linked access", () => {
+    const linkedIds = new Set(["person-own"]);
+
+    expect(roleForPersonProjection("OWNER", linkedIds, "person-other")).toBe("OWNER");
+    expect(roleForPersonProjection("CONTRIBUTOR", linkedIds, "person-other")).toBe(
+      "CONTRIBUTOR",
+    );
+    expect(roleForPersonProjection("LINKED", linkedIds, "person-own")).toBe("LINKED");
+    expect(roleForPersonProjection("LINKED", linkedIds, "person-other")).toBe("READER");
+    expect(roleForPersonProjection("READER", linkedIds, "person-other")).toBe("READER");
+    expect(roleForPersonProjection("NONE", linkedIds, "person-other")).toBe("NONE");
+  });
+
+  it("loads only person IDs claimed by the current user in the tree", async () => {
+    mocks.where.mockResolvedValueOnce([
+      { personId: "person-1" },
+      { personId: "person-2" },
+    ]);
+
+    await expect(
+      new AuthorizationService().linkedPersonIds("relative", "tree-1"),
+    ).resolves.toEqual(new Set(["person-1", "person-2"]));
   });
 });
