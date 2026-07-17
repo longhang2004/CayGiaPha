@@ -32,7 +32,7 @@ export async function GET(
     if (!tree) {
       throw ApiException.nodeNotAccessible("The specified tree was not found.");
     }
-    const accessRole = await authorizationService.classify(auth.userId, treeId);
+    const accessRole = await authorizationService.classify(auth.userId, treeId, null, shareToken);
 
     // Fetch all persons in the tree
     const dbPersons = await db
@@ -58,7 +58,12 @@ export async function GET(
     const roleByPersonId = new Map<string, Awaited<ReturnType<typeof authorizationService.classify>>>();
     const personById = new Map(dbPersons.map((person) => [person.id, person]));
     for (const person of dbPersons) {
-      const role = await authorizationService.classify(auth.userId, treeId, person.id);
+      const role = await authorizationService.classify(
+        auth.userId,
+        treeId,
+        person.id,
+        shareToken,
+      );
       roleByPersonId.set(person.id, role);
       const projected = projectPerson(person, {
         role,

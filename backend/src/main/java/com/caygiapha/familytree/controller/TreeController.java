@@ -30,6 +30,8 @@ import com.caygiapha.familytree.repository.VerificationCodeRepository;
 import com.caygiapha.familytree.security.AuthContext;
 import com.caygiapha.familytree.security.AuthorizationService;
 import com.caygiapha.familytree.security.AuthorizationService.Role;
+import com.caygiapha.familytree.security.CapabilitySet;
+import com.caygiapha.familytree.security.TreeAccessRole;
 import com.caygiapha.familytree.service.AuditService;
 import com.caygiapha.familytree.service.EventService;
 import com.caygiapha.familytree.service.LivingPersonPolicy;
@@ -170,6 +172,7 @@ public class TreeController {
         authorizationService.requireReadAccess(treeId, shareToken);
         Tree tree = treeRepository.findById(treeId)
                 .orElseThrow(() -> ApiException.nodeNotAccessible("The specified tree was not found."));
+        TreeAccessRole accessRole = authorizationService.classifyTreeAccess(treeId, shareToken);
 
         List<UUID> claimedIds = claimRepository.findUserIdsWithClaimsInTree(treeId).isEmpty()
                 ? List.of()
@@ -184,8 +187,16 @@ public class TreeController {
         List<TreeDetailResponse.RelationshipItem> relationships = relationshipRepository.findByTreeId(treeId).stream()
                 .map(this::projectRelationship)
                 .toList();
-        return new TreeDetailResponse(tree.getId(), tree.getName(), tree.getRegion(), tree.getSharing(),
-                tree.isLivingRedaction(), persons, relationships);
+        return new TreeDetailResponse(
+                tree.getId(),
+                tree.getName(),
+                accessRole,
+                CapabilitySet.forTreeRole(accessRole),
+                tree.getRegion(),
+                tree.getSharing(),
+                tree.isLivingRedaction(),
+                persons,
+                relationships);
     }
 
     @DeleteMapping("/{treeId}")
@@ -299,7 +310,8 @@ public class TreeController {
                 privileged ? person.getVisDeath() : null,
                 privileged ? person.getVisMarital() : null,
                 privileged ? person.getVisAdoption() : null,
-                claimed);
+                claimed,
+                CapabilitySet.forPersonRole(role));
     }
 
     private TreeDetailResponse.RelationshipItem projectRelationship(Relationship relationship) {

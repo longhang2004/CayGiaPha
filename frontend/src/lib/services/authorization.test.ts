@@ -128,39 +128,59 @@ describe("tree capability classification", () => {
   });
 
   it("maps roles to server-owned UI capabilities", () => {
-    expect(capabilitiesFor("OWNER")).toMatchObject({
+    expect(capabilitiesFor("OWNER")).toEqual({
       editContent: true,
       editRelationships: true,
+      editPhotos: true,
       editVisibility: true,
-      manageTree: true,
       manageClaim: true,
+      manageTree: true,
+      manageCollaboration: true,
     });
-    expect(capabilitiesFor("CONTRIBUTOR")).toMatchObject({
+    expect(capabilitiesFor("CONTRIBUTOR")).toEqual({
       editContent: true,
       editRelationships: true,
+      editPhotos: true,
       editVisibility: false,
-      manageTree: false,
       manageClaim: false,
+      manageTree: false,
+      manageCollaboration: false,
     });
-    expect(capabilitiesFor("LINKED")).toMatchObject({
+    expect(capabilitiesFor("LINKED")).toEqual({
       editContent: false,
       editRelationships: false,
+      editPhotos: false,
       editVisibility: false,
-      manageTree: false,
       manageClaim: false,
+      manageTree: false,
+      manageCollaboration: false,
     });
-    expect(capabilitiesFor("LINKED", { personScoped: true })).toMatchObject({
+    expect(capabilitiesFor("LINKED", { personScoped: true })).toEqual({
       editContent: true,
       editRelationships: false,
+      editPhotos: true,
       editVisibility: true,
-      manageTree: false,
       manageClaim: false,
+      manageTree: false,
+      manageCollaboration: false,
     });
-    expect(capabilitiesFor("READER")).toMatchObject({
+    expect(capabilitiesFor("READER")).toEqual({
       editContent: false,
       editRelationships: false,
+      editPhotos: false,
       editVisibility: false,
+      manageClaim: false,
       manageTree: false,
+      manageCollaboration: false,
+    });
+    expect(capabilitiesFor("NONE")).toEqual({
+      editContent: false,
+      editRelationships: false,
+      editPhotos: false,
+      editVisibility: false,
+      manageClaim: false,
+      manageTree: false,
+      manageCollaboration: false,
     });
   });
 

@@ -173,3 +173,14 @@ Durable project knowledge for future AI agents. Keep entries short, verified, an
   tiles when the mobile list/graph track is captured while it remains translated. The broad audit
   keeps production swipe behavior intact and flattens only the active graph track through
   Playwright's capture-only `style` option before exporting durable screenshots.
+
+## 2026-07-17
+
+- **Tree-detail proxy capability parity**: When `USE_BACKEND=true`, Next rewrites
+  `/api/v1/trees/{treeId}` to Spring. Both Next and Spring responses must include top-level
+  `accessRole`/`capabilities` and per-person `capabilities`. The React tree-detail boundary treats
+  network data as untrusted and normalizes missing/malformed capability fields to literal `false`;
+  it must never infer permissions from a role label. Tree loads use a request generation guard and
+  clear capabilities before a new response so stale privileged data cannot cross tree boundaries.
+  Verify both controller/route contracts and build with `USE_BACKEND=false` and
+  `USE_BACKEND=true` after capability changes.

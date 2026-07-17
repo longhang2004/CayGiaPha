@@ -29,10 +29,11 @@ class AuthorizationServiceTest {
     private final AuthContextHolder holder = new AuthContextHolder();
     private final ClaimService claimService = mock(ClaimService.class);
     private final ConsentService consentService = mock(ConsentService.class);
+    private final ShareTokenService shareTokenService = mock(ShareTokenService.class);
     private final TreeRepository treeRepository = mock(TreeRepository.class);
     private final TreeCollaboratorRepository collaboratorRepository = mock(TreeCollaboratorRepository.class);
     private final AuthorizationService service = new AuthorizationService(
-            holder, claimService, treeRepository, collaboratorRepository, mock(ShareTokenService.class),
+            holder, claimService, treeRepository, collaboratorRepository, shareTokenService,
             consentService);
 
     @AfterEach
@@ -151,5 +152,59 @@ class AuthorizationServiceTest {
         assertThatThrownBy(service::requireOwnedTreeId)
                 .isInstanceOfSatisfying(ApiException.class,
                         ex -> assertThat(ex.code()).isEqualTo(ErrorCode.NOT_AUTHORIZED));
+    }
+
+    @Test
+    void classifiesTreeLevelOwnerContributorLinkedAndReaderWithoutChangingMutationRoles() {
+        UUID treeId = UUID.randomUUID();
+        UUID userId = UUID.randomUUID();
+        Tree tree = new Tree(UUID.randomUUID());
+        holder.set(AuthContext.authenticated(userId, null));
+        when(treeRepository.findById(treeId)).thenReturn(Optional.of(tree));
+
+        when(collaboratorRepository.existsByTreeIdAndUserId(treeId, userId)).thenReturn(true);
+        assertThat(service.classifyTreeAccess(treeId, null)).isEqualTo(TreeAccessRole.CONTRIBUTOR);
+
+        when(collaboratorRepository.existsByTreeIdAndUserId(treeId, userId)).thenReturn(false);
+        when(claimService.isLinkedToTree(treeId, userId)).thenReturn(true);
+        assertThat(service.classifyTreeAccess(treeId, null)).isEqualTo(TreeAccessRole.LINKED);
+
+        when(claimService.isLinkedToTree(treeId, userId)).thenReturn(false);
+        tree.setSharing("public");
+        assertThat(service.classifyTreeAccess(treeId, null)).isEqualTo(TreeAccessRole.READER);
+        assertThat(service.classify(treeId, null)).isEqualTo(Role.NEITHER);
+    }
+
+    @Test
+    void classifiesOwnedTreeAndDeniedOrAnonymousTreeAccess() {
+        UUID treeId = UUID.randomUUID();
+        UUID userId = UUID.randomUUID();
+        holder.set(AuthContext.authenticated(userId, null));
+        stubOwnedTree(treeId, userId);
+
+        assertThat(service.classifyTreeAccess(treeId, null)).isEqualTo(TreeAccessRole.OWNER);
+
+        UUID privateTreeId = UUID.randomUUID();
+        when(treeRepository.findById(privateTreeId))
+                .thenReturn(Optional.of(new Tree(UUID.randomUUID())));
+        assertThat(service.classifyTreeAccess(privateTreeId, null)).isEqualTo(TreeAccessRole.NONE);
+
+        holder.set(AuthContext.anonymous());
+        assertThat(service.classifyTreeAccess(treeId, null)).isEqualTo(TreeAccessRole.NONE);
+    }
+
+    @Test
+    void classifiesAuthenticatedShareTokenAccessAsReader() {
+        UUID treeId = UUID.randomUUID();
+        UUID userId = UUID.randomUUID();
+        Tree tree = new Tree(UUID.randomUUID());
+        tree.setSharing("link");
+        holder.set(AuthContext.authenticated(userId, null));
+        when(treeRepository.findById(treeId)).thenReturn(Optional.of(tree));
+        when(shareTokenService.resolveTreeId("link-token")).thenReturn(Optional.of(treeId));
+
+        assertThat(service.classifyTreeAccess(treeId, "link-token"))
+                .isEqualTo(TreeAccessRole.READER);
+        assertThat(service.classify(treeId, null)).isEqualTo(Role.NEITHER);
     }
 }

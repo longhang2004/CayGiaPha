@@ -88,6 +88,31 @@ public class AuthorizationService {
     }
 
     /**
+     * Classify the current caller for the tree-detail response without changing mutation-role
+     * semantics. A caller receives {@link TreeAccessRole#READER} only when the same sharing policy
+     * used by {@link #requireReadAccess(UUID, String)} admits the request.
+     */
+    public TreeAccessRole classifyTreeAccess(UUID targetTreeId, String shareToken) {
+        AuthContext context = authContextHolder.current();
+        if (!context.isAuthenticated() || targetTreeId == null) {
+            return TreeAccessRole.NONE;
+        }
+        UUID userId = context.userId();
+        if (isOwnerOf(targetTreeId, userId)) {
+            return TreeAccessRole.OWNER;
+        }
+        if (collaboratorRepository.existsByTreeIdAndUserId(targetTreeId, userId)) {
+            return TreeAccessRole.CONTRIBUTOR;
+        }
+        if (claimService.isLinkedToTree(targetTreeId, userId)) {
+            return TreeAccessRole.LINKED;
+        }
+        return hasReadAccess(targetTreeId, shareToken)
+                ? TreeAccessRole.READER
+                : TreeAccessRole.NONE;
+    }
+
+    /**
      * Enforce that the current caller may perform a mutation on the given target, rejecting a
      * {@link Role#NEITHER} caller with {@code NOT_AUTHORIZED} (13.5).
      *
