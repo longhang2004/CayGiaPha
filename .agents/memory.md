@@ -176,6 +176,14 @@ Durable project knowledge for future AI agents. Keep entries short, verified, an
 
 ## 2026-07-17
 
+- **Marketing motion contract**: Production `/` and `/prototype/home` share `HomeLanding`, while
+  `HomeScrollReveal` progressively enhances existing `.home-reveal` markers. Content must remain
+  visible when animation is disabled, reduced motion is requested, or `IntersectionObserver` is
+  unavailable; FAQ buttons explicitly override the global centered-button alignment.
+- **Tree-list presentation boundary**: Production `/tree` and `/prototype/tree-list` share
+  `frontend/src/components/tree/TreeListView.tsx`. Keep fetching, routing, confirmation, and
+  create/join/delete effects in the owning page; the shared view owns truthful count, ordered
+  editorial rows, role/region labels, Owner-only delete visibility, and the empty Guidance slot.
 - **Tree-detail proxy capability parity**: When `USE_BACKEND=true`, Next rewrites
   `/api/v1/trees/{treeId}` to Spring. Both Next and Spring responses must include top-level
   `accessRole`/`capabilities` and per-person `capabilities`. The React tree-detail boundary treats

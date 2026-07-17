@@ -65,6 +65,22 @@ afterEach(() => {
 });
 
 describe("SettingsPage profile editor", () => {
+  it("places canonical legal links before data rights", () => {
+    render(<SettingsPage />);
+
+    const legalHeading = screen.getByRole("heading", { name: "Pháp lý và quyền riêng tư" });
+    const dataRights = screen.getByRole("region", { name: "Quyền dữ liệu của bạn" });
+    expect(legalHeading.compareDocumentPosition(dataRights) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(screen.getByRole("link", { name: "Điều khoản dịch vụ" })).toHaveAttribute(
+      "href",
+      "/legal/tos",
+    );
+    expect(screen.getByRole("link", { name: "Chính sách quyền riêng tư" })).toHaveAttribute(
+      "href",
+      "/legal/privacy",
+    );
+  });
+
   it("shows legacy prompt when displayName is missing", () => {
     render(<SettingsPage />);
     expect(

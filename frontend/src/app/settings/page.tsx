@@ -8,6 +8,7 @@ import { FormControl, Input } from "@/components/ui/FormControls";
 import { ApiError } from "@/lib/apiClient";
 import { updateMyProfile } from "@/lib/profile";
 import { DataRightsPanel } from "@/components/settings/DataRightsPanel";
+import { LegalLinksCard } from "@/components/legal/LegalLinksCard";
 
 const SUCCESS_MESSAGE = "Đã cập nhật tên hiển thị.";
 const LEGACY_PROMPT =
@@ -248,6 +249,8 @@ export default function SettingsPage() {
             ) : null}
           </section>
       </div>
+
+      <LegalLinksCard />
 
       <div className="surface-card settings-data-rights-card">
         <DataRightsPanel />

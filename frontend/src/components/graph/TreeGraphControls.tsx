@@ -93,6 +93,8 @@ export interface TreeGraphNavControlsProps {
   activeSelectedId: string | null;
   activeEgoId: string;
   helpHref?: string;
+  canZoomIn?: boolean;
+  canZoomOut?: boolean;
 }
 
 export function TreeGraphNavControls({
@@ -106,6 +108,8 @@ export function TreeGraphNavControls({
   activeSelectedId,
   activeEgoId,
   helpHref = "/help",
+  canZoomIn = true,
+  canZoomOut = true,
 }: TreeGraphNavControlsProps) {
   const [isExpanded, setIsExpanded] = useState(false);
 
@@ -137,6 +141,7 @@ export function TreeGraphNavControls({
           <button
             type="button"
             onClick={onZoomIn}
+            disabled={!canZoomIn}
             className="tree-graph__nav-button"
             title="Phóng to"
             aria-label="Phóng to"
@@ -145,7 +150,7 @@ export function TreeGraphNavControls({
             <PlusIcon size={18} />
             <span>Phóng to</span>
           </button>
-          <button type="button" onClick={onZoomOut} className="tree-graph__nav-button" title="Thu nhỏ" aria-label="Thu nhỏ">
+          <button type="button" onClick={onZoomOut} disabled={!canZoomOut} className="tree-graph__nav-button" title="Thu nhỏ" aria-label="Thu nhỏ">
             <MinusIcon size={18} />
             <span>Thu nhỏ</span>
           </button>

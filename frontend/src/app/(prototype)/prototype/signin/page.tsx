@@ -97,7 +97,7 @@ export default function PrototypeSignInPage() {
             Đăng nhập bằng Google
           </button>
           <a href="/prototype/signup?redirect=%2Finvitation%2Fexample&reason=invitation" style={{ textAlign: "center" }}>
-            Chưa có tài khoản?
+            Chưa có tài khoản? Đăng ký ngay!
           </a>
         </div>
           </form>

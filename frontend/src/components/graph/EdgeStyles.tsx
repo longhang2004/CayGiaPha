@@ -16,17 +16,23 @@ import {
   type NodePosition,
   type Relationship,
 } from "@/lib/graph";
+import { getRectangleBoundaryPoint, type GraphSize } from "./treeGraphGeometry";
 
 export interface GraphEdgeProps {
   relationship: Relationship;
   source: NodePosition;
   target: NodePosition;
+  sourceSize: GraphSize;
+  targetSize: GraphSize;
 }
 
-/** Offset so the line meets the node box edge rather than its center. */
-const NODE_HALF_HEIGHT = 36;
-
-export function GraphEdge({ relationship, source, target }: GraphEdgeProps) {
+export function GraphEdge({
+  relationship,
+  source,
+  target,
+  sourceSize,
+  targetSize,
+}: GraphEdgeProps) {
   const isUnidentified =
     (relationship.derivationState as string) === "unidentified" ||
     (relationship.type === "asserted" && (relationship.assertedLabel || "").toLowerCase().includes("chưa xác định"));
@@ -51,14 +57,18 @@ export function GraphEdge({ relationship, source, target }: GraphEdgeProps) {
   };
 
   const titleElement = label ? <title>{label}</title> : null;
+  const sourceBoundary = getRectangleBoundaryPoint(source, target, sourceSize);
+  const targetBoundary = getRectangleBoundaryPoint(target, source, targetSize);
 
   if (isUnidentified) {
-    const x1 = source.x;
-    const y1 = source.y;
-    const x2 = target.x;
-    const y2 = target.y;
+    const x1 = sourceBoundary.x;
+    const y1 = sourceBoundary.y;
+    const x2 = targetBoundary.x;
+    const y2 = targetBoundary.y;
     const midX = (x1 + x2) / 2;
     const midY = (y1 + y2) / 2;
+    const labelWidth = 64;
+    const labelTextWidth = 56;
     return (
       <g>
         <line
@@ -72,9 +82,9 @@ export function GraphEdge({ relationship, source, target }: GraphEdgeProps) {
           style={{ stroke: "#94a3b8" }}
         />
         <rect
-          x={midX - 45}
+          x={midX - labelWidth / 2}
           y={midY - 8}
-          width={90}
+          width={labelWidth}
           height={16}
           rx={4}
           fill="var(--color-surface, #ffffff)"
@@ -86,7 +96,9 @@ export function GraphEdge({ relationship, source, target }: GraphEdgeProps) {
           textAnchor="middle"
           dominantBaseline="central"
           fill="#64748b"
-          fontSize="10"
+          fontSize="9"
+          textLength={labelTextWidth}
+          lengthAdjust="spacingAndGlyphs"
           style={{ pointerEvents: "none", userSelect: "none" }}
         >
           Chưa xác định
@@ -97,10 +109,10 @@ export function GraphEdge({ relationship, source, target }: GraphEdgeProps) {
 
   // bloodline_father / bloodline_mother: elbow connector dọc (fail-safe fallback)
   if (relationship.type === "bloodline_father" || relationship.type === "bloodline_mother") {
-    const NODE_HEIGHT = 72;
-    const HALF_HEIGHT = NODE_HEIGHT / 2;
+    const sourceHalfHeight = sourceSize.height / 2;
+    const targetHalfHeight = targetSize.height / 2;
     const midY = (source.y + target.y) / 2;
-    const pathData = `M ${source.x} ${source.y + HALF_HEIGHT} L ${source.x} ${midY} L ${target.x} ${midY} L ${target.x} ${target.y - HALF_HEIGHT}`;
+    const pathData = `M ${source.x} ${source.y + sourceHalfHeight} L ${source.x} ${midY} L ${target.x} ${midY} L ${target.x} ${target.y - targetHalfHeight}`;
     return (
       <path d={pathData} fill="none" {...props}>
         {titleElement}
@@ -110,13 +122,14 @@ export function GraphEdge({ relationship, source, target }: GraphEdgeProps) {
 
   // marriage: đường ngang giữa 2 spouse với small indicator ╪ ở giữa
   if (relationship.type === "marriage") {
-    const NODE_WIDTH = 180;
-    const HALF_WIDTH = NODE_WIDTH / 2;
-    const left = source.x < target.x ? source : target;
-    const right = source.x < target.x ? target : source;
-    const x1 = left.x + HALF_WIDTH;
+    const sourceIsLeft = source.x < target.x;
+    const left = sourceIsLeft ? source : target;
+    const right = sourceIsLeft ? target : source;
+    const leftSize = sourceIsLeft ? sourceSize : targetSize;
+    const rightSize = sourceIsLeft ? targetSize : sourceSize;
+    const x1 = left.x + leftSize.width / 2;
     const y1 = left.y;
-    const x2 = right.x - HALF_WIDTH;
+    const x2 = right.x - rightSize.width / 2;
     const y2 = right.y;
     const midX = (x1 + x2) / 2;
     const midY = (y1 + y2) / 2;
@@ -133,10 +146,10 @@ export function GraphEdge({ relationship, source, target }: GraphEdgeProps) {
   // Các loại khác: giữ nguyên logic hiện tại
   return (
     <line
-      x1={source.x}
-      y1={source.y + NODE_HALF_HEIGHT}
-      x2={target.x}
-      y2={target.y - NODE_HALF_HEIGHT}
+      x1={sourceBoundary.x}
+      y1={sourceBoundary.y}
+      x2={targetBoundary.x}
+      y2={targetBoundary.y}
       {...props}
     >
       {titleElement}

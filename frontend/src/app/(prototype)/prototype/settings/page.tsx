@@ -1,6 +1,7 @@
 "use client";
 
 import { DataRightsPanel, type DataRightsAdapter } from "@/components/settings/DataRightsPanel";
+import { LegalLinksCard } from "@/components/legal/LegalLinksCard";
 
 const prototypeDataRightsAdapter: DataRightsAdapter = {
   loadNodes: async () => [
@@ -49,6 +50,8 @@ export default function PrototypeSettingsPage() {
           <strong>minh@example.test</strong>
         </section>
       </div>
+
+      <LegalLinksCard />
 
       <div className="surface-card settings-data-rights-card">
         <DataRightsPanel adapter={prototypeDataRightsAdapter} />

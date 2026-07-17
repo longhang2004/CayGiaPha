@@ -35,3 +35,13 @@ Thumbs.db
 .codex/
 .cursor/
 .kiro/steering/
+
+# Local agent/runtime artifacts
+.superpowers/
+.codegraph/
+
+# Package-manager cache
+.pnpm-store/
+
+# Root-level test artifacts
+/test-results/

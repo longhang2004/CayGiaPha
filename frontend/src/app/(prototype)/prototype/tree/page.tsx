@@ -11,6 +11,7 @@
  *  - API mutating calls (save, delete, share) are stubbed to no-ops.
  *  - `fetchAddresses` derives mock regional terms locally, avoiding backend calls.
  *  - Accepts `?panel=settings` to open the settings modal by default.
+ *  - Accepts `?graphStress=1` for long-name and combined-status graph regression checks.
  *
  * ⚠️  Dev/local only — gated by the (prototype) layout.
  *
@@ -89,12 +90,30 @@ function PrototypeTreeContent() {
   const capabilities = useMemo(() => prototypeCapabilities(accessRole), [accessRole]);
   const guidanceRole = accessRole === "OWNER" ? "owner" : accessRole === "CONTRIBUTOR" ? "editor" : "reader";
   const guideState = searchParams.get("guideState");
-  const persons = useMemo<Person[]>(() => MOCK_PERSONS.map((person) => ({
-    ...person,
-    capabilities: accessRole === "LINKED"
-      ? prototypeCapabilities(accessRole, person.id === "ego")
-      : capabilities,
-  })), [accessRole, capabilities]);
+  const graphStress = searchParams.get("graphStress") === "1";
+  const persons = useMemo<Person[]>(() => MOCK_PERSONS.map((person) => {
+    const stressedPerson = graphStress && person.id === "ego"
+      ? {
+          ...person,
+          displayName: "Hàng Nhựt Long Gia Đình Nhánh Chính Nhiều Thế Hệ",
+          claimed: true,
+        }
+      : graphStress && person.id === "duong"
+        ? {
+            ...person,
+            displayName: "Nguyễn Văn Hùng Gia Đình Nhánh Mở Rộng Nhiều Thế Hệ",
+            claimed: true,
+            deceased: true,
+          }
+        : person;
+
+    return {
+      ...stressedPerson,
+      capabilities: accessRole === "LINKED"
+        ? prototypeCapabilities(accessRole, person.id === "ego")
+        : capabilities,
+    };
+  }), [accessRole, capabilities, graphStress]);
   const [relationships] = useState<Relationship[]>(MOCK_RELATIONSHIPS);
   const [region, setRegionState] = useState<Region>("Nam");
   const [livingRedaction, setLivingRedaction] = useState(false);

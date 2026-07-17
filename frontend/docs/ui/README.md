@@ -2,7 +2,7 @@
 
 This directory is the starting point for frontend UI/UX changes. It records the
 current design language, where visual concerns live, and known quality gaps. It
-describes the code as of 2026-07-10; product specs and `AGENTS.md` take
+describes the code as of 2026-07-17; product specs and `AGENTS.md` take
 precedence.
 
 ## Read order
@@ -31,8 +31,9 @@ generic SaaS dashboard:
 - Older-user accessibility intent: 48 CSS-px targets, text scaling from
   100–200%, visible keyboard focus.
 
-The strongest existing screens are the landing page, auth cards, and graph
-workspace. Preserve their warm palette, typography, and purposeful whitespace.
+The landing page, auth cards, and graph workspace share the warm palette but use different density.
+Preserve the landing page's editorial pacing, the auth flow's focused cards, and the workspace's
+task-first information hierarchy.
 
 ## Rendering shells
 
@@ -59,7 +60,7 @@ imported by the tree workspace.
 | Order | File | Owns |
 |---:|---|---|
 | 1 | `_01_variables.scss` | Theme tokens, spacing, shadows, root/body, dark mode |
-| 2 | `_02_typography.scss` | Type hierarchy, shared layouts, landing, lists/empty states |
+| 2 | `_02_typography.scss` | Type hierarchy, shared layouts, lists/empty states |
 | 3 | `_03_tree_workspace.scss` | Workspace, toolbar, panels, search, double-bezel utilities, breakpoints |
 | 4 | `_04_forms_buttons.scss` | Buttons, inputs, field states, focus, check/radio |
 | 5 | `_05_header.scss` | Public header, nav, text-size UI, skip link |
@@ -68,6 +69,7 @@ imported by the tree workspace.
 | 8 | `_08_modals_auth.scss` | Auth, modal, forms, onboarding, tour, loading states |
 | 9 | `_09_animations.scss` | Reusable entrance animation |
 | 10 | `_10_support_admin.scss` | Support, feedback, admin |
+| 11 | `_11_home.scss` | Marketing landing layout, conceptual illustrations, FAQ, footer, responsive states |
 | extra | `components/graph/graph.css` | SVG graph, nodes/edges, controls, person panel |
 
 CSS is global. Before changing a shared selector, search both SCSS and TSX.
@@ -124,6 +126,27 @@ not automatically page-overflow bugs.
 - Relationship types must remain distinguishable by line style and color.
 - `prefers-reduced-motion` must disable non-essential motion.
 - Help topics under `src/content/help/` are the canonical guidance source. Overview, checklist and contextual notes reference topic IDs and excerpt keys; do not duplicate explanatory copy in components.
+- Production `/` and `/prototype/home` render the same `HomeLanding`. Session state changes only the
+  primary account action; content, anchors, FAQ, footer, and generated hero asset remain identical.
+  The fixed marketing header uses absolute `/#cach-hoat-dong`, `/#tinh-nang`, and `/#rieng-tu`
+  links so they work from `/help` as well as `/`. The hamburger mirrors those destinations.
+- Marketing artwork is illustration-first. The hero and Open Graph metadata share the 1200×630
+  `home-heritage-family.jpg` asset with an honest family-scene alt; feature stories use stable
+  conceptual HTML/CSS artwork, not screenshots or simulated product UI. Keep homepage styles in
+  `_11_home.scss`, support auto light/dark themes and reduced motion, collapse asymmetric layouts
+  below tablet width, and verify the whole page at 200% text without horizontal overflow.
+- Homepage section reveals are progressive enhancement: observe `.home-reveal` markers once, keep
+  content visible without observer support, and remove movement under reduced motion. FAQ buttons
+  must explicitly left-align their wrapping label and reserve a fixed trailing plus/minus slot.
+- The homepage footer groups product, support, and legal destinations. Production and prototype
+  Settings share `LegalLinksCard` before Data Rights. Keep ToS and Privacy out of the app sidebar,
+  and never fork or rewrite canonical legal document copy for marketing surfaces.
+- Production `/tree` and `/prototype/tree-list` share `TreeListView`. Keep its truthful count,
+  semantic ordered rows, visible indices, role/region metadata, Owner-only delete action, and empty
+  Guidance slot synchronized. Tree-list styles belong to `_02_typography.scss`; responsive rows
+  stack actions without returning to elevated generic cards or duplicating rules in workspace SCSS.
+- Auth cross-links use the complete prompts “Chưa có tài khoản? Đăng ký ngay!” and “Đã có tài
+  khoản? Đăng nhập ngay!” in production and prototypes without changing redirect query handling.
 - The populated workspace uses progressive Coach mark chapters sourced from canonical Help topics:
   overview, actions, graph, and person. Contextual chapters start only after the user opens their
   surface and never open a drawer, change tabs, expand controls, select a person, or start editing.
@@ -152,6 +175,15 @@ not automatically page-overflow bugs.
 - Region Nam may append a privacy-safe, display-only calling number for sibling and parent-sibling
   terms (including their spouses) when explicit birth order is visible. Bắc/Trung, missing or hidden
   order, and all ineligible relation bands retain the canonical base term; never infer “Út”.
+- Graph cards use one compact metric profile per text scale: 176×128px at 100%, 192×156px at 150%,
+  and 208×184px at 200%. Keep 24px between adjacent nodes, 96px of line space between generations,
+  72px between disconnected components, and 64px inside the SVG world. Names may use two visual
+  lines, but their full accessible name and tooltip must remain available. Connectors terminate at
+  measured card edges rather than hard-coded offsets.
+- Graph camera transforms keep 48px four-direction boundaries, a dynamic minimum zoom of
+  `clamp(fitZoom, 0.12, 0.5)`, and maximum zoom 2. Center axes whose scaled world is smaller than
+  the padded viewport; clamp every drag, wheel, pinch, button, reset, resize, fullscreen, and
+  center-on-node path. Pointer, pinch-midpoint, and viewport-center zoom anchors must remain stable.
 - The action drawer remains a compact right drawer on desktop and a vertically entering/exiting
   bottom sheet on mobile/tablet. Mobile/tablet graph controls place exactly eight primary actions in
   a 4×2 grid, with selected-person centring and full Help outside the grid; desktop controls remain

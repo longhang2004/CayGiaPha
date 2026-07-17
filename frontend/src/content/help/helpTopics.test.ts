@@ -9,7 +9,7 @@ const EXPECTED_METADATA = {
   "them-quan-he-ro-rang": { version: 2, reviewedAt: "2026-07-13" },
   "xem-thong-tin-va-xung-ho": { version: 3, reviewedAt: "2026-07-17" },
   "doi-diem-nhin": { version: 3, reviewedAt: "2026-07-17" },
-  "dieu-huong-so-do": { version: 2, reviewedAt: "2026-07-13" },
+  "dieu-huong-so-do": { version: 3, reviewedAt: "2026-07-17" },
   "doc-duong-quan-he": { version: 3, reviewedAt: "2026-07-15" },
   "chon-vung-mien": { version: 2, reviewedAt: "2026-07-13" },
   "dieu-chinh-hien-thi": { version: 2, reviewedAt: "2026-07-13" },
@@ -20,7 +20,7 @@ const EXPECTED_METADATA = {
   "xac-nhan-day-la-toi": { version: 1, reviewedAt: "2026-07-13" },
   "thao-tac-trong-cay": { version: 1, reviewedAt: "2026-07-15" },
   "sua-va-them-thanh-vien": { version: 1, reviewedAt: "2026-07-15" },
-  "xem-va-luu-so-do": { version: 1, reviewedAt: "2026-07-15" },
+  "xem-va-luu-so-do": { version: 2, reviewedAt: "2026-07-17" },
 };
 
 describe("canonical Help registry", () => {
@@ -128,6 +128,25 @@ describe("canonical Help registry", () => {
     );
     expect(resetStep).toContain("trạng thái ban đầu");
     expect(resetStep).not.toMatch(/toàn bộ cây/i);
+  });
+
+  it("explains bounded camera behavior without exposing implementation numbers", () => {
+    const navigationTopic = getHelpTopic("dieu-huong-so-do");
+    const exportTopic = getHelpTopic("xem-va-luu-so-do");
+    const copy = [
+      navigationTopic?.summary,
+      navigationTopic?.purpose,
+      ...(navigationTopic?.steps ?? []),
+      navigationTopic?.recovery,
+      exportTopic?.summary,
+      ...(exportTopic?.steps ?? []),
+      exportTopic?.recovery,
+    ].join(" ");
+
+    expect(copy).toMatch(/bốn hướng/i);
+    expect(copy).toMatch(/giới hạn.*thu phóng|thu phóng.*giới hạn/i);
+    expect(copy).toContain("Đặt lại");
+    expect(copy).not.toMatch(/0\.12|48\s*px|zoom\s*2/i);
   });
 
   it("keeps every related topic ID resolvable and non-self-referential", () => {

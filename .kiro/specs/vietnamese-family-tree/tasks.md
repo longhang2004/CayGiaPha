@@ -605,6 +605,40 @@ against the active Next.js code and current tests.
     - Give marriage edges their own namespace; assert unique person/relationship IDs, valid endpoints,
       and simultaneous marriage plus joint parent-child connectors in the regression family.
 
+- [x] 28. Compact graph layout and bounded camera
+  - [x] 28.1 Add deterministic node, world, and connector geometry
+    - Interpolate node metrics across the existing 100–200% text scale; compact horizontal spacing,
+      increase generation spacing, and terminate every relationship line at actual card boundaries.
+  - [x] 28.2 Clamp every graph camera interaction
+    - Share pure fit/min/max/pan geometry across initialization, reset, resize, fullscreen, drag,
+      wheel, pinch, buttons, and center-on-node behavior with a 48px four-edge boundary.
+  - [x] 28.3 Lock production/prototype responsive evidence
+    - Cover compact cards, connector endpoints, zoom limits, four-direction pan, 200% text, and page
+      overflow in targeted component and Playwright tests plus the broad prototype audit.
+
+- [x] 29. Heritage marketing homepage, legal entry points, and Help sync
+  - [x] 29.1 Build one illustration-first production/prototype landing page
+    - Share session-state CTAs, long-form content, stable conceptual feature visuals, FAQ, final CTA,
+      and grouped footer without screenshots, fabricated social proof, or unsupported promises.
+  - [x] 29.2 Add marketing navigation and legal access
+    - Keep absolute homepage anchors usable from Help; add ToS and Privacy to the homepage footer and
+      shared production/prototype Settings card before Data Rights without changing the sidebar.
+  - [x] 29.3 Synchronize bounded-camera Help and responsive evidence
+    - Bump both graph guidance topics, explain four-direction limits, bounded zoom, and Đặt lại without
+      numeric implementation details; verify dark mode, reduced motion, 200% text, and no horizontal
+      overflow at mobile, tablet, and desktop widths.
+
+- [x] 30. Homepage motion, auth prompts, and editorial tree list
+  - [x] 30.1 Repair responsive FAQ layout and add progressive section reveals
+    - Left-align wrapping questions with a fixed icon slot; reveal marked sections once while keeping
+      unsupported and reduced-motion experiences fully visible.
+  - [x] 30.2 Clarify sign-in and sign-up cross-links
+    - Use complete reciprocal prompts in production and prototypes while preserving invitation
+      redirect and reason parameters.
+  - [x] 30.3 Share the editorial tree catalog across production and prototype
+    - Present truthful count, ordered rows, role/region metadata, Owner-only delete, empty Guidance,
+      responsive action reflow, and no horizontal page overflow without changing data callbacks.
+
 ## Notes
 
 - Tasks marked with `*` are optional test sub-tasks and can be skipped for a faster MVP; core

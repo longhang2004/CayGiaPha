@@ -16,6 +16,8 @@ const AUDIT_ROUTES = [
   { name: "signin", href: "/prototype/signin" },
   { name: "signup", href: "/prototype/signup" },
   { name: "forgot-password", href: "/prototype/forgot-password" },
+  { name: "tree-list", href: "/prototype/tree-list" },
+  { name: "tree-list-empty", href: "/prototype/tree-list?trees=none" },
   { name: "tree-list-welcome", href: "/prototype/tree-list?welcome=open&trees=none" },
   { name: "tree-owner", href: "/prototype/tree?person=ego" },
   { name: "tree-contributor", href: "/prototype/tree?role=contributor&person=ego" },
@@ -113,6 +115,23 @@ test.describe("prototype UI audit", () => {
       });
     }
   }
+
+  test("tree list dark mode at mobile", async ({ page }) => {
+    await page.emulateMedia({ colorScheme: "dark" });
+    await page.setViewportSize({ width: 375, height: 667 });
+    await page.goto("/prototype/tree-list");
+    await expect(page.getByRole("heading", { name: "Cây gia phả của bạn" })).toBeVisible();
+    expect(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth <= document.documentElement.clientWidth + 1,
+      ),
+    ).toBe(true);
+    await page.screenshot({
+      path: test.info().outputPath("mobile-tree-list-dark.png"),
+      fullPage: true,
+      animations: "disabled",
+    });
+  });
 
   for (const viewport of WORKSPACE_BOUNDARY_VIEWPORTS) {
     for (const mode of ["list", "graph"] as const) {
@@ -213,7 +232,8 @@ test.describe("prototype UI audit", () => {
         expect(controlsBox!.x + controlsBox!.width).toBeLessThanOrEqual(canvasBox!.x + canvasBox!.width + 1);
         expect(controlsBox!.y).toBeGreaterThanOrEqual(canvasBox!.y);
         expect(controlsBox!.y + controlsBox!.height).toBeLessThanOrEqual(footerBox!.y + 1);
-        expect(egoNodeBox!.width).toBeGreaterThanOrEqual(140);
+        // Compact 176px cards render at the readable initial 0.75 camera zoom (132px).
+        expect(egoNodeBox!.width).toBeGreaterThanOrEqual(128);
         expect(egoNodeBox!.x + egoNodeBox!.width).toBeGreaterThan(canvasBox!.x);
         expect(egoNodeBox!.x).toBeLessThan(canvasBox!.x + canvasBox!.width);
       }
