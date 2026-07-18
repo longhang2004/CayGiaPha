@@ -1,0 +1,194 @@
+
+.tree-workspace-action-drawer {
+  width: min(100vw, 30rem);
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  height: 100dvh;
+  padding: max(min(1.5rem, 24px), calc(env(safe-area-inset-top) + 12px))
+    max(min(1.5rem, 24px), calc(env(safe-area-inset-right) + 12px))
+    max(min(1.25rem, 20px), env(safe-area-inset-bottom))
+    min(1.25rem, 20px);
+  overflow: hidden;
+}
+
+.cgp-drawer.tree-workspace-action-drawer {
+  padding-top: max(min(1.5rem, 24px), calc(env(safe-area-inset-top) + 12px));
+  padding-bottom: max(min(1.25rem, 20px), env(safe-area-inset-bottom));
+  overflow-x: hidden;
+  overflow-y: hidden;
+}
+
+.tree-person-picker {
+  width: min(100vw, 30rem);
+  padding: max(1.25rem, env(safe-area-inset-top)) 1.25rem max(1.25rem, env(safe-area-inset-bottom));
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  overflow: hidden;
+  height: 100dvh;
+}
+
+.cgp-drawer.tree-person-picker {
+  padding-top: max(1.25rem, env(safe-area-inset-top));
+  padding-bottom: max(1.25rem, env(safe-area-inset-bottom));
+  overflow-x: hidden;
+  overflow-y: hidden;
+}
+
+.tree-person-picker__header {
+  padding-right: 2.75rem;
+}
+
+.tree-workspace-action-drawer__chrome {
+  padding-right: min(4rem, 72px);
+}
+
+.tree-person-picker__eyebrow,
+.tree-workspace-action-drawer__eyebrow {
+  margin: 0;
+  color: var(--color-brand);
+  font-size: 0.76rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.tree-person-picker__header h2,
+.tree-workspace-action-drawer__chrome h2 {
+  margin: 0.2rem 0 0.35rem;
+}
+
+.tree-workspace-action-drawer__description {
+  margin: 0;
+  color: var(--color-muted);
+  line-height: 1.45;
+}
+
+.tree-workspace-action-drawer__content {
+  position: relative;
+  display: grid;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.tree-workspace-action-drawer__body {
+  grid-area: 1 / 1;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.tree-workspace-action-drawer__content > .workspace-coach-layer--actions {
+  inset: 0;
+}
+
+.tree-person-picker__header > p:last-child {
+  margin: 0 0 1rem;
+  color: var(--color-muted);
+}
+
+.tree-person-picker__count {
+  margin: 0.65rem 0;
+  color: var(--color-muted);
+  font-size: 0.86rem;
+}
+
+.tree-person-picker__list {
+  overflow-y: auto;
+  border-top: 1px solid var(--color-hairline);
+}
+
+.tree-person-picker__person,
+.tree-workspace-action-drawer__list > button,
+.tree-workspace-action-drawer__list > a {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  width: 100%;
+  min-height: 64px;
+  align-items: center;
+  gap: 0.8rem;
+  padding: 0.65rem 0.25rem;
+  color: var(--color-fg);
+  border: 0;
+  border-bottom: 1px solid var(--color-hairline-soft);
+  border-radius: 0;
+  background: transparent;
+  font: inherit;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.tree-person-picker__person:hover,
+.tree-person-picker__person:focus-visible,
+.tree-person-picker__person[data-selected="true"],
+.tree-workspace-action-drawer__list > button:hover,
+.tree-workspace-action-drawer__list > a:hover {
+  background: var(--color-surface-hover);
+}
+
+.tree-workspace-action-drawer .tree-workspace-action-drawer__list > button:hover:not(:disabled),
+.tree-workspace-action-drawer .tree-workspace-action-drawer__list > button:focus-visible,
+.tree-workspace-action-drawer .tree-workspace-action-drawer__list > a:hover,
+.tree-workspace-action-drawer .tree-workspace-action-drawer__list > a:focus-visible {
+  color: var(--color-fg);
+  background: var(--color-surface-hover);
+  box-shadow: none;
+  transform: none;
+}
+
+.tree-workspace-action-drawer .tree-workspace-action-drawer__list > button:active:not(:disabled) {
+  background: var(--color-surface-strong);
+  box-shadow: none;
+  transform: none;
+}
+
+.tree-person-picker__selected {
+  color: var(--color-brand);
+  font-size: 0.75rem;
+  font-weight: 800;
+}
+
+.tree-workspace-action-drawer__list {
+  margin-top: 1rem;
+}
+
+.tree-workspace-action-drawer__list > button,
+.tree-workspace-action-drawer__list > a {
+  grid-template-columns: 24px minmax(0, 1fr);
+}
+
+.tree-workspace-action-drawer__list > button > span,
+.tree-workspace-action-drawer__list > a > span {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+}
+
+.tree-workspace-action-drawer__list small {
+  font-size: 0.78rem;
+  font-weight: 400;
+}
+
+html[data-text-scale="200"] .tree-workspace-action-drawer__chrome h2 {
+  margin-block: 0;
+  font-size: 1rem;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+html[data-text-scale="200"] .tree-workspace-action-drawer__list > button,
+html[data-text-scale="200"] .tree-workspace-action-drawer__list > a {
+  padding-block: 8px;
+}
+
+html[data-text-scale="200"] .tree-workspace-action-drawer__list > button > span,
+html[data-text-scale="200"] .tree-workspace-action-drawer__list > a > span {
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+
+html[data-text-scale="200"] .tree-workspace-action-drawer__list strong,
+html[data-text-scale="200"] .tree-workspace-action-drawer__list small {
+  white-space: nowrap;
+}

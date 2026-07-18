@@ -11,6 +11,29 @@ export interface FocusRelation {
   address?: Address;
 }
 
+export interface WorkspacePeopleFilters {
+  gender: "all" | "male" | "female";
+  side: "all" | "paternal" | "maternal" | "none";
+  birthYearFrom?: number;
+  birthYearTo?: number;
+  lifeStatus: "all" | "living" | "deceased";
+  claimedStatus: "all" | "claimed" | "unclaimed";
+  relationshipType:
+    | "all"
+    | "bloodline"
+    | "marriage"
+    | "asserted"
+    | "social";
+}
+
+export const DEFAULT_WORKSPACE_PEOPLE_FILTERS: WorkspacePeopleFilters = {
+  gender: "all",
+  side: "all",
+  lifeStatus: "all",
+  claimedStatus: "all",
+  relationshipType: "all",
+};
+
 export function getFocusRelations(
   focusPersonId: string,
   persons: Person[],
@@ -94,5 +117,113 @@ export function filterWorkspacePeople(
       if (labelText && normalizeName(labelText).includes(normalizedQuery)) return true;
     }
     return false;
+  });
+}
+
+interface FilterWorkspacePeopleInput {
+  persons: Person[];
+  relationships: Relationship[];
+  addresses: Map<string, Address>;
+  query: string;
+  filters: WorkspacePeopleFilters;
+}
+
+function matchesRelationshipType(
+  personId: string,
+  relationships: Relationship[],
+  relationshipType: WorkspacePeopleFilters["relationshipType"],
+): boolean {
+  if (relationshipType === "all") return true;
+
+  return relationships.some((relationship) => {
+    if (
+      relationship.sourceId !== personId &&
+      relationship.targetId !== personId
+    ) {
+      return false;
+    }
+    if (relationshipType === "bloodline") {
+      return (
+        relationship.type === "bloodline_father" ||
+        relationship.type === "bloodline_mother"
+      );
+    }
+    if (relationshipType === "social") {
+      return relationship.type === "non_bloodline";
+    }
+    return relationship.type === relationshipType;
+  });
+}
+
+export function filterWorkspacePeopleWithFilters({
+  persons,
+  relationships,
+  addresses,
+  query,
+  filters,
+}: FilterWorkspacePeopleInput): Person[] {
+  const normalizedQuery = normalizeName(query.trim());
+
+  return persons.filter((person) => {
+    const address = addresses.get(person.id);
+    if (normalizedQuery) {
+      const nameMatches = normalizeName(person.displayName).includes(normalizedQuery);
+      const relationMatches = address
+        ? normalizeName(addressLabel(address)).includes(normalizedQuery)
+        : false;
+      if (!nameMatches && !relationMatches) return false;
+    }
+
+    if (filters.gender !== "all" && person.gender !== filters.gender) {
+      return false;
+    }
+    if (
+      filters.side !== "all" &&
+      (address?.relation?.side ?? "none") !== filters.side
+    ) {
+      return false;
+    }
+    if (
+      filters.birthYearFrom !== undefined &&
+      (person.birthYear == null || person.birthYear < filters.birthYearFrom)
+    ) {
+      return false;
+    }
+    if (
+      filters.birthYearTo !== undefined &&
+      (person.birthYear == null || person.birthYear > filters.birthYearTo)
+    ) {
+      return false;
+    }
+    if (
+      filters.lifeStatus === "living" &&
+      person.deceased === true
+    ) {
+      return false;
+    }
+    if (
+      filters.lifeStatus === "deceased" &&
+      person.deceased !== true
+    ) {
+      return false;
+    }
+    if (
+      filters.claimedStatus === "claimed" &&
+      person.claimed !== true
+    ) {
+      return false;
+    }
+    if (
+      filters.claimedStatus === "unclaimed" &&
+      person.claimed === true
+    ) {
+      return false;
+    }
+
+    return matchesRelationshipType(
+      person.id,
+      relationships,
+      filters.relationshipType,
+    );
   });
 }

@@ -14,8 +14,8 @@ import {
   type Gender,
   type MaritalStatus,
 } from "@/lib/persons";
-import { type PersonOption } from "./AddRelativeForm";
 import { Button } from "@/components/Button";
+import { PhotoFilePicker } from "@/components/photos/PhotoFilePicker";
 import { uploadPhoto } from "@/lib/photos";
 import { FormControl, Input, Select } from "@/components/ui/FormControls";
 import { LawfulBasisNotice } from "./LawfulBasisNotice";
@@ -50,6 +50,12 @@ export interface PersonFormInitialValues {
   deathLunarLeap?: boolean;
 }
 
+interface PersonOption {
+  id: string;
+  displayName: string;
+  gender?: Gender;
+}
+
 interface PersonFormProps {
   mode: "create" | "edit";
   /** Required to scope edits / visibility updates to a tree. */
@@ -59,6 +65,7 @@ interface PersonFormProps {
   initialValues?: PersonFormInitialValues;
   onSuccess?: (personId: string) => void;
   onCancel?: () => void;
+  onDirtyChange?: (dirty: boolean) => void;
   persons?: PersonOption[];
   hideCancelButton?: boolean;
   spouseRelationship?: {
@@ -83,6 +90,7 @@ export function PersonForm({
   initialValues,
   onSuccess,
   onCancel,
+  onDirtyChange,
   persons = [],
   hideCancelButton = false,
   spouseRelationship,
@@ -179,9 +187,12 @@ export function PersonForm({
     };
   }, [deathStatus, deathDay, deathMonth, deathYear, deathCalendar, deathLunarLeap]);
   const [photoFile, setPhotoFile] = useState<File | null>(null);
-  const [photoPreviewUrl, setPhotoPreviewUrl] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [formError, setFormError] = useState<string | null>(null);
+  const [partialSuccess, setPartialSuccess] = useState<{
+    personId: string;
+    displayName: string;
+  } | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const isSubmittingRef = useRef(false);
   const [showSubmitReview, setShowSubmitReview] = useState(false);
@@ -213,6 +224,10 @@ export function PersonForm({
     (mode === "edit" && spouseRelationship && (
       spouseMaritalStatus !== (spouseRelationship?.maritalStatus === "divorced" ? "divorced" : "married")
     ));
+
+  useEffect(() => {
+    onDirtyChange?.(Boolean(isDirty));
+  }, [isDirty, onDirtyChange]);
 
   function handleCancelClick() {
     trackUxEvent("ux_core_flow_error", {
@@ -329,20 +344,23 @@ export function PersonForm({
         }
       }
 
-      // Upload photo if selected
+      let photoUploadFailed = false;
       if (photoFile && resolvedId) {
         try {
           await uploadPhoto(treeId, resolvedId, photoFile);
-        } catch (uploadErr) {
-          console.error("Failed to upload photo.");
-          // Don't fail the whole form submit if photo fails, just warn
-          alert("Lưu thông tin thành công nhưng không thể tải ảnh lên: " + (uploadErr instanceof Error ? uploadErr.message : ""));
+        } catch {
+          photoUploadFailed = true;
+          if (mode === "create") {
+            setPartialSuccess({ personId: resolvedId, displayName: displayName.trim() });
+          } else {
+            setFormError("Đã lưu thông tin nhưng chưa tải được ảnh. Bạn có thể thử lại trong thư viện ảnh.");
+          }
         }
       }
 
       setShowSubmitReview(false);
       trackUxEvent("ux_core_flow_complete", { flow: flowName, surface, viewportClass: getUxViewportClass(), accessRole: "unknown", outcome: "completed" });
-      if (resolvedId) {
+      if (resolvedId && !photoUploadFailed) {
         onSuccess?.(resolvedId);
       }
     } catch (error) {
@@ -374,6 +392,22 @@ export function PersonForm({
           }}>Tiếp tục chỉnh sửa</button>
           <button type="button" className="btn btn-primary btn-terracotta" onClick={() => onCancel?.()}>Xác nhận hủy</button>
         </div>
+      </div>
+    );
+  }
+
+  if (partialSuccess) {
+    return (
+      <div className="person-flow-partial-success" role="status">
+        <h3>Đã lưu thông tin của {partialSuccess.displayName}</h3>
+        <p>Ảnh chưa tải lên được. Mở hồ sơ để thử lại.</p>
+        <Button
+          type="button"
+          className="btn-primary btn-terracotta"
+          onClick={() => onSuccess?.(partialSuccess.personId)}
+        >
+          Mở thông tin thành viên
+        </Button>
       </div>
     );
   }
@@ -631,42 +665,14 @@ return (
         />
       </FormControl>
 
-      <div className="field photo-upload-container">
-        <input
-          id="photo"
-          name="photo"
-          type="file"
-          accept="image/jpeg,image/png"
-          className="photo-upload-input"
-          disabled={submitting}
-          onChange={(e) => {
-            const file = e.target.files?.[0];
-            if (file) {
-              setPhotoFile(file);
-              setPhotoPreviewUrl(URL.createObjectURL(file));
-            } else {
-              setPhotoFile(null);
-              setPhotoPreviewUrl(null);
-            }
-          }}
-        />
-        <label htmlFor="photo" className="photo-upload-zone">
-          <span className="photo-upload-zone__icon">📤</span>
-          <span className="photo-upload-zone__title">
-            {photoFile ? `Đã chọn: ${photoFile.name}` : "Hình ảnh đại diện (tùy chọn)"}
-          </span>
-          <span className="photo-upload-zone__subtitle">Kéo thả file hoặc click để chọn ảnh đại diện</span>
-        </label>
-        {photoPreviewUrl && (
-          <div style={{ marginTop: "0.5rem" }}>
-            <img
-              src={photoPreviewUrl}
-              alt="Xem trước ảnh"
-              style={{ width: "80px", height: "80px", objectFit: "cover", borderRadius: "8px", border: "1px solid var(--color-hairline)" }}
-            />
-          </div>
-        )}
-      </div>
+      <PhotoFilePicker
+        id="photo"
+        value={photoFile}
+        onChange={setPhotoFile}
+        label="Ảnh đại diện (tùy chọn)"
+        hint="JPEG hoặc PNG, tối đa 5 MiB."
+        disabled={submitting}
+      />
 
       {mode === "create" && persons.length > 0 && (
         <fieldset style={{ marginTop: "1.5rem", border: "1px dashed var(--color-hairline-strong)", borderRadius: "8px", padding: "1rem" }}>

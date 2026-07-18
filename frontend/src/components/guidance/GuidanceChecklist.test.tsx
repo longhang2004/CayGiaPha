@@ -18,8 +18,8 @@ describe("GuidanceChecklist", () => {
     expect(getHelpExcerpt("them-nguoi-dau-tien", "checklist", "owner")).toBe(
       "Chọn Thêm thành viên và bắt đầu với chính bạn hoặc một người thân.",
     );
-    expect(getHelpExcerpt("them-quan-he-ro-rang", "checklist", "owner")).toBe(
-      "Chọn một người, mở Thêm kết nối, rồi thêm cha, mẹ, vợ/chồng hoặc con.",
+    expect(getHelpExcerpt("them-nguoi-moi", "checklist", "owner")).toBe(
+      "Chọn Thêm người mới, chọn người làm mốc rồi xác nhận quan hệ.",
     );
     expect(getHelpExcerpt("xem-thong-tin-va-xung-ho", "checklist", "owner")).toBe(
       "Chọn một người trên sơ đồ để mở thông tin và xem cách xưng hô.",

@@ -264,22 +264,26 @@ test.describe("Prototype Pages — smoke tests (no auth required)", () => {
     await expect(listTab).toHaveAttribute("aria-selected", "true");
     await expect(page.locator("#panel-graph")).toHaveAttribute("inert", "");
 
-    await page.getByRole("button", { name: "Thêm người thân" }).click();
-    await expect(page.getByRole("form", { name: "Thêm người thân" })).toBeVisible();
-    await page.getByRole("button", { name: "Hủy thêm quan hệ" }).click();
-    await page.getByRole("button", { name: "Bỏ chọn" }).click();
+    const memberSearch = page.getByRole("searchbox", { name: "Tìm theo tên hoặc cách xưng hô" });
+    await expect(memberSearch).toBeVisible();
+    await memberSearch.fill("huu phuong");
+    await expect(page.getByRole("button", { name: "Chọn Hàng Hữu Phương" })).toBeVisible();
+    await page.getByRole("button", { name: "Xóa tìm kiếm và bộ lọc" }).click();
+
+    await page.getByRole("button", { name: "Thêm người mới" }).click();
+    await expect(page.getByRole("form", { name: "Thêm người mới" })).toBeVisible();
+    await page.getByRole("button", { name: "Quay lại thông tin thành viên" }).click();
+    await page.getByRole("button", { name: "Đóng bảng thông tin thành viên" }).click();
     await expect(page.locator(".tree-workspace__info-panel")).toBeHidden();
 
-    const otherActions = page.getByRole("button", { name: "Thao tác khác" });
+    const otherActions = page.getByRole("button", { name: "Thao tác khác", exact: true });
     await otherActions.click();
-    await page.getByRole("button", { name: "Tìm người" }).click();
-    const searchDialog = page.getByRole("dialog", { name: "Tìm người" });
-    await expect(searchDialog.getByPlaceholder("Tìm tên hoặc cách xưng hô…")).toBeVisible();
-    await searchDialog.getByRole("button", { name: "Đóng tìm người" }).click();
+    const actionDialog = page.getByRole("dialog", { name: "Thao tác khác" });
+    await expect(actionDialog.getByRole("button", { name: "Tìm người" })).toHaveCount(0);
+    await actionDialog.getByRole("button", { name: "Đóng thao tác khác" }).click();
     await expect(otherActions).toBeFocused();
 
-    await otherActions.click();
-    await page.getByRole("dialog", { name: "Thao tác khác" }).getByRole("button", { name: "Đổi người xét" }).click();
+    await page.getByRole("button", { name: "Đổi người xét" }).click();
     const viewpointDialog = page.getByRole("dialog", { name: "Chọn người để xét vai vế" });
     await viewpointDialog.getByRole("button", { name: "Xét theo Nguyễn Thị Minh" }).click();
     await expect(page.locator(".tree-page-header")).toContainText("Nguyễn Thị Minh");
@@ -302,7 +306,7 @@ test.describe("Prototype Pages — smoke tests (no auth required)", () => {
 
     expect(geometry.scrollWidth).toBeLessThanOrEqual(geometry.clientWidth);
     expect(geometry.footerRight).toBeLessThanOrEqual(geometry.clientWidth);
-    await expect(page.getByRole("button", { name: "Thêm người thân" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Thêm người mới" })).toBeVisible();
     await expect(page.getByRole("button", { name: "Thao tác khác" })).toBeVisible();
   });
 
@@ -379,7 +383,7 @@ test.describe("Prototype Pages — smoke tests (no auth required)", () => {
     const scrollRegion = scrollRegions.first();
     const chrome = dialog.locator(".tree-workspace-action-drawer__chrome");
     const close = dialog.getByRole("button", { name: "Đóng thao tác khác" });
-    const firstAction = scrollRegion.getByRole("button", { name: "Tìm người" });
+    const firstAction = scrollRegion.getByRole("button", { name: "Mở hướng dẫn nhanh" });
     const firstActionBeforeCoach = await requiredBoundingBox(firstAction);
 
     await scrollRegion.getByRole("button", { name: "Mở hướng dẫn nhanh" }).click();
@@ -393,7 +397,7 @@ test.describe("Prototype Pages — smoke tests (no auth required)", () => {
       requiredBoundingBox(chrome),
       requiredBoundingBox(close),
     ]);
-    await scrollRegionToBottom(scrollRegion);
+    await scrollRegion.evaluate((element) => { element.scrollTop = element.scrollHeight; });
     const [chromeAfter, closeAfter] = await Promise.all([
       requiredBoundingBox(chrome),
       requiredBoundingBox(close),
@@ -437,8 +441,6 @@ test.describe("Prototype Pages — smoke tests (no auth required)", () => {
     await expectWithinViewport(actionDialog.locator('[data-coach-layer="actions"]'));
     const actionCoach = actionDialog.getByRole("dialog", { name: "Hướng dẫn nhanh" });
     await expectCoachTargetsHighlightedControl(actionCoach);
-    await actionCoach.getByRole("button", { name: "Tiếp theo" }).click();
-    await expectCoachTargetsHighlightedControl(actionCoach);
     await page.keyboard.press("Escape");
     await actionDialog.getByRole("button", { name: "Đóng thao tác khác" }).click();
 
@@ -474,7 +476,7 @@ test.describe("Prototype Pages — smoke tests (no auth required)", () => {
     await expect(scrollRegion.locator('[data-coach-layer="person"]')).toHaveCount(0);
 
     const chrome = panel.locator(".side-panel__chrome");
-    const close = panel.getByRole("button", { name: "Bỏ chọn" });
+    const close = panel.getByRole("button", { name: "Đóng bảng thông tin thành viên" });
     const [chromeBefore, closeBefore] = await Promise.all([
       requiredBoundingBox(chrome),
       requiredBoundingBox(close),
@@ -1137,7 +1139,7 @@ test.describe("Prototype Pages — smoke tests (no auth required)", () => {
     await page.getByRole("button", { name: "Thao tác khác" }).click();
     const actionDrawer = page.getByRole("dialog", { name: "Thao tác khác" });
     const actionCoach = actionDrawer.getByRole("dialog", { name: "Hướng dẫn nhanh" });
-    await expect(actionCoach).toContainText("Tìm người và di chuyển trên sơ đồ");
+    await expect(actionCoach).toContainText("Làm quen với các thao tác trong cây");
     await expectWithinViewport(actionCoach);
     await expect(page.getByRole("tab", { name: "Danh sách" })).toHaveAttribute("aria-selected", "true");
     await actionCoach.getByRole("button", { name: "Bỏ qua" }).click();
@@ -1183,7 +1185,7 @@ test.describe("Prototype Pages — smoke tests (no auth required)", () => {
       person: "skipped",
     });
 
-    await page.getByRole("button", { name: "Bỏ chọn" }).click();
+    await page.getByRole("button", { name: "Đóng bảng thông tin thành viên" }).click();
     await expect(panel).toHaveCount(0);
     const overviewCoach = page.getByRole("dialog", { name: "Hướng dẫn nhanh" });
     await expect(overviewCoach).toBeVisible();
@@ -1271,27 +1273,30 @@ test.describe("Prototype Pages — smoke tests (no auth required)", () => {
   });
 
   test("tree prototype — actions follow Owner, Contributor, Linked, and Reader capabilities", async ({ page }) => {
+    await installCompletedWorkspaceGuidance(page);
     await page.goto("/prototype/tree?role=contributor&person=ego");
-    await expect(page.getByRole("button", { name: "Thêm người thân" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Thêm người mới" })).toBeVisible();
     await expect(page.getByRole("button", { name: "Chỉnh sửa thông tin" })).toBeVisible();
-    await expect(page.getByRole("button", { name: "Thêm quan hệ" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Cập nhật quan hệ" })).toBeVisible();
     await page.getByRole("button", { name: "Thao tác khác" }).click();
-    await expect(page.getByRole("button", { name: "Thêm thành viên khác" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Thêm thành viên khác" })).toHaveCount(0);
+    await expect(page.getByRole("button", { name: "Tìm người" })).toHaveCount(0);
     await expect(page.getByRole("button", { name: "Cộng tác" })).toHaveCount(0);
     await expect(page.getByRole("button", { name: "Cài đặt cây" })).toHaveCount(0);
 
     await page.goto("/prototype/tree?role=linked&person=ego");
     await expect(page.getByRole("button", { name: "Chỉnh sửa thông tin" })).toBeVisible();
-    await expect(page.getByRole("button", { name: "Thêm quan hệ" })).toHaveCount(0);
-    await expect(page.getByRole("button", { name: "Thêm người thân" })).toHaveCount(0);
+    await expect(page.getByRole("button", { name: "Cập nhật quan hệ" })).toHaveCount(0);
+    await expect(page.getByRole("button", { name: "Thêm người mới" })).toHaveCount(0);
 
     await page.goto("/prototype/tree?role=reader&person=ego");
     await expect(page.getByRole("button", { name: "Chỉnh sửa thông tin" })).toHaveCount(0);
-    await expect(page.getByRole("button", { name: "Thêm quan hệ" })).toHaveCount(0);
-    await expect(page.getByRole("button", { name: "Thêm người thân" })).toHaveCount(0);
+    await expect(page.getByRole("button", { name: "Cập nhật quan hệ" })).toHaveCount(0);
+    await expect(page.getByRole("button", { name: "Thêm người mới" })).toHaveCount(0);
+    await expect(page.getByRole("searchbox", { name: "Tìm theo tên hoặc cách xưng hô" })).toBeVisible();
     await page.getByRole("button", { name: "Thao tác khác" }).click();
-    await expect(page.getByRole("button", { name: "Tìm người" })).toBeVisible();
-    await expect(page.getByRole("dialog", { name: "Thao tác khác" }).getByRole("button", { name: "Đổi người xét" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Tìm người" })).toHaveCount(0);
+    await expect(page.getByRole("dialog", { name: "Thao tác khác" }).getByRole("button", { name: "Đổi người xét" })).toHaveCount(0);
     await expect(page.getByRole("button", { name: "Mở hướng dẫn nhanh" })).toBeVisible();
   });
 
@@ -1315,6 +1320,7 @@ test.describe("Prototype Pages — smoke tests (no auth required)", () => {
   });
 
   test("tree prototype — collaboration roster shows owner and contributor identities without UUID labels", async ({ page }) => {
+    await installCompletedWorkspaceGuidance(page);
     await page.goto("/prototype/tree");
     await page.getByRole("button", { name: "Thao tác khác" }).click();
     await page.getByRole("button", { name: "Cộng tác" }).click();

@@ -60,10 +60,9 @@ function TreePageContent({ params, searchParams }: TreePageProps) {
     capabilities,
     accessRole,
     guidanceRole,
-    setSelectedId,
-    setEditMode,
-    setAddRelativeMode,
-    setCreateMode,
+    selectPerson,
+    openPersonPanel,
+    closePersonPanel,
     setEgoId,
     setFocusId,
     refreshTree,
@@ -111,22 +110,21 @@ function TreePageContent({ params, searchParams }: TreePageProps) {
     const requestedPerson = persons.find((person) => person.id === requestedPersonId);
     if (!requestedPerson) return;
 
-    setSelectedId(requestedPersonId);
-    setFocusId(requestedPersonId);
-    setAddRelativeMode(false);
-    setCreateMode(false);
-    setEditMode(
+    if (
       nextSearchParams.get("edit") === "true" &&
-      requestedPerson.capabilities?.editContent === true,
-    );
+      requestedPerson.capabilities?.editContent === true
+    ) {
+      openPersonPanel(requestedPersonId, "edit");
+    } else {
+      selectPerson(requestedPersonId);
+    }
+    setFocusId(requestedPersonId);
   }, [
     nextSearchParams,
+    openPersonPanel,
     persons,
-    setAddRelativeMode,
-    setCreateMode,
-    setEditMode,
+    selectPerson,
     setFocusId,
-    setSelectedId,
   ]);
 
   const handleCloseSettings = () => {
@@ -242,12 +240,7 @@ function TreePageContent({ params, searchParams }: TreePageProps) {
               egoId={egoId}
               selectedId={selectedId}
               accessRole={accessRole}
-              onSelectPerson={(id) => {
-                setSelectedId(id);
-                setEditMode(false);
-                setAddRelativeMode(false);
-                setCreateMode(false);
-              }}
+              onSelectPerson={(id, opener) => selectPerson(id, opener)}
               graphContent={
                 <div className="tree-workspace__graph">
                   <TreeGraph
@@ -255,12 +248,7 @@ function TreePageContent({ params, searchParams }: TreePageProps) {
                     persons={persons}
                     relationships={relationships}
                     selectedId={selectedId}
-                    onSelectId={(id) => {
-                      setSelectedId(id);
-                      setEditMode(false);
-                      setAddRelativeMode(false);
-                      setCreateMode(false);
-                    }}
+                    onSelectId={(id) => id ? selectPerson(id) : closePersonPanel()}
                     egoId={egoId}
                     onEgoChange={setEgoId}
                     addresses={addresses}

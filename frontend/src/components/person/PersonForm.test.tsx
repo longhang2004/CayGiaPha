@@ -30,6 +30,17 @@ afterEach(() => {
 });
 
 describe("PersonForm (create)", () => {
+  it("uses the shared photo picker contract", () => {
+    render(<PersonForm mode="create" treeId="t1" />);
+
+    expect(screen.getByLabelText("Ảnh đại diện (tùy chọn)")).toHaveAttribute(
+      "accept",
+      "image/jpeg,image/png",
+    );
+    expect(screen.getByTestId("photo-file-dropzone")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Chọn ảnh/ })).toBeInTheDocument();
+  });
+
   it("explains the responsibility for another person's data", () => {
     render(<PersonForm mode="create" treeId="t1" />);
     expect(screen.getByRole("note")).toHaveTextContent(/cơ sở phù hợp/i);
@@ -71,6 +82,36 @@ describe("PersonForm (create)", () => {
       deathStatus: false,
     });
     expect(onSuccess).toHaveBeenCalledWith("p1");
+  });
+
+  it("does not create the person twice when an optional photo upload fails", async () => {
+    const fetchMock = mockFetchQueue([
+      { ok: true, status: 201, body: { id: "p1" } },
+      {
+        ok: false,
+        status: 400,
+        body: { error: { code: "VALIDATION_ERROR", field: "file", message: "Ảnh lỗi" } },
+      },
+    ]);
+    const onSuccess = vi.fn();
+
+    render(<PersonForm mode="create" treeId="t1" onSuccess={onSuccess} />);
+    await userEvent.type(screen.getByLabelText(/Họ và tên/i), "An");
+    await userEvent.upload(
+      screen.getByLabelText("Ảnh đại diện (tùy chọn)"),
+      new File(["photo"], "an.png", { type: "image/png" }),
+    );
+    await userEvent.click(screen.getByRole("button", { name: "Lưu thành viên" }));
+    await userEvent.click(screen.getByRole("button", { name: "Xác nhận lưu" }));
+
+    expect(await screen.findByText("Đã lưu thông tin của An")).toBeInTheDocument();
+    expect(screen.getByText("Ảnh chưa tải lên được. Mở hồ sơ để thử lại.")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Lưu thành viên" })).not.toBeInTheDocument();
+    expect(onSuccess).not.toHaveBeenCalled();
+
+    await userEvent.click(screen.getByRole("button", { name: "Mở thông tin thành viên" }));
+    expect(onSuccess).toHaveBeenCalledWith("p1");
+    expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 
   it("includes optional birth fields and death status when provided", async () => {

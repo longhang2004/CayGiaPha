@@ -1,0 +1,145 @@
+
+.workspace-coach {
+  position: absolute;
+  z-index: 210;
+  display: grid;
+  box-sizing: border-box;
+  width: min(21.25rem, calc(100% - 1.5rem));
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  gap: 0.75rem;
+  padding: 1rem;
+  overflow: hidden;
+  color: var(--color-fg);
+  border: 1px solid var(--color-hairline-strong);
+  border-radius: 1rem;
+  background: var(--color-surface-card);
+  box-shadow: 0 18px 44px color-mix(in srgb, var(--color-fg) 20%, transparent);
+}
+
+.workspace-coach-layer {
+  position: absolute;
+  z-index: 210;
+  min-width: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.workspace-coach-layer > .workspace-coach--contextual {
+  position: absolute;
+  pointer-events: auto;
+}
+
+.workspace-coach-spotlight__pane {
+  position: absolute;
+  z-index: 0;
+  background: rgb(0 0 0 / 58%);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+  pointer-events: none;
+}
+
+.workspace-coach-spotlight__cutout {
+  position: absolute;
+  z-index: 0;
+  border-radius: 0.75rem;
+  pointer-events: none;
+}
+
+.workspace-coach__progress {
+  color: var(--color-brand);
+  font-size: 0.76rem;
+  font-weight: 800;
+}
+
+.workspace-coach__skip {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  min-height: 44px;
+  padding-inline: 0.75rem;
+  color: var(--color-muted);
+  border: 0;
+  background: transparent;
+  font: inherit;
+  cursor: pointer;
+}
+
+.workspace-coach h2 {
+  margin: 0;
+  padding-right: min(4.5rem, 42%);
+  font-size: 1.1rem;
+}
+
+.workspace-coach__body {
+  display: grid;
+  min-height: 0;
+  gap: 0.75rem;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.workspace-coach__body > p {
+  margin: 0;
+  color: var(--color-muted);
+}
+
+.workspace-coach__actions {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0.75rem;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+.workspace-coach__actions a {
+  display: inline-flex;
+  min-width: 0;
+  min-height: 44px;
+  align-items: center;
+  flex: 0 1 auto;
+  margin-right: 0;
+  color: var(--color-brand);
+  font-weight: 700;
+}
+
+.workspace-coach__actions .btn {
+  min-width: 0;
+  flex: 1 1 0;
+  white-space: normal;
+}
+
+html[data-text-scale="200"] .workspace-coach {
+  width: min(21.25rem, calc(100% - 24px));
+  gap: 8px;
+  padding: 12px;
+}
+
+html[data-text-scale="200"] .workspace-coach__body {
+  gap: 8px;
+}
+
+html[data-text-scale="200"] .workspace-coach__actions {
+  flex-wrap: nowrap;
+  justify-content: flex-start;
+  gap: 8px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: thin;
+}
+
+html[data-text-scale="200"] .workspace-coach__actions a,
+html[data-text-scale="200"] .workspace-coach__actions .btn {
+  flex: 0 0 auto;
+  margin-right: 0;
+  white-space: nowrap;
+}
+
+[data-guidance-highlight="true"] {
+  outline: 3px solid var(--color-focus) !important;
+  outline-offset: 3px;
+}
+
+@import "coach-guidance";

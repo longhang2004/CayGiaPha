@@ -23,7 +23,7 @@ const OVERVIEW_STEPS: CoachStep[] = [
   },
   {
     topicId: "dieu-huong-so-do",
-    anchorIds: ["workspace-tabs"],
+    anchorIds: ["workspace-search", "workspace-tabs"],
     preferredPlacement: "bottom",
   },
   {
@@ -38,10 +38,11 @@ const OVERVIEW_STEPS: CoachStep[] = [
   },
 ];
 
-const TOPIC_ANCHORS: Record<string, string> = {
-  "doi-diem-nhin": "workspace-viewpoint",
-  "dieu-huong-so-do": "graph-navigation",
-  "them-quan-he-ro-rang": "workspace-add-relative",
+const TOPIC_ANCHORS: Record<string, string[]> = {
+  "doi-diem-nhin": ["workspace-viewpoint"],
+  "dieu-huong-so-do": ["workspace-search", "workspace-tabs", "graph-navigation"],
+  "them-nguoi-moi": ["workspace-add-person"],
+  "them-quan-he-ro-rang": ["workspace-person-list", "workspace-tabs"],
 };
 
 const MIN_COACH_SAFE_HEIGHT = 160;
@@ -69,7 +70,9 @@ export function WorkspaceCoachMarks({
     if (!initialTopicId) return OVERVIEW_STEPS;
     return [{
       topicId: initialTopicId,
-      anchorIds: [anchorOverride ?? TOPIC_ANCHORS[initialTopicId] ?? "graph-navigation"],
+      anchorIds: anchorOverride
+        ? [anchorOverride]
+        : TOPIC_ANCHORS[initialTopicId] ?? ["graph-navigation"],
       preferredPlacement: "bottom",
     }];
   }, [anchorOverride, initialTopicId]);

@@ -10,7 +10,7 @@ export interface TreeWorkspaceSurfaceProps {
   addresses: Map<string, Address>;
   egoId: string;
   selectedId: string | null;
-  onSelectPerson: (id: string) => void;
+  onSelectPerson: (id: string, opener?: HTMLElement | null) => void;
   accessRole: TreeAccessRole;
   graphContent: ReactNode; // We pass the TreeGraph as a prop to keep it decoupled
 }

@@ -1,5 +1,10 @@
 import { describe, it, expect } from "vitest";
-import { getFocusRelations, filterWorkspacePeople } from "./people";
+import {
+  DEFAULT_WORKSPACE_PEOPLE_FILTERS,
+  getFocusRelations,
+  filterWorkspacePeople,
+  filterWorkspacePeopleWithFilters,
+} from "./people";
 import { Person, Relationship } from "@/lib/graph";
 import { Address } from "@/lib/graph";
 
@@ -67,5 +72,138 @@ describe("filterWorkspacePeople", () => {
     expect(filterWorkspacePeople(persons, addresses, "hai").length).toBe(1);
     expect(filterWorkspacePeople(persons, addresses, "xyz").length).toBe(0);
     expect(filterWorkspacePeople(persons, addresses, "").length).toBe(2);
+  });
+
+  it("filters without Vietnamese diacritics by name and form of address", () => {
+    const persons: Person[] = [
+      { id: "1", displayName: "Nguyễn Thị Hồng" } as Person,
+      { id: "2", displayName: "Trần Văn Bình" } as Person,
+    ];
+    const addresses = new Map<string, Address>([
+      ["1", { personId: "1", resolved: "Cô ruột", status: "resolved" }],
+      ["2", { personId: "2", resolved: "Anh họ", status: "resolved" }],
+    ]);
+
+    expect(
+      filterWorkspacePeopleWithFilters({
+        persons,
+        relationships: [],
+        addresses,
+        query: "nguyen thi hong",
+        filters: DEFAULT_WORKSPACE_PEOPLE_FILTERS,
+      }).map((person) => person.id),
+    ).toEqual(["1"]);
+    expect(
+      filterWorkspacePeopleWithFilters({
+        persons,
+        relationships: [],
+        addresses,
+        query: "co ruot",
+        filters: DEFAULT_WORKSPACE_PEOPLE_FILTERS,
+      }).map((person) => person.id),
+    ).toEqual(["1"]);
+  });
+
+  it("combines gender, side, birth year, life, claimed and relationship filters", () => {
+    const persons: Person[] = [
+      {
+        id: "paternal-aunt",
+        displayName: "Cô Lan",
+        gender: "female",
+        birthYear: 1968,
+        deceased: false,
+        claimed: true,
+      } as Person,
+      {
+        id: "maternal-uncle",
+        displayName: "Cậu Minh",
+        gender: "male",
+        birthYear: 1955,
+        deceased: true,
+        claimed: false,
+      } as Person,
+    ];
+    const relationships: Relationship[] = [
+      {
+        id: "asserted-edge",
+        type: "asserted",
+        sourceId: "paternal-aunt",
+        targetId: "maternal-uncle",
+        derivationState: "asserted",
+        assertedLabel: "thông gia",
+      },
+    ];
+    const addresses = new Map<string, Address>([
+      [
+        "paternal-aunt",
+        {
+          personId: "paternal-aunt",
+          resolved: "Cô",
+          status: "resolved",
+          relation: { side: "paternal" },
+        },
+      ],
+      [
+        "maternal-uncle",
+        {
+          personId: "maternal-uncle",
+          resolved: "Cậu",
+          status: "resolved",
+          relation: { side: "maternal" },
+        },
+      ],
+    ]);
+
+    expect(
+      filterWorkspacePeopleWithFilters({
+        persons,
+        relationships,
+        addresses,
+        query: "",
+        filters: {
+          gender: "female",
+          side: "paternal",
+          birthYearFrom: 1960,
+          birthYearTo: 1970,
+          lifeStatus: "living",
+          claimedStatus: "claimed",
+          relationshipType: "asserted",
+        },
+      }).map((person) => person.id),
+    ).toEqual(["paternal-aunt"]);
+  });
+
+  it.each([
+    ["bloodline", "bloodline_father"],
+    ["marriage", "marriage"],
+    ["asserted", "asserted"],
+    ["social", "non_bloodline"],
+  ] as const)("recognizes %s relationships", (filter, type) => {
+    const persons = [
+      { id: "1", displayName: "Một" },
+      { id: "2", displayName: "Hai" },
+    ] as Person[];
+    const relationships = [
+      {
+        id: "edge",
+        type,
+        sourceId: "1",
+        targetId: "2",
+        derivationState: type === "asserted" ? "asserted" : "derived",
+      },
+    ] as Relationship[];
+
+    expect(
+      filterWorkspacePeopleWithFilters({
+        persons,
+        relationships,
+        addresses: new Map(),
+        query: "",
+        filters: {
+          ...DEFAULT_WORKSPACE_PEOPLE_FILTERS,
+          relationshipType: filter,
+        },
+      }),
+    ).toHaveLength(2);
   });
 });

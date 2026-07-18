@@ -1,0 +1,146 @@
+
+
+.home-problem__notes {
+  display: grid;
+  gap: 2.25rem;
+  padding-bottom: 0.5rem;
+}
+
+.home-problem__notes article {
+  padding-left: 1.5rem;
+  border-left: 3px solid var(--color-brand);
+}
+
+.home-problem__notes strong {
+  color: var(--color-fg);
+  font-size: 1.125rem;
+}
+
+.home-problem__notes p {
+  margin: 0.55rem 0 0;
+  color: var(--color-muted);
+  line-height: 1.65;
+}
+
+.home-how {
+  display: grid;
+  grid-template-columns: minmax(16rem, 0.72fr) minmax(0, 1.28fr);
+  gap: clamp(3rem, 8vw, 7rem);
+  border-top: 1px solid var(--color-hairline);
+}
+
+.home-how__list {
+  display: grid;
+  gap: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.home-how__list li {
+  display: grid;
+  grid-template-columns: minmax(11rem, 0.8fr) minmax(0, 1.2fr);
+  gap: 1.5rem;
+  padding: 1.75rem 0;
+  border-bottom: 1px solid var(--color-hairline);
+}
+
+.home-how__list li:first-child {
+  padding-top: 0;
+}
+
+.home-how__list strong {
+  color: var(--color-fg);
+  font-size: 1.125rem;
+  line-height: 1.35;
+}
+
+.home-how__list p {
+  margin: 0;
+  color: var(--color-muted);
+  line-height: 1.65;
+}
+
+.home-features {
+  max-width: 75rem;
+}
+
+.home-feature-stories {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  grid-template-rows: minmax(24rem, auto) minmax(21rem, auto);
+  gap: 1rem;
+  margin-top: 3.5rem;
+}
+
+.home-feature-story {
+  position: relative;
+  display: flex;
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid var(--color-hairline);
+  border-radius: 1.5rem;
+  background: var(--color-surface-card);
+}
+
+.home-feature-story--wide {
+  grid-column: 1 / 8;
+  grid-row: 1;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 2.5rem 2.5rem 0;
+}
+
+.home-feature-story--tall {
+  grid-column: 8 / 13;
+  grid-row: 1 / 3;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 2.5rem;
+  background: color-mix(in srgb, var(--color-surface-card) 68%, var(--home-terracotta-soft));
+}
+
+.home-feature-story--memory {
+  grid-column: 1 / 5;
+  grid-row: 2;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 1.75rem;
+  background: color-mix(in srgb, var(--color-surface-card) 65%, var(--home-olive-soft));
+}
+
+.home-feature-story--access {
+  grid-column: 5 / 8;
+  grid-row: 2;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 1.75rem;
+  background: color-mix(in srgb, var(--color-surface-card) 76%, var(--home-cream-deep));
+}
+
+.home-feature-story__copy {
+  position: relative;
+  z-index: 2;
+}
+
+.home-feature-story__copy h3 {
+  max-width: 21rem;
+  margin: 0;
+  color: var(--color-fg);
+  font-size: clamp(1.45rem, 2.7vw, 2.35rem);
+  letter-spacing: -0.04em;
+  line-height: 1.12;
+  text-wrap: balance;
+}
+
+.home-feature-story__copy p {
+  max-width: 30rem;
+  margin: 1rem 0 0;
+  color: var(--color-muted);
+  line-height: 1.65;
+}
+
+.home-story-visual {
+  position: relative;
+  flex: 0 0 auto;
+}

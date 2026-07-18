@@ -70,39 +70,28 @@ test.describe("Family Tree E2E Flow", () => {
     await photoLibrary.getByRole("button", { name: "Xóa" }).click();
     await expect(photoLibrary).toContainText("Chưa có ảnh nào.");
 
-    // 9. Use the capability-filtered action tray to create disconnected "Bà Tổ".
-    await page.getByRole("button", { name: "Thao tác khác" }).click();
-    await page.getByRole("button", { name: "Thêm thành viên khác" }).click();
-    await page.fill('input[id="displayName"]', "Bà Tổ");
-    await page.getByRole("combobox", { name: "Giới tính" }).selectOption("female");
-    await page.getByRole("form", { name: "Thêm thành viên mới" }).getByRole("button", { name: "Lưu thành viên" }).click();
+    // 9. Add "Bà Tổ" through the explicit new-person flow and connect her as a spouse.
+    await page.getByRole("button", { name: "Thêm người mới" }).click();
+    const addPersonForm = page.getByRole("form", { name: "Thêm người mới" });
+    await addPersonForm.getByRole("combobox", { name: "Quan hệ với người làm mốc" }).selectOption("wife");
+    await addPersonForm.getByRole("textbox", { name: "Họ và tên" }).fill("Bà Tổ");
+    await addPersonForm.getByRole("button", { name: "Thêm người mới" }).click();
     await page.getByRole("button", { name: "Xác nhận lưu" }).click();
 
-    // 10. A disconnected person is discoverable in List before an edge exists.
+    // 10. Verify both the connected person and relationship edge in the split Graph.
     await expect(page.getByRole("button", { name: "Chọn Bà Tổ" })).toBeVisible();
-    await page.getByRole("button", { name: "Chọn Ông Tổ" }).click();
-
-    // 11. Add a relationship (spouse) between "Ông Tổ" and "Bà Tổ"
-    await page.getByRole("button", { name: "Thêm quan hệ" }).click();
-    await page.selectOption('select[id="sourceId"]', { label: "Ông Tổ" });
-    await page.selectOption('select[id="targetId"]', { label: "Bà Tổ" });
-    await page.selectOption('select[id="derivedKind"]', "marriage");
-    await page.selectOption('select[id="maritalStatus"]', "married");
-    await page.click('form[aria-label="Thêm người thân"] button[type="submit"]');
-    await page.click('button:has-text("Xác nhận lưu")');
-
-    // 12. Verify both the connected person and relationship edge in the split Graph.
     await expect(page.locator(".tree-graph__node-name").filter({ hasText: "Bà Tổ" })).toBeVisible();
     // A marriage relationship is a solid line (edge-solid)
     await expect(page.locator(".edge-solid").first()).toBeAttached({ timeout: 10000 });
 
-    // 13. Test the Search drawer (Search for "Bà")
-    await page.getByRole("button", { name: "Thao tác khác" }).click();
-    await page.getByRole("button", { name: "Tìm người" }).click();
-    await page.fill('input[id="nameQuery"]', "Bà");
-    await expect(page.getByRole("list", { name: "Kết quả tìm kiếm" }).getByRole("listitem").filter({ hasText: "Bà Tổ" })).toBeVisible();
+    // 11. Search from the fixed list chrome instead of opening a separate drawer.
+    await page.getByRole("button", { name: "Đóng bảng thông tin thành viên" }).click();
+    await page.getByRole("searchbox", { name: "Tìm theo tên hoặc cách xưng hô" }).fill("Bà");
+    await expect(page.getByRole("heading", { name: "Kết quả" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Chọn Bà Tổ" })).toBeVisible();
 
-    // 14. Open system settings and change the display theme.
+    // 12. Open system settings and change the display theme.
+    await page.getByRole("button", { name: "Thao tác khác" }).click();
     await page.getByRole("link", { name: "Cài đặt" }).click();
     await expect(page.getByRole("heading", { level: 1, name: "Cài đặt hệ thống" })).toBeVisible();
     await page.getByRole("button", { name: "Giao diện tối" }).click();

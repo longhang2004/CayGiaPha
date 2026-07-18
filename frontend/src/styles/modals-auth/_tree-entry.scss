@@ -1,0 +1,158 @@
+
+/* Tree entry chooser */
+.tree-entry-modal {
+  width: min(38rem, calc(100vw - 2rem));
+  max-width: 38rem;
+  max-height: min(46rem, calc(100dvh - 2rem));
+  overflow: hidden;
+}
+
+.tree-entry-modal .cgp-dialog__body {
+  max-height: calc(100dvh - 8rem);
+  padding: 1.5rem;
+  overflow-y: auto;
+}
+
+.tree-entry-modal__lead {
+  margin: 0;
+  color: var(--color-muted);
+  line-height: 1.55;
+}
+
+.tree-entry-modal__choices,
+.tree-entry-modal__form,
+.tree-entry-modal__status {
+  display: grid;
+  gap: 1rem;
+}
+
+.tree-entry-modal__choices {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.tree-entry-modal__choices > .tree-entry-modal__lead {
+  grid-column: 1 / -1;
+}
+
+.tree-entry-choice {
+  min-height: 11rem;
+  display: grid;
+  align-content: start;
+  justify-items: start;
+  gap: 1rem;
+  padding: 1.25rem;
+  border: 1px solid var(--color-hairline);
+  border-radius: 18px;
+  background: var(--color-surface-card);
+  color: var(--color-fg);
+  text-align: left;
+  cursor: pointer;
+}
+
+.tree-entry-choice:hover {
+  border-color: var(--color-brand);
+  background: var(--color-step-num-bg);
+}
+
+.tree-entry-choice:focus-visible,
+.tree-entry-modal__back:focus-visible {
+  outline: 3px solid var(--color-focus);
+  outline-offset: 3px;
+}
+
+.tree-entry-choice__icon,
+.tree-entry-modal__status-icon {
+  width: 2.75rem;
+  height: 2.75rem;
+  display: inline-grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--color-step-num-bg);
+  color: var(--color-brand);
+  font-size: 1.4rem;
+  font-weight: 800;
+}
+
+.tree-entry-choice strong,
+.tree-entry-choice small {
+  display: block;
+}
+
+.tree-entry-choice strong {
+  margin-bottom: 0.4rem;
+  font-size: 1.05rem;
+}
+
+.tree-entry-choice small {
+  color: var(--color-muted);
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.tree-entry-modal__form label {
+  margin-bottom: -0.5rem;
+  font-weight: 700;
+}
+
+.tree-entry-modal__form input,
+.tree-entry-modal__form select {
+  width: 100%;
+}
+
+.tree-entry-modal__form > .btn,
+.tree-entry-modal__status > .btn {
+  width: 100%;
+  justify-content: center;
+}
+
+.tree-entry-modal__back {
+  width: fit-content;
+  min-height: var(--min-touch-target);
+  padding: 0.5rem 0.75rem;
+  border: 0;
+  background: transparent;
+  color: var(--color-brand);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.tree-entry-modal__status {
+  justify-items: center;
+  text-align: center;
+}
+
+.tree-entry-modal__status h3,
+.tree-entry-modal__status p {
+  margin: 0;
+}
+
+.tree-entry-modal__status p {
+  color: var(--color-muted);
+  line-height: 1.55;
+}
+
+@media (max-width: 640px) {
+  .tree-entry-modal {
+    width: calc(100vw - 1rem);
+    max-height: calc(100dvh - 1rem);
+  }
+
+  .tree-entry-modal .cgp-dialog__body {
+    max-height: calc(100dvh - 7rem);
+  }
+
+  .tree-entry-modal__choices {
+    grid-template-columns: 1fr;
+  }
+
+  .tree-entry-choice {
+    min-height: 8rem;
+    grid-template-columns: auto 1fr;
+    align-content: center;
+    align-items: center;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tree-entry-choice { transition: none; }
+}

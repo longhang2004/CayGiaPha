@@ -3,6 +3,7 @@ import type { Person, Relationship, Address, Capabilities, TreeAccessRole } from
 import type { Region } from "@/lib/region";
 import type { TreeCollaborator } from "@/lib/collaboration";
 import type { UpcomingEvent } from "@/lib/persons";
+import type { PersonPanelMode } from "./personPanelState";
 
 export interface TreeContextType {
   activeTreeId: string;
@@ -37,9 +38,7 @@ export interface TreeContextType {
   addressError: string | null;
 
   // Modals & Panels State
-  editMode: boolean;
-  addRelativeMode: boolean;
-  createMode: boolean;
+  personPanelMode: PersonPanelMode;
   isSettingsOpen: boolean;
   isCollaborationOpen: boolean;
 
@@ -53,11 +52,16 @@ export interface TreeContextType {
 
   // Actions
   setEgoId: (id: string) => void;
-  setSelectedId: (id: string | null) => void;
+  selectPerson: (id: string, opener?: HTMLElement | null) => void;
+  openPersonPanel: (
+    id: string,
+    mode: Exclude<PersonPanelMode, "view">,
+    opener?: HTMLElement | null,
+  ) => void;
+  backPersonPanel: () => void;
+  closePersonPanel: () => void;
+  showCreatedPerson: (id: string) => void;
   setFocusId: (id: string | null) => void;
-  setEditMode: (mode: boolean) => void;
-  setAddRelativeMode: (mode: boolean) => void;
-  setCreateMode: (mode: boolean) => void;
   setIsSettingsOpen: (open: boolean) => void;
   setIsCollaborationOpen: (open: boolean) => void;
   refreshTree: () => void;

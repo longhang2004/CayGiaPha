@@ -639,6 +639,36 @@ against the active Next.js code and current tests.
     - Present truthful count, ordered rows, role/region metadata, Owner-only delete, empty Guidance,
       responsive action reflow, and no horizontal page overflow without changing data callbacks.
 
+- [x] 31. Split member intents and normalize the Person panel
+  - [x] 31.1 Replace combined panel booleans with one reducer-owned state machine
+    - Support `view`, `edit`, `add-person`, and `update-relationship`; make Back return to the viewed
+      Person, make Close/Escape dismiss the full panel, and share dirty-form confirmation and focus
+      restoration across production and prototype.
+  - [x] 31.2 Separate new-person creation from existing-person relationship updates
+    - Keep the atomic relative endpoint for “Thêm người mới”; use the relationship endpoint for
+      “Cập nhật quan hệ”; allow only primitive parent, child, and spouse choices; retain asserted
+      storage, rendering, upgrade, and conflict behavior without exposing asserted creation in UI.
+  - [x] 31.3 Move local people discovery into fixed list chrome and synchronize guidance
+    - Filter projected people locally by name, address, person fields, and relationship type; keep
+      search/filter controls outside the sole list scroll owner; update Help, checklist, Coach
+      anchors, docs, capability tests, and responsive production/prototype evidence. Do not depend
+      on browser speech recognition for workspace search.
+
+- [x] 32. Unify photo picking, remove voice search, and decompose global SCSS
+  - [x] 32.1 Share one accessible photo picker across person flows
+    - Accept JPEG/PNG files up to 5 MiB; support keyboard, click, and drop; preview, replace, and
+      remove controlled files; revoke object URLs; preserve existing upload endpoints and payloads.
+  - [x] 32.2 Protect person creation from partial photo-upload failures
+    - Retain the created Person id, prevent a second create request, and let the user open that
+      profile to retry the photo while keeping successful upload behavior unchanged.
+  - [x] 32.3 Remove browser voice search and isolate member search chrome
+    - Keep reactive local text/filter discovery and privacy-safe analytics; extract a controlled
+      fixed chrome and leave projection, grouping, selection, and rows in the list view.
+  - [x] 32.4 Split large global styles by component ownership
+    - Keep the numbered global import order, use short aggregators, keep ownership partials below
+      500 lines, remove verified dead selectors, and prove Sass compilation plus responsive cascade
+      behavior across production and shared prototypes.
+
 ## Notes
 
 - Tasks marked with `*` are optional test sub-tasks and can be skipped for a faster MVP; core

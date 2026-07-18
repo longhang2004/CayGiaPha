@@ -1,14 +1,18 @@
-import type { ReactNode } from "react";
+"use client";
+
+import { useEffect, useState, type ReactNode } from "react";
 import { PersonForm } from "@/components/person/PersonForm";
-import { AddRelativeForm } from "@/components/person/AddRelativeForm";
+import { AddConnectedPersonForm } from "@/components/person/AddConnectedPersonForm";
+import { UpdateRelationshipForm } from "@/components/person/UpdateRelationshipForm";
 import { PersonInfoPanel } from "@/components/graph/PersonInfoPanel";
 import { DeletionDialog } from "@/components/deletion/DeletionDialog";
 import { PersonPhotos } from "@/components/photos/PersonPhotos";
 import { UpcomingEventsWidget } from "@/components/graph/UpcomingEventsWidget";
-import { CloseIcon, LightbulbIcon } from "@/components/ui/Icons";
+import { ChevronLeftIcon, CloseIcon, LightbulbIcon } from "@/components/ui/Icons";
 import { ClaimFlow } from "@/components/claim/ClaimFlow";
 import { ContextualCoachMarks } from "@/components/guidance/ContextualCoachMarks";
 import { reopenGuidanceChapter } from "@/lib/guidance/storage";
+import type { PersonPanelMode } from "./personPanelState";
 import { useTreeContext } from "./TreeContext";
 
 const PERSON_COACH_STEPS = [
@@ -26,15 +30,14 @@ const PERSON_COACH_STEPS = [
   },
 ];
 
-type PersonPanelMode = "view" | "create" | "edit" | "add-relative";
-
 interface PanelFrameProps {
   mode: PersonPanelMode;
   eyebrow: string;
   title: string;
-  closeLabel: string;
+  onBack?: () => void;
   onClose: () => void;
   coach?: ReactNode;
+  discardDialog?: ReactNode;
   children: ReactNode;
 }
 
@@ -42,14 +45,35 @@ function PanelFrame({
   mode,
   eyebrow,
   title,
-  closeLabel,
+  onBack,
   onClose,
   coach,
+  discardDialog,
   children,
 }: PanelFrameProps) {
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== "Escape" || event.defaultPrevented) return;
+      event.preventDefault();
+      onClose();
+    };
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [onClose]);
+
   return (
-    <div className="side-panel" data-panel-mode={mode}>
+    <div className="side-panel" data-panel-mode={mode} role="dialog" aria-label={title}>
       <div className="side-panel__chrome">
+        {onBack ? (
+          <button
+            type="button"
+            className="side-panel__back"
+            onClick={onBack}
+            aria-label="Quay lại thông tin thành viên"
+          >
+            <ChevronLeftIcon size={20} />
+          </button>
+        ) : null}
         <div className="side-panel__heading">
           <p className="side-panel__eyebrow">{eyebrow}</p>
           <h3 className="side-panel__title">{title}</h3>
@@ -58,7 +82,7 @@ function PanelFrame({
           type="button"
           className="side-panel__close"
           onClick={onClose}
-          aria-label={closeLabel}
+          aria-label="Đóng bảng thông tin thành viên"
         >
           <CloseIcon size={20} />
         </button>
@@ -68,6 +92,7 @@ function PanelFrame({
         <div className="side-panel__body" data-panel-scroll-region="person">
           {children}
         </div>
+        {discardDialog}
       </div>
     </div>
   );
@@ -82,34 +107,32 @@ export function TreePageSlidePanel() {
     selectedAddress,
     selectedEgo,
     egoId,
-    createMode,
-    editMode,
-    addRelativeMode,
+    personPanelMode,
     addressLoading,
     capabilities,
     canEdit,
-    setCreateMode,
-    setEditMode,
-    setAddRelativeMode,
-    setSelectedId,
+    openPersonPanel,
+    backPersonPanel,
+    closePersonPanel,
+    showCreatedPerson,
     setEgoId,
     refreshTree,
     claimInviteAction,
     upcomingEventsLoader,
     guidanceRole,
   } = useTreeContext();
+  const [isDirty, setIsDirty] = useState(false);
+  const [pendingNavigation, setPendingNavigation] = useState<"back" | "close" | null>(null);
 
-  const selectedPerson = selectedId ? persons.find((p) => p.id === selectedId) : null;
+  const selectedPerson = selectedId ? persons.find((person) => person.id === selectedId) : null;
   const selectedCapabilities = selectedPerson?.capabilities ?? capabilities;
   const canEditSelected = selectedCapabilities?.editContent ?? canEdit;
-  const canEditSelectedRelationships =
-    selectedCapabilities?.editRelationships ?? capabilities.editRelationships;
+  const canEditSelectedRelationships = selectedCapabilities?.editRelationships ?? capabilities.editRelationships;
   const selectedSpouseRelationship = selectedPerson
     ? relationships.find(
         (relationship) =>
           relationship.type === "marriage" &&
-          (relationship.sourceId === selectedPerson.id ||
-            relationship.targetId === selectedPerson.id),
+          (relationship.sourceId === selectedPerson.id || relationship.targetId === selectedPerson.id),
       )
     : undefined;
   const selectedSpouseId = selectedSpouseRelationship && selectedPerson
@@ -117,6 +140,11 @@ export function TreePageSlidePanel() {
       ? selectedSpouseRelationship.targetId
       : selectedSpouseRelationship.sourceId
     : undefined;
+
+  useEffect(() => {
+    setIsDirty(false);
+    setPendingNavigation(null);
+  }, [personPanelMode, selectedId]);
 
   const personOptions = persons.map((person) => ({
     id: person.id,
@@ -130,6 +158,8 @@ export function TreePageSlidePanel() {
         gender: selectedPerson.gender,
         birthOrder: selectedPerson.birthOrder ?? undefined,
         birthYear: selectedPerson.birthYear ?? undefined,
+        phone: selectedPerson.phone ?? undefined,
+        email: selectedPerson.email ?? undefined,
         deathStatus: selectedPerson.deceased ?? false,
         deathDay: selectedPerson.deathDay ?? undefined,
         deathMonth: selectedPerson.deathMonth ?? undefined,
@@ -139,147 +169,190 @@ export function TreePageSlidePanel() {
       }
     : undefined;
 
-  const isPanelOpen = Boolean(createMode || selectedPerson || addRelativeMode);
+  const executeNavigation = (navigation: "back" | "close") => {
+    setIsDirty(false);
+    setPendingNavigation(null);
+    if (navigation === "back") backPersonPanel();
+    else closePersonPanel();
+  };
 
+  const requestNavigation = (navigation: "back" | "close") => {
+    if (isDirty && personPanelMode !== "view") {
+      setPendingNavigation(navigation);
+      return;
+    }
+    executeNavigation(navigation);
+  };
+
+  const discardDialog = pendingNavigation ? (
+    <div className="person-flow-discard" role="alertdialog" aria-modal="true" aria-labelledby="discard-person-flow-title">
+      <h4 id="discard-person-flow-title">Bỏ các thay đổi?</h4>
+      <p>Thông tin bạn vừa nhập chưa được lưu.</p>
+      <div className="person-flow-discard__actions">
+        <button type="button" className="btn btn-secondary" onClick={() => setPendingNavigation(null)}>
+          Tiếp tục chỉnh sửa
+        </button>
+        <button type="button" className="btn btn-danger" onClick={() => executeNavigation(pendingNavigation)}>
+          Bỏ thay đổi
+        </button>
+      </div>
+    </div>
+  ) : null;
+
+  const isPanelOpen = Boolean(selectedPerson);
   let panelContent: ReactNode;
 
-  if (createMode && capabilities.editContent) {
+  if (!selectedPerson) {
+    panelContent = (
+      <div className="side-panel side-panel--empty">
+        <p>Chọn một người để xem thông tin và cách xưng hô.</p>
+        <UpcomingEventsWidget treeId={activeTreeId} loadEvents={upcomingEventsLoader} />
+      </div>
+    );
+  } else if (personPanelMode === "edit" && canEditSelected) {
     panelContent = (
       <PanelFrame
-        mode="create"
-        eyebrow="Thành viên"
-        title="Thêm thành viên mới"
-        closeLabel="Hủy"
-        onClose={() => setCreateMode(false)}
+        mode="edit"
+        eyebrow="Chỉnh sửa thành viên"
+        title={selectedPerson.displayName}
+        onBack={() => requestNavigation("back")}
+        onClose={() => requestNavigation("close")}
+        discardDialog={discardDialog}
       >
         <PersonForm
-          mode="create"
+          mode="edit"
           treeId={activeTreeId}
+          personId={selectedPerson.id}
+          initialValues={selectedInitialValues}
           persons={personOptions}
+          spouseRelationship={selectedSpouseId
+            ? {
+                relationshipId: selectedSpouseRelationship!.id,
+                spouseId: selectedSpouseId,
+                maritalStatus: selectedSpouseRelationship?.maritalStatus,
+              }
+            : undefined}
+          onDirtyChange={setIsDirty}
           onSuccess={() => {
-            setCreateMode(false);
+            setIsDirty(false);
+            backPersonPanel();
             refreshTree();
           }}
-          onCancel={() => setCreateMode(false)}
-          hideCancelButton={true}
+          hideCancelButton
         />
       </PanelFrame>
     );
-  } else if (selectedPerson) {
-    const closeSelectedMode = () => {
-      if (editMode) setEditMode(false);
-      else if (addRelativeMode) setAddRelativeMode(false);
-      else setSelectedId(null);
-    };
+  } else if (personPanelMode === "add-person" && canEditSelectedRelationships) {
+    panelContent = (
+      <PanelFrame
+        mode="add-person"
+        eyebrow="Thêm người mới"
+        title={`Nối với ${selectedPerson.displayName}`}
+        onBack={() => requestNavigation("back")}
+        onClose={() => requestNavigation("close")}
+        discardDialog={discardDialog}
+      >
+        <AddConnectedPersonForm
+          treeId={activeTreeId}
+          persons={persons}
+          preferredAnchorId={selectedPerson.id}
+          egoId={egoId}
+          onDirtyChange={setIsDirty}
+          onCreated={(personId) => {
+            setIsDirty(false);
+            refreshTree();
+            showCreatedPerson(personId);
+          }}
+        />
+      </PanelFrame>
+    );
+  } else if (personPanelMode === "update-relationship" && canEditSelectedRelationships) {
+    panelContent = (
+      <PanelFrame
+        mode="update-relationship"
+        eyebrow="Quan hệ gia đình"
+        title={selectedPerson.displayName}
+        onBack={() => requestNavigation("back")}
+        onClose={() => requestNavigation("close")}
+        discardDialog={discardDialog}
+      >
+        <UpdateRelationshipForm
+          treeId={activeTreeId}
+          persons={persons}
+          relationships={relationships}
+          anchorId={selectedPerson.id}
+          onDirtyChange={setIsDirty}
+          onSwitchToAddPerson={() => openPersonPanel(selectedPerson.id, "add-person")}
+          onCreated={() => {
+            setIsDirty(false);
+            backPersonPanel();
+            refreshTree();
+          }}
+        />
+      </PanelFrame>
+    );
+  } else {
+    panelContent = (
+      <PanelFrame
+        mode="view"
+        eyebrow="Thông tin thành viên"
+        title={selectedPerson.displayName}
+        onClose={() => requestNavigation("close")}
+        coach={(
+          <ContextualCoachMarks
+            chapter="person"
+            role={guidanceRole}
+            steps={PERSON_COACH_STEPS}
+            enabled
+          />
+        )}
+      >
+        <PersonInfoPanel
+          person={selectedPerson}
+          ego={selectedEgo}
+          address={selectedAddress}
+          loading={addressLoading}
+          hideHeading
+          addressGuidanceAnchor="person-info-address"
+        />
 
-    if (editMode && canEditSelected) {
-      panelContent = (
-        <PanelFrame
-          mode="edit"
-          eyebrow="Chỉnh sửa thành viên"
-          title={selectedPerson.displayName}
-          closeLabel="Hủy chỉnh sửa"
-          onClose={closeSelectedMode}
-        >
-          <PersonForm
-            mode="edit"
-            treeId={activeTreeId}
-            personId={selectedPerson.id}
-            initialValues={selectedInitialValues}
-            spouseRelationship={selectedSpouseId
-              ? {
-                  relationshipId: selectedSpouseRelationship!.id,
-                  spouseId: selectedSpouseId,
-                  maritalStatus: selectedSpouseRelationship?.maritalStatus,
-                }
-              : undefined}
-            onSuccess={() => {
-              setEditMode(false);
-              refreshTree();
-            }}
-            onCancel={() => setEditMode(false)}
-            hideCancelButton={true}
-          />
-        </PanelFrame>
-      );
-    } else if (addRelativeMode && canEditSelectedRelationships) {
-      panelContent = (
-        <PanelFrame
-          mode="add-relative"
-          eyebrow="Quan hệ gia đình"
-          title={`Thêm kết nối cho ${selectedPerson.displayName}`}
-          closeLabel="Hủy thêm quan hệ"
-          onClose={closeSelectedMode}
-        >
-          <AddRelativeForm
-            treeId={activeTreeId}
-            persons={personOptions}
-            preselectedPersonId={selectedPerson.id}
-            onCreated={() => {
-              setAddRelativeMode(false);
-              refreshTree();
-            }}
-            onCancel={() => setAddRelativeMode(false)}
-            hideCancelButton={true}
-          />
-        </PanelFrame>
-      );
-    } else {
-      panelContent = (
-        <PanelFrame
-          mode="view"
-          eyebrow="Thông tin thành viên"
-          title={selectedPerson.displayName}
-          closeLabel="Bỏ chọn"
-          onClose={closeSelectedMode}
-          coach={(
-            <ContextualCoachMarks
-              chapter="person"
-              role={guidanceRole}
-              steps={PERSON_COACH_STEPS}
-              enabled={true}
-            />
-          )}
-        >
-          <PersonInfoPanel
-            person={selectedPerson}
-            ego={selectedEgo}
-            address={selectedAddress}
-            loading={addressLoading}
-            hideHeading={true}
-            addressGuidanceAnchor="person-info-address"
-          />
-
-          {canEditSelected ? (
-            <section className="person-detail-section person-detail-section--actions">
-              <div className="person-detail-section__header">
-                <h4>Thao tác với thành viên</h4>
-                <p>Sửa thông tin hoặc cập nhật quan hệ gia đình.</p>
-              </div>
-              <div className="person-actions" data-guidance-anchor="person-actions">
-                <button type="button" className="btn" onClick={() => setEditMode(true)}>
+        {canEditSelected || canEditSelectedRelationships ? (
+          <section className="person-detail-section person-detail-section--actions">
+            <div className="person-detail-section__header">
+              <h4>Thao tác với thành viên</h4>
+              <p>Sửa hồ sơ hoặc nối người này với một thành viên khác.</p>
+            </div>
+            <div className="person-actions" data-guidance-anchor="person-actions">
+              {canEditSelected ? (
+                <button
+                  type="button"
+                  className="btn"
+                  data-person-panel-focus-key={`edit-${selectedPerson.id}`}
+                  onClick={(event) => openPersonPanel(selectedPerson.id, "edit", event.currentTarget)}
+                >
                   Chỉnh sửa thông tin
                 </button>
-                {canEditSelectedRelationships ? (
-                  <button
-                    type="button"
-                    className="btn btn-secondary"
-                    onClick={() => setAddRelativeMode(true)}
-                  >
-                    Thêm quan hệ
-                  </button>
-                ) : null}
+              ) : null}
+              {canEditSelectedRelationships ? (
                 <button
                   type="button"
                   className="btn btn-secondary"
-                  onClick={() => setEgoId(selectedPerson.id)}
-                  disabled={egoId === selectedPerson.id || addressLoading}
+                  data-person-panel-focus-key={`update-relationship-${selectedPerson.id}`}
+                  onClick={(event) => openPersonPanel(selectedPerson.id, "update-relationship", event.currentTarget)}
                 >
-                  {egoId === selectedPerson.id
-                    ? "Đang dùng để xét vai vế"
-                    : "Xét vai vế theo người này"}
+                  Cập nhật quan hệ
                 </button>
-              </div>
+              ) : null}
+              <button
+                type="button"
+                className="btn btn-secondary"
+                onClick={() => setEgoId(selectedPerson.id)}
+                disabled={egoId === selectedPerson.id || addressLoading}
+              >
+                {egoId === selectedPerson.id ? "Đang dùng để xét vai vế" : "Xét vai vế theo người này"}
+              </button>
+            </div>
+            {canEditSelected ? (
               <div className="person-danger-section">
                 <h4>Thao tác cần xác nhận</h4>
                 <p>Xóa thành viên sẽ ảnh hưởng đến các kết nối đang có trong cây.</p>
@@ -289,97 +362,65 @@ export function TreePageSlidePanel() {
                   triggerLabel="Xóa thành viên này"
                   className="btn-danger"
                   onDeleted={() => {
-                    setSelectedId(null);
+                    closePersonPanel();
                     refreshTree();
                   }}
                 />
               </div>
-            </section>
-          ) : null}
+            ) : null}
+          </section>
+        ) : null}
 
-          {selectedCapabilities?.manageClaim && !selectedPerson.claimed ? (
-            <section className="person-detail-section">
-              <div className="person-detail-section__header">
-                <h4>Xác nhận thành viên</h4>
-                <p>Mời người thân liên kết tài khoản với hồ sơ này.</p>
-              </div>
-              <ClaimFlow
-                mode="invite"
-                treeId={activeTreeId}
-                personId={selectedPerson.id}
-                inviteAction={claimInviteAction}
-              />
-            </section>
-          ) : null}
-
+        {selectedCapabilities?.manageClaim && !selectedPerson.claimed ? (
           <section className="person-detail-section">
-            <div
-              className="person-detail-section__header"
-              data-guidance-anchor="person-claim-photos"
-            >
-              <h4>Ảnh kỷ niệm</h4>
-              <p>Lưu lại ảnh gia đình gắn với thành viên này.</p>
+            <div className="person-detail-section__header">
+              <h4>Xác nhận thành viên</h4>
+              <p>Mời người thân liên kết tài khoản với hồ sơ này.</p>
             </div>
-            <PersonPhotos
+            <ClaimFlow
+              mode="invite"
               treeId={activeTreeId}
               personId={selectedPerson.id}
-              canEdit={selectedCapabilities?.editPhotos ?? false}
+              inviteAction={claimInviteAction}
             />
           </section>
+        ) : null}
 
-          <section className="person-detail-section person-detail-section--help">
-            <div className="person-detail-section__header">
-              <h4>Cần hướng dẫn?</h4>
-              <p>Xem lại các bước dành riêng cho màn hình thông tin thành viên.</p>
-            </div>
-            <button
-              type="button"
-              className="btn btn-secondary"
-              aria-label="Mở hướng dẫn thông tin thành viên"
-              onClick={() => reopenGuidanceChapter("person")}
-            >
-              <LightbulbIcon size={18} />
-              Mở hướng dẫn nhanh
-            </button>
-          </section>
-        </PanelFrame>
-      );
-    }
-  } else if (addRelativeMode && capabilities.editRelationships) {
-    panelContent = (
-      <PanelFrame
-        mode="add-relative"
-        eyebrow="Quan hệ gia đình"
-        title="Thêm kết nối mới"
-        closeLabel="Hủy"
-        onClose={() => setAddRelativeMode(false)}
-      >
-        <AddRelativeForm
-          treeId={activeTreeId}
-          persons={personOptions}
-          onCreated={() => {
-            setAddRelativeMode(false);
-            refreshTree();
-          }}
-          hideCancelButton={true}
-        />
+        <section className="person-detail-section">
+          <div className="person-detail-section__header" data-guidance-anchor="person-claim-photos">
+            <h4>Ảnh kỷ niệm</h4>
+            <p>Lưu lại ảnh gia đình gắn với thành viên này.</p>
+          </div>
+          <PersonPhotos
+            treeId={activeTreeId}
+            personId={selectedPerson.id}
+            canEdit={selectedCapabilities?.editPhotos ?? false}
+          />
+        </section>
+
+        <section className="person-detail-section person-detail-section--help">
+          <div className="person-detail-section__header">
+            <h4>Cần hướng dẫn?</h4>
+            <p>Xem lại hướng dẫn cho màn hình thông tin thành viên.</p>
+          </div>
+          <button
+            type="button"
+            className="btn btn-secondary"
+            aria-label="Mở hướng dẫn thông tin thành viên"
+            onClick={() => reopenGuidanceChapter("person")}
+          >
+            <LightbulbIcon size={18} />
+            Mở hướng dẫn nhanh
+          </button>
+        </section>
       </PanelFrame>
-    );
-  } else {
-    panelContent = (
-      <div className="side-panel side-panel--empty">
-        <p>Chọn một người để xem thông tin và cách xưng hô.</p>
-        <UpcomingEventsWidget treeId={activeTreeId} loadEvents={upcomingEventsLoader} />
-      </div>
     );
   }
 
   return (
     <div
       data-graph-safe-exclude="panel"
-      className={`tree-workspace__info-panel ${
-        isPanelOpen ? "tree-workspace__info-panel--open" : ""
-      }`}
+      className={`tree-workspace__info-panel ${isPanelOpen ? "tree-workspace__info-panel--open" : ""}`}
     >
       {panelContent}
     </div>

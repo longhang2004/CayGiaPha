@@ -37,6 +37,19 @@ afterEach(() => {
 });
 
 describe("PersonPhotos", () => {
+  it("uses the shared picker for new uploads", async () => {
+    vi.mocked(listPhotos).mockResolvedValue([]);
+
+    render(<PersonPhotos treeId="t1" personId="person1" canEdit />);
+    await screen.findByText("Chưa có ảnh nào.");
+
+    expect(screen.getByLabelText("Tải ảnh lên")).toHaveAttribute(
+      "accept",
+      "image/jpeg,image/png",
+    );
+    expect(screen.getByTestId("photo-file-dropzone")).toBeInTheDocument();
+  });
+
   it("lists photos and marks the primary", async () => {
     vi.mocked(listPhotos).mockResolvedValue([
       photo({ id: "a", primary: true }),
@@ -76,6 +89,27 @@ describe("PersonPhotos", () => {
 
     expect(uploadPhoto).toHaveBeenCalledWith("t1", "person1", file, year, undefined);
     await waitFor(() => expect(screen.getByTestId("photo-item")).toBeInTheDocument());
+  });
+
+  it("keeps a successful upload from being submitted again when refresh fails", async () => {
+    vi.mocked(listPhotos)
+      .mockResolvedValueOnce([])
+      .mockRejectedValueOnce(new Error("refresh failed"));
+    vi.mocked(uploadPhoto).mockResolvedValue(photo({ id: "new" }));
+
+    render(<PersonPhotos treeId="t1" personId="person1" canEdit />);
+    await screen.findByText("Chưa có ảnh nào.");
+
+    const file = new File(["bytes"], "face.png", { type: "image/png" });
+    await userEvent.upload(screen.getByLabelText(/Tải ảnh lên/), file);
+    await userEvent.click(screen.getByRole("button", { name: "Lưu ảnh" }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Ảnh đã tải lên. Danh sách ảnh chưa cập nhật được.",
+    );
+    expect(uploadPhoto).toHaveBeenCalledTimes(1);
+    expect(screen.queryByRole("button", { name: "Lưu ảnh" })).not.toBeInTheDocument();
+    expect(screen.getByTestId("photo-item")).toBeInTheDocument();
   });
 
   it("sets a non-primary photo as primary", async () => {

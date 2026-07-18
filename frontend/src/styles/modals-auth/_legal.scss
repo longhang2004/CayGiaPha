@@ -1,0 +1,62 @@
+
+/* Canonical legal documents */
+.legal-page {
+  min-height: 100vh;
+  padding: clamp(1rem, 4vw, 3rem) 1rem;
+  background: var(--color-bg);
+}
+
+.legal-page__brand {
+  display: flex;
+  align-items: center;
+  width: fit-content;
+  gap: 0.65rem;
+  margin: 0 auto 2rem;
+  color: var(--color-fg);
+  text-decoration: none;
+  font-size: 1.4rem;
+  font-weight: 700;
+
+  img {
+    width: auto;
+    height: 32px;
+  }
+}
+
+.legal-page__document {
+  width: min(100%, 50rem);
+  margin: 0 auto;
+  padding: clamp(1.25rem, 5vw, 2.5rem);
+  line-height: 1.7;
+
+  h1 {
+    margin-top: 0;
+  }
+
+  section {
+    margin-top: 2rem;
+  }
+
+  h2 {
+    font-size: 1.2rem;
+  }
+}
+
+.legal-page__meta {
+  color: var(--color-muted);
+}
+
+.legal-page__notice {
+  padding: 0.85rem 1rem;
+  border-inline-start: 3px solid var(--color-brand);
+  background: var(--color-surface-subtle);
+}
+
+.legal-page__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 2rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--color-hairline);
+}

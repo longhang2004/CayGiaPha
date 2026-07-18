@@ -1,0 +1,438 @@
+/* ====== Floating Island Header — compact multi-row ====== */
+.tree-page-header {
+  position: absolute;
+  bottom: 1.25rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 80;
+  width: min(calc(100% - 2rem), 1120px);
+  background-color: var(--color-island-bg);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid var(--color-hairline);
+  border-radius: 1.25rem;
+  box-shadow: 0 18px 44px rgba(38, 37, 30, 0.12);
+  padding: 0.55rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  transition: box-shadow 0.25s ease;
+}
+
+@media (prefers-color-scheme: dark) {
+}
+
+/* Row 2 — viewpoint on tablet/mobile only */
+.tree-page-header__row-two {
+  display: none;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  border-top: 1px solid var(--color-hairline-soft);
+  padding-top: 0.3rem;
+  margin-top: 0.3rem;
+}
+
+.tree-page-header__viewpoint,
+.tree-page-header__row-two .viewpoint-selector {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+}
+
+.tree-page-header__row-two .viewpoint-selector label {
+  font-size: 0.82rem;
+  font-weight: 700;
+  white-space: nowrap;
+  color: var(--color-fg);
+}
+
+.tree-page-header__row-two .viewpoint-selector label::before {
+  content: "Xét vai vế theo:";
+}
+
+.tree-page-header__row-two .viewpoint-selector label {
+  font-size: 0;
+}
+
+.tree-page-header__row-two .viewpoint-selector label::before {
+  font-size: 0.82rem;
+}
+
+.tree-page-header__row-two .viewpoint-selector select {
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 44px !important;
+  min-height: 44px !important;
+  border-radius: 999px;
+  margin: 0;
+  font-size: 0.82rem;
+}
+
+.tree-page-header .search-input-wrapper,
+.tree-page-header .search-input-wrapper input {
+  min-width: 0;
+  transition: width 0.25s cubic-bezier(0.16,1,0.3,1);
+}
+
+.tree-page-header .search-input-wrapper {
+  overflow: hidden;
+}
+
+.tree-page-header .search-input-wrapper input {
+  height: 44px !important;
+  min-height: 44px !important;
+  margin: 0 !important;
+  padding-block: 0;
+}
+
+/* ---- Buttons inside island ---- */
+.tree-page-header .btn,
+.tree-page-header button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  height: 44px;
+  min-height: 44px;
+  padding-block: 0;
+  white-space: nowrap;
+}
+
+.btn-terracotta {
+  background-color: var(--color-brand);
+  color: white;
+  font-weight: 600;
+  border: none;
+}
+
+.btn-terracotta:hover {
+  background-color: var(--color-brand-active);
+}
+
+/* ---- Tablet (540–1024px) ---- */
+@media (max-width: 1024px) {
+  .tree-page-header {
+    bottom: max(0.75rem, env(safe-area-inset-bottom));
+    width: calc(100% - 1rem);
+    border-radius: 1rem;
+    padding: 0.45rem;
+    gap: 0.4rem;
+  }
+
+  .tree-page-header__row-two {
+    display: none;
+  }
+  .tree-page-header .search-submit-btn {
+    min-width: 5.2rem;
+  }
+  .tree-page-header .filter-toggle-btn {
+    min-width: 4.7rem;
+  }
+
+}
+@media (max-width: 539px) {
+  .tree-page-header {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+    column-gap: 0.5rem;
+    row-gap: 0.4rem;
+    width: calc(100% - 0.75rem);
+    border-radius: 0.875rem;
+    padding: 0.45rem;
+  }
+
+  .tree-page-header .search-input-wrapper input {
+    padding-inline: 0.95rem !important;
+    text-overflow: ellipsis;
+  }
+
+  .hide-on-mobile {
+    display: none !important;
+  }
+
+  .tree-page-header__row-two {
+    display: flex;
+    order: 3;
+    grid-column: 2;
+    min-width: 0;
+    padding-top: 0;
+    margin-top: 0;
+    border-top: 0;
+  }
+
+  .tree-page-header .filter-toggle-btn,
+  .tree-page-header .search-submit-btn {
+    min-width: 44px;
+    width: 44px;
+    padding-inline: 0;
+  }
+
+  .tree-page-header__row-two .viewpoint-selector {
+    gap: 0.35rem;
+    min-width: 0;
+  }
+
+  .tree-page-header__row-two .viewpoint-selector label {
+    display: block;
+    flex: 0 0 auto;
+  }
+
+  .tree-page-header__row-two .viewpoint-selector label::before {
+    font-size: 0.72rem;
+  }
+
+  .tree-page-header__row-two .viewpoint-selector select {
+    min-width: 0;
+    width: 100%;
+  }
+}
+
+/*
+ * At the maximum text scale the fixed header, tabs, and action footer can be
+ * taller than a short mobile viewport combined. Reflow the footer into normal
+ * document flow so the member list keeps a usable scrollport instead of being
+ * covered by fixed chrome.
+ */
+@media (max-width: 900px) {
+  html[data-text-scale="200"] .inapp-content--no-padding {
+    overflow-y: auto;
+  }
+
+  html[data-text-scale="200"] .inapp-content--no-padding > .tree-workspace,
+  html[data-text-scale="200"] .tree-workspace .tree-workspace__layout,
+  html[data-text-scale="200"] .tree-workspace .tree-workspace__main {
+    height: auto !important;
+    min-height: 0;
+    overflow: visible;
+  }
+
+  html[data-text-scale="200"] .tree-workspace .tree-workspace-surface {
+    flex: 0 0 360px;
+    height: 360px !important;
+    min-height: 360px;
+    overflow: clip;
+  }
+
+  html[data-text-scale="200"] .tree-workspace .tree-workspace-surface__panels {
+    height: auto !important;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  html[data-text-scale="200"] .tree-workspace__main > .tree-workspace-actions {
+    position: static;
+    flex: 0 0 auto;
+  }
+
+  html[data-text-scale="200"] .tree-workspace-surface__panel--list {
+    padding-bottom: 0;
+  }
+}
+
+/* Workspace action tray: bottom sheet on touch-first layouts, side drawer on desktop. */
+@media (max-width: 900px) {
+  .cgp-drawer-modal--right:has(> .tree-workspace-action-drawer) {
+    top: auto;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: auto;
+    max-height: calc(100dvh - var(--mobile-top-bar-height, 60px) - 0.75rem);
+  }
+
+  .cgp-drawer-modal--right:not([data-exiting]):has(> .tree-workspace-action-drawer) > .tree-workspace-action-drawer {
+    position: relative;
+    width: 100%;
+    height: min(42rem, calc(100dvh - var(--mobile-top-bar-height, 60px) - 0.75rem));
+    max-height: calc(100dvh - var(--mobile-top-bar-height, 60px) - 0.75rem);
+    border: 1px solid var(--color-hairline);
+    border-bottom: 0;
+    border-radius: 1.25rem 1.25rem 0 0;
+    animation: tree-workspace-action-sheet-enter 0.2s ease both;
+  }
+
+  .cgp-drawer-modal--right[data-exiting]:has(> .tree-workspace-action-drawer) > .tree-workspace-action-drawer {
+    animation: tree-workspace-action-sheet-exit 0.2s ease both;
+  }
+}
+
+@keyframes tree-workspace-action-sheet-enter {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+
+@keyframes tree-workspace-action-sheet-exit {
+  from { transform: translateY(0); }
+  to { transform: translateY(100%); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cgp-drawer-modal--right:not([data-exiting]):has(> .tree-workspace-action-drawer) > .tree-workspace-action-drawer,
+  .cgp-drawer-modal--right[data-exiting]:has(> .tree-workspace-action-drawer) > .tree-workspace-action-drawer {
+    animation: none !important;
+  }
+}
+
+/*
+ * Populated workspace v2 cascade guards.
+ * Kept at the end because this legacy bundle still contains older workspace
+ * selectors below the main v2 block. Remove these guards when the stylesheet
+ * is split by page family.
+ */
+.tree-workspace .tree-workspace__layout {
+  display: flex;
+  min-height: 0;
+  flex-direction: row;
+  background: var(--color-bg);
+}
+
+.tree-workspace .tree-workspace__main {
+  position: relative;
+  display: flex;
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+  flex-direction: column;
+}
+
+.tree-workspace .tree-workspace-surface__header {
+  position: static;
+  inset: auto;
+  display: flex;
+  width: 100%;
+  padding: 0.45rem 0.8rem;
+  transform: none;
+  border-bottom: 1px solid var(--color-hairline);
+  background: var(--color-surface-card);
+}
+
+.tree-workspace .view-switcher {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0;
+  width: 100%;
+  max-width: 32rem;
+  margin-inline: auto;
+  padding: 0.2rem;
+  border-radius: 0.75rem;
+  background: var(--color-surface-strong);
+}
+
+.tree-workspace .tree-workspace__info-panel {
+  position: static;
+  order: 2;
+  display: none;
+  width: min(24rem, 36vw);
+  min-width: 20rem;
+  height: auto;
+  overflow: hidden;
+  transform: none !important;
+  border: 0;
+  border-left: 1px solid var(--color-hairline);
+  background: var(--color-surface-card);
+  box-shadow: none;
+}
+
+.tree-workspace .tree-workspace__info-panel--open {
+  display: flex;
+}
+
+@media (max-width: 900px) {
+  .inapp-content--no-padding > .tree-workspace {
+    height: calc(100dvh - var(--mobile-top-bar-height, 60px));
+    min-height: 0;
+  }
+
+  .tree-workspace .tree-workspace__layout,
+  .tree-workspace .tree-workspace__main {
+    min-height: 0;
+  }
+
+  .tree-workspace .tree-workspace__info-panel {
+    position: absolute;
+    top: auto;
+    right: 0;
+    bottom: 0 !important;
+    left: 0;
+    display: none;
+    width: 100% !important;
+    min-width: 0;
+    height: min(72dvh, 36rem) !important;
+    max-height: calc(100dvh - 5rem);
+    border: 0;
+    border-top: 1px solid var(--color-hairline);
+    border-radius: 1.25rem 1.25rem 0 0;
+    box-shadow: 0 -16px 40px color-mix(in srgb, var(--color-fg) 18%, transparent);
+    z-index: 120;
+  }
+
+  .tree-workspace .tree-workspace__info-panel--open {
+    display: flex;
+  }
+
+  html[data-text-scale="200"] .tree-workspace,
+  html[data-text-scale="200"] .tree-workspace .tree-workspace__layout {
+    height: 100dvh;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  html[data-text-scale="200"] .tree-workspace .tree-workspace__main,
+  html[data-text-scale="200"] .tree-workspace .tree-workspace-surface,
+  html[data-text-scale="200"] .tree-workspace .tree-workspace-surface__panels {
+    height: auto !important;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  html[data-text-scale="200"] .tree-workspace .tree-page-header,
+  html[data-text-scale="200"] .tree-workspace .tree-workspace-surface__header {
+    position: static;
+    width: 100%;
+    margin: 0;
+    transform: none;
+  }
+
+  html[data-text-scale="200"] .tree-workspace .tree-people-list {
+    height: auto !important;
+    min-height: 0;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+  }
+
+  html[data-text-scale="200"] .tree-workspace .tree-workspace__info-panel {
+    position: absolute;
+    height: min(72dvh, 36rem) !important;
+    max-height: calc(100dvh - 5rem);
+    overflow: hidden;
+    border-radius: 1.25rem 1.25rem 0 0;
+  }
+}
+
+@media (max-width: 520px) {
+  .tree-workspace .tree-workspace-surface__header {
+    inset: auto;
+    width: 100%;
+    transform: none;
+  }
+}
+
+@media (max-width: 640px) {
+  .tree-workspace .tree-workspace__graph {
+    height: 100%;
+    min-height: 0;
+    max-height: 100% !important;
+  }
+}
+
+/* ===== Populated workspace v2: task-first list + graph ===== */
+.tree-workspace__layout {
+  display: flex;
+  min-height: 0;
+  background: var(--color-bg);
+}

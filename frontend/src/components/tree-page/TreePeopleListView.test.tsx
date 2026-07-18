@@ -54,7 +54,7 @@ describe("TreePeopleListView", () => {
     );
     await userEvent.click(pBtn);
 
-    expect(onSelectPerson).toHaveBeenCalledWith("father");
+    expect(onSelectPerson).toHaveBeenCalledWith("father", expect.any(HTMLButtonElement));
     expect(trackUxEvent).toHaveBeenCalledWith("ux_core_flow_complete", {
       flow: "find_person",
       surface: "workspace_list",
@@ -98,5 +98,85 @@ describe("TreePeopleListView", () => {
     expect(closeGroup).toHaveTextContent("My Father");
     expect(closeGroup).toHaveTextContent("Cha");
     expect(screen.getByRole("region", { name: "Các thành viên khác" })).toHaveTextContent("Me");
+  });
+
+  it("keeps search chrome outside the only scrollable list region and filters rows reactively", async () => {
+    render(
+      <TreePeopleListView
+        persons={PERSONS}
+        relationships={[{
+          id: "father-edge",
+          type: "bloodline_father",
+          sourceId: "father",
+          targetId: "ego",
+          derivationState: "verified",
+        }]}
+        addresses={ADDRESSES}
+        egoId="ego"
+        selectedId={null}
+        onSelectPerson={vi.fn()}
+        accessRole="OWNER"
+      />
+    );
+
+    const chrome = document.querySelector('[data-guidance-anchor="workspace-search"]');
+    const scrollRegion = document.querySelector('[data-panel-scroll-region="people-list"]');
+    expect(chrome).toBeInTheDocument();
+    expect(scrollRegion).toBeInTheDocument();
+    expect(scrollRegion).not.toContainElement(chrome as HTMLElement);
+
+    await userEvent.type(screen.getByRole("searchbox", { name: "Tìm theo tên hoặc cách xưng hô" }), "cha");
+    expect(screen.getByRole("region", { name: "Kết quả" })).toHaveTextContent("My Father");
+    expect(screen.queryByRole("region", { name: "Người thân gần" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Chọn Me/i })).not.toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("button", { name: "Xóa tìm kiếm và bộ lọc" }));
+    expect(screen.getByRole("region", { name: "Người thân gần" })).toBeInTheDocument();
+  });
+
+  it("does not expose voice search or log text entered in local search", async () => {
+    render(
+      <TreePeopleListView
+        persons={PERSONS}
+        relationships={[]}
+        addresses={ADDRESSES}
+        egoId="ego"
+        selectedId={null}
+        onSelectPerson={vi.fn()}
+        accessRole="OWNER"
+      />
+    );
+
+    expect(screen.queryByRole("button", { name: /giọng nói|microphone/i })).not.toBeInTheDocument();
+    await userEvent.type(
+      screen.getByRole("searchbox", { name: "Tìm theo tên hoặc cách xưng hô" }),
+      "cha",
+    );
+    expect(trackUxEvent).not.toHaveBeenCalled();
+  });
+
+  it("filters by gender from the inline filter controls", async () => {
+    render(
+      <TreePeopleListView
+        persons={[
+          ...PERSONS,
+          { id: "mother", displayName: "My Mother", gender: "female" },
+        ]}
+        relationships={[]}
+        addresses={ADDRESSES}
+        egoId="ego"
+        selectedId={null}
+        onSelectPerson={vi.fn()}
+        accessRole="OWNER"
+      />
+    );
+
+    await userEvent.click(screen.getByRole("button", { name: "Mở bộ lọc thành viên" }));
+    await userEvent.selectOptions(screen.getByLabelText("Giới tính"), "female");
+
+    const results = screen.getByRole("region", { name: "Kết quả" });
+    expect(results).toHaveTextContent("My Mother");
+    expect(results).not.toHaveTextContent("My Father");
+    expect(screen.getByRole("button", { name: /Bộ lọc đang dùng: 1/ })).toBeInTheDocument();
   });
 });

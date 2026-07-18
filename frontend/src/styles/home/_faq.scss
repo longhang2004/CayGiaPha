@@ -1,0 +1,117 @@
+
+
+.home-faq__list {
+  display: grid;
+}
+
+.home-faq__item {
+  border-bottom: 1px solid var(--color-hairline);
+}
+
+.home-faq__question {
+  position: relative;
+  display: flex;
+  width: 100%;
+  min-height: var(--min-touch-target);
+  padding: 1.25rem 2.5rem 1.25rem 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--color-fg);
+  font-size: 1.0625rem;
+  font-weight: 700;
+  line-height: 1.45;
+  cursor: pointer;
+  justify-content: flex-start;
+  text-align: left;
+  box-shadow: none;
+}
+
+.home-faq__question > span:first-child {
+  min-width: 0;
+  text-align: left;
+  text-wrap: pretty;
+}
+
+.home-faq__question:hover:not(:disabled) {
+  background: transparent;
+  box-shadow: none;
+  transform: none;
+}
+
+.home-faq__icon {
+  position: absolute;
+  top: 50%;
+  right: 0;
+  width: 1.25rem;
+  height: 1.25rem;
+  transform: translateY(-50%);
+}
+
+.home-faq__icon::before,
+.home-faq__icon::after {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 1rem;
+  height: 2px;
+  border-radius: 999px;
+  background: var(--color-brand);
+  content: "";
+  transform: translate(-50%, -50%);
+  transition: transform 240ms var(--ease-fluid);
+}
+
+.home-faq__icon::after {
+  transform: translate(-50%, -50%) rotate(90deg);
+}
+
+.home-faq__item--open .home-faq__icon::after {
+  transform: translate(-50%, -50%) rotate(0deg);
+}
+
+.home-faq__answer {
+  display: grid;
+  grid-template-rows: 0fr;
+  opacity: 0;
+  transition:
+    grid-template-rows 320ms var(--ease-fluid),
+    opacity 200ms ease;
+}
+
+.home-faq__answer > div {
+  min-height: 0;
+  overflow: hidden;
+}
+
+.home-faq__item--open .home-faq__answer {
+  grid-template-rows: 1fr;
+  opacity: 1;
+}
+
+.home-faq__answer p {
+  max-width: 39rem;
+  margin: 0;
+  padding: 0 2.5rem 1.5rem 0;
+  color: var(--color-muted);
+  line-height: 1.7;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .home-faq__icon::before,
+  .home-faq__icon::after,
+  .home-faq__answer {
+    transition: none;
+  }
+}
+
+.home-closing {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 3rem;
+  align-items: center;
+  margin-bottom: 7rem;
+  padding: clamp(2.25rem, 6vw, 4.5rem);
+  border-radius: 1.5rem;
+  background: var(--home-terracotta-soft);
+}

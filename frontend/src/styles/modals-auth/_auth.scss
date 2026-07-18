@@ -1,0 +1,55 @@
+
+/* Authentication layout and cards */
+.auth-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  width: 100%;
+  padding: 1rem;
+}
+
+.auth-card {
+  width: 100%;
+  max-width: 28rem; /* 448px */
+  padding: 1.5rem;
+  background: var(--color-surface-card);
+  border: 1px solid var(--color-hairline);
+  border-radius: 16px;
+  box-shadow: 0 16px 40px rgba(38, 37, 30, 0.06);
+}
+
+.auth-card h1 {
+  margin-top: 0;
+  margin-bottom: 0.25rem;
+  text-align: center;
+  font-size: 1.75rem;
+  font-weight: 500;
+  letter-spacing: -0.03em;
+}
+
+.auth-card p {
+  text-align: center;
+  margin-top: 0;
+  margin-bottom: 1rem;
+  font-size: 0.9375rem;
+  color: var(--color-muted);
+}
+
+.auth-wrapper .cgp-field,
+.auth-wrapper .cgp-select,
+.auth-card .cgp-select {
+  margin-bottom: 1rem;
+}
+
+.auth-consents {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.auth-consents .cgp-checkbox {
+  color: var(--color-muted);
+  font-weight: normal;
+}
