@@ -1,0 +1,60 @@
+.tree-workspace__info-panel {
+  order: 2;
+  width: min(24rem, 36vw);
+  min-width: 20rem;
+  border: 0;
+  border-left: 1px solid var(--color-hairline);
+  background: var(--color-surface-card);
+}
+
+@media (max-width: 900px) {
+  html[data-text-scale="200"] .tree-workspace__info-panel {
+    height: calc(100dvh - var(--mobile-top-bar-height, 60px)) !important;
+    max-height: calc(100dvh - var(--mobile-top-bar-height, 60px));
+  }
+
+  html[data-text-scale="200"] .side-panel__chrome {
+    min-height: 0;
+    padding: 12px 12px 10px 16px;
+  }
+
+  html[data-text-scale="200"] .side-panel__heading {
+    overflow-x: auto;
+    scrollbar-width: thin;
+  }
+
+  html[data-text-scale="200"] .side-panel__eyebrow,
+  html[data-text-scale="200"] .side-panel__title {
+    white-space: nowrap;
+  }
+
+  html[data-text-scale="200"] .side-panel__body {
+    padding: 12px 12px max(12px, env(safe-area-inset-bottom));
+  }
+
+  html[data-text-scale="200"] .person-info,
+  html[data-text-scale="200"] .person-info__tabs,
+  html[data-text-scale="200"] .person-info__facts {
+    min-width: 0;
+  }
+
+  html[data-text-scale="200"] .person-info__fact {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 4px;
+  }
+
+  html[data-text-scale="200"] .person-info__address-callout {
+    box-sizing: border-box;
+    min-width: 0;
+    max-width: 100%;
+    gap: 4px;
+    margin-top: 16px;
+    padding: 8px;
+    overflow-x: auto;
+    scrollbar-width: thin;
+  }
+
+  html[data-text-scale="200"] .person-info__address-callout > * {
+    white-space: nowrap;
+  }
+}

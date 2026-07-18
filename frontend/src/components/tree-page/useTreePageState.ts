@@ -8,6 +8,7 @@ import { getCollaborators, type TreeCollaborator } from "@/lib/collaboration";
 import type { TreeContextType } from "./TreeContext";
 import { useViewpointAddresses } from "./useViewpointAddresses";
 import { normalizeTreeDetailPayload } from "./treeDetailPayload";
+import { usePersonPanelController } from "./usePersonPanelController";
 
 const NO_CAPABILITIES: Capabilities = {
   editContent: false,
@@ -43,10 +44,15 @@ export function useTreePageState(
   const [error, setError] = useState<string | null>(null);
   const [authError, setAuthError] = useState(false);
 
-  const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [editMode, setEditMode] = useState(false);
-  const [addRelativeMode, setAddRelativeMode] = useState(false);
-  const [createMode, setCreateMode] = useState(false);
+  const {
+    selectedId,
+    personPanelMode,
+    selectPerson,
+    openPersonPanel,
+    backPersonPanel,
+    closePersonPanel,
+    showCreatedPerson,
+  } = usePersonPanelController();
 
   const [egoId, setEgoId] = useState<string>("");
   const [addressRefreshKey, setAddressRefreshKey] = useState(0);
@@ -217,9 +223,7 @@ export function useTreePageState(
     selectedEgo,
     focusId,
     addressRefreshKey,
-    editMode,
-    addRelativeMode,
-    createMode,
+    personPanelMode,
     isSettingsOpen,
     isCollaborationOpen,
     accessRole,
@@ -229,11 +233,12 @@ export function useTreePageState(
     canEdit,
     guidanceRole,
     setEgoId,
-    setSelectedId,
+    selectPerson,
+    openPersonPanel,
+    backPersonPanel,
+    closePersonPanel,
+    showCreatedPerson,
     setFocusId,
-    setEditMode,
-    setAddRelativeMode,
-    setCreateMode,
     setIsSettingsOpen,
     setIsCollaborationOpen,
     refreshTree,

@@ -48,13 +48,19 @@ Prototype discovery is driven by `src/lib/prototype/manifest.ts`.
 |---|---|
 | Theme tokens and global foundations | `src/styles/_01_variables.scss` |
 | Marketing, typography, lists, empty states | `src/styles/_02_typography.scss` |
-| Tree workspace, panels, search | `src/styles/_03_tree_workspace.scss` |
+| Tree workspace, panels, search | `_03_tree_workspace.scss` aggregator → `tree-workspace/` ownership partials |
 | Forms and buttons | `src/styles/_04_forms_buttons.scss`, `_08_modals_auth.scss` |
 | Public header and in-app navigation | `_05_header.scss`, `_07_sidebar_mobile.scss` |
-| Photos | `_06_gallery.scss` |
-| Modals, auth, onboarding, tour | `_08_modals_auth.scss` |
+| Photos | `_06_gallery.scss` for timeline; `modals-auth/_loaders-photo.scss` for shared picker/upload controls |
+| Modals, auth, onboarding, legal | `_08_modals_auth.scss` aggregator → `modals-auth/` ownership partials |
+| Homepage | `_11_home.scss` aggregator → `home/` ownership partials |
 | Support and admin | `_10_support_admin.scss` |
 | Graph canvas, nodes, edges, panel | `src/components/graph/graph.css` |
+
+The `_03_tree_workspace.scss`, `_08_modals_auth.scss`, and `_11_home.scss` files only define import
+order. Add component rules to the matching ownership partial instead of growing the aggregators.
+Keep each ownership partial below 500 lines and preserve the listed import order because selectors
+remain global and cascade-sensitive.
 
 Before changing a global selector, a shared primitive, a theme token, a shell,
 or a `Person`/`Relationship` shape, use CodeGraph to inspect its impact, then

@@ -166,10 +166,26 @@ not automatically page-overflow bugs.
   target remains interactive inside an 8px-padded cutout formed by four `pointer-events: none` panes
   using 58% black and 2px backdrop blur. Overview uses the graph-safe card layer plus a full-workspace
   spotlight; contextual spotlights are clipped to their action, graph, or person surface.
-- The viewpoint picker keeps search and count controls in fixed chrome and scrolls only its person
-  list. Person view, create, edit, and add-relative modes share the side-panel chrome/body contract;
-  normal actions remain grouped, the destructive action is separated, and the person surface has a
-  typed manual replay for its Coach chapter.
+- The member list owns a controlled, fixed discovery chrome with name/address search, filters, and
+  active-filter count. Querying switches the rows to one result group; without a query it retains
+  “Người thân gần” and “Các thành viên khác”. Only the rows scroll. Filtering uses the privacy-
+  projected people, relationships, and addresses already loaded by the workspace and never records
+  search text in analytics. Browser voice recognition is intentionally absent. The viewpoint picker
+  separately keeps its own search and count controls in fixed chrome and scrolls only its person
+  list.
+- Person creation, editing, and gallery upload share `PhotoFilePicker`: JPEG/PNG up to 5 MiB,
+  keyboard-accessible native input, dropzone, preview, replace/remove actions, and local validation.
+  If optional upload fails after a Person is created, the flow opens that saved profile instead of
+  submitting creation again.
+- The Person panel is controlled by one `{ personId, mode }` state machine with `view`, `edit`,
+  `add-person`, and `update-relationship`. Child modes show Back on the left and Close on the right;
+  Back returns to the same Person, while Close and Escape dismiss the full surface. Dirty forms use
+  one discard dialog and restore focus to the action or panel opener.
+- “Thêm người mới” starts from the workspace footer and creates one Person with a primitive parent,
+  child, or spouse edge. “Cập nhật quan hệ” starts in the viewed Person's action group and connects
+  two existing people without creating a node. The action drawer contains only Help and management
+  destinations. Existing asserted edges remain dashed and retain upgrade/conflict behavior, but UI
+  forms do not offer asserted creation until that flow is redesigned.
 - User-facing kinship reference copy is “Xét vai vế theo [Tên]” and “Đổi người xét”. Keep the stable
   internal `viewpoint` names and reserve “góc nhìn” for graph camera/zoom controls such as Đặt lại.
 - Region Nam may append a privacy-safe, display-only calling number for sibling and parent-sibling

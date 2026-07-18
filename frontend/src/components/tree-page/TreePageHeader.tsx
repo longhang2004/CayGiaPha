@@ -4,16 +4,12 @@ import { useRef, useState } from "react";
 import { useSession } from "@/app/providers";
 import { CGPDrawer } from "@/components/cgp";
 import { ContextualCoachMarks } from "@/components/guidance/ContextualCoachMarks";
-import { SearchPanel } from "@/components/search/SearchPanel";
 import {
   ArrowLeftIcon,
-  CenterIcon,
   CollaborationIcon,
-  EditIcon,
   LightbulbIcon,
   MoreHorizontalIcon,
   PlusIcon,
-  SearchIcon,
   SettingsIcon,
 } from "@/components/ui/Icons";
 import { getUxAccessRole, getUxViewportClass, trackUxEvent } from "@/lib/analytics/uxEvents";
@@ -22,8 +18,6 @@ import { TreePersonPicker } from "./TreePersonPicker";
 import { useTreeContext } from "./TreeContext";
 
 const ACTION_COACH_STEPS = [
-  { topicId: "dieu-huong-so-do", anchorIds: ["actions-search-viewpoint"] },
-  { topicId: "sua-va-them-thanh-vien", anchorIds: ["actions-edit-add"] },
   { topicId: "thao-tac-trong-cay", anchorIds: ["actions-manage-help"] },
 ];
 
@@ -38,9 +32,7 @@ export function TreePageHeader({ treeListHref = "/tree", helpHref = "/help" }: T
   const actionsTriggerRef = useRef<HTMLButtonElement>(null);
   const [isViewpointOpen, setIsViewpointOpen] = useState(false);
   const [isActionsOpen, setIsActionsOpen] = useState(false);
-  const [isSearchOpen, setIsSearchOpen] = useState(false);
   const {
-    activeTreeId,
     treeName,
     persons,
     addresses,
@@ -49,10 +41,7 @@ export function TreePageHeader({ treeListHref = "/tree", helpHref = "/help" }: T
     capabilities,
     accessRole,
     guidanceRole,
-    setSelectedId,
-    setEditMode,
-    setAddRelativeMode,
-    setCreateMode,
+    openPersonPanel,
     setEgoId,
     setIsSettingsOpen,
     setIsCollaborationOpen,
@@ -60,22 +49,15 @@ export function TreePageHeader({ treeListHref = "/tree", helpHref = "/help" }: T
 
   const ego = persons.find((person) => person.id === egoId) ?? persons[0];
   const selectedPerson = selectedId ? persons.find((person) => person.id === selectedId) : null;
-  const actionTarget = selectedPerson ?? ego;
-  const actionTargetCapabilities = actionTarget?.capabilities ?? capabilities;
-  const canAddRelative = Boolean(actionTarget && actionTargetCapabilities.editRelationships);
-  const canEditSelected = Boolean(selectedPerson && actionTargetCapabilities.editContent);
+  const editableAnchors = persons.filter((person) => person.capabilities?.editRelationships === true);
+  const addPersonAnchor =
+    editableAnchors.find((person) => person.id === selectedPerson?.id) ??
+    editableAnchors.find((person) => person.id === ego?.id) ??
+    editableAnchors[0];
 
   const closeActionDrawerAnd = (action: () => void) => {
     setIsActionsOpen(false);
     action();
-  };
-
-  const openAddRelative = () => {
-    if (!actionTarget || !canAddRelative) return;
-    setSelectedId(actionTarget.id);
-    setCreateMode(false);
-    setEditMode(false);
-    setAddRelativeMode(true);
   };
 
   const changeViewpoint = (personId: string) => {
@@ -122,15 +104,15 @@ export function TreePageHeader({ treeListHref = "/tree", helpHref = "/help" }: T
         data-guidance-anchor="workspace-actions"
         aria-label="Tác vụ cây gia phả"
       >
-        {canAddRelative ? (
+        {addPersonAnchor ? (
           <button
             type="button"
             className="tree-workspace-actions__primary"
-            onClick={openAddRelative}
-            data-guidance-anchor="workspace-add-relative"
+            onClick={(event) => openPersonPanel(addPersonAnchor.id, "add-person", event.currentTarget)}
+            data-guidance-anchor="workspace-add-person"
           >
             <PlusIcon size={22} />
-            <span>Thêm người thân</span>
+            <span>Thêm người mới</span>
           </button>
         ) : null}
         <button
@@ -185,70 +167,23 @@ export function TreePageHeader({ treeListHref = "/tree", helpHref = "/help" }: T
             data-panel-scroll-region="actions"
           >
             <p className="tree-workspace-action-drawer__description">
-              Tìm người, đổi người xét hoặc quản lý cây gia phả.
+              Mở hướng dẫn hoặc quản lý cây gia phả.
             </p>
             <div className="tree-workspace-action-drawer__list">
               <button
                 type="button"
-                aria-label="Tìm người"
-                data-guidance-anchor="actions-search-viewpoint"
-                onClick={() => closeActionDrawerAnd(() => setIsSearchOpen(true))}
-              >
-                <SearchIcon size={20} />
-                <span><strong>Tìm người</strong><small>Tìm theo tên, vai vế hoặc bộ lọc</small></span>
-              </button>
-              <button
-                type="button"
-                aria-label="Đổi người xét"
-                onClick={() => closeActionDrawerAnd(() => setIsViewpointOpen(true))}
-              >
-                <CenterIcon size={20} />
-                <span><strong>Đổi người xét</strong><small>Tính lại vai vế theo một người khác</small></span>
-              </button>
-              <button
-                type="button"
                 aria-label="Mở hướng dẫn nhanh"
+                data-guidance-anchor="actions-manage-help"
                 onClick={() => reopenGuidanceChapter("actions")}
               >
                 <LightbulbIcon size={20} />
                 <span><strong>Mở hướng dẫn nhanh</strong><small>Phát lại hướng dẫn trong ngăn thao tác này</small></span>
               </button>
-              <a href={helpHref} aria-label="Trung tâm hướng dẫn" data-guidance-anchor="actions-manage-help">
+              <a href={helpHref} aria-label="Trung tâm hướng dẫn">
                 <LightbulbIcon size={20} />
                 <span><strong>Trung tâm hướng dẫn</strong><small>Xem hướng dẫn đầy đủ theo việc đang làm</small></span>
               </a>
 
-              {canEditSelected ? (
-                <button
-                  type="button"
-                  aria-label="Sửa người đang chọn"
-                  data-guidance-anchor="actions-edit-add"
-                  onClick={() => closeActionDrawerAnd(() => {
-                    setAddRelativeMode(false);
-                    setCreateMode(false);
-                    setEditMode(true);
-                  })}
-                >
-                  <EditIcon size={20} />
-                  <span><strong>Sửa người đang chọn</strong><small>{selectedPerson?.displayName}</small></span>
-                </button>
-              ) : null}
-              {capabilities.editContent ? (
-                <button
-                  type="button"
-                  aria-label="Thêm thành viên khác"
-                  data-guidance-anchor={canEditSelected ? undefined : "actions-edit-add"}
-                  onClick={() => closeActionDrawerAnd(() => {
-                    setSelectedId(null);
-                    setAddRelativeMode(false);
-                    setEditMode(false);
-                    setCreateMode(true);
-                  })}
-                >
-                  <PlusIcon size={20} />
-                  <span><strong>Thêm thành viên khác</strong><small>Thêm người chưa có quan hệ trực tiếp</small></span>
-                </button>
-              ) : null}
               {capabilities.manageTree ? (
                 <button type="button" aria-label="Cài đặt cây" onClick={() => closeActionDrawerAnd(() => setIsSettingsOpen(true))}>
                   <SettingsIcon size={20} />
@@ -264,37 +199,6 @@ export function TreePageHeader({ treeListHref = "/tree", helpHref = "/help" }: T
             </div>
           </div>
         </div>
-      </CGPDrawer>
-
-      <CGPDrawer
-        presentation="modal"
-        placement="right"
-        label="Tìm người"
-        isOpen={isSearchOpen}
-        onOpenChange={setIsSearchOpen}
-        returnFocusRef={actionsTriggerRef}
-        className="tree-workspace-search-drawer"
-        safeAreaEdge="right"
-      >
-        <div className="tree-workspace-search-drawer__header">
-          <p>Tìm trong {treeName}</p>
-          <h2>Tìm người</h2>
-        </div>
-        <SearchPanel
-          presentation="drawer"
-          treeId={activeTreeId}
-          persons={persons}
-          addresses={addresses}
-          egoId={egoId}
-          viewpointId={egoId}
-          onSelectResult={(personId) => {
-            setSelectedId(personId);
-            setEditMode(false);
-            setAddRelativeMode(false);
-            setCreateMode(false);
-            setIsSearchOpen(false);
-          }}
-        />
       </CGPDrawer>
     </>
   );

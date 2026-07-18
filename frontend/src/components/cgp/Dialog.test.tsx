@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { useRef, useState } from "react";
+import { compile } from "sass";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
@@ -10,10 +11,10 @@ const DIALOG_SOURCE = readFileSync(
   resolve(process.cwd(), "src/components/cgp/Dialog.tsx"),
   "utf8",
 );
-const DIALOG_SCSS = readFileSync(
+const DIALOG_SCSS = compile(
   resolve(process.cwd(), "src/styles/_08_modals_auth.scss"),
-  "utf8",
-);
+  { silenceDeprecations: ["import"] },
+).css;
 
 describe("CGPDialog", () => {
   it("renders no dialog while closed", () => {

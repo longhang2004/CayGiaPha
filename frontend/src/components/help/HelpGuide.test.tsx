@@ -8,6 +8,7 @@ const EXPECTED_ACTIVE_TOPIC_IDS = [
   "tao-hoac-mo-cay",
   "thao-tac-trong-cay",
   "them-nguoi-dau-tien",
+  "them-nguoi-moi",
   "sua-va-them-thanh-vien",
   "them-quan-he-ro-rang",
   "xem-thong-tin-va-xung-ho",

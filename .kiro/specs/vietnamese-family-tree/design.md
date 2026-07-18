@@ -167,16 +167,32 @@ Workspace drawers and person panels use fixed chrome plus exactly one internal b
 owner. Contextual Coach content is an absolute overlay outside that scroll region and never pushes
 rows. Only one workspace Coach sequence is active at a time; opening another chapter dismisses the
 prior visual sequence without persisting completion or skip. The viewpoint picker keeps search and
-count in its fixed chrome and scrolls only the person
-list. Person view, create, edit, and add-relative modes share the same side-panel chrome/body;
-ordinary actions stay grouped, the destructive action is separated, and the person surface exposes
-typed manual replay for its Coach chapter.
+count in its fixed chrome and scrolls only the person list.
 
-The footer is capability-driven. “Thêm người thân” targets `selectedId ?? egoId` only when that
-person's server capability permits relationship editing. Search, viewpoint change, quick guidance,
-and canonical Help remain available to all readable roles; editing, settings, and collaboration
-actions appear only when the corresponding server capability is true. Client role labels never
-grant authority.
+The person surface uses one reducer-owned state `{ personId, mode }`, where mode is `view`, `edit`,
+`add-person`, or `update-relationship`; a null `personId` closes the surface. Child modes render Back
+and Close as separate controls, share dirty-form discard handling, and restore focus to their
+respective opener. `AddConnectedPersonForm` atomically creates a Person plus one primitive edge via
+`POST /trees/{treeId}/relatives`. `UpdateRelationshipForm` keeps the viewed Person fixed and creates
+only a missing parent, child, or spouse edge between two existing nodes via `POST /relationships`.
+Asserted-edge APIs, rendering, upgrades, and conflicts remain supported, but no populated-workspace
+form offers asserted creation until that interaction is redesigned.
+
+All person-photo entry points use one controlled `PhotoFilePicker`. It keeps the native file input
+keyboard and screen-reader accessible while presenting a shared dropzone, preview, replace, and
+remove interaction. JPEG and PNG files up to 5 MiB are accepted before the existing upload request
+is made. If a new Person is saved but the optional photo upload fails, the UI retains the created
+Person id and offers a route to that profile instead of allowing the create request to run again.
+
+The footer is capability-driven. “Thêm người mới” chooses the selected editable Person, then the
+editable viewpoint Person, then the first editable Person as its connection anchor. Text search and
+combinable filters live in controlled, fixed chrome above the member rows and operate on the already
+projected people, relationships, and addresses; only the result list scrolls, and search text is
+never sent to analytics. Browser speech recognition is not part of this surface. “Cập nhật quan hệ”
+lives in the viewed Person's action group. The action drawer contains only guidance and management
+destinations. Viewpoint change, quick guidance, and canonical Help remain available to all readable
+roles; editing, settings, and collaboration actions appear only when the corresponding server
+capability is true. Client role labels never grant authority.
 
 The action surface is a compact right drawer on desktop and a bottom sheet with vertical enter and
 exit motion on mobile/tablet. Graph controls are compact on wide containers. On mobile/tablet, the

@@ -1,0 +1,228 @@
+
+
+.home-story-visual--lineage {
+  height: 15rem;
+  margin: 2rem -0.25rem 0;
+}
+
+.home-story-lineage__connector {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.home-story-lineage__connector path {
+  fill: none;
+  stroke: color-mix(in srgb, var(--color-brand) 58%, var(--color-hairline-strong));
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 0.45;
+  vector-effect: non-scaling-stroke;
+}
+
+.home-story-node {
+  position: absolute;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 5.75rem;
+  min-height: 3.25rem;
+  padding: 0.65rem 0.9rem;
+  border: 1px solid rgba(45, 43, 39, 0.19);
+  border-radius: 1rem;
+  background: var(--color-surface-card);
+  color: var(--color-fg);
+  font-size: 0.8125rem;
+  font-weight: 700;
+  box-shadow: 0 0.85rem 2rem rgba(49, 44, 35, 0.08);
+}
+
+.home-story-node--grandparent {
+  top: 0;
+  left: 42%;
+  transform: translateX(-50%);
+}
+
+.home-story-node--parent-a {
+  top: 7.4rem;
+  left: 30%;
+  transform: translateX(-50%);
+}
+
+.home-story-node--parent-b {
+  top: 7.4rem;
+  left: 72%;
+  transform: translateX(-50%);
+}
+
+.home-story-node--child {
+  top: 11.4rem;
+  left: 30%;
+  border-color: rgba(var(--color-accent-rgb), 0.45);
+  transform: translateX(-50%);
+}
+
+.home-story-visual--kinship {
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  min-height: 24rem;
+  margin-top: 3rem;
+}
+
+.home-kinship-person,
+.home-kinship-callout {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.home-kinship-avatar {
+  display: grid;
+  place-items: center;
+  width: 5.75rem;
+  height: 5.75rem;
+  margin-bottom: 0.75rem;
+  border: 0.4rem solid rgba(255, 255, 255, 0.55);
+  border-radius: 50%;
+  background: var(--home-olive);
+  color: #f9f6f0;
+  font-size: 1.75rem;
+  font-weight: 750;
+  box-shadow: 0 1rem 2.5rem rgba(58, 48, 38, 0.15);
+}
+
+.home-kinship-connector {
+  width: 1px;
+  height: 4rem;
+  margin: 0.75rem 0;
+  background: var(--color-brand);
+}
+
+.home-kinship-callout {
+  min-width: 12rem;
+  padding: 1.15rem 1.5rem;
+  border: 1px solid rgba(var(--color-accent-rgb), 0.28);
+  border-radius: 1.2rem;
+  background: var(--color-surface-card);
+  box-shadow: var(--shadow-ambient);
+}
+
+.home-kinship-callout span {
+  color: var(--color-muted);
+  font-size: 0.75rem;
+}
+
+.home-kinship-callout strong {
+  margin-top: 0.2rem;
+  color: var(--color-brand);
+  font-size: 1.35rem;
+}
+
+.home-story-visual--memory {
+  height: 10.5rem;
+  margin-bottom: 1.75rem;
+}
+
+.home-memory-frame {
+  position: absolute;
+  display: block;
+  width: 9rem;
+  height: 7.1rem;
+  border: 0.45rem solid #fffaf0;
+  border-bottom-width: 1.35rem;
+  border-radius: 0.3rem;
+  background: #b7c1a4;
+  box-shadow: 0 1rem 2rem rgba(46, 43, 35, 0.15);
+}
+
+.home-memory-frame--back {
+  top: 1rem;
+  left: 15%;
+  background: #c98970;
+  transform: rotate(-8deg);
+}
+
+.home-memory-frame--front {
+  top: 0.5rem;
+  left: 42%;
+  overflow: hidden;
+  transform: rotate(5deg);
+}
+
+.home-memory-sun {
+  position: absolute;
+  top: 1rem;
+  right: 1.1rem;
+  width: 1.2rem;
+  height: 1.2rem;
+  border-radius: 50%;
+  background: #e8ba72;
+}
+
+.home-memory-hills {
+  position: absolute;
+  right: -1rem;
+  bottom: -2rem;
+  width: 9rem;
+  height: 6rem;
+  border-radius: 50%;
+  background: #657455;
+  transform: rotate(-10deg);
+}
+
+.home-memory-caption {
+  position: absolute;
+  right: 0.25rem;
+  bottom: 0;
+  color: var(--home-ink);
+  font-size: 0.75rem;
+  font-weight: 650;
+}
+
+.home-story-visual--access {
+  display: grid;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.home-story-visual--access > span {
+  display: grid;
+  grid-template-columns: 1fr;
+  padding: 0.85rem 1rem;
+  border: 1px solid rgba(65, 58, 49, 0.13);
+  border-radius: 1rem;
+  background: color-mix(in srgb, var(--color-surface-card) 90%, transparent);
+}
+
+.home-story-visual--access > span:nth-child(2) {
+  margin-left: 1rem;
+}
+
+.home-story-visual--access > span:nth-child(3) {
+  margin-left: 2rem;
+}
+
+.home-story-visual--access strong {
+  color: var(--color-fg);
+  font-size: 0.875rem;
+}
+
+.home-story-visual--access small {
+  margin-top: 0.1rem;
+  color: var(--color-muted);
+  font-size: 0.72rem;
+}
+
+.home-kinship {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(22rem, 0.85fr);
+  gap: clamp(3rem, 10vw, 8rem);
+  align-items: center;
+}

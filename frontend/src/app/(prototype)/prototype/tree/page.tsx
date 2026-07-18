@@ -45,6 +45,7 @@ import { TreePageHeader } from "@/components/tree-page/TreePageHeader";
 import { TreePageSlidePanel } from "@/components/tree-page/TreePageSlidePanel";
 import { useViewpointAddresses } from "@/components/tree-page/useViewpointAddresses";
 import { TreeWorkspaceSurface } from "@/components/tree-page/TreeWorkspaceSurface";
+import { usePersonPanelController } from "@/components/tree-page/usePersonPanelController";
 
 const NO_CAPABILITIES: Capabilities = {
   editContent: false,
@@ -120,9 +121,15 @@ function PrototypeTreeContent() {
   const [sharing, setSharing] = useState("private");
   const [treeName, setTreeName] = useState("Cây Gia Phả Mẫu");
 
-  const [editMode, setEditMode] = useState(false);
-  const [addRelativeMode, setAddRelativeMode] = useState(false);
-  const [createMode, setCreateMode] = useState(false);
+  const {
+    selectedId,
+    personPanelMode,
+    selectPerson,
+    openPersonPanel,
+    backPersonPanel,
+    closePersonPanel,
+    showCreatedPerson,
+  } = usePersonPanelController();
 
   const [egoId, setEgoId] = useState<string>("ego");
   const [addressRefreshKey, setAddressRefreshKey] = useState(0);
@@ -132,8 +139,6 @@ function PrototypeTreeContent() {
       buildMockViewpointAddresses(viewpointId, region),
     [region],
   );
-
-  const [selectedId, setSelectedId] = useState<string | null>(null);
 
   const { addresses, loading: addressLoading, ready: addressesReady, error: addressError } = useViewpointAddresses({
     treeId: PROTOTYPE_TREE_ID,
@@ -164,9 +169,9 @@ function PrototypeTreeContent() {
     }
     const requestedPerson = searchParams.get("person");
     if (requestedPerson && persons.some((person) => person.id === requestedPerson)) {
-      setSelectedId(requestedPerson);
+      selectPerson(requestedPerson);
     }
-  }, [persons, searchParams]);
+  }, [persons, searchParams, selectPerson]);
 
   const handleCloseSettings = useCallback(() => {
     setIsSettingsOpen(false);
@@ -262,9 +267,7 @@ function PrototypeTreeContent() {
     selectedEgo,
     focusId,
     addressRefreshKey,
-    editMode,
-    addRelativeMode,
-    createMode,
+    personPanelMode,
     isSettingsOpen,
     isCollaborationOpen,
     isOwner: accessRole === "OWNER",
@@ -272,11 +275,12 @@ function PrototypeTreeContent() {
     canEdit: capabilities.editContent,
     guidanceRole,
     setEgoId,
-    setSelectedId,
+    selectPerson,
+    openPersonPanel,
+    backPersonPanel,
+    closePersonPanel,
+    showCreatedPerson,
     setFocusId,
-    setEditMode,
-    setAddRelativeMode,
-    setCreateMode,
     setIsSettingsOpen,
     setIsCollaborationOpen,
     refreshTree,
@@ -312,12 +316,7 @@ function PrototypeTreeContent() {
               egoId={egoId}
               selectedId={selectedId}
               accessRole={accessRole}
-              onSelectPerson={(id) => {
-                setSelectedId(id);
-                setEditMode(false);
-                setAddRelativeMode(false);
-                setCreateMode(false);
-              }}
+              onSelectPerson={(id, opener) => selectPerson(id, opener)}
               graphContent={
                 <div className="tree-workspace__graph">
                   <TreeGraph
@@ -325,12 +324,7 @@ function PrototypeTreeContent() {
                     persons={persons}
                     relationships={relationships}
                     selectedId={selectedId}
-                    onSelectId={(id) => {
-                      setSelectedId(id);
-                      setEditMode(false);
-                      setAddRelativeMode(false);
-                      setCreateMode(false);
-                    }}
+                    onSelectId={(id) => id ? selectPerson(id) : closePersonPanel()}
                     egoId={egoId}
                     onEgoChange={setEgoId}
                     addresses={addresses}

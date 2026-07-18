@@ -1,0 +1,104 @@
+
+/* Invitation and claim flows */
+.invitation-page,
+.claim-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background: var(--color-bg);
+}
+
+.invitation-page__card,
+.claim-page__card {
+  width: min(100%, 30rem);
+  padding: clamp(1.5rem, 5vw, 2.5rem);
+  text-align: center;
+}
+
+.claim-page__card {
+  text-align: left;
+
+  form {
+    display: grid;
+    gap: 0.75rem;
+    margin-top: 1.5rem;
+  }
+
+  form h3 {
+    font-size: 1rem;
+    margin: 0;
+  }
+
+  form p {
+    margin: 0;
+  }
+
+  form input {
+    width: 100%;
+    min-height: 44px;
+    margin-top: 0.35rem;
+  }
+}
+
+.invitation-account {
+  margin: 1.5rem 0;
+}
+
+.invitation-page__actions {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 640px) {
+  .invitation-page,
+  .claim-page {
+    align-items: flex-start;
+    padding-top: max(1rem, env(safe-area-inset-top));
+  }
+
+  .invitation-page__actions {
+    flex-direction: column;
+  }
+
+  .invitation-page__actions .btn {
+    width: 100%;
+    min-height: 44px;
+  }
+}
+
+.consent-reacceptance-dialog__content {
+  display: grid;
+  gap: 1rem;
+
+  p {
+    margin: 0;
+  }
+}
+
+.consent-reacceptance-reminder {
+  position: fixed;
+  z-index: calc(var(--z-modal, 1000) - 1);
+  right: 1rem;
+  bottom: 1rem;
+  left: auto;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: min(32rem, calc(100vw - 2rem));
+  padding: 0.75rem;
+  border: 1px solid var(--color-hairline);
+  border-radius: 0.75rem;
+  background: var(--color-surface);
+  box-shadow: var(--shadow-lg);
+}
+
+@media (max-width: 640px) {
+  .consent-reacceptance-reminder {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}

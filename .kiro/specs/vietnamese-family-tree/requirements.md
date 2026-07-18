@@ -125,6 +125,8 @@ Tree merging and cross-tree graph traversal are deferred to a later version.
 3. WHEN a relationship is stored as a Primitive_Bloodline_Edge or Marriage_Edge, THE Renderer SHALL render the corresponding edge as a solid line.
 4. WHEN an Owner adds a relative through a parent-child or spouse relationship, THE Kinship_Resolver SHALL compute and return a defined Form_Of_Address from the added Person toward every connected Person whose connecting path consists only of Derived_Relationships.
 5. IF an add-relative request references a Person node outside the selected tree, THEN THE Graph_Store SHALL reject the request, return an error indicating the referenced node is invalid, and SHALL NOT create a Person node or edge.
+6. WHEN a Content_Editor starts from the populated tree workspace, THE Family_Tree_System SHALL present creating a new connected Person and connecting two existing Person nodes as two distinct user intents.
+7. WHEN a Content_Editor connects two existing Person nodes from a selected Person's information panel, THE Family_Tree_System SHALL keep that selected Person fixed, allow only a missing parent, child, or spouse primitive relationship, and SHALL NOT create a new Person node.
 
 ### Requirement 6: Add Relative as Asserted Relationship (Dashed Line)
 
@@ -284,7 +286,7 @@ Tree merging and cross-tree graph traversal are deferred to a later version.
 #### Acceptance Criteria
 
 1. THE Family_Tree_System SHALL provide access to the Help_System from the main application interface.
-2. THE Help_System SHALL contain at least one section addressing each of the following topics: the distinction between solid Derived_Relationship lines and dashed Asserted_Relationship lines; how to add a relative as a Derived_Relationship and as an Asserted_Relationship; how the Kinship_Resolver computes a Form_Of_Address; how to change the Viewpoint; how to use “Xác nhận đây là tôi” to link a Person node; and how to select a Region.
+2. THE Help_System SHALL contain at least one section addressing each of the following topics: the distinction between solid Derived_Relationship lines and existing dashed Asserted_Relationship lines; how to add a new Person through a Derived_Relationship; how to connect two existing Person nodes through a Derived_Relationship; how to interpret and resolve existing asserted-edge conflicts; how the Kinship_Resolver computes a Form_Of_Address; how to change the Viewpoint; how to use “Xác nhận đây là tôi” to link a Person node; and how to select a Region. The mounted UI guide SHALL NOT instruct users to create a new Asserted_Relationship while that creation flow is intentionally unavailable from the UI.
 3. WHEN a User opens the Help_System, THE Family_Tree_System SHALL display the guide content within 2 seconds.
 4. WHEN a User selects one of the topics listed in criterion 2 from the Help_System, THE Help_System SHALL display the section corresponding to the selected topic.
 5. FOR ALL topics listed in criterion 2, THE Help_System SHALL provide a corresponding section that is reachable from the Help_System entry point (topic-coverage property).

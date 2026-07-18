@@ -121,6 +121,10 @@ To create customer-visible value and a defensible adoption loop, prioritize in t
    conventions, eligible kinship bands, spouse inheritance, and privacy behavior independently for
    each region before extending resolver display and search. Do not assume the Southern
    `birthOrder + 1` calling-number formatter applies to either dialect.
+8. **Redesign asserted-relationship creation:** research a separate, older-adult-friendly flow for
+   recording a known kinship label when the intermediate family path is missing. Keep existing
+   dashed edges, upgrades, conflicts, and deletion preservation working, but do not restore the old
+   mixed primitive/asserted form without usability validation and clear recovery guidance.
 
 The three best experiments for the next product cycle are: “ngày giỗ không quên”, “quét QR biết
 xưng hô”, and “cộng tác nhưng không làm hỏng gia phả”. Each can be tested with a small number of

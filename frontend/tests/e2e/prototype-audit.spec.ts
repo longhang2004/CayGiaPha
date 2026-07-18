@@ -268,23 +268,8 @@ test.describe("prototype UI audit", () => {
       const chromeBox = await dialog.locator(".tree-workspace-action-drawer__chrome").boundingBox();
       expect(chromeBox).not.toBeNull();
       expect(chromeBox!.y - dialogBox!.y).toBeGreaterThanOrEqual(16);
-      const addMemberAction = dialog.getByRole("button", { name: "Thêm thành viên khác" });
-      if (await addMemberAction.isVisible()) {
-        await addMemberAction.hover();
-        const hoverColors = await addMemberAction.evaluate((element) => {
-          const probe = document.createElement("div");
-          probe.style.backgroundColor = "var(--color-brand-active)";
-          document.body.appendChild(probe);
-          const colors = {
-            background: getComputedStyle(element).backgroundColor,
-            brandActive: getComputedStyle(probe).backgroundColor,
-          };
-          probe.remove();
-          return colors;
-        });
-        expect(hoverColors.background).not.toBe(hoverColors.brandActive);
-        await page.mouse.move(0, 0);
-      }
+      await expect(dialog.getByRole("button", { name: "Thêm thành viên khác" })).toHaveCount(0);
+      await expect(dialog.getByRole("button", { name: "Tìm người" })).toHaveCount(0);
       if (viewport.name === "desktop") {
         expect(Math.abs(dialogBox!.x + dialogBox!.width - viewport.width)).toBeLessThanOrEqual(2);
       } else {
