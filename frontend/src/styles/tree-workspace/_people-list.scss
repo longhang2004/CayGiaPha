@@ -112,8 +112,13 @@
   border: 1px solid var(--color-hairline);
   border-radius: 0.65rem;
   color: var(--color-fg);
-  background: var(--color-surface-card);
+  background-color: var(--color-surface-card);
   font: inherit;
+}
+
+.tree-people-list__filters select {
+  padding-right: 2rem !important;
+  background-position: right 0.65rem center;
 }
 
 .tree-people-list__year-range {
