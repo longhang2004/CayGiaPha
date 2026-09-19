@@ -25,13 +25,6 @@ const sourceSerif = Source_Serif_4({
   display: "swap",
 });
 
-const sourceSerif = Source_Serif_4({
-  subsets: ["latin", "vietnamese"],
-  weight: ["600", "700"],
-  variable: "--font-serif",
-  display: "swap",
-});
-
 export const metadata: Metadata = {
   metadataBase: new URL("https://cay-gia-pha-six.vercel.app"),
   title: {
