@@ -53,7 +53,7 @@ The system is built with strict privacy controls, regional kinship dialect resol
 * **Java 21** and **Spring Boot 3.3.5**, Hibernate/JPA, Flyway, jqwik, JUnit 5, and Testcontainers
 * Modular hexagonal overlay with JWT (parallel to product sessions), Redis kinship cache, transactional outbox, OpenAPI, Micrometer, and Resilience4j
 * Production-priority request path remains Next.js (`USE_BACKEND=false`); the Java API is a runnable portfolio reference
-* Local stack: `cd backend && docker compose up -d --build` — see [backend/README.md](backend/README.md)
+* Local Java API: host JAR + Postgres/Redis is the verified path; Docker Compose is documented for hosts that can start containers — see [backend/README.md](backend/README.md)
 
 ---
 

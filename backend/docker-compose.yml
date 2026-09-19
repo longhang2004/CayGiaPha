@@ -1,15 +1,18 @@
 # Local development infrastructure for the Vietnamese Family Tree API.
 #
-# Starts PostgreSQL 16, Redis, MinIO, and the Spring Boot portfolio API.
+# Starts PostgreSQL 16, Redis, optional MinIO (--profile storage), and the Spring Boot API.
 #
 #   docker compose up -d --build    # start everything, including the Java API
-#   docker compose up -d db redis   # infrastructure only
+#   docker compose up -d db redis   # infrastructure only (then run the host JAR)
 #   docker compose ps               # check health
 #   docker compose down             # stop (keeps the named volume / data)
 #   docker compose down -v          # stop and delete the data volume
 #
+# Nested overlayfs Docker often cannot start these containers. Use a host
+# Postgres 16 + Redis 7 and the JAR path in README.md instead.
+#
 # Point a host-run JAR at the database with:
-#   SPRING_DATASOURCE_URL=jdbc:postgresql://localhost:5432/familytree
+#   SPRING_DATASOURCE_URL=jdbc:postgresql://127.0.0.1:5432/familytree
 #   SPRING_DATASOURCE_USERNAME=familytree
 #   SPRING_DATASOURCE_PASSWORD=familytree
 services:

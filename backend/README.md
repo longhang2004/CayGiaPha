@@ -41,30 +41,69 @@ Product contracts (`/api/v1/auth`, trees, persons, relationships) stay on the
 existing `ErrorResponse` envelope so the Next.js client is not broken. RFC 7807
 Problem Details is offered when the client sends `Accept: application/problem+json`.
 
-## How to run (Docker)
+## How to run (verified: host JAR)
 
-From `backend/`:
+This is the path verified on 2026-09-19 against Java 21, Maven, PostgreSQL 16,
+and Redis 7 on localhost (`SPRING_PROFILES_ACTIVE=local`, `APP_DEMO_SEED=true`).
+
+Postgres and Redis can be host installs **or** Compose services if the Docker
+daemon can start containers. Then:
+
+```bash
+cd backend
+mvn -DskipTests package
+SPRING_PROFILES_ACTIVE=local \
+SPRING_DATASOURCE_URL=jdbc:postgresql://127.0.0.1:5432/familytree \
+SPRING_DATASOURCE_USERNAME=familytree \
+SPRING_DATASOURCE_PASSWORD=familytree \
+APP_DEMO_SEED=true \
+java -jar target/family-tree-api-0.0.1-SNAPSHOT.jar
+```
+
+Create the `familytree` role/database first if you are using a host Postgres
+(user/password/db `familytree`). Flyway applies V1–V28 on boot.
+
+## How to run (Docker Compose)
+
+From `backend/`, when the daemon can create overlay containers:
 
 ```bash
 docker compose up -d --build
 ```
 
-MinIO object storage is opt-in (`--profile storage`) so the API can boot without that image. If the API image cannot build (nested overlay/Docker-in-Docker), start only Postgres and Redis and run the JAR on the host as below.
-
-Wait until `caygiapha-api` is healthy, then:
+MinIO object storage is opt-in (`--profile storage`) so the API can boot without
+that image. Infra only:
 
 ```bash
-curl -s http://localhost:8080/actuator/health
-curl -s http://localhost:8080/api/v1/platform/architecture
+docker compose up -d db redis
 ```
 
-Demo login (local seed only):
+Nested Docker / overlayfs environments often cannot start Compose containers
+(`overlay ... err: invalid argument`). Use the host JAR path above instead.
+
+Wait until the API is healthy, then run the smoke checks.
+
+Stop Compose (keeps the named volume):
+
+```bash
+docker compose down
+```
+
+## Smoke checks
+
+```bash
+curl -s http://127.0.0.1:8080/actuator/health
+curl -s http://127.0.0.1:8080/api/v1/health
+curl -s http://127.0.0.1:8080/api/v1/platform/architecture
+```
+
+Demo login (local seed only; never a production secret):
 
 - Email: `seed@caygiapha.local`
 - Password: `SeedFamily-2026!`
 
 ```bash
-curl -s -X POST http://localhost:8080/api/v1/platform/auth/token \
+curl -s -X POST http://127.0.0.1:8080/api/v1/platform/auth/token \
   -H 'Content-Type: application/json' \
   -d '{"email":"seed@caygiapha.local","password":"SeedFamily-2026!"}'
 ```
@@ -72,24 +111,28 @@ curl -s -X POST http://localhost:8080/api/v1/platform/auth/token \
 Use the returned Bearer token on `/api/v1/**`. Session cookies remain the
 product auth story.
 
-Stop:
+Verified against that seed (2026-09-19):
 
-```bash
-docker compose down
-```
+- `GET /api/v1/trees` lists `Họ Nguyễn - Chi Hà Nội` (region `Bac`, 8 people)
+- `GET /api/v1/platform/trees/{treeId}/kinship/{egoId}` resolves 7 addresses
+- Redis keys `kinship:addresses:*` are written, then evicted on graph mutation
+- `POST /api/v1/persons` and `POST /api/v1/relationships` return 201
+- Relationship writes append a published `graph.mutated` row to `domain_outbox`
+- OpenAPI: `http://127.0.0.1:8080/api/v1/docs` (`/api/v1/openapi` is 3.0.1)
 
-## How to run (host JAR + compose infra)
+The seed runner talks to repositories directly, so `domain_outbox` stays empty
+until an API graph mutation. Idempotency replay needs header `Idempotency-Key`.
 
-```bash
-docker compose up -d db redis
-mvn -DskipTests package
-SPRING_PROFILES_ACTIVE=local \
-SPRING_DATASOURCE_URL=jdbc:postgresql://localhost:5432/familytree \
-SPRING_DATASOURCE_USERNAME=familytree \
-SPRING_DATASOURCE_PASSWORD=familytree \
-APP_DEMO_SEED=true \
-java -jar target/family-tree-api-0.0.1-SNAPSHOT.jar
-```
+## Known local gaps
+
+- `V16__allow_multiple_trees_and_tree_name.sql` drops `trees_owner_user_id_key`
+  but the V1 constraint is named `uq_trees_owner`. A database migrated from V1
+  still has `UNIQUE (owner_user_id)`, so `POST /api/v1/trees` for the seed user
+  returns HTTP 500 (`INTERNAL_ERROR`) instead of a second tree. Person and
+  relationship writes on the existing tree succeed.
+- Compose `api` / `db` / `redis` images are the reviewer path on a normal Docker
+  host. They were not startable in the overlayfs nested-Docker VM used for the
+  2026-09-19 check.
 
 ## Tests
 

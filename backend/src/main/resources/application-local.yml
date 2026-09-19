@@ -1,10 +1,11 @@
 # Local development profile.
 #
-# Run the app locally against Docker Compose Postgres/Redis:
-#   docker compose up -d db redis minio
-#   SPRING_DATASOURCE_URL=jdbc:postgresql://localhost:5432/familytree \
+# Run the app locally against Postgres 16 + Redis 7 (host installs, or
+# `docker compose up -d db redis` when the daemon can start containers):
+#   SPRING_DATASOURCE_URL=jdbc:postgresql://127.0.0.1:5432/familytree \
 #   SPRING_DATASOURCE_USERNAME=familytree \
 #   SPRING_DATASOURCE_PASSWORD=familytree \
+#   APP_DEMO_SEED=true \
 #   mvn spring-boot:run
 #
 # Or use Testcontainers via TestFamilyTreeApiApplication.

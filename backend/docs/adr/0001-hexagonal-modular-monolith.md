@@ -58,10 +58,16 @@ cookies remain the product path.
 
 ## Consequences
 
-- Reviewers can boot `docker compose up --build` and exercise OpenAPI,
-  Prometheus, JWT, kinship cache, outbox, and a seeded four-generation tree.
+- Reviewers can exercise OpenAPI, Prometheus, JWT, kinship cache, outbox, and a
+  seeded four-generation tree. The verified local path is host JAR + Postgres 16
+  + Redis 7 (`backend/README.md`). `docker compose up --build` is the intended
+  one-command stack when the daemon can start overlay containers; nested
+  overlayfs Docker often cannot.
 - Next.js production routing is unchanged (`USE_BACKEND=false`).
 - Adding a real Kafka publisher later is an outbound adapter behind the same
   outbox port.
 - Extra moving parts (outbox relay, Redis cache) must fail open for reads and
   fail closed for authz/privacy.
+- Seed uses repositories, so outbox rows appear after API graph mutations, not
+  at boot. `V16` does not drop V1 constraint `uq_trees_owner`; a V1→V28 database
+  still rejects a second tree per owner at the unique index.

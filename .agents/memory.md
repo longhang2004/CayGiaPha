@@ -198,8 +198,15 @@ Durable project knowledge for future AI agents. Keep entries short, verified, an
 - **Java portfolio API**: Modular hexagonal overlay under `backend/.../hexagon` and
   `platform` (JWT + session dual auth, Redis kinship cache, transactional outbox, idempotency,
   OpenAPI at `/api/v1/docs`, Micrometer, Resilience4j). Product path stays Next.js
-  (`USE_BACKEND=false`). Boot with `cd backend && docker compose up -d --build`. Demo seed
-  email is documented in `backend/README.md`; never log OTP/JWT/family payloads.
+  (`USE_BACKEND=false`). Verified 2026-09-19: host JAR + Postgres 16 + Redis 7 with
+  `APP_DEMO_SEED=true` (health, JWT, 8-person Bắc seed, kinship, Redis cache, person/
+  relationship writes, published `graph.mutated` outbox). `docker compose up` failed on
+  nested overlayfs (`overlay ... invalid argument`); do not treat Compose as proven in
+  that class of VM. Demo seed email is documented in `backend/README.md`; never log
+  OTP/JWT/family payloads.
+- **trees.uq_trees_owner trap**: V1 unique is `uq_trees_owner`. V16 only drops
+  `trees_owner_user_id_key` / `trees_owner_user_id_unique`. A V1→current Flyway DB
+  still enforces one tree per owner; `POST /api/v1/trees` for the seed user returns 500.
 - **UI direction**: Forest paper `#eef3ee` + lacquer vermillion `#b43b16`, Be Vietnam Pro + Source Serif 4 headings,
   pine vs vermillion graph gender (not blue/pink). Tokens live in
   `frontend/src/styles/_01_variables.scss`. HomeLanding is shared with `/prototype/home`.

@@ -30,4 +30,6 @@ Modular hexagonal overlay on the existing layered Spring Boot 3.3.5 / Java 21 AP
 - Redis is kinship read-through cache + existing rate limits.
 - Privacy: living-person redaction and sensitive-read audit remain fail-closed.
 
-See `backend/docs/adr/0001-hexagonal-modular-monolith.md`.
+See `backend/docs/adr/0001-hexagonal-modular-monolith.md` and the verified
+run/smoke notes in `backend/README.md`. Docker Compose is not the proven path
+on nested overlayfs VMs.

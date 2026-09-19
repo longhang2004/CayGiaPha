@@ -2,7 +2,9 @@
 #
 # The Next.js application remains the production-priority request path
 # (`USE_BACKEND=false`). This profile exists so reviewers can boot a complete
-# Java 21 / Spring Boot 3 stack against Postgres + Redis without extra flags.
+# Java 21 / Spring Boot 3 stack against Compose Postgres + Redis without extra
+# flags. If Compose cannot start (nested overlayfs), use profile `local` and
+# the host JAR path in README.md.
 spring:
   datasource:
     url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://db:5432/familytree}
