@@ -1,20 +1,25 @@
 package com.caygiapha.familytree.controller;
 
 import com.caygiapha.familytree.config.SessionCookieFactory;
+import com.caygiapha.familytree.dto.ConsentReacceptanceRequest;
+import com.caygiapha.familytree.dto.ConsentReacceptanceResponse;
 import com.caygiapha.familytree.dto.DataExportResponse;
 import com.caygiapha.familytree.dto.EraseNodeRequest;
-import com.caygiapha.familytree.error.ApiException;
-import com.caygiapha.familytree.service.AuditService;
-import com.caygiapha.familytree.service.DataRightsService;
-import com.caygiapha.familytree.service.DataRightsService.EraseStrategy;
-import java.util.Locale;
-import java.util.UUID;
-import com.caygiapha.familytree.dto.UpdateProfileRequest;
 import com.caygiapha.familytree.dto.MeProfileResponse;
+import com.caygiapha.familytree.dto.SubjectNodeSummary;
+import com.caygiapha.familytree.dto.UpdateProfileRequest;
 import com.caygiapha.familytree.entity.User;
+import com.caygiapha.familytree.error.ApiException;
 import com.caygiapha.familytree.repository.UserRepository;
 import com.caygiapha.familytree.security.AuthContext;
 import com.caygiapha.familytree.security.AuthorizationService;
+import com.caygiapha.familytree.service.AuditService;
+import com.caygiapha.familytree.service.ConsentService;
+import com.caygiapha.familytree.service.DataRightsService;
+import com.caygiapha.familytree.service.DataRightsService.EraseStrategy;
+import java.util.List;
+import java.util.Locale;
+import java.util.UUID;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -30,6 +35,8 @@ import org.springframework.web.bind.annotation.RestController;
  * Self-service personal-data-rights endpoints for the authenticated subject (Requirement 22):
  *
  * <ul>
+ *   <li>{@code POST   /api/v1/me/consent}                 — record current Terms/Privacy acceptance (23.4).</li>
+ *   <li>{@code GET    /api/v1/me/nodes}                   — list nodes linked to the current user (22.1).</li>
  *   <li>{@code GET    /api/v1/me/nodes/{personId}/export} — export the linked node's data (22.1).</li>
  *   <li>{@code POST   /api/v1/me/nodes/{personId}/erase}  — delete or anonymize the node (22.3).</li>
  *   <li>{@code DELETE /api/v1/me/account}                 — delete the account and owned tree (22.4).</li>
@@ -47,18 +54,36 @@ public class MeController {
     private final SessionCookieFactory sessionCookieFactory;
     private final AuthorizationService authorizationService;
     private final UserRepository userRepository;
+    private final ConsentService consentService;
 
     public MeController(
             DataRightsService dataRightsService,
             AuditService auditService,
             SessionCookieFactory sessionCookieFactory,
             AuthorizationService authorizationService,
-            UserRepository userRepository) {
+            UserRepository userRepository,
+            ConsentService consentService) {
         this.dataRightsService = dataRightsService;
         this.auditService = auditService;
         this.sessionCookieFactory = sessionCookieFactory;
         this.authorizationService = authorizationService;
         this.userRepository = userRepository;
+        this.consentService = consentService;
+    }
+
+    @PostMapping("/consent")
+    public ConsentReacceptanceResponse recordConsent(@RequestBody ConsentReacceptanceRequest request) {
+        AuthContext context = authorizationService.requireAuthenticatedViewer();
+        boolean acceptedTos = request != null && request.acceptedTos();
+        boolean acceptedPrivacy = request != null && request.acceptedPrivacy();
+        consentService.requireConsent(acceptedTos, acceptedPrivacy);
+        consentService.recordConsent(context.userId());
+        return new ConsentReacceptanceResponse(false);
+    }
+
+    @GetMapping("/nodes")
+    public List<SubjectNodeSummary> listNodes() {
+        return dataRightsService.listSubjectNodes();
     }
 
     @GetMapping("/nodes/{personId}/export")

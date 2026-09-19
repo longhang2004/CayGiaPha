@@ -26,24 +26,25 @@ import net.jqwik.api.constraints.IntRange;
 import org.mockito.invocation.InvocationOnMock;
 
 /**
- * Property-based test for design <strong>Property 19: At most one tree per user</strong>.
+ * Property-based test for design <strong>Property 19: Sign-up creates at most one tree per user</strong>.
  *
  * <p>Feature: vietnamese-family-tree, Property 19
  *
  * <p>For any sequence of verification / tree-creation events directed at a single user, that user
- * owns <em>exactly</em> one tree — never zero (a verification creates a tree) and never more than
- * one (repeated verifications reuse the existing tree). The property drives the real code path of
+ * owns <em>exactly</em> one tree from the sign-up path — never zero (a verification creates a tree)
+ * and never more than one (repeated verifications reuse the existing tree). Explicit
+ * {@code POST /api/v1/trees} may create additional owned trees after the leftover
+ * {@code uq_trees_owner} unique was dropped (V29); this property only covers
  * {@link AuthService#verifySignUp(String, String)}, which is the only operation that creates a
  * tree on successful verification (13.1) and which must not create an additional tree on
  * subsequent verifications (13.2).
  *
  * <p>The {@link TreeRepository} is an in-memory fake backed by a {@code Map} keyed by
- * {@code owner_user_id}. The map enforces a single tree per owner, mirroring both the
- * {@code trees.owner_user_id} UNIQUE constraint and the read-then-create guard in
- * {@link AuthService}: {@code save} of a second tree for an owner that already owns one is
- * rejected exactly as the database UNIQUE constraint would reject it. Verification is mocked to
- * succeed (the validity-window / lockout behaviour is covered by Properties 1 and 2) so the
- * tree-creation path is always reached.
+ * {@code owner_user_id}. The map enforces a single tree per owner on this sign-up path, mirroring
+ * the read-then-create guard in {@link AuthService}: {@code save} of a second tree for an owner
+ * that already owns one is rejected so a second verification cannot silently insert another tree.
+ * Verification is mocked to succeed (the validity-window / lockout behaviour is covered by
+ * Properties 1 and 2) so the tree-creation path is always reached.
  *
  * <p>The invariant is checked after <em>every</em> verification event in the sequence (i.e. after
  * every prefix), and the tree's identity is asserted stable across the whole sequence so that
@@ -91,11 +92,11 @@ class AtMostOneTreePerUserProperties {
         when(treeRepository.save(any(Tree.class))).thenAnswer((InvocationOnMock i) -> {
             Tree t = i.getArgument(0);
             UUID owner = t.getOwnerUserId();
-            // Mirror the trees.owner_user_id UNIQUE constraint: a second insert for the same owner
-            // would be rejected by the database. The service must never reach this branch.
+            // The fake still rejects a second insert on this sign-up path so verifySignUp must
+            // reuse the first tree (13.2). Explicit POST /trees is outside this property.
             if (treesByOwner.containsKey(owner)) {
                 throw new IllegalStateException(
-                        "UNIQUE violation: owner " + owner + " already owns a tree");
+                        "sign-up path created a second tree for owner " + owner);
             }
             if (t.getId() == null) {
                 setId(t, UUID.randomUUID());

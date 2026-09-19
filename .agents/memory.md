@@ -216,6 +216,14 @@ Durable project knowledge for future AI agents. Keep entries short, verified, an
 - **ComposeDbIntegrationTest trap**: V21 made `sessions.token_hash` NOT NULL.
   The live-Postgres account-deletion test must construct `Session` with a hash;
   the 2-arg constructor only works against in-memory fakes.
+- **Java ↔ Next session/tree contracts (2026-09-19)**: Spring `GET /auth/session`
+  must include `consentRequired` from `ConsentService.needsReacceptance`.
+  `GET /trees` must include linked claims as `accessRole=LINKED` (owner >
+  contributor > linked). `POST /me/consent` records current Tos/Privacy for
+  the session user only. `GET /me/nodes` lists claimed nodes for settings.
+  `RelationshipService` rejects asserted overlay on parent/spouse pairs.
+  Still missing on the Java path: atomic `POST /trees/{treeId}/relatives`.
+  Session JSON may still include a legacy `treeId`; Next omits it.
 - **UI direction**: Forest paper `#eef3ee` + lacquer vermillion `#b43b16`, Be Vietnam Pro + Source Serif 4 headings,
   pine vs vermillion graph gender (not blue/pink). Tokens live in
   `frontend/src/styles/_01_variables.scss`. HomeLanding is shared with `/prototype/home`.

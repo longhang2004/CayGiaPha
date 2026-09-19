@@ -29,7 +29,8 @@ import org.springframework.stereotype.Service;
  *   <li>both endpoints already exist within the request's tree (4.8, 5.5);</li>
  *   <li>type-specific rules: at-most-one father / mother per child (4.4), the marital-status
  *       enum for marriage (4.5), the social-type enum for non-bloodline (4.6, 12.1, 12.2), and
- *       the asserted-label length 1-50 (4.7, 6.1, 6.2).</li>
+ *       the asserted-label length 1-50 (4.7, 6.1, 6.2) with no overlay on an existing parent,
+ *       child, or spouse pair.</li>
  * </ol>
  *
  * <p><strong>Cycle prevention (Requirement 4.9)</strong> is enforced in the bloodline branch via
@@ -161,7 +162,7 @@ public class RelationshipService {
                     validateBloodlineEdge(type, sourceId, targetId);
             case TYPE_MARRIAGE -> applyMarriage(edge, command.maritalStatus());
             case TYPE_NON_BLOODLINE -> applyNonBloodline(edge, command.socialType());
-            case TYPE_ASSERTED -> applyAsserted(edge, command.assertedLabel());
+            case TYPE_ASSERTED -> applyAsserted(edge, command.assertedLabel(), sourceId, targetId);
             default -> throw new IllegalStateException("Unreachable type: " + type);
         }
 
@@ -295,16 +296,36 @@ public class RelationshipService {
         edge.setSocialType(socialType);
     }
 
-    private void applyAsserted(Relationship edge, String assertedLabel) {
+    private void applyAsserted(Relationship edge, String assertedLabel, UUID sourceId, UUID targetId) {
         if (assertedLabel == null
                 || assertedLabel.length() < ASSERTED_LABEL_MIN
                 || assertedLabel.length() > ASSERTED_LABEL_MAX) {
             throw ApiException.validation("assertedLabel",
                     "Asserted label must be 1 to 50 characters.");
         }
+        if (hasPrimitivePair(sourceId, targetId)) {
+            throw ApiException.validation("relationship",
+                    "An asserted label cannot overlay an existing parent, child, or spouse relationship.");
+        }
         edge.setAssertedLabel(assertedLabel);
         // Asserted edges are opaque until intermediate nodes complete a path (Requirement 6.x).
         edge.setDerivationState("asserted");
+    }
+
+    private boolean hasPrimitivePair(UUID firstId, UUID secondId) {
+        return isPrimitiveBetween(firstId, secondId) || isPrimitiveBetween(secondId, firstId);
+    }
+
+    private boolean isPrimitiveBetween(UUID sourceId, UUID targetId) {
+        return relationshipRepository
+                        .findFirstBySourceIdAndTargetIdAndType(sourceId, targetId, TYPE_BLOODLINE_FATHER)
+                        .isPresent()
+                || relationshipRepository
+                        .findFirstBySourceIdAndTargetIdAndType(sourceId, targetId, TYPE_BLOODLINE_MOTHER)
+                        .isPresent()
+                || relationshipRepository
+                        .findFirstBySourceIdAndTargetIdAndType(sourceId, targetId, TYPE_MARRIAGE)
+                        .isPresent();
     }
 
     /**

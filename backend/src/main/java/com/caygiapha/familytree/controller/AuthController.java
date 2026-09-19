@@ -210,7 +210,8 @@ public class AuthController {
                 identifier == null ? "" : identifier,
                 user.getDisplayName(),
                 user.isVerified(),
-                "admin".equals(user.getRole()) ? "admin" : "user");
+                "admin".equals(user.getRole()) ? "admin" : "user",
+                consentService.needsReacceptance(user.getId()));
     }
 
     @PostMapping("/signout")

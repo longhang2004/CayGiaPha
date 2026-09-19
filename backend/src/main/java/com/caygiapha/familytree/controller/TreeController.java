@@ -138,10 +138,15 @@ public class TreeController {
         AuthContext context = authorizationService.requireAuthenticatedViewer();
         Map<UUID, TreeSummaryResponse> rows = new LinkedHashMap<>();
         treeRepository.findAllByOwnerUserIdOrderByCreatedAtAsc(context.userId())
-                .forEach(tree -> rows.put(tree.getId(), TreeSummaryResponse.from(tree, true)));
+                .forEach(tree -> rows.put(tree.getId(), TreeSummaryResponse.from(tree, TreeAccessRole.OWNER)));
         collaboratorRepository.findByUserId(context.userId()).forEach(collaborator ->
                 treeRepository.findById(collaborator.getTreeId()).ifPresent(tree ->
-                        rows.putIfAbsent(tree.getId(), TreeSummaryResponse.from(tree, false))));
+                        rows.putIfAbsent(tree.getId(),
+                                TreeSummaryResponse.from(tree, TreeAccessRole.CONTRIBUTOR))));
+        claimRepository.findTreeIdsLinkedToUser(context.userId()).forEach(treeId ->
+                treeRepository.findById(treeId).ifPresent(tree ->
+                        rows.putIfAbsent(tree.getId(),
+                                TreeSummaryResponse.from(tree, TreeAccessRole.LINKED))));
         return List.copyOf(rows.values());
     }
 
@@ -162,7 +167,7 @@ public class TreeController {
         }
         String name = request == null ? null : request.name();
         Tree saved = treeRepository.save(new Tree(context.userId(), region, name));
-        return TreeSummaryResponse.from(saved, true);
+        return TreeSummaryResponse.from(saved, TreeAccessRole.OWNER);
     }
 
     @GetMapping("/{treeId}")

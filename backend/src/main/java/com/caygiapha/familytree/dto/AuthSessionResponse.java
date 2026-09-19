@@ -11,5 +11,6 @@ public record AuthSessionResponse(
         String identifier,
         String displayName,
         boolean verified,
-        String role) {
+        String role,
+        boolean consentRequired) {
 }

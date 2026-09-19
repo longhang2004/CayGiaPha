@@ -26,6 +26,13 @@ public class InMemoryClaimRepository extends InMemoryRepository<Claim> implement
                         && Objects.equals(c.getUserId(), userId));
     }
 
+    @Override
+    public java.util.List<Claim> findByUserId(UUID userId) {
+        return all().stream()
+                .filter(c -> Objects.equals(c.getUserId(), userId))
+                .toList();
+    }
+
     /**
      * This lightweight fake holds only claim rows (no person/tree data), so it cannot perform the
      * claims-to-persons join the real query does. The Docker-free tests using it do not exercise
@@ -40,6 +47,15 @@ public class InMemoryClaimRepository extends InMemoryRepository<Claim> implement
 
     @Override
     public java.util.List<UUID> findUserIdsWithClaimsInTree(UUID treeId) {
+        return java.util.List.of();
+    }
+
+    /**
+     * This fake has no person/tree join data, so it cannot resolve linked tree ids. Docker-free
+     * tests using it do not exercise GET /trees linkage; return empty to stay conservative.
+     */
+    @Override
+    public java.util.List<UUID> findTreeIdsLinkedToUser(UUID userId) {
         return java.util.List.of();
     }
 

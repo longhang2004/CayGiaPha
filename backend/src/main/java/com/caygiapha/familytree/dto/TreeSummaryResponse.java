@@ -1,6 +1,7 @@
 package com.caygiapha.familytree.dto;
 
 import com.caygiapha.familytree.entity.Tree;
+import com.caygiapha.familytree.security.TreeAccessRole;
 import java.time.Instant;
 import java.util.UUID;
 
@@ -13,9 +14,10 @@ public record TreeSummaryResponse(
         String sharing,
         boolean livingRedaction,
         Instant createdAt,
-        boolean isOwner) {
+        boolean isOwner,
+        TreeAccessRole accessRole) {
 
-    public static TreeSummaryResponse from(Tree tree, boolean isOwner) {
+    public static TreeSummaryResponse from(Tree tree, TreeAccessRole accessRole) {
         return new TreeSummaryResponse(
                 tree.getId(),
                 tree.getOwnerUserId(),
@@ -24,6 +26,7 @@ public record TreeSummaryResponse(
                 tree.getSharing(),
                 tree.isLivingRedaction(),
                 tree.getCreatedAt(),
-                isOwner);
+                accessRole == TreeAccessRole.OWNER,
+                accessRole);
     }
 }

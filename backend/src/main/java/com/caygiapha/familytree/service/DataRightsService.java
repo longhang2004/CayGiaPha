@@ -1,6 +1,8 @@
 package com.caygiapha.familytree.service;
 
 import com.caygiapha.familytree.dto.DataExportResponse;
+import com.caygiapha.familytree.dto.SubjectNodeSummary;
+import com.caygiapha.familytree.entity.Claim;
 import com.caygiapha.familytree.entity.Person;
 import com.caygiapha.familytree.entity.Tree;
 import com.caygiapha.familytree.error.ApiException;
@@ -15,6 +17,7 @@ import com.caygiapha.familytree.repository.UserRepository;
 import com.caygiapha.familytree.repository.VerificationCodeRepository;
 import com.caygiapha.familytree.security.AuthContext;
 import com.caygiapha.familytree.security.AuthorizationService;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.transaction.annotation.Transactional;
@@ -72,6 +75,29 @@ public class DataRightsService {
         this.personDeletionService = personDeletionService;
         this.claimService = claimService;
         this.authorizationService = authorizationService;
+    }
+
+    /** Linked claimed nodes for the authenticated subject (settings data-rights list; 22.1). */
+    @Transactional(readOnly = true)
+    public List<SubjectNodeSummary> listSubjectNodes() {
+        AuthContext context = authorizationService.requireAuthenticatedViewer();
+        List<SubjectNodeSummary> rows = new ArrayList<>();
+        for (Claim claim : claimRepository.findByUserId(context.userId())) {
+            Person person = personRepository.findById(claim.getPersonId()).orElse(null);
+            if (person == null) {
+                continue;
+            }
+            String treeName = treeRepository.findById(person.getTreeId())
+                    .map(Tree::getName)
+                    .orElse("");
+            rows.add(new SubjectNodeSummary(
+                    person.getId(),
+                    person.getTreeId(),
+                    person.getDisplayName(),
+                    treeName,
+                    claim.getClaimedAt()));
+        }
+        return List.copyOf(rows);
     }
 
     /** Export the subject's node and its incident edges (22.1). Subject-only (22.5). */

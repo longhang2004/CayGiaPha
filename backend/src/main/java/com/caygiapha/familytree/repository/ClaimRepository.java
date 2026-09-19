@@ -28,6 +28,9 @@ public interface ClaimRepository extends JpaRepository<Claim, UUID> {
     /** Whether the given user is the one linked to the given claimed node (11.6). */
     boolean existsByPersonIdAndUserId(UUID personId, UUID userId);
 
+    /** Every claim held by the given user (settings data-rights list). */
+    List<Claim> findByUserId(UUID userId);
+
     /**
      * Whether the given user is linked (via a {@code Claimed_Node}) to any person in the given tree,
      * used to grant tree-level read access to a family member who is not the owner (Requirement
@@ -40,6 +43,15 @@ public interface ClaimRepository extends JpaRepository<Claim, UUID> {
     @Query("SELECT DISTINCT c.userId FROM Claim c, Person p "
             + "WHERE p.id = c.personId AND p.treeId = :treeId")
     List<UUID> findUserIdsWithClaimsInTree(@Param("treeId") UUID treeId);
+
+    /**
+     * Tree ids the given user can open because they are linked to a claimed node in that tree
+     * (Requirement 19.3). Used by {@code GET /api/v1/trees} so linked members see those trees
+     * with {@code accessRole=LINKED}.
+     */
+    @Query("SELECT DISTINCT p.treeId FROM Claim c, Person p "
+            + "WHERE p.id = c.personId AND c.userId = :userId")
+    List<UUID> findTreeIdsLinkedToUser(@Param("userId") UUID userId);
 
     /** Delete every claim on any of the given person nodes (account/tree deletion cascade; 22.4). */
     void deleteByPersonIdIn(java.util.Collection<UUID> personIds);

@@ -8,6 +8,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.caygiapha.familytree.dto.SubjectNodeSummary;
+import com.caygiapha.familytree.entity.Claim;
 import com.caygiapha.familytree.entity.Person;
 import com.caygiapha.familytree.entity.Tree;
 import com.caygiapha.familytree.repository.ClaimRepository;
@@ -122,6 +124,30 @@ class DataRightsServiceTest {
         verify(userConsentRepository).deleteByUserId(userId);
         verify(verificationCodeRepository).deleteByUserId(userId);
         verify(userRepository).deleteById(userId);
+    }
+
+    @Test
+    void listSubjectNodesReturnsOnlyNodesLinkedToTheAuthenticatedUser() {
+        UUID personId = UUID.randomUUID();
+        UUID treeId = UUID.randomUUID();
+        Person person = new Person(treeId, "Nguyễn Văn A", "male");
+        setId(person, personId);
+        Tree tree = new Tree(UUID.randomUUID(), "Nam", "Họ Nguyễn");
+        setId(tree, treeId);
+        Claim claim = new Claim(personId, userId);
+        when(claimRepository.findByUserId(userId)).thenReturn(List.of(claim));
+        when(personRepository.findById(personId)).thenReturn(Optional.of(person));
+        when(treeRepository.findById(treeId)).thenReturn(Optional.of(tree));
+
+        List<SubjectNodeSummary> nodes = service.listSubjectNodes();
+
+        assertThat(nodes).singleElement().satisfies(row -> {
+            assertThat(row.personId()).isEqualTo(personId);
+            assertThat(row.treeId()).isEqualTo(treeId);
+            assertThat(row.displayName()).isEqualTo("Nguyễn Văn A");
+            assertThat(row.treeName()).isEqualTo("Họ Nguyễn");
+        });
+        verify(claimRepository).findByUserId(userId);
     }
 
     private static void setId(Object entity, UUID id) {

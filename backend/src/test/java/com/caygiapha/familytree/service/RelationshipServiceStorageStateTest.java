@@ -1,15 +1,19 @@
 package com.caygiapha.familytree.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.caygiapha.familytree.entity.Relationship;
+import com.caygiapha.familytree.error.ApiException;
+import com.caygiapha.familytree.error.ErrorCode;
 import com.caygiapha.familytree.repository.PersonRepository;
 import com.caygiapha.familytree.repository.RelationshipRepository;
 import com.caygiapha.familytree.service.RelationshipService.CreateRelationshipCommand;
+import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -84,5 +88,50 @@ class RelationshipServiceStorageStateTest {
         assertThat(edge.getType()).isEqualTo(RelationshipService.TYPE_ASSERTED);
         assertThat(edge.getDerivationState()).isEqualTo("asserted");
         assertThat(edge.getAssertedLabel()).isEqualTo("bác");
+    }
+
+    @Test
+    void assertedOverlayOnFatherEdgeIsRejected() {
+        when(relationshipRepository.findFirstBySourceIdAndTargetIdAndType(
+                SOURCE, TARGET, RelationshipService.TYPE_BLOODLINE_FATHER))
+                .thenReturn(Optional.of(new Relationship(
+                        TREE_ID, RelationshipService.TYPE_BLOODLINE_FATHER, SOURCE, TARGET)));
+
+        assertThatThrownBy(() -> service.createRelationship(new CreateRelationshipCommand(
+                TREE_ID, RelationshipService.TYPE_ASSERTED, SOURCE, TARGET,
+                null, null, "bác")))
+                .isInstanceOfSatisfying(ApiException.class, ex -> {
+                    assertThat(ex.code()).isEqualTo(ErrorCode.VALIDATION_ERROR);
+                    assertThat(ex.field()).isEqualTo("relationship");
+                    assertThat(ex.getMessage()).contains("parent, child, or spouse");
+                });
+    }
+
+    @Test
+    void assertedOverlayOnReverseMotherEdgeIsRejected() {
+        when(relationshipRepository.findFirstBySourceIdAndTargetIdAndType(
+                TARGET, SOURCE, RelationshipService.TYPE_BLOODLINE_MOTHER))
+                .thenReturn(Optional.of(new Relationship(
+                        TREE_ID, RelationshipService.TYPE_BLOODLINE_MOTHER, TARGET, SOURCE)));
+
+        assertThatThrownBy(() -> service.createRelationship(new CreateRelationshipCommand(
+                TREE_ID, RelationshipService.TYPE_ASSERTED, SOURCE, TARGET,
+                null, null, "mẹ")))
+                .isInstanceOf(ApiException.class)
+                .hasMessageContaining("parent, child, or spouse");
+    }
+
+    @Test
+    void assertedOverlayOnMarriageEdgeIsRejected() {
+        when(relationshipRepository.findFirstBySourceIdAndTargetIdAndType(
+                TARGET, SOURCE, RelationshipService.TYPE_MARRIAGE))
+                .thenReturn(Optional.of(new Relationship(
+                        TREE_ID, RelationshipService.TYPE_MARRIAGE, TARGET, SOURCE)));
+
+        assertThatThrownBy(() -> service.createRelationship(new CreateRelationshipCommand(
+                TREE_ID, RelationshipService.TYPE_ASSERTED, SOURCE, TARGET,
+                null, null, "vợ")))
+                .isInstanceOf(ApiException.class)
+                .hasMessageContaining("parent, child, or spouse");
     }
 }
