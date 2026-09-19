@@ -49,6 +49,8 @@ From `backend/`:
 docker compose up -d --build
 ```
 
+MinIO object storage is opt-in (`--profile storage`) so the API can boot without that image. If the API image cannot build (nested overlay/Docker-in-Docker), start only Postgres and Redis and run the JAR on the host as below.
+
 Wait until `caygiapha-api` is healthy, then:
 
 ```bash
