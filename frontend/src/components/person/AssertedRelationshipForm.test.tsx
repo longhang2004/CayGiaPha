@@ -111,4 +111,28 @@ describe("AssertedRelationshipForm", () => {
     expect(screen.getByRole("option", { name: /Nguyễn Văn Thành/ })).toBeDisabled();
     expect(screen.getByRole("option", { name: "Phạm Thị Mai" })).not.toBeDisabled();
   });
+
+  it("disables a person already joined by a parent or spouse edge", () => {
+    const relationships: Relationship[] = [
+      {
+        id: "father",
+        type: "bloodline_father",
+        sourceId: "relative",
+        targetId: "anchor",
+        derivationState: "derived",
+      },
+    ];
+    render(
+      <AssertedRelationshipForm
+        treeId="tree-1"
+        persons={PERSONS}
+        relationships={relationships}
+        anchorId="anchor"
+      />,
+    );
+
+    expect(screen.getByRole("option", { name: /Nguyễn Văn Thành/ })).toBeDisabled();
+    expect(screen.getByRole("option", { name: /đã có quan hệ cha, mẹ, con hoặc vợ\/chồng/ })).toBeDisabled();
+    expect(screen.getByRole("option", { name: "Phạm Thị Mai" })).not.toBeDisabled();
+  });
 });

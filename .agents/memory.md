@@ -211,6 +211,11 @@ Durable project knowledge for future AI agents. Keep entries short, verified, an
 - **Asserted-label UI**: Person panel mode `asserted-label` + `AssertedRelationshipForm`
   records a dashed kinship label between two existing people. Keep primitive
   add/update forms free of asserted creation. Help topic `ghi-cach-goi-net-dut`.
+  Candidates already joined by parent/spouse, or by a same-direction dashed
+  label, are disabled.
+- **ComposeDbIntegrationTest trap**: V21 made `sessions.token_hash` NOT NULL.
+  The live-Postgres account-deletion test must construct `Session` with a hash;
+  the 2-arg constructor only works against in-memory fakes.
 - **UI direction**: Forest paper `#eef3ee` + lacquer vermillion `#b43b16`, Be Vietnam Pro + Source Serif 4 headings,
   pine vs vermillion graph gender (not blue/pink). Tokens live in
   `frontend/src/styles/_01_variables.scss`. HomeLanding is shared with `/prototype/home`.

@@ -20,6 +20,44 @@ function isSameDirectedPair(relationship: Relationship, sourceId: string, target
   return relationship.sourceId === sourceId && relationship.targetId === targetId;
 }
 
+function isPrimitivePair(relationship: Relationship, firstId: string, secondId: string): boolean {
+  switch (relationship.type) {
+    case "bloodline_father":
+    case "bloodline_mother":
+    case "marriage":
+      return (
+        (relationship.sourceId === firstId && relationship.targetId === secondId) ||
+        (relationship.sourceId === secondId && relationship.targetId === firstId)
+      );
+    case "asserted":
+    case "non_bloodline":
+      return false;
+    default: {
+      const exhaustive: never = relationship.type;
+      return exhaustive;
+    }
+  }
+}
+
+function unavailableAssertedCandidateReason(
+  relationships: Relationship[],
+  anchorId: string,
+  personId: string,
+): "asserted" | "primitive" | null {
+  if (
+    relationships.some(
+      (relationship) =>
+        relationship.type === "asserted" && isSameDirectedPair(relationship, anchorId, personId),
+    )
+  ) {
+    return "asserted";
+  }
+  if (relationships.some((relationship) => isPrimitivePair(relationship, anchorId, personId))) {
+    return "primitive";
+  }
+  return null;
+}
+
 export function AssertedRelationshipForm({
   treeId,
   persons,
@@ -33,14 +71,14 @@ export function AssertedRelationshipForm({
     () =>
       persons
         .filter((person) => person.id !== anchorId)
-        .map((person) => ({
-          person,
-          disabled: relationships.some(
-            (relationship) =>
-              relationship.type === "asserted" &&
-              isSameDirectedPair(relationship, anchorId, person.id),
-          ),
-        })),
+        .map((person) => {
+          const unavailable = unavailableAssertedCandidateReason(relationships, anchorId, person.id);
+          return {
+            person,
+            disabled: unavailable !== null,
+            unavailable,
+          };
+        }),
     [anchorId, persons, relationships],
   );
   const firstEligibleId = candidates.find((candidate) => !candidate.disabled)?.person.id ?? "";
@@ -165,10 +203,14 @@ export function AssertedRelationshipForm({
           value={candidateId}
           onChange={(event) => setCandidateId(event.target.value)}
         >
-          {candidates.map(({ person, disabled }) => (
+          {candidates.map(({ person, disabled, unavailable }) => (
             <option key={person.id} value={person.id} disabled={disabled}>
               {person.displayName}
-              {disabled ? " (đã có cách gọi nét đứt)" : ""}
+              {unavailable === "asserted"
+                ? " (đã có cách gọi nét đứt)"
+                : unavailable === "primitive"
+                  ? " (đã có quan hệ cha, mẹ, con hoặc vợ/chồng)"
+                  : ""}
             </option>
           ))}
         </Select>

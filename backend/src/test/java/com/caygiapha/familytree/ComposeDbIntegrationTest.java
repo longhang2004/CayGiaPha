@@ -201,7 +201,8 @@ class ComposeDbIntegrationTest {
                 tree.getId(), "bloodline_father", parent.getId(), child.getId()));
         claimRepository.save(new com.caygiapha.familytree.entity.Claim(child.getId(), user.getId()));
         sessionRepository.save(new com.caygiapha.familytree.entity.Session(
-                user.getId(), java.time.Instant.now().plusSeconds(3600)));
+                user.getId(), java.time.Instant.now().plusSeconds(3600),
+                "a".repeat(64)));
         userConsentRepository.save(
                 new com.caygiapha.familytree.entity.UserConsent(user.getId(), "tos", 1));
         personPhotoRepository.save(new com.caygiapha.familytree.entity.PersonPhoto(
