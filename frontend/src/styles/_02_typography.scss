@@ -563,18 +563,33 @@ html:has(.empty-tree) {
 .help-nav__link {
   display: flex;
   align-items: center;
-  min-height: 44px; /* Accessible target height */
+  min-height: var(--min-touch-target, 48px);
   font-weight: 600;
   font-size: 1.05rem;
   color: var(--color-fg);
   text-decoration: none;
   border-bottom: 1px solid transparent;
   transition: all 0.2s;
-  padding: 0.25rem 0; /* Add some visual padding */
+  padding: 0.25rem 0;
 }
 
-.help-nav__link:hover {
+button.help-nav__link,
+button.help-nav__link.btn-ghost {
+  background: transparent;
+  background-color: transparent;
+  box-shadow: none;
+  justify-content: flex-start;
+  transform: none;
+  border: none;
+  min-height: var(--min-touch-target, 48px);
+}
+
+.help-nav__link:hover,
+button.help-nav__link:hover:not(:disabled) {
   color: var(--color-brand);
+  background: transparent;
+  background-color: transparent;
+  box-shadow: none;
 }
 
 .help-nav__summary {

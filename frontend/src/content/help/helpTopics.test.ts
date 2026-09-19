@@ -8,6 +8,7 @@ const EXPECTED_METADATA = {
   "them-nguoi-dau-tien": { version: 2, reviewedAt: "2026-07-13" },
   "them-nguoi-moi": { version: 1, reviewedAt: "2026-07-17" },
   "them-quan-he-ro-rang": { version: 3, reviewedAt: "2026-07-17" },
+  "ghi-cach-goi-net-dut": { version: 1, reviewedAt: "2026-09-19" },
   "xem-thong-tin-va-xung-ho": { version: 3, reviewedAt: "2026-07-17" },
   "doi-diem-nhin": { version: 3, reviewedAt: "2026-07-17" },
   "dieu-huong-so-do": { version: 4, reviewedAt: "2026-07-17" },
@@ -20,7 +21,7 @@ const EXPECTED_METADATA = {
   "gui-phan-hoi-va-ung-ho": { version: 1, reviewedAt: "2026-07-13" },
   "xac-nhan-day-la-toi": { version: 1, reviewedAt: "2026-07-13" },
   "thao-tac-trong-cay": { version: 2, reviewedAt: "2026-07-17" },
-  "sua-va-them-thanh-vien": { version: 2, reviewedAt: "2026-07-17" },
+  "sua-va-them-thanh-vien": { version: 3, reviewedAt: "2026-09-19" },
   "xem-va-luu-so-do": { version: 2, reviewedAt: "2026-07-17" },
 };
 
@@ -102,7 +103,7 @@ describe("canonical Help registry", () => {
       topic?.excerpts.contextual ?? "",
     ].join(" ");
 
-    for (const label of ["Chỉnh sửa thông tin", "Cập nhật quan hệ"]) {
+    for (const label of ["Chỉnh sửa thông tin", "Cập nhật quan hệ", "Ghi cách gọi"]) {
       expect(copy).toContain(label);
     }
     expect(copy).not.toContain("Sửa người đang chọn");
@@ -110,6 +111,24 @@ describe("canonical Help registry", () => {
     expect(copy).not.toContain("Quan hệ khác");
     expect(copy).not.toMatch(/nút Chỉnh sửa(?= xuất hiện| hoặc)/);
     expect(copy).not.toMatch(/nút Thêm thành viên(?= xuất hiện|[.,;]| hoặc)/);
+  });
+
+  it("teaches how to record a dashed asserted kinship label (17.2)", () => {
+    const topic = getHelpTopic("ghi-cach-goi-net-dut");
+    const copy = [
+      topic?.title,
+      topic?.summary,
+      topic?.purpose,
+      ...(topic?.steps ?? []),
+      topic?.success,
+      topic?.recovery,
+      topic?.excerpts.contextual ?? "",
+    ].join(" ");
+
+    expect(copy).toContain("Ghi cách gọi");
+    expect(copy).toMatch(/nét đứt/);
+    expect(copy).toMatch(/1 đến 50/);
+    expect(copy).not.toMatch(/chưa khả dụng|unavailable/i);
   });
 
   it("separates adding a new person from connecting two existing people", () => {

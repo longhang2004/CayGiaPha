@@ -70,7 +70,7 @@ public class Tree {
     @Column(name = "id", nullable = false, updatable = false)
     private UUID id;
 
-    /** Owning user (FK to {@code users}); UNIQUE — at most one tree per user (13.2). */
+    /** Owning user (FK to {@code users}). Multiple trees per owner are allowed (13.2). */
     @Column(name = "owner_user_id", nullable = false)
     private UUID ownerUserId;
 

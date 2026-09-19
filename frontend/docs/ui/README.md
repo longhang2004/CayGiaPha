@@ -178,14 +178,14 @@ not automatically page-overflow bugs.
   If optional upload fails after a Person is created, the flow opens that saved profile instead of
   submitting creation again.
 - The Person panel is controlled by one `{ personId, mode }` state machine with `view`, `edit`,
-  `add-person`, and `update-relationship`. Child modes show Back on the left and Close on the right;
+  `add-person`, `update-relationship`, and `asserted-label`. Child modes show Back on the left and Close on the right;
   Back returns to the same Person, while Close and Escape dismiss the full surface. Dirty forms use
   one discard dialog and restore focus to the action or panel opener.
 - “Thêm người mới” starts from the workspace footer and creates one Person with a primitive parent,
   child, or spouse edge. “Cập nhật quan hệ” starts in the viewed Person's action group and connects
-  two existing people without creating a node. The action drawer contains only Help and management
-  destinations. Existing asserted edges remain dashed and retain upgrade/conflict behavior, but UI
-  forms do not offer asserted creation until that flow is redesigned.
+  two existing people without creating a node. “Ghi cách gọi” is a separate elder-friendly flow that
+  stores a dashed asserted label (1–50 characters) when intermediate ancestors are unknown. The
+  action drawer contains only Help and management destinations.
 - User-facing kinship reference copy is “Xét vai vế theo [Tên]” and “Đổi người xét”. Keep the stable
   internal `viewpoint` names and reserve “góc nhìn” for graph camera/zoom controls such as Đặt lại.
 - Region Nam may append a privacy-safe, display-only calling number for sibling and parent-sibling

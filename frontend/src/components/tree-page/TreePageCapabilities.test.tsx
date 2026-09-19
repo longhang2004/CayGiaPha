@@ -47,6 +47,7 @@ vi.mock("@/components/person/PersonForm", () => ({
 }));
 vi.mock("@/components/person/AddConnectedPersonForm", () => ({ AddConnectedPersonForm: () => <div>Biểu mẫu thêm người mới</div> }));
 vi.mock("@/components/person/UpdateRelationshipForm", () => ({ UpdateRelationshipForm: () => <div>Biểu mẫu cập nhật quan hệ</div> }));
+vi.mock("@/components/person/AssertedRelationshipForm", () => ({ AssertedRelationshipForm: () => <div>Biểu mẫu ghi cách gọi</div> }));
 vi.mock("@/components/deletion/DeletionDialog", () => ({
   DeletionDialog: ({ triggerLabel }: { triggerLabel: string }) => <button type="button">{triggerLabel}</button>,
 }));
@@ -191,6 +192,19 @@ describe("tree workspace capability-driven actions", () => {
     expect(context.openPersonPanel).toHaveBeenCalledWith(selected.id, "add-person", button);
   });
 
+  it("opens the dashed-label flow from the selected person", async () => {
+    const context = contextFor("OWNER");
+    render(
+      <TreeContext.Provider value={context}>
+        <TreePageHeader />
+        <TreePageSlidePanel />
+      </TreeContext.Provider>,
+    );
+    const button = screen.getByRole("button", { name: "Ghi cách gọi" });
+    await userEvent.click(button);
+    expect(context.openPersonPanel).toHaveBeenCalledWith("person-1", "asserted-label", button);
+  });
+
   it("shows compact context, content, and administration actions to the owner", async () => {
     renderRole("OWNER");
     const header = screen.getByRole("banner");
@@ -201,6 +215,7 @@ describe("tree workspace capability-driven actions", () => {
     expect(screen.getByRole("button", { name: "Thêm người mới" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Chỉnh sửa thông tin" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Cập nhật quan hệ" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Ghi cách gọi" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Đang dùng để xét vai vế" })).toBeDisabled();
 
     await userEvent.click(screen.getByRole("button", { name: "Thao tác khác" }));
@@ -268,6 +283,7 @@ describe("tree workspace capability-driven actions", () => {
     expect(screen.getByRole("button", { name: "Thêm người mới" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Chỉnh sửa thông tin" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Cập nhật quan hệ" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Ghi cách gọi" })).toBeInTheDocument();
     expect(screen.queryByText("Mời xác nhận")).not.toBeInTheDocument();
     expect(screen.getByTestId("photos")).toHaveAttribute("data-can-edit", "true");
     await userEvent.click(screen.getByRole("button", { name: "Thao tác khác" }));
@@ -281,6 +297,7 @@ describe("tree workspace capability-driven actions", () => {
     expect(screen.queryByRole("button", { name: "Thêm người mới" })).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Chỉnh sửa thông tin" })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Cập nhật quan hệ" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Ghi cách gọi" })).not.toBeInTheDocument();
     expect(screen.queryByText("Mời xác nhận")).not.toBeInTheDocument();
     expect(screen.getByTestId("photos")).toHaveAttribute("data-can-edit", "true");
     await userEvent.click(screen.getByRole("button", { name: "Thao tác khác" }));
@@ -294,6 +311,7 @@ describe("tree workspace capability-driven actions", () => {
     expect(screen.queryByRole("button", { name: "Thêm người mới" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Chỉnh sửa thông tin" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Cập nhật quan hệ" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Ghi cách gọi" })).not.toBeInTheDocument();
     expect(screen.queryByText("Mời xác nhận")).not.toBeInTheDocument();
     expect(screen.getByTestId("photos")).toHaveAttribute("data-can-edit", "false");
     await userEvent.click(screen.getByRole("button", { name: "Thao tác khác" }));
@@ -420,6 +438,7 @@ describe("tree workspace capability-driven actions", () => {
     ["edit"],
     ["add-person"],
     ["update-relationship"],
+    ["asserted-label"],
   ] as const)(
     "keeps fixed chrome and one scroll body in %s mode",
     async (mode) => {
@@ -471,7 +490,7 @@ describe("tree workspace capability-driven actions", () => {
     expect(coach).toHaveTextContent("Xem thông tin và cách xưng hô");
   });
 
-  it.each(["edit", "add-person", "update-relationship"] as const)(
+  it.each(["edit", "add-person", "update-relationship", "asserted-label"] as const)(
     "does not mount the person Coach while the %s form is active",
     async (mode) => {
       const context = contextFor("OWNER");
@@ -487,7 +506,9 @@ describe("tree workspace capability-driven actions", () => {
           ? "Biểu mẫu thành viên"
           : mode === "add-person"
             ? "Biểu mẫu thêm người mới"
-            : "Biểu mẫu cập nhật quan hệ",
+            : mode === "update-relationship"
+              ? "Biểu mẫu cập nhật quan hệ"
+              : "Biểu mẫu ghi cách gọi",
       )).toBeInTheDocument();
       expect(screen.queryByRole("dialog", { name: "Hướng dẫn nhanh" })).not.toBeInTheDocument();
       expect(readGuidanceState(window.localStorage).workspaceCoach.chapters.person).toBeUndefined();

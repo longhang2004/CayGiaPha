@@ -3,6 +3,7 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { PersonForm } from "@/components/person/PersonForm";
 import { AddConnectedPersonForm } from "@/components/person/AddConnectedPersonForm";
+import { AssertedRelationshipForm } from "@/components/person/AssertedRelationshipForm";
 import { UpdateRelationshipForm } from "@/components/person/UpdateRelationshipForm";
 import { PersonInfoPanel } from "@/components/graph/PersonInfoPanel";
 import { DeletionDialog } from "@/components/deletion/DeletionDialog";
@@ -291,6 +292,30 @@ export function TreePageSlidePanel() {
         />
       </PanelFrame>
     );
+  } else if (personPanelMode === "asserted-label" && canEditSelectedRelationships) {
+    panelContent = (
+      <PanelFrame
+        mode="asserted-label"
+        eyebrow="Ghi cách gọi"
+        title={selectedPerson.displayName}
+        onBack={() => requestNavigation("back")}
+        onClose={() => requestNavigation("close")}
+        discardDialog={discardDialog}
+      >
+        <AssertedRelationshipForm
+          treeId={activeTreeId}
+          persons={persons}
+          relationships={relationships}
+          anchorId={selectedPerson.id}
+          onDirtyChange={setIsDirty}
+          onCreated={() => {
+            setIsDirty(false);
+            backPersonPanel();
+            refreshTree();
+          }}
+        />
+      </PanelFrame>
+    );
   } else {
     panelContent = (
       <PanelFrame
@@ -320,7 +345,7 @@ export function TreePageSlidePanel() {
           <section className="person-detail-section person-detail-section--actions">
             <div className="person-detail-section__header">
               <h4>Thao tác với thành viên</h4>
-              <p>Sửa hồ sơ hoặc nối người này với một thành viên khác.</p>
+              <p>Sửa hồ sơ, nối quan hệ rõ, hoặc ghi cách gọi khi chưa biết đường trung gian.</p>
             </div>
             <div className="person-actions" data-guidance-anchor="person-actions">
               {canEditSelected ? (
@@ -334,14 +359,24 @@ export function TreePageSlidePanel() {
                 </button>
               ) : null}
               {canEditSelectedRelationships ? (
-                <button
-                  type="button"
-                  className="btn btn-secondary"
-                  data-person-panel-focus-key={`update-relationship-${selectedPerson.id}`}
-                  onClick={(event) => openPersonPanel(selectedPerson.id, "update-relationship", event.currentTarget)}
-                >
-                  Cập nhật quan hệ
-                </button>
+                <>
+                  <button
+                    type="button"
+                    className="btn btn-secondary"
+                    data-person-panel-focus-key={`update-relationship-${selectedPerson.id}`}
+                    onClick={(event) => openPersonPanel(selectedPerson.id, "update-relationship", event.currentTarget)}
+                  >
+                    Cập nhật quan hệ
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-secondary"
+                    data-person-panel-focus-key={`asserted-label-${selectedPerson.id}`}
+                    onClick={(event) => openPersonPanel(selectedPerson.id, "asserted-label", event.currentTarget)}
+                  >
+                    Ghi cách gọi
+                  </button>
+                </>
               ) : null}
               <button
                 type="button"

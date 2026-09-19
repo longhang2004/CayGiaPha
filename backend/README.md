@@ -125,14 +125,12 @@ until an API graph mutation. Idempotency replay needs header `Idempotency-Key`.
 
 ## Known local gaps
 
-- `V16__allow_multiple_trees_and_tree_name.sql` drops `trees_owner_user_id_key`
-  but the V1 constraint is named `uq_trees_owner`. A database migrated from V1
-  still has `UNIQUE (owner_user_id)`, so `POST /api/v1/trees` for the seed user
-  returns HTTP 500 (`INTERNAL_ERROR`) instead of a second tree. Person and
-  relationship writes on the existing tree succeed.
 - Compose `api` / `db` / `redis` images are the reviewer path on a normal Docker
   host. They were not startable in the overlayfs nested-Docker VM used for the
   2026-09-19 check.
+- Flyway `V29` drops leftover `uq_trees_owner`. Restart the JAR (or apply that
+  migration) on databases that already ran V1–V28 so `POST /api/v1/trees` can
+  create a second tree for the same owner.
 
 ## Tests
 

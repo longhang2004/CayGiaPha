@@ -14,7 +14,7 @@ describe("personPanelReducer", () => {
     ).toEqual({ personId: "person-1", mode: "view" });
   });
 
-  it.each(["edit", "add-person", "update-relationship"] as const)(
+  it.each(["edit", "add-person", "update-relationship", "asserted-label"] as const)(
     "opens %s without producing an incompatible state",
     (mode) => {
       expect(

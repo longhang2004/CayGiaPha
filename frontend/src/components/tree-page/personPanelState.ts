@@ -2,7 +2,8 @@ export type PersonPanelMode =
   | "view"
   | "edit"
   | "add-person"
-  | "update-relationship";
+  | "update-relationship"
+  | "asserted-label";
 
 export interface PersonPanelState {
   personId: string | null;
@@ -42,5 +43,9 @@ export function personPanelReducer(
       return CLOSED_PERSON_PANEL_STATE;
     case "created":
       return { personId: action.personId, mode: "view" };
+    default: {
+      const exhaustive: never = action;
+      return exhaustive;
+    }
   }
 }

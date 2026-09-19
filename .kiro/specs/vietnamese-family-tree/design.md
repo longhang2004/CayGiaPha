@@ -170,13 +170,15 @@ prior visual sequence without persisting completion or skip. The viewpoint picke
 count in its fixed chrome and scrolls only the person list.
 
 The person surface uses one reducer-owned state `{ personId, mode }`, where mode is `view`, `edit`,
-`add-person`, or `update-relationship`; a null `personId` closes the surface. Child modes render Back
-and Close as separate controls, share dirty-form discard handling, and restore focus to their
-respective opener. `AddConnectedPersonForm` atomically creates a Person plus one primitive edge via
-`POST /trees/{treeId}/relatives`. `UpdateRelationshipForm` keeps the viewed Person fixed and creates
-only a missing parent, child, or spouse edge between two existing nodes via `POST /relationships`.
-Asserted-edge APIs, rendering, upgrades, and conflicts remain supported, but no populated-workspace
-form offers asserted creation until that interaction is redesigned.
+`add-person`, `update-relationship`, or `asserted-label`; a null `personId` closes the surface. Child
+modes render Back and Close as separate controls, share dirty-form discard handling, and restore
+focus to their respective opener. `AddConnectedPersonForm` atomically creates a Person plus one
+primitive edge via `POST /trees/{treeId}/relatives`. `UpdateRelationshipForm` keeps the viewed Person
+fixed and creates only a missing parent, child, or spouse edge between two existing nodes via
+`POST /relationships`. `AssertedRelationshipForm` is a separate elder-friendly flow that records a
+dashed asserted kinship label (1–50 characters) between two existing people via
+`POST /relationships` when intermediate ancestors are unknown. Primitive add/update forms must not
+mix asserted creation. Asserted-edge rendering, upgrades, and conflicts remain supported.
 
 All person-photo entry points use one controlled `PhotoFilePicker`. It keeps the native file input
 keyboard and screen-reader accessible while presenting a shared dropzone, preview, replace, and

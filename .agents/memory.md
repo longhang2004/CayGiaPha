@@ -204,9 +204,13 @@ Durable project knowledge for future AI agents. Keep entries short, verified, an
   nested overlayfs (`overlay ... invalid argument`); do not treat Compose as proven in
   that class of VM. Demo seed email is documented in `backend/README.md`; never log
   OTP/JWT/family payloads.
-- **trees.uq_trees_owner trap**: V1 unique is `uq_trees_owner`. V16 only drops
-  `trees_owner_user_id_key` / `trees_owner_user_id_unique`. A V1→current Flyway DB
-  still enforces one tree per owner; `POST /api/v1/trees` for the seed user returns 500.
+- **trees.uq_trees_owner trap**: V1 unique is `uq_trees_owner`. V16 only dropped
+  `trees_owner_user_id_key`. **V29** (`V29__drop_legacy_one_tree_per_owner.sql`)
+  drops `uq_trees_owner`. Next.js local self-heal in `frontend/src/lib/db/index.ts`
+  also drops that leftover name. Restart the Java API (or run that SQL) on V1→V28 DBs.
+- **Asserted-label UI**: Person panel mode `asserted-label` + `AssertedRelationshipForm`
+  records a dashed kinship label between two existing people. Keep primitive
+  add/update forms free of asserted creation. Help topic `ghi-cach-goi-net-dut`.
 - **UI direction**: Forest paper `#eef3ee` + lacquer vermillion `#b43b16`, Be Vietnam Pro + Source Serif 4 headings,
   pine vs vermillion graph gender (not blue/pink). Tokens live in
   `frontend/src/styles/_01_variables.scss`. HomeLanding is shared with `/prototype/home`.

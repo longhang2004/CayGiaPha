@@ -39,6 +39,7 @@ Thumbs.db
 # Local agent/runtime artifacts
 .superpowers/
 .codegraph/
+dump.rdb
 
 # Package-manager cache
 .pnpm-store/

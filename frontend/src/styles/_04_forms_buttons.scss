@@ -456,6 +456,19 @@ a.button:disabled {
   border-color: var(--color-border) !important;
 }
 
+.btn-ghost {
+  background-color: transparent !important;
+  color: var(--color-fg) !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+.btn-ghost:hover:not(:disabled) {
+  background-color: transparent !important;
+  color: var(--color-brand) !important;
+  box-shadow: none !important;
+}
+
 /* Form inputs border styling */
 input:not([type="checkbox"]):not([type="radio"]),
 select,

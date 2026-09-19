@@ -7,11 +7,12 @@ import java.util.UUID;
  * The authenticated principal attached to the current request by the {@link AuthenticationFilter}
  * (design "Request Flow Summary"; Requirements 11.6, 13.4, 13.5).
  *
- * <p>An {@code AuthContext} captures who the caller is — the resolved {@code userId} and, because a
- * user owns at most one tree (Requirement 13.2), the id of the tree they own ({@code ownedTreeId},
- * absent when the user has not yet created one). It deliberately does <em>not</em> carry an
- * owner/linked/neither classification: that classification is relative to a specific target
- * tree/person and is computed on demand by {@link AuthorizationService}.
+ * <p>An {@code AuthContext} captures who the caller is — the resolved {@code userId} and the
+ * earliest owned tree id ({@code ownedTreeId}, used as a legacy default context). Users may own
+ * more than one tree (Requirement 13.2); per-request authorization still uses the target
+ * {@code treeId}. The field is absent when the user has not yet created a tree. It deliberately
+ * does <em>not</em> carry an owner/linked/neither classification: that classification is relative
+ * to a specific target tree/person and is computed on demand by {@link AuthorizationService}.
  *
  * <p>Unauthenticated requests (no/invalid/expired session) carry the {@link #anonymous()} context,
  * so downstream code never has to deal with {@code null}; per-endpoint enforcement decides whether
