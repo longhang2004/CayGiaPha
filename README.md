@@ -51,9 +51,9 @@ The system is built with strict privacy controls, regional kinship dialect resol
 
 ### Reference backend
 * **Java 21** and **Spring Boot 3.3.5**, Hibernate/JPA, Flyway, jqwik, JUnit 5, and Testcontainers
-* Retained for domain reference and future synchronization; disabled by default (`USE_BACKEND=false`)
-* Implement active behavior and schema changes in the Next.js application first, then mirror
-  forward migrations to the Java module when required
+* Modular hexagonal overlay with JWT (parallel to product sessions), Redis kinship cache, transactional outbox, OpenAPI, Micrometer, and Resilience4j
+* Production-priority request path remains Next.js (`USE_BACKEND=false`); the Java API is a runnable portfolio reference
+* Local stack: `cd backend && docker compose up -d --build` — see [backend/README.md](backend/README.md)
 
 ---
 

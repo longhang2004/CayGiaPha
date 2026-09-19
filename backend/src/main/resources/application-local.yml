@@ -1,22 +1,31 @@
 # Local development profile.
 #
-# Run the app locally against a throwaway Testcontainers PostgreSQL instance by launching
-# the test-classpath entry point (requires Docker):
+# Run the app locally against Docker Compose Postgres/Redis:
+#   docker compose up -d db redis minio
+#   SPRING_DATASOURCE_URL=jdbc:postgresql://localhost:5432/familytree \
+#   SPRING_DATASOURCE_USERNAME=familytree \
+#   SPRING_DATASOURCE_PASSWORD=familytree \
+#   mvn spring-boot:run
 #
-#   mvn test-compile
-#   mvn -Dspring-boot.run.profiles=local \
-#       -Dspring-boot.run.main-class=com.caygiapha.familytree.TestFamilyTreeApiApplication \
-#       spring-boot:run
-#
-# TestcontainersConfiguration provides the DataSource via @ServiceConnection, so no JDBC URL
-# is configured here. To point at an already-running PostgreSQL instead, set the standard
-# spring.datasource.* properties (or the SPRING_DATASOURCE_URL / USERNAME / PASSWORD env vars).
+# Or use Testcontainers via TestFamilyTreeApiApplication.
 spring:
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/familytree}
+    username: ${SPRING_DATASOURCE_USERNAME:familytree}
+    password: ${SPRING_DATASOURCE_PASSWORD:familytree}
+  data:
+    redis:
+      host: ${SPRING_DATA_REDIS_HOST:localhost}
+      port: ${SPRING_DATA_REDIS_PORT:6379}
   jpa:
     show-sql: true
     properties:
       hibernate:
         format_sql: true
+
+app:
+  demo:
+    seed: ${APP_DEMO_SEED:false}
 
 logging:
   level:

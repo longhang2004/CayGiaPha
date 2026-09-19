@@ -57,7 +57,7 @@ describe("HomePage", () => {
 
     expect(
       screen.getByRole("heading", {
-        name: "Gom lại những người thân, câu chuyện và cách gọi trong gia đình",
+        name: "Ghi lại gia đình để cả nhà cùng nhớ",
       }),
     ).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Nhìn cả gia đình trong một sơ đồ" })).toBeInTheDocument();

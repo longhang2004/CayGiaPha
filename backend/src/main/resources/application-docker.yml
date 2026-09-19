@@ -1,0 +1,27 @@
+# Profile used by docker compose for the runnable portfolio API.
+#
+# The Next.js application remains the production-priority request path
+# (`USE_BACKEND=false`). This profile exists so reviewers can boot a complete
+# Java 21 / Spring Boot 3 stack against Postgres + Redis without extra flags.
+spring:
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://db:5432/familytree}
+    username: ${SPRING_DATASOURCE_USERNAME:familytree}
+    password: ${SPRING_DATASOURCE_PASSWORD:familytree}
+  data:
+    redis:
+      host: ${SPRING_DATA_REDIS_HOST:redis}
+      port: ${SPRING_DATA_REDIS_PORT:6379}
+  jpa:
+    show-sql: false
+
+app:
+  demo:
+    seed: true
+  jwt:
+    secret: ${APP_JWT_SECRET:local-dev-only-change-me-use-32b-min-secret}
+
+logging:
+  level:
+    com.caygiapha.familytree: INFO
+    org.flywaydb: INFO

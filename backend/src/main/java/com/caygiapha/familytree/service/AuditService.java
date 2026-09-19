@@ -31,6 +31,7 @@ public class AuditService {
     public static final String ACCOUNT_DELETED = "rights.account_deleted";
     public static final String FEEDBACK_SUBMITTED = "feedback.submitted";
     public static final String FEEDBACK_STATUS_CHANGED = "feedback.status_changed";
+    public static final String SENSITIVE_READ = "privacy.sensitive_read";
 
     private final AuditLogRepository auditLogRepository;
     private final AuthContextHolder authContextHolder;

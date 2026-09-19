@@ -2,6 +2,8 @@ package com.caygiapha.familytree.service;
 
 import com.caygiapha.familytree.entity.Relationship;
 import com.caygiapha.familytree.error.ApiException;
+import com.caygiapha.familytree.platform.outbox.DomainEventPublisher;
+import com.caygiapha.familytree.platform.outbox.GraphMutatedEvent;
 import com.caygiapha.familytree.repository.PersonRepository;
 import com.caygiapha.familytree.repository.RelationshipRepository;
 import java.util.ArrayDeque;
@@ -11,6 +13,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -60,6 +63,7 @@ public class RelationshipService {
     private final PersonRepository personRepository;
     private final KinshipGraphProjectionCache projectionCache;
     private final AssertedUpgradeService assertedUpgradeService;
+    private final DomainEventPublisher domainEvents;
 
     /**
      * Primary (Spring) constructor wiring the asserted-upgrade scan
@@ -69,11 +73,24 @@ public class RelationshipService {
     public RelationshipService(RelationshipRepository relationshipRepository,
             PersonRepository personRepository,
             KinshipGraphProjectionCache projectionCache,
+            AssertedUpgradeService assertedUpgradeService,
+            ObjectProvider<DomainEventPublisher> domainEvents) {
+        this.relationshipRepository = relationshipRepository;
+        this.personRepository = personRepository;
+        this.projectionCache = projectionCache;
+        this.assertedUpgradeService = assertedUpgradeService;
+        this.domainEvents = domainEvents == null ? null : domainEvents.getIfAvailable();
+    }
+
+    public RelationshipService(RelationshipRepository relationshipRepository,
+            PersonRepository personRepository,
+            KinshipGraphProjectionCache projectionCache,
             AssertedUpgradeService assertedUpgradeService) {
         this.relationshipRepository = relationshipRepository;
         this.personRepository = personRepository;
         this.projectionCache = projectionCache;
         this.assertedUpgradeService = assertedUpgradeService;
+        this.domainEvents = null;
     }
 
     /**
@@ -158,6 +175,9 @@ public class RelationshipService {
         // Any new edge can change derived connectivity, so invalidate the tree's cached kinship
         // graph projection; the next resolve rebuilds it from the current graph.
         projectionCache.evict(treeId);
+        if (domainEvents != null) {
+            domainEvents.publish(GraphMutatedEvent.edgeCreated(treeId, saved.getId(), type));
+        }
 
         // (7.1) Only a new bloodline edge can complete an unbroken bloodline path between a pair
         // previously joined by an asserted relationship; run the upgrade/conflict scan for those.

@@ -8,3 +8,13 @@ spring:
     show-sql: false
   flyway:
     enabled: true
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration
+      - org.springframework.boot.autoconfigure.data.redis.RedisRepositoriesAutoConfiguration
+
+app:
+  demo:
+    seed: false
+  jwt:
+    secret: test-only-jwt-hmac-secret-32bytes-min

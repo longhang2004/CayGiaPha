@@ -129,9 +129,10 @@ export function HomeLanding({ state, animated = true }: HomeLandingProps) {
         />
         <div className="home-landing__hero-wash" aria-hidden="true" />
         <div className="home-landing__hero-content home-reveal">
-          <h1 id="home-title">Gom lại những người thân, câu chuyện và cách gọi trong gia đình</h1>
+          <p className="home-section__eyebrow">Gia phả cho ông bà và con cháu</p>
+          <h1 id="home-title">Ghi lại gia đình để cả nhà cùng nhớ</h1>
           <p>
-            Bắt đầu bằng những gì bạn nhớ. Cây Gia Phả đang miễn phí trong giai đoạn truy cập sớm.
+            Bắt đầu với một người bạn còn nhớ rõ. Phần còn lại có thể bổ sung sau.
           </p>
           <div className="home-landing__hero-actions" aria-live="polite">
             <PrimaryHomeAction state={state} />

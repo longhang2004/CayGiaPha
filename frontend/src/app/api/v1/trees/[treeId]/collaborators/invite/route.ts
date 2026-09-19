@@ -57,12 +57,12 @@ async function deliverInviteEmail(opts: {
       text: `Mã mời: ${opts.code}. Link: ${inviteUrl}. Nếu không thấy thư, kiểm tra hộp thư rác/spam.`,
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 500px; margin: 0 auto; padding: 20px; border: 1px solid #e9e9e9; border-radius: 8px;">
-          <h2 style="color: #b94b34; text-align: center;">Mời Hợp Tác Gia Phả</h2>
+          <h2 style="color: #b43b16; text-align: center;">Mời Hợp Tác Gia Phả</h2>
           <p>Xin chào,</p>
           <p>Bạn đã nhận được lời mời cộng tác xây dựng cây gia phả <strong>"${safeTreeName}"</strong>.</p>
           <p>${descriptionText}</p>
           <div style="text-align: center; margin: 30px 0;">
-            <a href="${safeInviteUrl}" style="background-color: #b94b34; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">${buttonText}</a>
+            <a href="${safeInviteUrl}" style="background-color: #b43b16; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">${buttonText}</a>
           </div>
           <p style="font-size: 0.9rem; color: #666; text-align: center;">
             Mã mời của bạn là: <strong>${safeCode}</strong> (dùng khi tham gia thủ công)

@@ -5,15 +5,30 @@ import { SessionProvider } from "./providers";
 import { CGPToastProvider } from "@/components/cgp";
 import { ConfirmProvider } from "@/components/ui/ConfirmProvider";
 import { TextSizeProvider } from "@/components/a11y/TextSizeProvider";
-import { Plus_Jakarta_Sans } from "next/font/google";
+import { Be_Vietnam_Pro, Source_Serif_4 } from "next/font/google";
 import { AppLayoutWrapper } from "@/components/AppLayoutWrapper";
 import { Analytics } from "@vercel/analytics/react";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { ConsentReacceptanceDialog } from "@/components/legal/ConsentReacceptanceDialog";
 
-const plusJakarta = Plus_Jakarta_Sans({
+const beVietnam = Be_Vietnam_Pro({
   subsets: ["latin", "vietnamese"],
+  weight: ["400", "500", "600", "700"],
   variable: "--font-grotesk",
+  display: "swap",
+});
+
+const sourceSerif = Source_Serif_4({
+  subsets: ["latin", "vietnamese"],
+  weight: ["600", "700"],
+  variable: "--font-serif",
+  display: "swap",
+});
+
+const sourceSerif = Source_Serif_4({
+  subsets: ["latin", "vietnamese"],
+  weight: ["600", "700"],
+  variable: "--font-serif",
   display: "swap",
 });
 
@@ -79,7 +94,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="vi" className={plusJakarta.variable}>
+    <html lang="vi" className={`${beVietnam.variable} ${sourceSerif.variable}`}>
       <head>
         <script
           dangerouslySetInnerHTML={{

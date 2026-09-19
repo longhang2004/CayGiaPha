@@ -112,34 +112,34 @@
 }
 
 .tree-graph__node--male .tree-graph__node-avatar {
-  background-color: #0284c7;
-  border-color: #bae6fd;
+  background-color: var(--color-gender-male);
+  border-color: var(--color-gender-male-soft);
 }
 
 .tree-graph__node--female .tree-graph__node-avatar {
-  background-color: #db2777;
-  border-color: #fbcfe8;
+  background-color: var(--color-gender-female);
+  border-color: var(--color-gender-female-soft);
 }
 
 /* Male & Female Node Background Colors */
 .tree-graph__node--male .tree-graph__node-button {
-  background-color: #e9f5ff; /* soft blue */
-  border-color: #bae6fd;
-  color: #1d1c1a;
+  background-color: var(--color-gender-male-soft);
+  border-color: color-mix(in srgb, var(--color-gender-male) 28%, var(--color-hairline));
+  color: var(--color-fg);
 }
 
 .tree-graph__node--male .tree-graph__node-button:hover {
-  background-color: #dbeafe;
+  background-color: color-mix(in srgb, var(--color-gender-male) 16%, var(--color-surface-card));
 }
 
 .tree-graph__node--female .tree-graph__node-button {
-  background-color: #fff0f6; /* soft pink */
-  border-color: #fbcfe8;
-  color: #1d1c1a;
+  background-color: var(--color-gender-female-soft);
+  border-color: color-mix(in srgb, var(--color-gender-female) 28%, var(--color-hairline));
+  color: var(--color-fg);
 }
 
 .tree-graph__node--female .tree-graph__node-button:hover {
-  background-color: #ffe4e6;
+  background-color: color-mix(in srgb, var(--color-gender-female) 16%, var(--color-surface-card));
 }
 
 /* Main Card Content Layout */
@@ -242,7 +242,7 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  color: #3b82f6;
+  color: var(--color-brand);
   width: 13px;
   height: 13px;
   flex-shrink: 0;
@@ -542,11 +542,11 @@ html[data-text-scale="200"] .tree-graph__node-branch-badge > span {
 }
 
 .person-info__avatar--male {
-  background: color-mix(in srgb, var(--color-timeline-read) 42%, var(--color-surface-card));
+  background: var(--color-gender-male-soft);
 }
 
 .person-info__avatar--female {
-  background: color-mix(in srgb, var(--color-brand) 22%, var(--color-surface-card));
+  background: var(--color-gender-female-soft);
 }
 
 .person-info__header-text {
@@ -692,23 +692,23 @@ html.dark .tree-graph__node-button {
 }
 
 html.dark .tree-graph__node--male .tree-graph__node-button {
-  background-color: #10283d;
-  border-color: #2e6a98;
-  color: #e6f6ff;
+  background-color: var(--color-gender-male-soft);
+  border-color: color-mix(in srgb, var(--color-gender-male) 55%, var(--color-hairline));
+  color: var(--color-fg);
 }
 
 html.dark .tree-graph__node--male .tree-graph__node-button:hover {
-  background-color: #15334d;
+  background-color: color-mix(in srgb, var(--color-gender-male) 28%, var(--color-surface-card));
 }
 
 html.dark .tree-graph__node--female .tree-graph__node-button {
-  background-color: #3b1427;
-  border-color: #8d2b57;
-  color: #fff0f7;
+  background-color: var(--color-gender-female-soft);
+  border-color: color-mix(in srgb, var(--color-gender-female) 55%, var(--color-hairline));
+  color: var(--color-fg);
 }
 
 html.dark .tree-graph__node--female .tree-graph__node-button:hover {
-  background-color: #4b1931;
+  background-color: color-mix(in srgb, var(--color-gender-female) 28%, var(--color-surface-card));
 }
 
 html.dark .tree-graph__node--unknown .tree-graph__node-button,
@@ -751,26 +751,30 @@ html.dark .tree-graph__node-tooltip {
 .tree-graph__node--unknown .tree-graph__node-button,
 .tree-graph__node--deceased .tree-graph__node-button {
   color: var(--color-fg);
+  opacity: 1;
+}
+
+.tree-graph__node--unknown .tree-graph__node-button,
+.tree-graph__node--deceased .tree-graph__node-button {
   border-color: var(--color-hairline-strong);
   background: var(--color-surface-card);
-  opacity: 1;
 }
 
 .tree-graph__node--male .tree-graph__node-button:hover,
 .tree-graph__node--female .tree-graph__node-button:hover {
-  background: color-mix(in srgb, var(--color-brand) 8%, var(--color-surface-card));
+  filter: brightness(0.98);
 }
 
 .tree-graph__node--male .tree-graph__node-avatar {
-  color: var(--color-fg);
-  border-color: color-mix(in srgb, var(--color-timeline-read) 60%, var(--color-hairline));
-  background: color-mix(in srgb, var(--color-timeline-read) 42%, var(--color-surface-card));
+  color: #ffffff;
+  border-color: color-mix(in srgb, var(--color-gender-male) 35%, var(--color-hairline));
+  background: var(--color-gender-male);
 }
 
 .tree-graph__node--female .tree-graph__node-avatar {
-  color: var(--color-fg);
-  border-color: color-mix(in srgb, var(--color-brand) 45%, var(--color-hairline));
-  background: color-mix(in srgb, var(--color-brand) 22%, var(--color-surface-card));
+  color: #ffffff;
+  border-color: color-mix(in srgb, var(--color-gender-female) 35%, var(--color-hairline));
+  background: var(--color-gender-female);
 }
 
 .tree-graph__node[data-selected="true"] .tree-graph__node-button {
@@ -954,23 +958,23 @@ html.dark .tree-graph__node-tooltip::after {
   }
 
   html:not(.light) .tree-graph__node--male .tree-graph__node-button {
-    background-color: #10283d;
-    border-color: #2e6a98;
-    color: #e6f6ff;
+    background-color: var(--color-gender-male-soft);
+    border-color: color-mix(in srgb, var(--color-gender-male) 55%, var(--color-hairline));
+    color: var(--color-fg);
   }
 
   html:not(.light) .tree-graph__node--male .tree-graph__node-button:hover {
-    background-color: #15334d;
+    background-color: color-mix(in srgb, var(--color-gender-male) 28%, var(--color-surface-card));
   }
 
   html:not(.light) .tree-graph__node--female .tree-graph__node-button {
-    background-color: #3b1427;
-    border-color: #8d2b57;
-    color: #fff0f7;
+    background-color: var(--color-gender-female-soft);
+    border-color: color-mix(in srgb, var(--color-gender-female) 55%, var(--color-hairline));
+    color: var(--color-fg);
   }
 
   html:not(.light) .tree-graph__node--female .tree-graph__node-button:hover {
-    background-color: #4b1931;
+    background-color: color-mix(in srgb, var(--color-gender-female) 28%, var(--color-surface-card));
   }
 
   html:not(.light) .tree-graph__node--unknown .tree-graph__node-button,

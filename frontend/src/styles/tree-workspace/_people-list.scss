@@ -231,12 +231,12 @@
 
 .tree-people-list__avatar--male,
 .tree-person-picker__avatar--male {
-  background: color-mix(in srgb, var(--color-timeline-read) 42%, var(--color-surface-card));
+  background: var(--color-gender-male-soft);
 }
 
 .tree-people-list__avatar--female,
 .tree-person-picker__avatar--female {
-  background: color-mix(in srgb, var(--color-brand) 22%, var(--color-surface-card));
+  background: var(--color-gender-female-soft);
 }
 
 .tree-people-list__identity,

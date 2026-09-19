@@ -1,13 +1,14 @@
 # Local development infrastructure for the Vietnamese Family Tree API.
 #
-# Starts a PostgreSQL 16 database the Spring Boot app (and Flyway migrations) run against.
+# Starts PostgreSQL 16, Redis, MinIO, and the Spring Boot portfolio API.
 #
-#   docker compose up -d            # start the database
+#   docker compose up -d --build    # start everything, including the Java API
+#   docker compose up -d db redis   # infrastructure only
 #   docker compose ps               # check health
 #   docker compose down             # stop (keeps the named volume / data)
 #   docker compose down -v          # stop and delete the data volume
 #
-# Point the app at it with the matching datasource settings (see application-local.yml):
+# Point a host-run JAR at the database with:
 #   SPRING_DATASOURCE_URL=jdbc:postgresql://localhost:5432/familytree
 #   SPRING_DATASOURCE_USERNAME=familytree
 #   SPRING_DATASOURCE_PASSWORD=familytree
@@ -61,6 +62,31 @@ services:
       interval: 5s
       timeout: 5s
       retries: 10
+
+  api:
+    build: .
+    container_name: caygiapha-api
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/familytree
+      SPRING_DATASOURCE_USERNAME: familytree
+      SPRING_DATASOURCE_PASSWORD: familytree
+      SPRING_DATA_REDIS_HOST: redis
+      APP_DEMO_SEED: "true"
+      APP_JWT_SECRET: local-dev-only-change-me-use-32b-min-secret
+    ports:
+      - "8080:8080"
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8080/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 40s
 
 volumes:
   caygiapha-pgdata:

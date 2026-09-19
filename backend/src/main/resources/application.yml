@@ -37,9 +37,62 @@ spring:
 server:
   port: ${PORT:8080}
 
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus,metrics,circuitbreakers
+  endpoint:
+    health:
+      show-details: when_authorized
+      probes:
+        enabled: true
+  tracing:
+    sampling:
+      probability: ${MANAGEMENT_TRACING_SAMPLING:1.0}
+  observations:
+    key-values:
+      application: family-tree-api
+
+springdoc:
+  api-docs:
+    path: /api/v1/openapi
+  swagger-ui:
+    path: /api/v1/docs
+    tags-sorter: alpha
+  show-actuator: false
+
+resilience4j:
+  circuitbreaker:
+    instances:
+      outboundEmail:
+        slidingWindowSize: 10
+        failureRateThreshold: 50
+        waitDurationInOpenState: 10s
+        permittedNumberOfCallsInHalfOpenState: 2
+      outboundGoogle:
+        slidingWindowSize: 10
+        failureRateThreshold: 50
+        waitDurationInOpenState: 10s
+  retry:
+    instances:
+      outboundEmail:
+        maxAttempts: 3
+        waitDuration: 200ms
+      outboundGoogle:
+        maxAttempts: 2
+        waitDuration: 150ms
+  timelimiter:
+    instances:
+      outboundEmail:
+        timeoutDuration: 8s
+      outboundGoogle:
+        timeoutDuration: 5s
+
 logging:
   level:
     com.caygiapha.familytree: INFO
+    # Never raise auth/otp packages to TRACE in shared logs.
 
 app:
   storage:
@@ -61,5 +114,16 @@ app:
     smtp-enabled: ${EMAIL_SMTP_ENABLED:true}
     from: ${EMAIL_FROM:${EMAIL_USER:}}
   app-url: ${APP_PUBLIC_URL:http://localhost:3000}
+  demo:
+    seed: ${APP_DEMO_SEED:false}
+    email: ${APP_DEMO_EMAIL:seed@caygiapha.local}
+    # Documented local-only password. Override in real environments; never a production secret.
+    password: ${APP_DEMO_PASSWORD:SeedFamily-2026!}
+  jwt:
+    issuer: ${APP_JWT_ISSUER:caygiapha-family-tree-api}
+    secret: ${APP_JWT_SECRET:local-dev-only-change-me-use-32b-min-secret}
+    ttl-seconds: ${APP_JWT_TTL_SECONDS:3600}
+  kinship-cache:
+    ttl-seconds: ${APP_KINSHIP_CACHE_TTL_SECONDS:120}
 
 # Optional: RESEND_API_KEY (HTTPS email). Preferred when cloud hosts block SMTP.

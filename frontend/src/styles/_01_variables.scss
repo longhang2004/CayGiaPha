@@ -15,39 +15,43 @@
  */
 
 :root {
-  /* Palette — contrast ratios are against the adjacent surface. */
-  --color-bg: #f9f6f0; /* warm beige canvas */
-  --color-fg: #1d1c1a; /* warm ink dark body and display text */
-  --color-muted: #5d5b54; /* warm body copy: meets >= 4.5:1 contrast against bg (~6.8:1) */
-  --color-accent: #b94b34; /* terracotta warm orange: meets >= 4.5:1 contrast against bg (~4.9:1) */
-  --color-border: #8a8780; /* strong UI borders on bg: meets >= 3:1 contrast (~4.5:1) */
-  --color-focus: #b94b34; /* focus ring (Terracotta Orange) */
+  /* Forest paper + lacquer vermillion. Cool green ink, not cream/brass. High contrast for elders. */
+  --color-bg: #eef3ee;
+  --color-fg: #14261c;
+  --color-muted: #3f5348;
+  --color-accent: #b43b16;
+  --color-border: #4d6356;
+  --color-focus: #b43b16;
 
   /* Brand colors */
-  --color-brand: #b94b34; /* Terracotta Orange */
-  --color-brand-active: #963b27; /* Active Terracotta */
-  --color-on-brand: #ffffff; /* 5.1:1 on light-theme brand */
-  --color-hairline: #e2dcd3; /* light divider line */
-  --color-hairline-soft: #ede8df;
-  --color-hairline-strong: #c5beb3;
-  --color-surface-card: #ffffff;
-  --color-surface-strong: #ebe6dd; /* Be trầm */
-  --color-surface-hover: rgba(0, 0, 0, 0.04);
-  --color-danger: #ef4444; /* Standard danger red */
-  --color-on-danger: #141412; /* 4.9:1 on light-theme danger */
+  --color-brand: #b43b16;
+  --color-brand-active: #8f2e11;
+  --color-on-brand: #ffffff;
+  --color-hairline: #c5d0c6;
+  --color-hairline-soft: #dce5dd;
+  --color-hairline-strong: #9aada0;
+  --color-surface-card: #f7faf7;
+  --color-surface-strong: #dce6de;
+  --color-surface-hover: rgba(20, 38, 28, 0.05);
+  --color-danger: #b42318;
+  --color-on-danger: #ffffff;
   --color-primary: var(--color-brand);
   --color-background: var(--color-bg);
   --color-surface: var(--color-surface-card);
   --color-fg-muted: var(--color-muted);
-  --color-accent-rgb: 185, 75, 52; /* #b94b34 */
+  --color-accent-rgb: 180, 59, 22;
+  --color-gender-male: #1f4a38;
+  --color-gender-male-soft: #d5e6dc;
+  --color-gender-female: #b43b16;
+  --color-gender-female-soft: #f3d8cc;
 
   /* Theme-aware backgrounds */
-  --color-island-bg: rgba(255, 255, 255, 0.85);
-  --color-header-bg: rgba(247, 247, 244, 0.85);
-  --color-hero-card-bg: linear-gradient(145deg, #fffaf4, var(--color-surface-card));
-  --color-surface-card-translucent: rgba(255, 255, 255, 0.72);
-  --color-overlay-bg: rgba(247, 247, 244, 0.86);
-  --color-step-num-bg: #fff3eb;
+  --color-island-bg: rgba(247, 250, 247, 0.9);
+  --color-header-bg: rgba(238, 243, 238, 0.92);
+  --color-hero-card-bg: linear-gradient(145deg, #f7faf7, var(--color-surface-card));
+  --color-surface-card-translucent: rgba(247, 250, 247, 0.78);
+  --color-overlay-bg: rgba(238, 243, 238, 0.9);
+  --color-step-num-bg: #f3d6d4;
   --color-step-num-text: var(--color-accent);
 
   /* AI Timeline Colors */
@@ -81,35 +85,39 @@
 }
 
 @mixin dark-theme-variables {
-  --color-bg: #141412; /* Nền tối ấm áp */
-  --color-fg: #f5f4f0; /* Chữ sáng ấm áp */
-  --color-muted: #a5a298; /* Chữ phụ */
-  --color-accent: #e06c53; /* Đất nung sáng cho chế độ tối */
-  --color-border: #6d6b63;
-  --color-focus: #e06c53;
+  --color-bg: #101914;
+  --color-fg: #e6efe8;
+  --color-muted: #a8bfb0;
+  --color-accent: #f06a4a;
+  --color-border: #6f8578;
+  --color-focus: #f06a4a;
 
-  --color-brand: #e06c53;
-  --color-brand-active: #f38f7a;
-  --color-on-brand: #141412; /* 5.7:1 on dark-theme brand */
-  --color-hairline: #2d2b27;
-  --color-hairline-soft: #23221e;
-  --color-hairline-strong: #44423c;
-  --color-surface-card: #1e1d1b;
-  --color-surface-strong: #2a2824;
-  --color-surface-hover: rgba(255, 255, 255, 0.05);
-  --color-danger: #f87171; /* Dark-mode danger */
-  --color-on-danger: #141412; /* 6.7:1 on dark-theme danger */
+  --color-brand: #f06a4a;
+  --color-brand-active: #ff8a70;
+  --color-on-brand: #101914;
+  --color-hairline: #1e2c24;
+  --color-hairline-soft: #17221c;
+  --color-hairline-strong: #33463b;
+  --color-surface-card: #17221c;
+  --color-surface-strong: #22332a;
+  --color-surface-hover: rgba(230, 239, 232, 0.06);
+  --color-danger: #f87171;
+  --color-on-danger: #101914;
   --color-primary: var(--color-brand);
   --color-background: var(--color-bg);
   --color-surface: var(--color-surface-card);
   --color-fg-muted: var(--color-muted);
-  --color-accent-rgb: 224, 108, 83; /* #e06c53 */
+  --color-accent-rgb: 240, 106, 74;
+  --color-gender-male: #8fbfa4;
+  --color-gender-male-soft: #1a3328;
+  --color-gender-female: #f06a4a;
+  --color-gender-female-soft: #3a2218;
 
-  --color-island-bg: rgba(30, 29, 27, 0.85);
-  --color-header-bg: rgba(20, 20, 18, 0.85);
-  --color-hero-card-bg: linear-gradient(145deg, #1e1d1b, #141412);
-  --color-surface-card-translucent: rgba(30, 29, 27, 0.85);
-  --color-overlay-bg: rgba(20, 20, 18, 0.9);
+  --color-island-bg: rgba(23, 34, 28, 0.88);
+  --color-header-bg: rgba(16, 25, 20, 0.9);
+  --color-hero-card-bg: linear-gradient(145deg, #17221c, #101914);
+  --color-surface-card-translucent: rgba(23, 34, 28, 0.86);
+  --color-overlay-bg: rgba(16, 25, 20, 0.92);
   --color-step-num-bg: #3a2218;
   --color-step-num-text: #ff9b85;
 }
@@ -134,7 +142,7 @@ body {
   padding: 0;
   background: var(--color-bg);
   color: var(--color-fg);
-  font-family: var(--font-grotesk), system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-family: var(--font-grotesk), "Be Vietnam Pro", system-ui, sans-serif;
   /* Text scaling (Requirement 18.1/18.2): rem-based, so 100–200% root scaling
    * reflows the whole UI. TextSizeProvider overrides this percentage inline. */
   font-size: 100%;

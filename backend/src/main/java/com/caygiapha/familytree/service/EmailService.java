@@ -1,5 +1,6 @@
 package com.caygiapha.familytree.service;
 
+import com.caygiapha.familytree.platform.resilience.ResilientOutbound;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -12,6 +13,7 @@ import java.util.List;
 import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.JavaMailSenderImpl;
@@ -38,6 +40,7 @@ public class EmailService {
     private final String resendApiKey;
     private final HttpClient httpClient;
     private final ObjectMapper objectMapper = new ObjectMapper();
+    private final ResilientOutbound resilientOutbound;
 
     public EmailService(
             JavaMailSender mailSender,
@@ -45,13 +48,15 @@ public class EmailService {
             @Value("${app.mail.smtp-enabled:true}") boolean smtpEnabled,
             @Value("${app.mail.from:}") String fromAddress,
             @Value("${spring.mail.username:}") String mailUsername,
-            @Value("${RESEND_API_KEY:}") String resendApiKey) {
+            @Value("${RESEND_API_KEY:}") String resendApiKey,
+            ObjectProvider<ResilientOutbound> resilientOutbound) {
         this.mailSender = mailSender;
         this.enabled = enabled;
         this.smtpEnabled = smtpEnabled;
         this.fromAddress = resolveFrom(fromAddress, mailUsername);
         this.resendApiKey = resendApiKey == null ? "" : resendApiKey.trim();
         this.httpClient = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(15)).build();
+        this.resilientOutbound = resilientOutbound.getIfAvailable();
 
         if (enabled) {
             if (StringUtils.hasText(this.resendApiKey)) {
@@ -139,8 +144,7 @@ public class EmailService {
                     .header("Content-Type", "application/json")
                     .POST(HttpRequest.BodyPublishers.ofString(json, StandardCharsets.UTF_8))
                     .build();
-            HttpResponse<String> response =
-                    httpClient.send(request, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
+            HttpResponse<String> response = sendResend(request);
             if (response.statusCode() >= 200 && response.statusCode() < 300) {
                 log.info("Sent email via Resend to {} subject={} status={}", to, subject, response.statusCode());
                 return;
@@ -152,6 +156,23 @@ public class EmailService {
         } catch (Exception ex) {
             log.error("Resend email failed to {}: {}", to, ex.getMessage(), ex);
             throw new IllegalStateException("Email sending failed (Resend): " + ex.getMessage(), ex);
+        }
+    }
+
+    private HttpResponse<String> sendResend(HttpRequest request) {
+        if (resilientOutbound != null) {
+            return resilientOutbound.call(() -> {
+                try {
+                    return httpClient.send(request, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
+                } catch (Exception ex) {
+                    throw new IllegalStateException(ex);
+                }
+            });
+        }
+        try {
+            return httpClient.send(request, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
+        } catch (Exception ex) {
+            throw new IllegalStateException(ex);
         }
     }
 

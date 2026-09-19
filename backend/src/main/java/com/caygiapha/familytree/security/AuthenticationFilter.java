@@ -2,6 +2,7 @@ package com.caygiapha.familytree.security;
 
 import com.caygiapha.familytree.config.SessionCookieFactory;
 import com.caygiapha.familytree.entity.Tree;
+import com.caygiapha.familytree.platform.security.JwtTokenService;
 import com.caygiapha.familytree.repository.TreeRepository;
 import com.caygiapha.familytree.repository.UserRepository;
 import com.caygiapha.familytree.service.SessionService;
@@ -50,6 +51,7 @@ public class AuthenticationFilter extends OncePerRequestFilter {
     private final UserRepository userRepository;
     private final TreeRepository treeRepository;
     private final AuthContextHolder authContextHolder;
+    private final JwtTokenService jwtTokenService;
 
     public AuthenticationFilter(
             SessionService sessionService,
@@ -57,11 +59,22 @@ public class AuthenticationFilter extends OncePerRequestFilter {
             UserRepository userRepository,
             TreeRepository treeRepository,
             AuthContextHolder authContextHolder) {
+        this(sessionService, sessionCookieFactory, userRepository, treeRepository, authContextHolder, null);
+    }
+
+    public AuthenticationFilter(
+            SessionService sessionService,
+            SessionCookieFactory sessionCookieFactory,
+            UserRepository userRepository,
+            TreeRepository treeRepository,
+            AuthContextHolder authContextHolder,
+            JwtTokenService jwtTokenService) {
         this.sessionService = sessionService;
         this.sessionCookieFactory = sessionCookieFactory;
         this.userRepository = userRepository;
         this.treeRepository = treeRepository;
         this.authContextHolder = authContextHolder;
+        this.jwtTokenService = jwtTokenService;
     }
 
     @Override
@@ -81,22 +94,36 @@ public class AuthenticationFilter extends OncePerRequestFilter {
     private AuthContext resolveContext(HttpServletRequest request) {
         Optional<String> token =
                 readSessionCookie(request).flatMap(sessionCookieFactory::parseToken);
-        if (token.isEmpty()) {
-            return AuthContext.anonymous();
+        Optional<UUID> userId = token.flatMap(sessionService::resolveUserId);
+        if (userId.isEmpty()) {
+            userId = readBearerToken(request).flatMap(this::resolveJwtUserId);
         }
-        // Server-side expiry/revocation enforced by SessionService (2.3, 2.8).
-        Optional<UUID> userId = sessionService.resolveUserId(token.get());
         if (userId.isEmpty()) {
             return AuthContext.anonymous();
         }
         UUID uid = userId.get();
-        // Defensive: a session must resolve to an existing User to authenticate.
         if (!userRepository.existsById(uid)) {
             return AuthContext.anonymous();
         }
         UUID ownedTreeId =
                 treeRepository.findFirstByOwnerUserIdOrderByCreatedAtAsc(uid).map(Tree::getId).orElse(null);
         return AuthContext.authenticated(uid, ownedTreeId);
+    }
+
+    private Optional<UUID> resolveJwtUserId(String bearer) {
+        if (jwtTokenService == null) {
+            return Optional.empty();
+        }
+        return jwtTokenService.parseUserId(bearer);
+    }
+
+    private Optional<String> readBearerToken(HttpServletRequest request) {
+        String header = request.getHeader("Authorization");
+        if (header == null || header.length() < 8 || !header.regionMatches(true, 0, "Bearer ", 0, 7)) {
+            return Optional.empty();
+        }
+        String value = header.substring(7).trim();
+        return value.isEmpty() ? Optional.empty() : Optional.of(value);
     }
 
     private Optional<String> readSessionCookie(HttpServletRequest request) {

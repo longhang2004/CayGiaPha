@@ -16,6 +16,7 @@ public class HealthService {
     public Map<String, String> status() {
         return Map.of(
                 "service", "family-tree-api",
-                "status", "UP");
+                "status", "UP",
+                "architecture", "modular-hexagon");
     }
 }

@@ -192,3 +192,15 @@ Durable project knowledge for future AI agents. Keep entries short, verified, an
   clear capabilities before a new response so stale privileged data cannot cross tree boundaries.
   Verify both controller/route contracts and build with `USE_BACKEND=false` and
   `USE_BACKEND=true` after capability changes.
+
+## 2026-09-19
+
+- **Java portfolio API**: Modular hexagonal overlay under `backend/.../hexagon` and
+  `platform` (JWT + session dual auth, Redis kinship cache, transactional outbox, idempotency,
+  OpenAPI at `/api/v1/docs`, Micrometer, Resilience4j). Product path stays Next.js
+  (`USE_BACKEND=false`). Boot with `cd backend && docker compose up -d --build`. Demo seed
+  email is documented in `backend/README.md`; never log OTP/JWT/family payloads.
+- **UI direction**: Forest paper `#eef3ee` + lacquer vermillion `#b43b16`, Be Vietnam Pro + Source Serif 4 headings,
+  pine vs vermillion graph gender (not blue/pink). Tokens live in
+  `frontend/src/styles/_01_variables.scss`. HomeLanding is shared with `/prototype/home`.
+  Do not use Next.js `<Image />`.

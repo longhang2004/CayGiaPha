@@ -572,7 +572,7 @@ test.describe("Prototype Pages — smoke tests (no auth required)", () => {
   }) => {
     await page.goto("/prototype/home");
     await expect(page.locator("h1#home-title")).toHaveText(
-      "Gom lại những người thân, câu chuyện và cách gọi trong gia đình",
+      "Ghi lại gia đình để cả nhà cùng nhớ",
     );
     await expect(page.getByRole("link", { name: "Tạo cây gia phả" }).first()).toHaveAttribute(
       "href",

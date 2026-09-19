@@ -17,21 +17,21 @@ precedence.
 
 ## Current design direction
 
-The product uses a warm, editorial family-archive aesthetic rather than a
+The product uses a Vietnamese family-archive language rather than a
 generic SaaS dashboard:
 
-- Plus Jakarta Sans with Vietnamese glyph support.
-- Warm beige canvas, warm ink text, white paper surfaces, and terracotta accent.
-- Large, low-weight display headings; compact labels; generous macro spacing.
-- Rounded paper cards, double-bezel containers, hairlines, and restrained shadows.
+- Be Vietnam Pro for UI text and Source Serif 4 for headings (Vietnamese glyphs, no Inter).
+- Forest paper canvas, forest ink text, lacquer vermillion actions.
+- Large, readable display headings; compact labels; generous macro spacing.
+- Paper cards, double-bezel containers, hairlines, and restrained shadows.
 - A task-first populated family-tree workspace: list is the mobile/tablet default, graph is an
   equivalent labelled tab, and wide containers show a list–graph split view.
-- Light/dark themes based on semantic variables. Gender and relationship cues
-  combine color with text, shape, or dash patterns.
+- Light/dark themes based on semantic variables. Gender cues use pine (male) and
+  vermillion (female) plus text, not blue/pink alone.
 - Older-user accessibility intent: 48 CSS-px targets, text scaling from
   100–200%, visible keyboard focus.
 
-The landing page, auth cards, and graph workspace share the warm palette but use different density.
+The landing page, auth cards, and graph workspace share the forest-and-lacquer palette but use different density.
 Preserve the landing page's editorial pacing, the auth flow's focused cards, and the workspace's
 task-first information hierarchy.
 

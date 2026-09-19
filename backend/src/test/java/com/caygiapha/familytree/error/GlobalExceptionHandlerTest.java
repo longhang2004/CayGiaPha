@@ -142,8 +142,9 @@ class GlobalExceptionHandlerTest {
         String json = mapper.writeValueAsString(
                 ErrorResponse.of(ErrorCode.VALIDATION_ERROR, "phone", "Invalid phone."));
 
-        assertThat(json).isEqualTo(
-                "{\"error\":{\"code\":\"VALIDATION_ERROR\",\"field\":\"phone\",\"message\":\"Invalid phone.\"}}");
+        assertThat(json).contains("\"error\":{\"code\":\"VALIDATION_ERROR\",\"field\":\"phone\",\"message\":\"Invalid phone.\"}");
+        assertThat(json).contains("\"type\":\"https://docs.caygiapha.dev/problems/VALIDATION_ERROR\"");
+        assertThat(json).contains("\"status\":400");
     }
 
     @Test
@@ -151,9 +152,9 @@ class GlobalExceptionHandlerTest {
         String json = mapper.writeValueAsString(
                 ErrorResponse.of(ErrorCode.NOT_AUTHORIZED, null, "Not allowed."));
 
-        assertThat(json).doesNotContain("field");
-        assertThat(json).isEqualTo(
-                "{\"error\":{\"code\":\"NOT_AUTHORIZED\",\"message\":\"Not allowed.\"}}");
+        assertThat(json).doesNotContain("\"field\"");
+        assertThat(json).contains("\"error\":{\"code\":\"NOT_AUTHORIZED\",\"message\":\"Not allowed.\"}");
+        assertThat(json).contains("\"status\":403");
     }
 
     private HttpStatus statusOf(ErrorCode code) {

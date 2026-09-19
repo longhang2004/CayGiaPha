@@ -92,7 +92,7 @@
   border: 0.4rem solid rgba(255, 255, 255, 0.55);
   border-radius: 50%;
   background: var(--home-olive);
-  color: #f9f6f0;
+  color: var(--color-surface-card);
   font-size: 1.75rem;
   font-weight: 750;
   box-shadow: 0 1rem 2.5rem rgba(58, 48, 38, 0.15);
@@ -135,7 +135,7 @@
   display: block;
   width: 9rem;
   height: 7.1rem;
-  border: 0.45rem solid #fffaf0;
+  border: 0.45rem solid var(--color-surface-card);
   border-bottom-width: 1.35rem;
   border-radius: 0.3rem;
   background: #b7c1a4;
