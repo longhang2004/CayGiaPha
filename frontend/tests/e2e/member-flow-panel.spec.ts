@@ -122,6 +122,21 @@ for (const viewport of [
     await expect(viewPanel).toBeVisible();
     await expect(viewPanel.getByRole("button", { name: "Cập nhật quan hệ" })).toBeFocused();
 
+    await viewPanel.getByRole("button", { name: "Ghi cách gọi" }).click();
+    const assertedPanel = page.locator('.side-panel[data-panel-mode="asserted-label"]');
+    await expect(
+      assertedPanel.getByRole("form", { name: "Ghi cách gọi khi chưa rõ đường nối" }),
+    ).toBeVisible();
+    await expect(assertedPanel.getByText(/chưa biết ông bà trung gian/i)).toBeVisible();
+    await assertedPanel.getByRole("textbox", { name: "Cách gọi" }).fill("bác");
+    await assertedPanel.getByRole("button", { name: "Ghi cách gọi" }).click();
+    await expect(assertedPanel.getByText(/Hàng Hữu Phương gọi .* là bác/)).toBeVisible();
+    await assertedPanel.screenshot({ path: testInfo.outputPath(`${viewport.name}-asserted-label-panel.png`) });
+    await assertedPanel.getByRole("button", { name: "Quay lại thông tin thành viên" }).click();
+    await assertedPanel.getByRole("button", { name: "Bỏ thay đổi" }).click();
+    await expect(viewPanel).toBeVisible();
+    await expect(viewPanel.getByRole("button", { name: "Ghi cách gọi" })).toBeFocused();
+
     await viewPanel.getByRole("button", { name: "Cập nhật quan hệ" }).click();
     await page.keyboard.press("Escape");
     await expect(page.locator(".tree-workspace__info-panel--open")).toHaveCount(0);

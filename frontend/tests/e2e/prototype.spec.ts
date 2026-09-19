@@ -1278,6 +1278,7 @@ test.describe("Prototype Pages — smoke tests (no auth required)", () => {
     await expect(page.getByRole("button", { name: "Thêm người mới" })).toBeVisible();
     await expect(page.getByRole("button", { name: "Chỉnh sửa thông tin" })).toBeVisible();
     await expect(page.getByRole("button", { name: "Cập nhật quan hệ" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Ghi cách gọi" })).toBeVisible();
     await page.getByRole("button", { name: "Thao tác khác" }).click();
     await expect(page.getByRole("button", { name: "Thêm thành viên khác" })).toHaveCount(0);
     await expect(page.getByRole("button", { name: "Tìm người" })).toHaveCount(0);
@@ -1287,11 +1288,13 @@ test.describe("Prototype Pages — smoke tests (no auth required)", () => {
     await page.goto("/prototype/tree?role=linked&person=ego");
     await expect(page.getByRole("button", { name: "Chỉnh sửa thông tin" })).toBeVisible();
     await expect(page.getByRole("button", { name: "Cập nhật quan hệ" })).toHaveCount(0);
+    await expect(page.getByRole("button", { name: "Ghi cách gọi" })).toHaveCount(0);
     await expect(page.getByRole("button", { name: "Thêm người mới" })).toHaveCount(0);
 
     await page.goto("/prototype/tree?role=reader&person=ego");
     await expect(page.getByRole("button", { name: "Chỉnh sửa thông tin" })).toHaveCount(0);
     await expect(page.getByRole("button", { name: "Cập nhật quan hệ" })).toHaveCount(0);
+    await expect(page.getByRole("button", { name: "Ghi cách gọi" })).toHaveCount(0);
     await expect(page.getByRole("button", { name: "Thêm người mới" })).toHaveCount(0);
     await expect(page.getByRole("searchbox", { name: "Tìm theo tên hoặc cách xưng hô" })).toBeVisible();
     await page.getByRole("button", { name: "Thao tác khác" }).click();
